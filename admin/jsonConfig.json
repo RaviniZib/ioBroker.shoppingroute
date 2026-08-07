@@ -78,26 +78,32 @@
           "max": 10000
         },
         "fallbackMarket": {
-          "type": "text",
+          "type": "selectSendTo",
+          "command": "getMarkets",
+          "manual": false,
+          "noTranslation": true,
           "label": {
             "en": "Fallback market",
             "de": "Fallback-Markt"
           },
           "newLine": true,
           "help": {
-            "en": "Used only when no explicit market, product default or priority market applies.",
-            "de": "Wird nur verwendet, wenn weder ein ausdrücklich genannter Markt noch Artikel-Standardmarkt noch Prioritätsmarkt greift."
+            "en": "Used only when no explicit market, product default or priority market applies. The list is built from active markets.",
+            "de": "Wird nur verwendet, wenn weder ein ausdrücklich genannter Markt noch Artikel-Standardmarkt noch Prioritätsmarkt greift. Die Auswahl wird aus den aktiven Märkten erzeugt."
           }
         },
         "priorityMarket": {
-          "type": "text",
+          "type": "selectSendTo",
+          "command": "getMarketsOptional",
+          "manual": false,
+          "noTranslation": true,
           "label": {
             "en": "Priority market",
             "de": "Prioritätsmarkt"
           },
           "help": {
-            "en": "Optional. Products without an explicit or product-specific default market are assigned here. Enter an active market name or alias, e.g. LIDL. Leave empty for no priority market.",
-            "de": "Optional. Artikel ohne ausdrücklich genannten oder artikelbezogenen Standardmarkt werden diesem Markt zugeordnet. Aktiven Marktnamen oder Alias eintragen, z. B. LIDL. Leer lassen für keinen Prioritätsmarkt."
+            "en": "Optional. Products without an explicit or product-specific default market are assigned here. The list is built from active markets; choose the empty entry for no priority market.",
+            "de": "Optional. Artikel ohne ausdrücklich genannten oder artikelbezogenen Standardmarkt werden diesem Markt zugeordnet. Die Auswahl wird aus den aktiven Märkten erzeugt; der leere Eintrag bedeutet kein Prioritätsmarkt."
           },
           "newLine": true
         }
@@ -220,13 +226,17 @@
           },
           "items": [
             {
-              "type": "text",
+              "type": "selectSendTo",
               "attr": "market",
+              "command": "getMarkets",
+              "manual": false,
+              "noTranslation": true,
               "title": {
                 "en": "Market",
                 "de": "Markt"
               },
-              "width": "35%"
+              "width": "35%",
+              "sort": true
             },
             {
               "type": "selectSendTo",
@@ -239,7 +249,8 @@
                 "en": "Product group",
                 "de": "Produktgruppe"
               },
-              "width": "45%"
+              "width": "45%",
+              "sort": true
             },
             {
               "type": "number",
@@ -264,8 +275,8 @@
         "productsHelp": {
           "type": "staticText",
           "text": {
-            "en": "The visible Alexa text is never replaced with category markers. Amounts such as '3 bananas' or '500 grams minced meat' remain visible unchanged. Product aliases are comma-separated. New unknown products can be learned automatically; the priority market is not stored as a permanent product default.",
-            "de": "Der sichtbare Alexa-Text bekommt keine Kategorienummern oder Marker. Mengen wie '3 Bananen' oder '500 Gramm Hackfleisch' bleiben unverändert sichtbar. Artikel-Aliase werden kommagetrennt angegeben. Neue unbekannte Artikel können automatisch in den Artikelstamm übernommen werden; der Prioritätsmarkt wird dabei nicht als fester Standardmarkt gespeichert."
+            "en": "The visible Alexa text is never replaced with category markers. Amounts remain visible unchanged. Product aliases are comma-separated. New unknown products can be learned automatically; the priority market is not stored as a permanent product default. The Product, Product group and Default market columns are sortable; lists and drop-downs are shown alphabetically.",
+            "de": "Der sichtbare Alexa-Text bekommt keine Kategorienummern oder Marker. Mengen bleiben unverändert sichtbar. Artikel-Aliase werden kommagetrennt angegeben. Neue unbekannte Artikel können automatisch in den Artikelstamm übernommen werden; der Prioritätsmarkt wird dabei nicht als fester Standardmarkt gespeichert. Die Spalten Artikel, Produktgruppe und Standardmarkt sind sortierbar; Listen und Pulldowns werden alphabetisch angezeigt."
           }
         },
         "products": {
@@ -282,7 +293,8 @@
                 "en": "Product",
                 "de": "Artikel"
               },
-              "width": "25%"
+              "width": "25%",
+              "sort": true
             },
             {
               "type": "text",
@@ -304,16 +316,21 @@
                 "en": "Product group",
                 "de": "Produktgruppe"
               },
-              "width": "25%"
+              "width": "25%",
+              "sort": true
             },
             {
-              "type": "text",
+              "type": "selectSendTo",
               "attr": "defaultMarket",
+              "command": "getMarketsOptional",
+              "manual": false,
+              "noTranslation": true,
               "title": {
                 "en": "Default market",
                 "de": "Standardmarkt"
               },
-              "width": "25%"
+              "width": "25%",
+              "sort": true
             }
           ]
         }

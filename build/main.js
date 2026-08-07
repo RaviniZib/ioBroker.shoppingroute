@@ -101,7 +101,7 @@ class ShoppingRoute extends utils.Adapter {
             seen.add(key);
             result.push({ name });
         }
-        return result;
+        return result.sort((a, b) => a.name.localeCompare(b.name, 'de', { sensitivity: 'base' }));
     }
     get products() {
         if (this.runtimeProducts)
@@ -127,10 +127,15 @@ class ShoppingRoute extends utils.Adapter {
         return this.cfg.autoLearnProducts !== false;
     }
     async onReady() {
-        this.runtimeProducts = (Array.isArray(this.cfg.products) ? this.cfg.products : [])
+        const configuredProducts = (Array.isArray(this.cfg.products) ? this.cfg.products : [])
             .filter(product => product && product.name)
             .map(product => ({ ...product }));
+        this.runtimeProducts = [...configuredProducts]
+            .sort((a, b) => a.name.localeCompare(b.name, 'de', { sensitivity: 'base' }));
+        this.productsDirty = configuredProducts.some((product, index) => product.name !== this.runtimeProducts?.[index]?.name);
         await this.ensureProductGroupsConfig();
+        if (this.productsDirty)
+            await this.persistProductsConfig();
         await this.setStateAsync('info.connection', false, true);
         await this.setStateAsync('info.lastError', '', true);
         const enabled = await this.getStateAsync('control.enabled');
@@ -156,10 +161,19 @@ class ShoppingRoute extends utils.Adapter {
         if (!obj || !obj.callback)
             return;
         if (obj.command === 'getProductGroups') {
-            const options = this.productGroups.map(group => ({
-                value: group.name,
-                label: group.name,
-            }));
+            const options = this.productGroups
+                .map(group => ({ value: group.name, label: group.name }))
+                .sort((a, b) => a.label.localeCompare(b.label, 'de', { sensitivity: 'base' }));
+            this.sendTo(obj.from, obj.command, options, obj.callback);
+            return;
+        }
+        if (obj.command === 'getMarkets' || obj.command === 'getMarketsOptional') {
+            const options = this.markets
+                .map(market => ({ value: market.name, label: market.name }))
+                .sort((a, b) => a.label.localeCompare(b.label, 'de', { sensitivity: 'base' }));
+            if (obj.command === 'getMarketsOptional') {
+                options.unshift({ value: '', label: '—' });
+            }
             this.sendTo(obj.from, obj.command, options, obj.callback);
         }
     }
@@ -360,7 +374,9 @@ class ShoppingRoute extends utils.Adapter {
             const currentNative = (object.native || {});
             object.native = {
                 ...currentNative,
-                products: this.runtimeProducts.map(product => ({ ...product })),
+                products: [...this.runtimeProducts]
+                    .sort((a, b) => a.name.localeCompare(b.name, 'de', { sensitivity: 'base' }))
+                    .map(product => ({ ...product })),
             };
             await this.setForeignObjectAsync(instanceId, object);
             this.productsDirty = false;

@@ -210,3 +210,8 @@ Vor einem späteren offiziellen Release folgen mindestens:
 ## Lizenz
 
 MIT © 2026 RaviniZib
+
+
+### Admin-Oberfläche ab 0.0.4
+
+Fallback-Markt und Prioritätsmarkt werden als Pulldown aus den aktiven Märkten angeboten. Auch Standardmarkt im Artikelstamm und Markt im Laufweg sind Pulldowns. Dynamische Markt- und Produktgruppenlisten werden alphabetisch sortiert. Im Artikelstamm können die Spalten Artikel, Produktgruppe und Standardmarkt über den Spaltenkopf sortiert werden; innerhalb gleicher Gruppen bleibt die alphabetische Artikelreihenfolge erhalten.

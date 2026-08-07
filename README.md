@@ -59,3 +59,8 @@ Repository target: `https://github.com/RaviniZib/ioBroker.shoppingroute`
 ## License
 
 MIT © 2026 RaviniZib
+
+
+### Admin UI since 0.0.4
+
+Fallback market and Priority market are dynamic drop-downs built from active markets. Product default market and route market use the same market drop-downs. Dynamic market and product-group options are alphabetically sorted. The Product, Product group and Default market columns in the product catalogue are sortable from their headers; equal groups retain alphabetical product order.

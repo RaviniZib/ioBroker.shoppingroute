@@ -1,3 +1,11 @@
+## 0.0.4 (2026-08-07)
+
+- Changed Fallback market and Priority market on the General tab to dynamic market drop-downs.
+- Changed market selection in walking routes and product defaults to dynamic market drop-downs.
+- Sorts all dynamic product-group and market drop-downs alphabetically.
+- Product catalogue columns Product, Product group and Default market can now be sorted from the table header.
+- Keeps the stored product catalogue alphabetically ordered by product name so the default view is alphabetical and grouped table sorting stays alphabetical within equal groups.
+
 # Changelog
 
 ## 0.0.3 (2026-08-07)

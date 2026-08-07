@@ -81,7 +81,7 @@ export class ShoppingRoute extends utils.Adapter {
             result.push({ name });
         }
 
-        return result;
+        return result.sort((a, b) => a.name.localeCompare(b.name, 'de', { sensitivity: 'base' }));
     }
 
     private get products(): ProductConfig[] {
@@ -114,11 +114,15 @@ export class ShoppingRoute extends utils.Adapter {
     }
 
     private async onReady(): Promise<void> {
-        this.runtimeProducts = (Array.isArray(this.cfg.products) ? this.cfg.products : [])
+        const configuredProducts = (Array.isArray(this.cfg.products) ? this.cfg.products : [])
             .filter(product => product && product.name)
             .map(product => ({ ...product }));
+        this.runtimeProducts = [...configuredProducts]
+            .sort((a, b) => a.name.localeCompare(b.name, 'de', { sensitivity: 'base' }));
+        this.productsDirty = configuredProducts.some((product, index) => product.name !== this.runtimeProducts?.[index]?.name);
 
         await this.ensureProductGroupsConfig();
+        if (this.productsDirty) await this.persistProductsConfig();
 
         await this.setStateAsync('info.connection', false, true);
         await this.setStateAsync('info.lastError', '', true);
@@ -151,10 +155,22 @@ export class ShoppingRoute extends utils.Adapter {
         if (!obj || !obj.callback) return;
 
         if (obj.command === 'getProductGroups') {
-            const options = this.productGroups.map(group => ({
-                value: group.name,
-                label: group.name,
-            }));
+            const options = this.productGroups
+                .map(group => ({ value: group.name, label: group.name }))
+                .sort((a, b) => a.label.localeCompare(b.label, 'de', { sensitivity: 'base' }));
+            this.sendTo(obj.from, obj.command, options, obj.callback);
+            return;
+        }
+
+        if (obj.command === 'getMarkets' || obj.command === 'getMarketsOptional') {
+            const options = this.markets
+                .map(market => ({ value: market.name, label: market.name }))
+                .sort((a, b) => a.label.localeCompare(b.label, 'de', { sensitivity: 'base' }));
+
+            if (obj.command === 'getMarketsOptional') {
+                options.unshift({ value: '', label: '—' });
+            }
+
             this.sendTo(obj.from, obj.command, options, obj.callback);
         }
     }
@@ -421,7 +437,9 @@ export class ShoppingRoute extends utils.Adapter {
             const currentNative = (object.native || {}) as Record<string, unknown>;
             object.native = {
                 ...currentNative,
-                products: this.runtimeProducts.map(product => ({ ...product })),
+                products: [...this.runtimeProducts]
+                    .sort((a, b) => a.name.localeCompare(b.name, 'de', { sensitivity: 'base' }))
+                    .map(product => ({ ...product })),
             };
 
             await this.setForeignObjectAsync(instanceId, object);
