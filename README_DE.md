@@ -1,0 +1,180 @@
+# ioBroker.shoppingroute
+
+**Entwicklungsstand: 0.0.1 – frühe Testversion**
+
+`ioBroker.shoppingroute` sortiert eine vorhandene Alexa-Einkaufsliste nach **Einkaufsmarkt** und dem **individuellen Laufweg durch den jeweiligen Markt**. Die originale Alexa-App bleibt die einzige App für den Einkauf und die Artikel werden dort weiterhin ganz normal abgehakt.
+
+## Grundidee
+
+Alexa vergibt für jeden Listeneintrag eine ID und einen Erstellungszeitpunkt. Wenn die Alexa-App auf **„Älteste bis neueste“** eingestellt ist, können diese vorhandenen IDs als feste Listenplätze verwendet werden.
+
+Der Adapter:
+
+1. liest ausschließlich die **aktiven** Einträge aus `alexa2.x.Lists.<LISTE>.json`,
+2. sortiert die vorhandenen IDs nach `createdDateTime` von alt nach neu,
+3. analysiert unabhängig davon die Artikelnamen,
+4. sortiert die Artikel nach **Markt → Laufweg/Kategorie → Artikelname**,
+5. schreibt ausschließlich die sichtbaren `value`-Texte auf die bereits vorhandenen IDs zurück.
+
+### Harte Sicherheitsregel
+
+Der Adapter verwendet **niemals**:
+
+- `#New`
+- `#delete`
+- `completed`
+
+Er legt also selbst keine Alexa-Listeneinträge an, löscht keine und hakt keine ab.
+
+## Alexa-App vorbereiten
+
+In der Alexa-App für die Einkaufsliste einstellen:
+
+**Sortieren nach → Älteste bis neueste**
+
+Ohne diese Einstellung kann die App ihre eigene A–Z-Sortierung über die vom Adapter erzeugte Reihenfolge legen.
+
+## Beispiele
+
+### Markt explizit nennen
+
+Sprachbefehl sinngemäß:
+
+`Alexa, setze Bananen von Aldi auf die Einkaufsliste.`
+
+Der sichtbare Eintrag bleibt:
+
+`Bananen von Aldi`
+
+Intern erkennt der Adapter:
+
+- Artikel: `Bananen`
+- Markt: `ALDI`
+- Kategorie: `Obst/Gemüse`
+
+### Mengenangaben
+
+Auch folgende Einträge bleiben sichtbar unverändert:
+
+- `3 Bananen von Aldi`
+- `2 Packungen Eier von Penny`
+- `500 Gramm Hackfleisch von Lidl`
+
+Die Menge wird nur für die Artikelerkennung ausgeblendet, niemals aus dem Alexa-Text entfernt.
+
+## Konfiguration
+
+### Allgemein
+
+- Alexa2-Instanz, z. B. `alexa2.0`
+- Listenname, normalerweise `SHOP`
+- Dry-Run
+- Wartezeit nach Listenänderungen
+- Pause zwischen Alexa-`value`-Updates
+- Fallback-Hauptkategorie/Markt
+
+### Märkte / Hauptkategorien
+
+Beliebig viele Märkte können angelegt und in eine Reihenfolge gebracht werden.
+
+Beispiel:
+
+1. ALDI
+2. PENNY
+3. LIDL
+4. REWE
+5. Ohne Markt
+
+Aliase ermöglichen z. B. `Aldi` und `Aldi Nord` für denselben Markt.
+
+### Laufwege
+
+Jeder Markt bekommt eine eigene Kategorienreihenfolge.
+
+Beispiel ALDI:
+
+1. Obst/Gemüse
+2. Brot/Gebäck
+3. Fleisch/Fisch
+4. Wurst/Salate/Teigwaren
+5. Milchprodukte
+6. Konserven
+7. Getränke
+8. TK-Produkte
+9. Nonfood
+
+PENNY kann eine vollständig andere Reihenfolge besitzen.
+
+### Artikelstamm
+
+Pro Artikel können gepflegt werden:
+
+- Name
+- Aliase
+- Kategorie
+- Standardmarkt
+
+Ein ausdrücklich genannter Markt (`Bananen von Penny`) hat Vorrang vor dem Standardmarkt des Artikels.
+
+## Unbekannte Artikel
+
+Nicht im Artikelstamm vorhandene Artikel werden nicht blockiert. Der Adapter versucht eine Kategorie heuristisch zu erkennen und schreibt sie nach:
+
+`shoppingroute.0.info.unknownItems`
+
+Damit können unbekannte Artikel später bequem in den Artikelstamm übernommen werden.
+
+## Verhalten während des Einkaufs
+
+Wenn während einer laufenden Umsortierung ein Artikel hinzugefügt oder abgehakt wird, erkennt der Adapter die geänderte Menge aktiver IDs, bricht den aktuellen Durchlauf ab und berechnet die Liste anschließend neu.
+
+Es werden außerdem nur Plätze beschrieben, deren Text sich tatsächlich ändern muss.
+
+## Datenpunkte
+
+- `info.connection`
+- `info.activeItems`
+- `info.lastSort`
+- `info.lastError`
+- `info.lastPlan`
+- `info.unknownItems`
+- `control.enabled`
+- `control.sortNow`
+
+`info.lastPlan` ist besonders für den Dry-Run gedacht und zeigt vor dem echten Schreiben exakt, welcher Text auf welche vorhandene Alexa-ID geschrieben würde.
+
+## Dry-Run
+
+Die erste Version startet standardmäßig mit **Dry-Run = EIN**.
+
+Damit wird die Sortierung vollständig berechnet und protokolliert, aber Alexa wird nicht verändert. Erst wenn das Ergebnis plausibel ist, sollte Dry-Run in der Adapterkonfiguration deaktiviert werden.
+
+## Aktueller Alexa2-Hinweis
+
+Während der Entwicklung im August 2026 wurde in einer verwendeten `alexa-remote2`-Version ein Fehler beim Aktualisieren von Listeneinträgen gefunden. In `updateListItem` war die Versions-Query als
+
+`?version =${options.version}`
+
+statt
+
+`?version=${options.version}`
+
+gebildet. In der Testinstallation musste dieser Fehler korrigiert werden, bevor `value`/`completed`-Updates von Amazon akzeptiert wurden.
+
+**Für eine öffentliche Release-Version von shoppingroute ist ein upstream behobener Alexa2/alexa-remote2-Stand Voraussetzung.** Nutzer sollen später keine Dateien in `node_modules` manuell verändern müssen.
+
+## Entwicklungsinstallation
+
+Das Repository ist zunächst für Tests über GitHub vorgesehen. Nach dem Push auf GitHub kann es in ioBroker im Expertenmodus über die benutzerdefinierte GitHub-/URL-Installation installiert werden.
+
+Vor einem späteren offiziellen Release folgen mindestens:
+
+- Test auf mehreren ioBroker-Systemen
+- Prüfung der Admin-JSONConfig
+- Kompatibilitätstest mit aktuellen Alexa2-Versionen
+- npm-Veröffentlichung
+- Antrag für das ioBroker-Latest-Repository
+
+## Lizenz
+
+MIT © 2026 RaviniZib

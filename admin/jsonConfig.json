@@ -1,0 +1,269 @@
+{
+  "type": "tabs",
+  "items": {
+    "general": {
+      "type": "panel",
+      "label": {
+        "en": "General",
+        "de": "Allgemein"
+      },
+      "items": {
+        "warning": {
+          "type": "staticText",
+          "newLine": true,
+          "text": {
+            "en": "IMPORTANT: Set the Alexa app shopping list to 'Oldest to newest'. This adapter never creates, deletes or completes list items; it only redistributes the visible value texts across existing active item IDs.",
+            "de": "WICHTIG: Die Einkaufsliste in der Alexa-App auf 'Älteste bis neueste' stellen. Dieser Adapter legt niemals Listeneinträge an, löscht keine und hakt keine ab; er verteilt ausschließlich die sichtbaren value-Texte auf vorhandene aktive IDs."
+          }
+        },
+        "alexaInstance": {
+          "type": "text",
+          "label": {
+            "en": "Alexa2 instance",
+            "de": "Alexa2-Instanz"
+          },
+          "help": {
+            "en": "Example: alexa2.0",
+            "de": "Beispiel: alexa2.0"
+          },
+          "newLine": true
+        },
+        "listName": {
+          "type": "text",
+          "label": {
+            "en": "Alexa list name",
+            "de": "Alexa-Listenname"
+          },
+          "help": {
+            "en": "Usually SHOP",
+            "de": "Normalerweise SHOP"
+          }
+        },
+        "dryRun": {
+          "type": "checkbox",
+          "label": {
+            "en": "Dry run (do not write to Alexa)",
+            "de": "Dry-Run (nichts zu Alexa schreiben)"
+          },
+          "newLine": true
+        },
+        "debounceMs": {
+          "type": "number",
+          "label": {
+            "en": "Wait after list changes (ms)",
+            "de": "Wartezeit nach Listenänderungen (ms)"
+          },
+          "min": 250,
+          "max": 30000
+        },
+        "writePauseMs": {
+          "type": "number",
+          "label": {
+            "en": "Pause between value updates (ms)",
+            "de": "Pause zwischen value-Updates (ms)"
+          },
+          "min": 250,
+          "max": 10000
+        },
+        "fallbackMarket": {
+          "type": "text",
+          "label": {
+            "en": "Fallback market",
+            "de": "Standard-Hauptkategorie ohne Markt"
+          },
+          "newLine": true
+        }
+      }
+    },
+    "marketsTab": {
+      "type": "panel",
+      "label": {
+        "en": "Markets",
+        "de": "Märkte"
+      },
+      "items": {
+        "marketsHelp": {
+          "type": "staticText",
+          "text": {
+            "en": "Market order is the main sorting level. Aliases are comma-separated and are recognized in phrases such as 'bananas from Aldi' or 'bananas at Aldi'.",
+            "de": "Die Marktreihenfolge ist die oberste Sortierebene. Aliase werden kommagetrennt angegeben und z. B. in 'Bananen von Aldi' oder 'Bananen bei Aldi' erkannt."
+          }
+        },
+        "markets": {
+          "type": "table",
+          "label": {
+            "en": "Markets",
+            "de": "Märkte / Hauptkategorien"
+          },
+          "items": [
+            {
+              "type": "checkbox",
+              "attr": "enabled",
+              "title": {
+                "en": "Active",
+                "de": "Aktiv"
+              },
+              "width": "10%"
+            },
+            {
+              "type": "number",
+              "attr": "order",
+              "title": {
+                "en": "Order",
+                "de": "Reihenfolge"
+              },
+              "width": "12%"
+            },
+            {
+              "type": "text",
+              "attr": "name",
+              "title": {
+                "en": "Market",
+                "de": "Markt"
+              },
+              "width": "28%"
+            },
+            {
+              "type": "text",
+              "attr": "aliases",
+              "title": {
+                "en": "Aliases",
+                "de": "Aliase"
+              },
+              "width": "50%"
+            }
+          ]
+        }
+      }
+    },
+    "routesTab": {
+      "type": "panel",
+      "label": {
+        "en": "Walking routes",
+        "de": "Laufwege"
+      },
+      "items": {
+        "routesHelp": {
+          "type": "staticText",
+          "text": {
+            "en": "Define a separate category order for every market. Lower numbers appear earlier in the shopping route.",
+            "de": "Für jeden Markt kann eine eigene Kategorienreihenfolge definiert werden. Kleine Zahlen erscheinen im Laufweg zuerst."
+          }
+        },
+        "routes": {
+          "type": "table",
+          "label": {
+            "en": "Market/category order",
+            "de": "Markt-/Kategorienreihenfolge"
+          },
+          "items": [
+            {
+              "type": "text",
+              "attr": "market",
+              "title": {
+                "en": "Market",
+                "de": "Markt"
+              },
+              "width": "35%"
+            },
+            {
+              "type": "text",
+              "attr": "category",
+              "title": {
+                "en": "Category",
+                "de": "Kategorie"
+              },
+              "width": "45%"
+            },
+            {
+              "type": "number",
+              "attr": "order",
+              "title": {
+                "en": "Order",
+                "de": "Reihenfolge"
+              },
+              "width": "20%"
+            }
+          ]
+        }
+      }
+    },
+    "productsTab": {
+      "type": "panel",
+      "label": {
+        "en": "Products",
+        "de": "Artikel"
+      },
+      "items": {
+        "productsHelp": {
+          "type": "staticText",
+          "text": {
+            "en": "The visible Alexa text is never replaced with category markers. Amounts such as '3 bananas' or '500 grams minced meat' remain visible unchanged. Product aliases are comma-separated.",
+            "de": "Der sichtbare Alexa-Text bekommt keine Kategorienummern oder Marker. Mengen wie '3 Bananen' oder '500 Gramm Hackfleisch' bleiben unverändert sichtbar. Artikel-Aliase werden kommagetrennt angegeben."
+          }
+        },
+        "products": {
+          "type": "table",
+          "label": {
+            "en": "Product catalogue",
+            "de": "Artikelstamm"
+          },
+          "items": [
+            {
+              "type": "text",
+              "attr": "name",
+              "title": {
+                "en": "Product",
+                "de": "Artikel"
+              },
+              "width": "25%"
+            },
+            {
+              "type": "text",
+              "attr": "aliases",
+              "title": {
+                "en": "Aliases",
+                "de": "Aliase"
+              },
+              "width": "25%"
+            },
+            {
+              "type": "text",
+              "attr": "category",
+              "title": {
+                "en": "Category",
+                "de": "Kategorie"
+              },
+              "width": "25%"
+            },
+            {
+              "type": "text",
+              "attr": "defaultMarket",
+              "title": {
+                "en": "Default market",
+                "de": "Standardmarkt"
+              },
+              "width": "25%"
+            }
+          ]
+        }
+      }
+    },
+    "diagnosticsTab": {
+      "type": "panel",
+      "label": {
+        "en": "Diagnostics",
+        "de": "Diagnose"
+      },
+      "items": {
+        "diagnostics": {
+          "type": "staticText",
+          "text": {
+            "en": "Runtime diagnostics are available below shoppingroute.0.info. Use control.sortNow to trigger a manual sorting run. Unknown products are written to info.unknownItems with a guessed category.",
+            "de": "Laufzeitdiagnosen stehen unter shoppingroute.0.info. Mit control.sortNow kann ein Sortierlauf manuell ausgelöst werden. Unbekannte Artikel landen mit einer vorgeschlagenen Kategorie in info.unknownItems."
+          }
+        }
+      }
+    }
+  }
+}
