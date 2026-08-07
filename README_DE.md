@@ -1,6 +1,6 @@
 # ioBroker.shoppingroute
 
-**Entwicklungsstand: 0.0.1 – frühe Testversion**
+**Entwicklungsstand: 0.0.2 – frühe Testversion**
 
 `ioBroker.shoppingroute` sortiert eine vorhandene Alexa-Einkaufsliste nach **Einkaufsmarkt** und dem **individuellen Laufweg durch den jeweiligen Markt**. Die originale Alexa-App bleibt die einzige App für den Einkauf und die Artikel werden dort weiterhin ganz normal abgehakt.
 
@@ -62,6 +62,23 @@ Auch folgende Einträge bleiben sichtbar unverändert:
 
 Die Menge wird nur für die Artikelerkennung ausgeblendet, niemals aus dem Alexa-Text entfernt.
 
+### Prioritätsmarkt
+
+Optional kann ein **Prioritätsmarkt** festgelegt werden. Damit muss der bevorzugte Markt nicht bei jedem Artikel mitgesprochen werden.
+
+Beispiel mit `Prioritätsmarkt = LIDL`:
+
+- `Milch` → LIDL
+- `Bananen` → LIDL
+- `Cola von Rewe` → REWE
+- hat `Katzenfutter` im Artikelstamm den Standardmarkt ALDI → ALDI
+
+Die Reihenfolge der Marktentscheidung ist verbindlich:
+
+**ausdrücklich genannter Markt → Artikel-Standardmarkt → Prioritätsmarkt → Fallback-Markt**
+
+Der Prioritätsmarkt wird beim automatischen Lernen eines Artikels **nicht** als fester Standardmarkt gespeichert. Ein späterer Wechsel des Prioritätsmarkts wirkt dadurch auch auf bereits gelernte Artikel ohne eigenen Standardmarkt.
+
 ## Konfiguration
 
 ### Allgemein
@@ -69,9 +86,11 @@ Die Menge wird nur für die Artikelerkennung ausgeblendet, niemals aus dem Alexa
 - Alexa2-Instanz, z. B. `alexa2.0`
 - Listenname, normalerweise `SHOP`
 - Dry-Run
+- unbekannte Artikel automatisch lernen
 - Wartezeit nach Listenänderungen
 - Pause zwischen Alexa-`value`-Updates
 - Fallback-Hauptkategorie/Markt
+- Prioritätsmarkt, z. B. `LIDL` (optional)
 
 ### Märkte / Hauptkategorien
 
@@ -116,13 +135,21 @@ Pro Artikel können gepflegt werden:
 
 Ein ausdrücklich genannter Markt (`Bananen von Penny`) hat Vorrang vor dem Standardmarkt des Artikels.
 
-## Unbekannte Artikel
+## Unbekannte Artikel und automatisches Lernen
 
-Nicht im Artikelstamm vorhandene Artikel werden nicht blockiert. Der Adapter versucht eine Kategorie heuristisch zu erkennen und schreibt sie nach:
+Nicht im Artikelstamm vorhandene Artikel werden nicht blockiert. Ab 0.0.2 können sie automatisch in den Artikelstamm übernommen werden. Dabei wird eine Kategorie heuristisch vorgeschlagen; ein globaler Prioritätsmarkt wird **nicht** als fester Artikel-Standardmarkt gespeichert.
+
+Dry-Run verhindert ausschließlich Alexa-Schreibzugriffe. Das Lernen neuer Artikel darf weiterhin stattfinden, damit sich der Artikelstamm gefahrlos aufbauen lässt.
+
+Nicht automatisch gelernte unbekannte Artikel werden nach
 
 `shoppingroute.0.info.unknownItems`
 
-Damit können unbekannte Artikel später bequem in den Artikelstamm übernommen werden.
+geschrieben. Neu gelernte Artikel stehen zusätzlich unter
+
+`shoppingroute.0.info.lastLearnedItems`.
+
+Ein unbekannter Text mit einem nicht erkannten Suffix wie `35 Sushi von Ukuhama` wird aus Sicherheitsgründen nicht automatisch als Produkt `Sushi von Ukuhama` gelernt. `Ukuhama` könnte ein noch nicht angelegter Markt oder auch eine Marke sein. Solche Einträge übernehmen deshalb auch **nicht** den Prioritätsmarkt, sondern bleiben im Fallback-Markt und zur manuellen Klärung in `info.unknownItems`.
 
 ## Verhalten während des Einkaufs
 
@@ -138,6 +165,7 @@ Es werden außerdem nur Plätze beschrieben, deren Text sich tatsächlich änder
 - `info.lastError`
 - `info.lastPlan`
 - `info.unknownItems`
+- `info.lastLearnedItems`
 - `control.enabled`
 - `control.sortNow`
 

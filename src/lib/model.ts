@@ -30,9 +30,11 @@ export interface AdapterConfigShape {
     alexaInstance?: string;
     listName?: string;
     dryRun?: boolean;
+    autoLearnProducts?: boolean;
     debounceMs?: number;
     writePauseMs?: number;
     fallbackMarket?: string;
+    priorityMarket?: string;
     markets?: MarketConfig[];
     routes?: RouteConfig[];
     products?: ProductConfig[];

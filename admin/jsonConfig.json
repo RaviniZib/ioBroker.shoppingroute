@@ -47,6 +47,18 @@
           },
           "newLine": true
         },
+        "autoLearnProducts": {
+          "type": "checkbox",
+          "label": {
+            "en": "Automatically learn unknown products",
+            "de": "Unbekannte Artikel automatisch lernen"
+          },
+          "help": {
+            "en": "Adds newly recognized products to the product catalogue. Dry-run only blocks Alexa writes; learning remains active.",
+            "de": "Übernimmt neu erkannte Artikel in den Artikelstamm. Dry-Run sperrt nur Alexa-Schreibzugriffe; das Lernen bleibt aktiv."
+          },
+          "default": true
+        },
         "debounceMs": {
           "type": "number",
           "label": {
@@ -69,7 +81,23 @@
           "type": "text",
           "label": {
             "en": "Fallback market",
-            "de": "Standard-Hauptkategorie ohne Markt"
+            "de": "Fallback-Markt"
+          },
+          "newLine": true,
+          "help": {
+            "en": "Used only when no explicit market, product default or priority market applies.",
+            "de": "Wird nur verwendet, wenn weder ein ausdrücklich genannter Markt noch Artikel-Standardmarkt noch Prioritätsmarkt greift."
+          }
+        },
+        "priorityMarket": {
+          "type": "text",
+          "label": {
+            "en": "Priority market",
+            "de": "Prioritätsmarkt"
+          },
+          "help": {
+            "en": "Optional. Products without an explicit or product-specific default market are assigned here. Enter an active market name or alias, e.g. LIDL. Leave empty for no priority market.",
+            "de": "Optional. Artikel ohne ausdrücklich genannten oder artikelbezogenen Standardmarkt werden diesem Markt zugeordnet. Aktiven Marktnamen oder Alias eintragen, z. B. LIDL. Leer lassen für keinen Prioritätsmarkt."
           },
           "newLine": true
         }
@@ -198,8 +226,8 @@
         "productsHelp": {
           "type": "staticText",
           "text": {
-            "en": "The visible Alexa text is never replaced with category markers. Amounts such as '3 bananas' or '500 grams minced meat' remain visible unchanged. Product aliases are comma-separated.",
-            "de": "Der sichtbare Alexa-Text bekommt keine Kategorienummern oder Marker. Mengen wie '3 Bananen' oder '500 Gramm Hackfleisch' bleiben unverändert sichtbar. Artikel-Aliase werden kommagetrennt angegeben."
+            "en": "The visible Alexa text is never replaced with category markers. Amounts such as '3 bananas' or '500 grams minced meat' remain visible unchanged. Product aliases are comma-separated. New unknown products can be learned automatically; the priority market is not stored as a permanent product default.",
+            "de": "Der sichtbare Alexa-Text bekommt keine Kategorienummern oder Marker. Mengen wie '3 Bananen' oder '500 Gramm Hackfleisch' bleiben unverändert sichtbar. Artikel-Aliase werden kommagetrennt angegeben. Neue unbekannte Artikel können automatisch in den Artikelstamm übernommen werden; der Prioritätsmarkt wird dabei nicht als fester Standardmarkt gespeichert."
           }
         },
         "products": {
@@ -259,8 +287,8 @@
         "diagnostics": {
           "type": "staticText",
           "text": {
-            "en": "Runtime diagnostics are available below shoppingroute.0.info. Use control.sortNow to trigger a manual sorting run. Unknown products are written to info.unknownItems with a guessed category.",
-            "de": "Laufzeitdiagnosen stehen unter shoppingroute.0.info. Mit control.sortNow kann ein Sortierlauf manuell ausgelöst werden. Unbekannte Artikel landen mit einer vorgeschlagenen Kategorie in info.unknownItems."
+            "en": "Runtime diagnostics are available below shoppingroute.0.info. Use control.sortNow to trigger a manual sorting run. Unknown items not learned automatically are written to info.unknownItems; newly learned items are written to info.lastLearnedItems.",
+            "de": "Laufzeitdiagnosen stehen unter shoppingroute.0.info. Mit control.sortNow kann ein Sortierlauf manuell ausgelöst werden. Nicht gelernte unbekannte Artikel stehen in info.unknownItems; automatisch neu gelernte Artikel in info.lastLearnedItems."
           }
         }
       }

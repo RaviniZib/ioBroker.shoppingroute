@@ -3,7 +3,7 @@ import * as utils from '@iobroker/adapter-core';
 declare const require: any;
 declare const module: any;
 import type { AdapterConfigShape, AlexaListItem, MarketConfig, ProductConfig, RouteConfig } from './lib/model';
-import { activeIdSignature, activeItems, collectUnknownItems, createSortPlan } from './lib/sorter';
+import { activeIdSignature, activeItems, collectUnknownItems, createSortPlan, mergeUnknownProducts } from './lib/sorter';
 
 const DEFAULT_CATEGORIES = [
     'Obst/Gemüse',
@@ -27,6 +27,8 @@ export class ShoppingRoute extends utils.Adapter {
     private sorting = false;
     private abortAndRerun = false;
     private listChangedDuringSort = false;
+    private runtimeProducts: ProductConfig[] | null = null;
+    private productsDirty = false;
 
     public constructor(options: Partial<utils.AdapterOptions> = {}) {
         super({
@@ -65,11 +67,16 @@ export class ShoppingRoute extends utils.Adapter {
     }
 
     private get products(): ProductConfig[] {
+        if (this.runtimeProducts) return this.runtimeProducts.filter(product => product && product.name);
         return Array.isArray(this.cfg.products) ? this.cfg.products.filter(product => product && product.name) : [];
     }
 
     private get fallbackMarket(): string {
         return String(this.cfg.fallbackMarket || 'Ohne Markt').trim() || 'Ohne Markt';
+    }
+
+    private get priorityMarket(): string {
+        return String(this.cfg.priorityMarket || '').trim();
     }
 
     private get debounceMs(): number {
@@ -84,7 +91,15 @@ export class ShoppingRoute extends utils.Adapter {
         return this.cfg.dryRun !== false;
     }
 
+    private get autoLearnProducts(): boolean {
+        return this.cfg.autoLearnProducts !== false;
+    }
+
     private async onReady(): Promise<void> {
+        this.runtimeProducts = (Array.isArray(this.cfg.products) ? this.cfg.products : [])
+            .filter(product => product && product.name)
+            .map(product => ({ ...product }));
+
         await this.setStateAsync('info.connection', false, true);
         await this.setStateAsync('info.lastError', '', true);
 
@@ -104,6 +119,10 @@ export class ShoppingRoute extends utils.Adapter {
 
         await this.setStateAsync('info.connection', true, true);
         this.log.info(`Verbunden mit ${this.listStateId}. Dry-Run: ${this.dryRun ? 'JA' : 'NEIN'}.`);
+        this.log.info(
+            `Prioritätsmarkt: ${this.priorityMarket || 'keiner'}. ` +
+            `Artikel automatisch lernen: ${this.autoLearnProducts ? 'JA' : 'NEIN'}.`,
+        );
         this.log.info('WICHTIG: Die Alexa-App muss für diese Liste auf „Älteste bis neueste“ gestellt sein.');
         this.scheduleSort(500);
     }
@@ -181,6 +200,7 @@ export class ShoppingRoute extends utils.Adapter {
         this.sorting = true;
         this.abortAndRerun = false;
         this.listChangedDuringSort = false;
+        let learnedThisRun: ProductConfig[] = [];
 
         try {
             const list = await this.readList();
@@ -188,10 +208,42 @@ export class ShoppingRoute extends utils.Adapter {
             await this.setStateAsync('info.activeItems', active.length, true);
             await this.setStateAsync('info.connection', true, true);
 
-            const unknown = collectUnknownItems(list, this.markets, this.products, this.fallbackMarket);
+            if (this.autoLearnProducts) {
+                const merged = mergeUnknownProducts(
+                    list,
+                    this.markets,
+                    this.products,
+                    this.fallbackMarket,
+                    this.priorityMarket,
+                );
+                if (merged.learned.length > 0) {
+                    this.runtimeProducts = merged.products;
+                    this.productsDirty = true;
+                    learnedThisRun = merged.learned;
+                    await this.setStateAsync('info.lastLearnedItems', JSON.stringify(learnedThisRun, null, 2), true);
+                    this.log.info(
+                        `Neue Artikel gelernt: ${merged.learned.map(product => `„${product.name}“`).join(', ')}.`,
+                    );
+                }
+            }
+
+            const unknown = collectUnknownItems(
+                list,
+                this.markets,
+                this.products,
+                this.fallbackMarket,
+                this.priorityMarket,
+            );
             await this.setStateAsync('info.unknownItems', JSON.stringify(unknown, null, 2), true);
 
-            const plan = createSortPlan(list, this.markets, this.routes, this.products, this.fallbackMarket);
+            const plan = createSortPlan(
+                list,
+                this.markets,
+                this.routes,
+                this.products,
+                this.fallbackMarket,
+                this.priorityMarket,
+            );
             await this.setStateAsync('info.lastPlan', JSON.stringify(plan, null, 2), true);
 
             const changes = plan.filter(entry => entry.changed);
@@ -268,6 +320,7 @@ export class ShoppingRoute extends utils.Adapter {
                 this.routes,
                 this.products,
                 this.fallbackMarket,
+                this.priorityMarket,
             );
             const remaining = verifyPlan.filter(entry => entry.changed);
 
@@ -292,6 +345,7 @@ export class ShoppingRoute extends utils.Adapter {
             this.log.error(message);
         } finally {
             this.sorting = false;
+            if (this.productsDirty) await this.persistProductsConfig();
             if (this.abortAndRerun) {
                 this.abortAndRerun = false;
                 this.scheduleSort(this.debounceMs);
@@ -300,6 +354,33 @@ export class ShoppingRoute extends utils.Adapter {
                 this.listChangedDuringSort = false;
                 this.scheduleSort(this.debounceMs);
             }
+        }
+    }
+
+    private async persistProductsConfig(): Promise<void> {
+        if (!this.productsDirty || !this.runtimeProducts) return;
+
+        try {
+            const instanceId = `system.adapter.${this.namespace}`;
+            const object = await this.getForeignObjectAsync(instanceId);
+            if (!object) throw new Error(`Instanzobjekt nicht gefunden: ${instanceId}`);
+
+            const currentNative = (object.native || {}) as Record<string, unknown>;
+            object.native = {
+                ...currentNative,
+                products: this.runtimeProducts.map(product => ({ ...product })),
+            };
+
+            await this.setForeignObjectAsync(instanceId, object);
+            this.productsDirty = false;
+            this.log.info(
+                `Artikelstamm gespeichert (${this.runtimeProducts.length} Artikel). ` +
+                'Die Admin-Konfigurationsseite ggf. neu öffnen, um neue Artikel zu sehen.',
+            );
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            await this.setStateAsync('info.lastError', `Artikelstamm konnte nicht gespeichert werden: ${message}`, true);
+            this.log.error(`Artikelstamm konnte nicht gespeichert werden: ${message}`);
         }
     }
 

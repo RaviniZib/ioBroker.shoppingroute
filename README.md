@@ -1,6 +1,6 @@
 # ioBroker.shoppingroute
 
-**Development status: 0.0.1 – early test version**
+**Development status: 0.0.2 – early test version**
 
 `ioBroker.shoppingroute` sorts existing Alexa shopping-list entries by **store** and by the **configured walking route inside each store**, while keeping the original Alexa app as the only shopping app.
 
@@ -20,7 +20,7 @@ This adapter never uses:
 
 It therefore does not create, delete or complete Alexa list entries.
 
-## Features in 0.0.1
+## Features in 0.0.2
 
 - configurable Alexa2 instance and list name
 - Dry-Run enabled by default
@@ -28,9 +28,14 @@ It therefore does not create, delete or complete Alexa list entries.
 - market aliases, e.g. `Aldi,Aldi Nord`
 - separate category walking route for every market
 - product catalogue with aliases, category and optional default market
+- optional priority market for all products without an explicit or product-specific default market
+- deterministic precedence: explicit market → product default → priority market → fallback market
 - explicit phrases such as `Bananen von Aldi` / `Bananen bei Aldi`
 - quantity-aware recognition while keeping the visible Alexa text unchanged
 - heuristic category guess for unknown products
+- automatic learning of unknown products into the product catalogue, also while Dry-Run is active
+- priority market is not frozen into automatically learned product defaults
+- ambiguous unknown `von/bei <name>` suffixes are intentionally left for manual review
 - safe abort/recalculate when active IDs change while sorting
 - diagnostic states and complete sorting plan as JSON
 

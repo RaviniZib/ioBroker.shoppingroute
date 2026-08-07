@@ -2,12 +2,13 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { createSortPlan } = require('../build/lib/sorter');
+const { createSortPlan, mergeUnknownProducts } = require('../build/lib/sorter');
 const { parseItem } = require('../build/lib/parser');
 
 const markets = [
     { name: 'ALDI', aliases: 'Aldi,Aldi Nord', order: 10, enabled: true },
     { name: 'PENNY', aliases: 'Penny', order: 20, enabled: true },
+    { name: 'LIDL', aliases: 'Lidl', order: 30, enabled: true },
     { name: 'Ohne Markt', aliases: '', order: 999, enabled: true },
 ];
 
@@ -20,6 +21,8 @@ const routes = [
     { market: 'ALDI', category: 'Milchprodukte', order: 20 },
     { market: 'PENNY', category: 'Milchprodukte', order: 10 },
     { market: 'PENNY', category: 'Obst/Gemüse', order: 20 },
+    { market: 'LIDL', category: 'Obst/Gemüse', order: 10 },
+    { market: 'LIDL', category: 'Milchprodukte', order: 20 },
 ];
 
 const products = [
@@ -79,4 +82,56 @@ test('500 grams minced meat keeps text and matches product', () => {
     assert.equal(parsed.productName, 'Hackfleisch');
     assert.equal(parsed.market, 'ALDI');
     assert.equal(parsed.category, 'Fleisch/Fisch');
+});
+
+test('priority market is used when no explicit or product default market exists', () => {
+    const parsed = parseItem('Bananen', markets, products, 'Ohne Markt', 'LIDL');
+    assert.equal(parsed.market, 'LIDL');
+    assert.equal(parsed.productName, 'Bananen');
+});
+
+test('explicit market overrides priority market', () => {
+    const parsed = parseItem('Bananen von Aldi', markets, products, 'Ohne Markt', 'LIDL');
+    assert.equal(parsed.market, 'ALDI');
+});
+
+test('product default market overrides priority market', () => {
+    const configuredProducts = products.map(product =>
+        product.name === 'Eier' ? { ...product, defaultMarket: 'PENNY' } : product,
+    );
+    const parsed = parseItem('Eier', markets, configuredProducts, 'Ohne Markt', 'LIDL');
+    assert.equal(parsed.market, 'PENNY');
+});
+
+test('invalid priority market falls back to fallback market', () => {
+    const parsed = parseItem('Bananen', markets, products, 'Ohne Markt', 'NICHT VORHANDEN');
+    assert.equal(parsed.market, 'Ohne Markt');
+});
+
+test('unknown products can be learned without freezing the priority market', () => {
+    const list = [
+        { id: 'u1', value: 'Milch', completed: false, createdDateTime: 1 },
+        { id: 'u2', value: 'Toilettenpapier', completed: false, createdDateTime: 2 },
+    ];
+    const result = mergeUnknownProducts(list, markets, products, 'Ohne Markt', 'LIDL');
+    const milk = result.learned.find(product => product.name === 'Milch');
+    const toiletPaper = result.learned.find(product => product.name === 'Toilettenpapier');
+
+    assert.ok(milk);
+    assert.equal(milk.category, 'Milchprodukte');
+    assert.equal(milk.defaultMarket, '');
+    assert.ok(toiletPaper);
+    assert.equal(toiletPaper.category, 'Kosmetikartikel');
+    assert.equal(toiletPaper.defaultMarket, '');
+});
+
+test('ambiguous unknown "von/bei" suffix is not learned into the product name', () => {
+    const list = [
+        { id: 'u1', value: '35 Sushi von Ukuhama', completed: false, createdDateTime: 1 },
+    ];
+    const result = mergeUnknownProducts(list, markets, products, 'Ohne Markt', 'LIDL');
+    const parsed = parseItem('35 Sushi von Ukuhama', markets, products, 'Ohne Markt', 'LIDL');
+    assert.equal(result.learned.length, 0);
+    assert.equal(result.products.some(product => product.name === 'Sushi von Ukuhama'), false);
+    assert.equal(parsed.market, 'Ohne Markt');
 });

@@ -63,10 +63,11 @@ export function buildDesiredItems(
     routes: RouteConfig[],
     products: ProductConfig[],
     fallbackMarket: string,
+    priorityMarket = '',
 ): SortableItem[] {
     return items
         .map(source => {
-            const parsed = parseItem(String(source.value), markets, products, fallbackMarket);
+            const parsed = parseItem(String(source.value), markets, products, fallbackMarket, priorityMarket);
             return {
                 source,
                 parsed,
@@ -89,10 +90,11 @@ export function createSortPlan(
     routes: RouteConfig[],
     products: ProductConfig[],
     fallbackMarket: string,
+    priorityMarket = '',
 ): SortPlanEntry[] {
     const active = activeItems(items);
     const slots = sortSlotsOldestFirst(active);
-    const desired = buildDesiredItems(active, markets, routes, products, fallbackMarket);
+    const desired = buildDesiredItems(active, markets, routes, products, fallbackMarket, priorityMarket);
 
     return slots.map((slot, index) => {
         const target = desired[index];
@@ -116,12 +118,13 @@ export function collectUnknownItems(
     markets: MarketConfig[],
     products: ProductConfig[],
     fallbackMarket: string,
+    priorityMarket = '',
 ): Array<{ text: string; product: string; market: string; guessedCategory: string }> {
     const seen = new Set<string>();
     const result: Array<{ text: string; product: string; market: string; guessedCategory: string }> = [];
 
     for (const item of activeItems(items)) {
-        const parsed = parseItem(String(item.value), markets, products, fallbackMarket);
+        const parsed = parseItem(String(item.value), markets, products, fallbackMarket, priorityMarket);
         if (parsed.knownProduct) continue;
         const key = normalize(parsed.productName);
         if (!key || seen.has(key)) continue;
@@ -135,4 +138,42 @@ export function collectUnknownItems(
     }
 
     return result;
+}
+
+export function mergeUnknownProducts(
+    items: AlexaListItem[],
+    markets: MarketConfig[],
+    products: ProductConfig[],
+    fallbackMarket: string,
+    priorityMarket = '',
+): { products: ProductConfig[]; learned: ProductConfig[] } {
+    const merged = products.map(product => ({ ...product }));
+    const learned: ProductConfig[] = [];
+    const knownNames = new Set(merged.map(product => normalize(product.name)).filter(Boolean));
+    const unknown = collectUnknownItems(items, markets, merged, fallbackMarket, priorityMarket);
+
+    for (const entry of unknown) {
+        const name = String(entry.product || '').trim();
+        const key = normalize(name);
+        if (!key || knownNames.has(key)) continue;
+
+        // A trailing "von/bei <Name>" may be a not-yet-configured market (or a brand).
+        // Do not permanently learn that ambiguous suffix into the product name automatically.
+        if (/\s+(?:von|bei)\s+\S.+$/i.test(name)) continue;
+
+        const product: ProductConfig = {
+            name,
+            aliases: '',
+            category: entry.guessedCategory || 'Sonstiges',
+            // The current priority market is deliberately not made permanent.
+            // A product-specific default market must be a conscious user choice.
+            defaultMarket: '',
+        };
+
+        merged.push(product);
+        learned.push(product);
+        knownNames.add(key);
+    }
+
+    return { products: merged, learned };
 }

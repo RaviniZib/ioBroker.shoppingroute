@@ -50,6 +50,17 @@ function marketAliases(markets: MarketConfig[]): Array<{ market: string; alias: 
     return result.sort((a, b) => b.alias.length - a.alias.length);
 }
 
+function resolveMarket(value: string | undefined, markets: MarketConfig[]): string | undefined {
+    const wanted = normalize(value || '');
+    if (!wanted) return undefined;
+
+    for (const entry of marketAliases(markets)) {
+        if (entry.alias === wanted) return entry.market;
+    }
+
+    return undefined;
+}
+
 function extractMarket(text: string, markets: MarketConfig[]): { productText: string; market?: string; explicit: boolean } {
     const normalized = normalize(text);
 
@@ -117,16 +128,24 @@ export function parseItem(
     markets: MarketConfig[],
     products: ProductConfig[],
     fallbackMarket: string,
+    priorityMarket = '',
 ): ParsedItem {
     const marketResult = extractMarket(originalText, markets);
     const product = findProduct(marketResult.productText, products);
     const productText = stripQuantity(marketResult.productText);
+    const productDefaultMarket = resolveMarket(product?.defaultMarket, markets);
+    const resolvedPriorityMarket = resolveMarket(priorityMarket, markets);
+    const ambiguousUnknownMarketSuffix = !marketResult.market && !product && /\s+(?:von|bei)\s+\S.+$/i.test(productText);
 
     return {
         originalText,
         productText,
         productName: product?.name || productText || marketResult.productText,
-        market: marketResult.market || product?.defaultMarket || fallbackMarket,
+        market:
+            marketResult.market ||
+            productDefaultMarket ||
+            (!ambiguousUnknownMarketSuffix ? resolvedPriorityMarket : undefined) ||
+            fallbackMarket,
         category: product?.category || guessCategory(marketResult.productText),
         knownProduct: Boolean(product),
         explicitMarket: marketResult.explicit,

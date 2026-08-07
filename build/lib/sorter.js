@@ -7,6 +7,7 @@ exports.sortSlotsOldestFirst = sortSlotsOldestFirst;
 exports.buildDesiredItems = buildDesiredItems;
 exports.createSortPlan = createSortPlan;
 exports.collectUnknownItems = collectUnknownItems;
+exports.mergeUnknownProducts = mergeUnknownProducts;
 const parser_1 = require("./parser");
 function toTimestamp(value) {
     if (typeof value === 'number' && Number.isFinite(value))
@@ -51,10 +52,10 @@ function sortSlotsOldestFirst(items) {
         return String(a.id).localeCompare(String(b.id));
     });
 }
-function buildDesiredItems(items, markets, routes, products, fallbackMarket) {
+function buildDesiredItems(items, markets, routes, products, fallbackMarket, priorityMarket = '') {
     return items
         .map(source => {
-        const parsed = (0, parser_1.parseItem)(String(source.value), markets, products, fallbackMarket);
+        const parsed = (0, parser_1.parseItem)(String(source.value), markets, products, fallbackMarket, priorityMarket);
         return {
             source,
             parsed,
@@ -73,10 +74,10 @@ function buildDesiredItems(items, markets, routes, products, fallbackMarket) {
         return a.parsed.productName.localeCompare(b.parsed.productName, 'de', { sensitivity: 'base' });
     });
 }
-function createSortPlan(items, markets, routes, products, fallbackMarket) {
+function createSortPlan(items, markets, routes, products, fallbackMarket, priorityMarket = '') {
     const active = activeItems(items);
     const slots = sortSlotsOldestFirst(active);
-    const desired = buildDesiredItems(active, markets, routes, products, fallbackMarket);
+    const desired = buildDesiredItems(active, markets, routes, products, fallbackMarket, priorityMarket);
     return slots.map((slot, index) => {
         const target = desired[index];
         const from = String(slot.value).trim();
@@ -93,11 +94,11 @@ function createSortPlan(items, markets, routes, products, fallbackMarket) {
         };
     });
 }
-function collectUnknownItems(items, markets, products, fallbackMarket) {
+function collectUnknownItems(items, markets, products, fallbackMarket, priorityMarket = '') {
     const seen = new Set();
     const result = [];
     for (const item of activeItems(items)) {
-        const parsed = (0, parser_1.parseItem)(String(item.value), markets, products, fallbackMarket);
+        const parsed = (0, parser_1.parseItem)(String(item.value), markets, products, fallbackMarket, priorityMarket);
         if (parsed.knownProduct)
             continue;
         const key = (0, parser_1.normalize)(parsed.productName);
@@ -112,5 +113,33 @@ function collectUnknownItems(items, markets, products, fallbackMarket) {
         });
     }
     return result;
+}
+function mergeUnknownProducts(items, markets, products, fallbackMarket, priorityMarket = '') {
+    const merged = products.map(product => ({ ...product }));
+    const learned = [];
+    const knownNames = new Set(merged.map(product => (0, parser_1.normalize)(product.name)).filter(Boolean));
+    const unknown = collectUnknownItems(items, markets, merged, fallbackMarket, priorityMarket);
+    for (const entry of unknown) {
+        const name = String(entry.product || '').trim();
+        const key = (0, parser_1.normalize)(name);
+        if (!key || knownNames.has(key))
+            continue;
+        // A trailing "von/bei <Name>" may be a not-yet-configured market (or a brand).
+        // Do not permanently learn that ambiguous suffix into the product name automatically.
+        if (/\s+(?:von|bei)\s+\S.+$/i.test(name))
+            continue;
+        const product = {
+            name,
+            aliases: '',
+            category: entry.guessedCategory || 'Sonstiges',
+            // The current priority market is deliberately not made permanent.
+            // A product-specific default market must be a conscious user choice.
+            defaultMarket: '',
+        };
+        merged.push(product);
+        learned.push(product);
+        knownNames.add(key);
+    }
+    return { products: merged, learned };
 }
 //# sourceMappingURL=sorter.js.map
