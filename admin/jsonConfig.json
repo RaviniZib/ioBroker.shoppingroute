@@ -8,6 +8,13 @@
         "de": "Allgemein"
       },
       "items": {
+        "betaWarning": {
+          "type": "staticText",
+          "text": {
+            "en": "BETA 0.1.0-beta.1: Start with Dry-Run enabled. Before real Alexa writes, check info.writeCapability. If it is unknown, trigger shoppingroute.0.control.compatibilityTest once with at least one active list item.",
+            "de": "BETA 0.1.0-beta.1: Zuerst mit aktiviertem Dry-Run testen. Vor echten Alexa-Schreibzugriffen info.writeCapability prüfen. Steht dort unknown, einmal shoppingroute.0.control.compatibilityTest mit mindestens einem aktiven Listeneintrag auslösen."
+          }
+        },
         "warning": {
           "type": "staticText",
           "newLine": true,
@@ -343,11 +350,25 @@
         "de": "Diagnose"
       },
       "items": {
+        "betaDiagnostics": {
+          "type": "staticText",
+          "text": {
+            "en": "Beta diagnostics are collected in shoppingroute.0.info.compatibility. info.writeCapability shows whether real Alexa value writes are allowed: source-ok or live-ok = allowed; known-bug, live-failed or unknown = blocked. Dry-Run remains usable in every case.",
+            "de": "Die Beta-Diagnose wird gesammelt in shoppingroute.0.info.compatibility abgelegt. info.writeCapability zeigt, ob echte Alexa-value-Schreibzugriffe freigegeben sind: source-ok oder live-ok = freigegeben; known-bug, live-failed oder unknown = blockiert. Dry-Run bleibt in jedem Fall nutzbar."
+          }
+        },
+        "compatibilityTestHelp": {
+          "type": "staticText",
+          "text": {
+            "en": "Live compatibility test: with at least one active shopping-list item, set shoppingroute.0.control.compatibilityTest to true. The adapter writes the SAME visible value once and waits for Alexa2 to acknowledge it. It does not create, delete, complete or visibly rename an item. The result is stored in info.lastCompatibilityTest.",
+            "de": "Live-Kompatibilitätstest: Bei mindestens einem aktiven Einkaufslisteneintrag shoppingroute.0.control.compatibilityTest auf true setzen. Der Adapter schreibt einmal denselben sichtbaren value-Text und wartet auf die Bestätigung von Alexa2. Es wird kein Eintrag angelegt, gelöscht, abgehakt oder sichtbar umbenannt. Das Ergebnis steht in info.lastCompatibilityTest."
+          }
+        },
         "diagnostics": {
           "type": "staticText",
           "text": {
-            "en": "Runtime diagnostics are available below shoppingroute.0.info. Use control.sortNow to trigger a manual sorting run. Unknown items not learned automatically are written to info.unknownItems; newly learned items are written to info.lastLearnedItems.",
-            "de": "Laufzeitdiagnosen stehen unter shoppingroute.0.info. Mit control.sortNow kann ein Sortierlauf manuell ausgelöst werden. Nicht gelernte unbekannte Artikel stehen in info.unknownItems; automatisch neu gelernte Artikel in info.lastLearnedItems."
+            "en": "Further runtime diagnostics: info.connection, info.activeItems, info.lastSort, info.lastError, info.lastPlan, info.unknownItems and info.lastLearnedItems. Use control.sortNow to trigger a manual sorting run. For beta feedback, copy info.compatibility together with info.lastError and the relevant log lines.",
+            "de": "Weitere Laufzeitdiagnosen: info.connection, info.activeItems, info.lastSort, info.lastError, info.lastPlan, info.unknownItems und info.lastLearnedItems. Mit control.sortNow kann ein Sortierlauf manuell ausgelöst werden. Für Beta-Feedback bitte info.compatibility zusammen mit info.lastError und den betreffenden Logzeilen kopieren."
           }
         }
       }

@@ -1,9 +1,12 @@
 import * as utils from '@iobroker/adapter-core';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 
 declare const require: any;
 declare const module: any;
 import type { AdapterConfigShape, AlexaListItem, MarketConfig, ProductConfig, ProductGroupConfig, RouteConfig } from './lib/model';
-import { activeIdSignature, activeItems, collectUnknownItems, createSortPlan, mergeUnknownProducts } from './lib/sorter';
+import { canWriteAlexa, inspectAlexaRemoteSource, type WriteCapability } from './lib/compatibility';
+import { activeIdSignature, activeItems, collectUnknownItems, createSortPlan, mergeUnknownProducts, sortSlotsOldestFirst } from './lib/sorter';
 
 const DEFAULT_CATEGORIES = [
     'Obst/Gemüse',
@@ -29,6 +32,12 @@ export class ShoppingRoute extends utils.Adapter {
     private listChangedDuringSort = false;
     private runtimeProducts: ProductConfig[] | null = null;
     private productsDirty = false;
+    private compatibilityTesting = false;
+    private writeCapability: WriteCapability = 'unknown';
+    private compatibilityDetail = 'Noch nicht geprüft.';
+    private alexa2Version = 'unbekannt';
+    private alexaRemote2Version = 'unbekannt';
+    private lastCompatibilityTest = 'Noch nicht ausgeführt.';
 
     public constructor(options: Partial<utils.AdapterOptions> = {}) {
         super({
@@ -130,6 +139,7 @@ export class ShoppingRoute extends utils.Adapter {
         const enabled = await this.getStateAsync('control.enabled');
         if (!enabled) await this.setStateAsync('control.enabled', true, true);
         await this.setStateAsync('control.sortNow', false, true);
+        await this.setStateAsync('control.compatibilityTest', false, true);
 
         this.subscribeStates('control.*');
         this.subscribeForeignStates(this.listStateId);
@@ -142,6 +152,8 @@ export class ShoppingRoute extends utils.Adapter {
         }
 
         await this.setStateAsync('info.connection', true, true);
+        await this.runStartupCompatibilityCheck();
+        this.log.warn('BETA-Version: Dry-Run ist für Ersttests ausdrücklich empfohlen. Alexa-Einträge werden weiterhin niemals angelegt, gelöscht oder automatisch abgehakt.');
         this.log.info(`Verbunden mit ${this.listStateId}. Dry-Run: ${this.dryRun ? 'JA' : 'NEIN'}.`);
         this.log.info(
             `Prioritätsmarkt: ${this.priorityMarket || 'keiner'}. ` +
@@ -189,6 +201,14 @@ export class ShoppingRoute extends utils.Adapter {
             return;
         }
 
+        if (id === `${this.namespace}.control.compatibilityTest`) {
+            if (!state.ack && state.val === true) {
+                await this.setStateAsync('control.compatibilityTest', false, true);
+                await this.runLiveCompatibilityTest();
+            }
+            return;
+        }
+
         if (id === `${this.namespace}.control.enabled`) {
             if (!state.ack) {
                 await this.setStateAsync('control.enabled', Boolean(state.val), true);
@@ -199,6 +219,7 @@ export class ShoppingRoute extends utils.Adapter {
 
         if (id === this.listStateId) {
             await this.setStateAsync('info.connection', true, true);
+            if (this.compatibilityTesting) return;
             if (this.sorting) {
                 this.listChangedDuringSort = true;
                 return;
@@ -324,6 +345,18 @@ export class ShoppingRoute extends utils.Adapter {
                 return;
             }
 
+            if (!canWriteAlexa(this.writeCapability)) {
+                const message = this.writeCapability === 'known-bug'
+                    ? 'Alexa-Schreibzugriffe blockiert: Die bekannte fehlerhafte alexa-remote2 version-Query wurde erkannt. Bitte Alexa2/alexa-remote2 aktualisieren oder den Fehler upstream beheben lassen.'
+                    : this.writeCapability === 'live-failed'
+                        ? 'Alexa-Schreibzugriffe blockiert: Der Kompatibilitätstest ist fehlgeschlagen. Dry-Run kann weiter verwendet werden.'
+                        : 'Alexa-Schreibzugriffe blockiert: Die Schreibkompatibilität konnte nicht sicher bestätigt werden. Bitte control.compatibilityTest einmal mit mindestens einem aktiven Listeneintrag ausführen.';
+                await this.setStateAsync('info.lastSort', `${now} – BETA-Sicherheitsblock: keine Alexa-Schreibzugriffe`, true);
+                await this.setStateAsync('info.lastError', message, true);
+                this.log.error(message);
+                return;
+            }
+
             const originalSignature = activeIdSignature(list);
 
             for (const entry of changes) {
@@ -403,6 +436,178 @@ export class ShoppingRoute extends utils.Adapter {
                 this.scheduleSort(this.debounceMs);
             }
         }
+    }
+
+    private async runStartupCompatibilityCheck(): Promise<void> {
+        try {
+            const alexaObject = await this.getForeignObjectAsync(`system.adapter.${this.alexaInstance}`);
+            this.alexa2Version = String((alexaObject?.common as { version?: unknown } | undefined)?.version || 'unbekannt');
+        } catch {
+            this.alexa2Version = 'unbekannt';
+        }
+
+        try {
+            const resolved = require.resolve('alexa-remote2');
+            const source = fs.readFileSync(resolved, 'utf8');
+            const inspection = inspectAlexaRemoteSource(source);
+            this.writeCapability = inspection.status;
+            this.compatibilityDetail = inspection.detail;
+            this.alexaRemote2Version = this.findPackageVersion(resolved, 'alexa-remote2');
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            this.writeCapability = 'unknown';
+            this.compatibilityDetail = `alexa-remote2 konnte nicht automatisch geprüft werden: ${message}`;
+            this.alexaRemote2Version = 'unbekannt';
+        }
+
+        if (this.writeCapability === 'known-bug') {
+            this.log.error(
+                'Bekannte inkompatible alexa-remote2 updateListItem-Version erkannt. ' +
+                'Echte Alexa-Schreibzugriffe werden von shoppingroute blockiert; Dry-Run bleibt möglich.',
+            );
+        } else if (this.writeCapability === 'source-ok') {
+            this.log.info('Alexa2-Schreibkompatibilität: bekannte version-Query ist in alexa-remote2 korrigiert.');
+        } else {
+            this.log.warn(
+                'Alexa2-Schreibkompatibilität konnte aus der installierten Quelle nicht eindeutig bestimmt werden. ' +
+                'Vor echten Schreibzugriffen bitte control.compatibilityTest ausführen.',
+            );
+        }
+
+        await this.updateCompatibilityDiagnostics();
+    }
+
+    private findPackageVersion(moduleFile: string, expectedName: string): string {
+        let current = path.dirname(moduleFile);
+        for (let level = 0; level < 6; level++) {
+            const packageFile = path.join(current, 'package.json');
+            try {
+                const parsed = JSON.parse(fs.readFileSync(packageFile, 'utf8')) as { name?: string; version?: string };
+                if (parsed.name === expectedName && parsed.version) return String(parsed.version);
+            } catch {
+                // Continue walking towards the package root.
+            }
+            const parent = path.dirname(current);
+            if (parent === current) break;
+            current = parent;
+        }
+        return 'unbekannt';
+    }
+
+    private async runLiveCompatibilityTest(): Promise<void> {
+        if (this.compatibilityTesting) return;
+        this.compatibilityTesting = true;
+
+        try {
+            if (this.writeCapability === 'known-bug') {
+                this.lastCompatibilityTest = `${new Date().toISOString()} – NICHT AUSGEFÜHRT: bekannte inkompatible alexa-remote2-Version erkannt`;
+                await this.setStateAsync('info.lastCompatibilityTest', this.lastCompatibilityTest, true);
+                await this.updateCompatibilityDiagnostics();
+                this.log.error('Kompatibilitätstest nicht ausgeführt: bekannte fehlerhafte alexa-remote2 version-Query erkannt.');
+                return;
+            }
+
+            const list = await this.readList();
+            const active = sortSlotsOldestFirst(activeItems(list));
+            if (active.length === 0) {
+                this.lastCompatibilityTest = `${new Date().toISOString()} – nicht möglich: kein aktiver Alexa-Listeneintrag vorhanden`;
+                await this.setStateAsync('info.lastCompatibilityTest', this.lastCompatibilityTest, true);
+                await this.updateCompatibilityDiagnostics();
+                this.log.warn('Kompatibilitätstest benötigt mindestens einen aktiven Alexa-Listeneintrag.');
+                return;
+            }
+
+            const testItem = active[0];
+            const originalValue = String(testItem.value || '').trim();
+            const valueStateId = `${this.alexaInstance}.Lists.${this.listName}.items.${testItem.id}.value`;
+            const valueObject = await this.getForeignObjectAsync(valueStateId);
+            const before = await this.getForeignStateAsync(valueStateId);
+            if (!valueObject || !before) throw new Error(`Alexa-Wertedatenpunkt fehlt oder ist nicht lesbar: ${valueStateId}`);
+
+            const beforeTs = Number((before as { ts?: number }).ts || 0);
+            this.log.info(
+                `Starte Alexa-Schreibkompatibilitätstest mit „${originalValue}“. ` +
+                'Es wird ausschließlich derselbe value-Text erneut geschrieben; der sichtbare Listentext bleibt unverändert.',
+            );
+
+            await this.setForeignStateAsync(valueStateId, { val: originalValue, ack: false });
+
+            const timeoutAt = Date.now() + 10000;
+            let confirmed = false;
+            while (Date.now() < timeoutAt) {
+                await this.wait(250);
+                const current = await this.getForeignStateAsync(valueStateId);
+                if (
+                    current &&
+                    current.ack === true &&
+                    String(current.val ?? '').trim() === originalValue &&
+                    Number((current as { ts?: number }).ts || 0) > beforeTs
+                ) {
+                    confirmed = true;
+                    break;
+                }
+            }
+
+            if (confirmed) {
+                this.writeCapability = 'live-ok';
+                this.compatibilityDetail = 'Live-Test erfolgreich: Alexa2 hat einen erneuten Schreibzugriff mit unverändertem value bestätigt.';
+                this.lastCompatibilityTest = `${new Date().toISOString()} – ERFOLG mit „${originalValue}“`;
+                await this.setStateAsync('info.lastError', '', true);
+                this.log.info('Alexa-Schreibkompatibilitätstest erfolgreich.');
+            } else {
+                this.writeCapability = 'live-failed';
+                this.compatibilityDetail = 'Live-Test fehlgeschlagen: Alexa2 hat den erneuten value-Schreibzugriff nicht innerhalb von 10 Sekunden bestätigt.';
+                this.lastCompatibilityTest = `${new Date().toISOString()} – FEHLGESCHLAGEN mit „${originalValue}“`;
+                await this.setStateAsync(
+                    'info.lastError',
+                    'Alexa-Schreibkompatibilitätstest fehlgeschlagen. Echte Sortier-Schreibzugriffe bleiben aus Sicherheitsgründen blockiert; Dry-Run kann weiter verwendet werden.',
+                    true,
+                );
+                this.log.error('Alexa-Schreibkompatibilitätstest fehlgeschlagen. Schreibzugriffe bleiben blockiert.');
+            }
+
+            await this.setStateAsync('info.lastCompatibilityTest', this.lastCompatibilityTest, true);
+            await this.updateCompatibilityDiagnostics();
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            this.writeCapability = 'live-failed';
+            this.compatibilityDetail = `Live-Test konnte nicht abgeschlossen werden: ${message}`;
+            this.lastCompatibilityTest = `${new Date().toISOString()} – FEHLER: ${message}`;
+            await this.setStateAsync('info.lastCompatibilityTest', this.lastCompatibilityTest, true);
+            await this.setStateAsync('info.lastError', `Kompatibilitätstest: ${message}`, true);
+            await this.updateCompatibilityDiagnostics();
+            this.log.error(`Kompatibilitätstest: ${message}`);
+        } finally {
+            this.compatibilityTesting = false;
+        }
+    }
+
+    private async updateCompatibilityDiagnostics(): Promise<void> {
+        await this.setStateAsync('info.writeCapability', this.writeCapability, true);
+        await this.setStateAsync('info.lastCompatibilityTest', this.lastCompatibilityTest, true);
+        await this.setStateAsync(
+            'info.compatibility',
+            JSON.stringify(
+                {
+                    shoppingrouteVersion: '0.1.0-beta.1',
+                    beta: true,
+                    alexaInstance: this.alexaInstance,
+                    alexa2Version: this.alexa2Version,
+                    alexaRemote2Version: this.alexaRemote2Version,
+                    listName: this.listName,
+                    listStateId: this.listStateId,
+                    dryRun: this.dryRun,
+                    writeCapability: this.writeCapability,
+                    detail: this.compatibilityDetail,
+                    lastCompatibilityTest: this.lastCompatibilityTest,
+                    requiredAlexaAppSorting: 'Älteste bis neueste / Oldest to newest',
+                    checkedAt: new Date().toISOString(),
+                },
+                null,
+                2,
+            ),
+            true,
+        );
     }
 
     private async ensureProductGroupsConfig(): Promise<void> {

@@ -58,3 +58,28 @@ test('dynamic dropdown handlers sort market and product-group labels alphabetica
     assert.match(source, /getProductGroups[\s\S]*localeCompare\(b\.label/);
     assert.match(source, /getMarkets[\s\S]*localeCompare\(b\.label/);
 });
+
+test('beta build keeps Dry-Run default on and exposes compatibility diagnostics', () => {
+    assert.equal(ioPackage.common.version, '0.1.0-beta.1');
+    assert.equal(ioPackage.native.dryRun, true);
+
+    const ids = new Set(ioPackage.instanceObjects.map(object => object._id));
+    for (const id of [
+        'info.writeCapability',
+        'info.compatibility',
+        'info.lastCompatibilityTest',
+        'control.compatibilityTest',
+    ]) {
+        assert.ok(ids.has(id), `${id} should exist`);
+    }
+
+    assert.ok(jsonConfig.items.diagnosticsTab.items.betaDiagnostics);
+    assert.ok(jsonConfig.items.diagnosticsTab.items.compatibilityTestHelp);
+});
+
+test('beta runtime blocks real sorting writes unless Alexa write compatibility is confirmed', () => {
+    const source = fs.readFileSync(path.join(root, 'src', 'main.ts'), 'utf8');
+    assert.match(source, /if \(!canWriteAlexa\(this\.writeCapability\)\)/);
+    assert.match(source, /BETA-Sicherheitsblock/);
+    assert.match(source, /control\.compatibilityTest/);
+});

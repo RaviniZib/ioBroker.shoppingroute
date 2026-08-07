@@ -1,6 +1,6 @@
 # ioBroker.shoppingroute
 
-**Entwicklungsstand: 0.0.2 – frühe Testversion**
+**Entwicklungsstand: 0.1.0-beta.1 – geschlossene Beta**
 
 `ioBroker.shoppingroute` sortiert eine vorhandene Alexa-Einkaufsliste nach **Einkaufsmarkt** und dem **individuellen Laufweg durch den jeweiligen Markt**. Die originale Alexa-App bleibt die einzige App für den Einkauf und die Artikel werden dort weiterhin ganz normal abgehakt.
 
@@ -170,16 +170,29 @@ Es werden außerdem nur Plätze beschrieben, deren Text sich tatsächlich änder
 - `info.lastPlan`
 - `info.unknownItems`
 - `info.lastLearnedItems`
+- `info.writeCapability`
+- `info.compatibility`
+- `info.lastCompatibilityTest`
 - `control.enabled`
 - `control.sortNow`
+- `control.compatibilityTest`
 
 `info.lastPlan` ist besonders für den Dry-Run gedacht und zeigt vor dem echten Schreiben exakt, welcher Text auf welche vorhandene Alexa-ID geschrieben würde.
 
 ## Dry-Run
 
-Die erste Version startet standardmäßig mit **Dry-Run = EIN**.
+Neue Installationen starten standardmäßig mit **Dry-Run = EIN**.
 
 Damit wird die Sortierung vollständig berechnet und protokolliert, aber Alexa wird nicht verändert. Erst wenn das Ergebnis plausibel ist, sollte Dry-Run in der Adapterkonfiguration deaktiviert werden.
+
+
+## Beta-Sicherheitsprüfung ab 0.1.0-beta.1
+
+Vor echten Alexa-Schreibzugriffen prüft die Beta den installierten Alexa2/alexa-remote2-Pfad auf den bekannten `updateListItem`-Fehler. Das Ergebnis steht in `shoppingroute.0.info.writeCapability` und ausführlich in `shoppingroute.0.info.compatibility`.
+
+Bei `source-ok` oder `live-ok` sind echte Sortier-Schreibzugriffe freigegeben. Bei `known-bug`, `live-failed` oder `unknown` werden sie blockiert; Dry-Run funktioniert weiterhin. Ist der Status `unknown`, kann mit mindestens einem aktiven Listeneintrag `shoppingroute.0.control.compatibilityTest` einmal auf `true` gesetzt werden. Der Test schreibt ausschließlich denselben sichtbaren `value` erneut und verändert den sichtbaren Artikelnamen nicht.
+
+Eine Schritt-für-Schritt-Anleitung für Tester steht in [BETA_TESTING_DE.md](BETA_TESTING_DE.md).
 
 ## Aktueller Alexa2-Hinweis
 

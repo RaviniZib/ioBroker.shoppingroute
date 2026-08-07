@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "shoppingroute",
-    "version": "0.0.4",
+    "version": "0.1.0-beta.1",
     "titleLang": {
       "en": "Shopping Route",
       "de": "Einkaufsroute"
@@ -573,6 +573,45 @@
       "native": {}
     },
     {
+      "_id": "info.writeCapability",
+      "type": "state",
+      "common": {
+        "name": "Alexa write capability",
+        "type": "string",
+        "role": "text",
+        "read": true,
+        "write": false,
+        "def": "unknown"
+      },
+      "native": {}
+    },
+    {
+      "_id": "info.compatibility",
+      "type": "state",
+      "common": {
+        "name": "Compatibility diagnostics",
+        "type": "string",
+        "role": "json",
+        "read": true,
+        "write": false,
+        "def": "{}"
+      },
+      "native": {}
+    },
+    {
+      "_id": "info.lastCompatibilityTest",
+      "type": "state",
+      "common": {
+        "name": "Last Alexa write compatibility test",
+        "type": "string",
+        "role": "text",
+        "read": true,
+        "write": false,
+        "def": "Noch nicht ausgeführt."
+      },
+      "native": {}
+    },
+    {
       "_id": "control",
       "type": "channel",
       "common": {
@@ -598,6 +637,19 @@
       "type": "state",
       "common": {
         "name": "Sort now",
+        "type": "boolean",
+        "role": "button",
+        "read": true,
+        "write": true,
+        "def": false
+      },
+      "native": {}
+    },
+    {
+      "_id": "control.compatibilityTest",
+      "type": "state",
+      "common": {
+        "name": "Run Alexa write compatibility test",
         "type": "boolean",
         "role": "button",
         "read": true,

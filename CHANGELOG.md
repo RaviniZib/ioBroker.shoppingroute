@@ -1,3 +1,16 @@
+# Changelog
+
+## 0.1.0-beta.1 (2026-08-07)
+
+- First closed-beta preparation build.
+- Added automatic read-only inspection of the installed Alexa2/alexa-remote2 write path for the known malformed `?version =...` query.
+- Added beta write guard: real Alexa value sorting writes are blocked when compatibility is `known-bug`, `live-failed` or `unknown`. Dry-Run remains available.
+- Added `info.writeCapability`, `info.compatibility` and `info.lastCompatibilityTest`.
+- Added `control.compatibilityTest` for an explicit same-value Alexa2 acknowledgement test without creating, deleting, completing or visibly renaming a list item.
+- Expanded the Admin diagnostics guidance for beta testers.
+- Added German and English beta test guides and a GitHub beta feedback issue template.
+- Dry-Run remains enabled by default for new installations.
+
 ## 0.0.4 (2026-08-07)
 
 - Changed Fallback market and Priority market on the General tab to dynamic market drop-downs.
@@ -5,8 +18,6 @@
 - Sorts all dynamic product-group and market drop-downs alphabetically.
 - Product catalogue columns Product, Product group and Default market can now be sorted from the table header.
 - Keeps the stored product catalogue alphabetically ordered by product name so the default view is alphabetical and grouped table sorting stays alphabetical within equal groups.
-
-# Changelog
 
 ## 0.0.3 (2026-08-07)
 

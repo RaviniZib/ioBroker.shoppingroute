@@ -1,6 +1,6 @@
 # ioBroker.shoppingroute
 
-**Development status: 0.0.2 – early test version**
+**Development status: 0.1.0-beta.1 – closed beta**
 
 `ioBroker.shoppingroute` sorts existing Alexa shopping-list entries by **store** and by the **configured walking route inside each store**, while keeping the original Alexa app as the only shopping app.
 
@@ -20,7 +20,7 @@ This adapter never uses:
 
 It therefore does not create, delete or complete Alexa list entries.
 
-## Features in 0.0.2
+## Current beta features
 
 - configurable Alexa2 instance and list name
 - Dry-Run enabled by default
@@ -41,6 +41,13 @@ It therefore does not create, delete or complete Alexa list entries.
 - diagnostic states and complete sorting plan as JSON
 
 German documentation: [README_DE.md](README_DE.md)
+
+
+## Beta safety check in 0.1.0-beta.1
+
+The beta inspects the installed Alexa2/alexa-remote2 update path for the known malformed `?version =...` query. Real sorting writes are allowed only when `info.writeCapability` is `source-ok` or `live-ok`. They are blocked for `known-bug`, `live-failed` and `unknown`; Dry-Run remains available.
+
+If the status is `unknown`, run `shoppingroute.0.control.compatibilityTest` once while at least one active list item exists. The test writes the same visible `value` again and waits for Alexa2 to acknowledge it. It does not create, delete, complete or visibly rename an item. See [BETA_TESTING.md](BETA_TESTING.md).
 
 ## Important Alexa2 compatibility note
 
