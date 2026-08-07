@@ -106,6 +106,10 @@ Beispiel:
 
 Aliase ermöglichen z. B. `Aldi` und `Aldi Nord` für denselben Markt.
 
+### Produktgruppen
+
+Produktgruppen wie `Obst/Gemüse`, `TK-Produkte`, `Milchprodukte` oder `Nonfood` werden zentral in einem eigenen Reiter gepflegt. In **Artikel** und **Laufwege** werden Produktgruppen nicht mehr frei eingetippt, sondern aus dieser Liste per Pulldown ausgewählt. Nach Änderungen an den Produktgruppen die Konfiguration speichern, damit die Auswahllisten neu geladen werden.
+
 ### Laufwege
 
 Jeder Markt bekommt eine eigene Kategorienreihenfolge.

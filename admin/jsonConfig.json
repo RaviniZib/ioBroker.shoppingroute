@@ -164,6 +164,40 @@
         }
       }
     },
+    "productGroupsTab": {
+      "type": "panel",
+      "label": {
+        "en": "Product groups",
+        "de": "Produktgruppen"
+      },
+      "items": {
+        "productGroupsHelp": {
+          "type": "staticText",
+          "text": {
+            "en": "Maintain the product groups used for product assignments and store walking routes here. After adding or renaming a product group, save the configuration so the drop-down lists are refreshed.",
+            "de": "Hier werden die Produktgruppen gepflegt, die bei Artikeln und Laufwegen ausgewählt werden können. Nach dem Anlegen oder Umbenennen einer Produktgruppe die Konfiguration speichern, damit die Pulldown-Listen aktualisiert werden."
+          }
+        },
+        "productGroups": {
+          "type": "table",
+          "label": {
+            "en": "Product groups",
+            "de": "Produktgruppen"
+          },
+          "items": [
+            {
+              "type": "text",
+              "attr": "name",
+              "title": {
+                "en": "Product group",
+                "de": "Produktgruppe"
+              },
+              "width": "100%"
+            }
+          ]
+        }
+      }
+    },
     "routesTab": {
       "type": "panel",
       "label": {
@@ -195,11 +229,15 @@
               "width": "35%"
             },
             {
-              "type": "text",
+              "type": "selectSendTo",
               "attr": "category",
+              "command": "getProductGroups",
+              "manual": false,
+              "noTranslation": true,
+              "default": "Sonstiges",
               "title": {
-                "en": "Category",
-                "de": "Kategorie"
+                "en": "Product group",
+                "de": "Produktgruppe"
               },
               "width": "45%"
             },
@@ -256,11 +294,15 @@
               "width": "25%"
             },
             {
-              "type": "text",
+              "type": "selectSendTo",
               "attr": "category",
+              "command": "getProductGroups",
+              "manual": false,
+              "noTranslation": true,
+              "default": "Sonstiges",
               "title": {
-                "en": "Category",
-                "de": "Kategorie"
+                "en": "Product group",
+                "de": "Produktgruppe"
               },
               "width": "25%"
             },

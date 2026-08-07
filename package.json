@@ -1,6 +1,6 @@
 {
   "name": "iobroker.shoppingroute",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Sort Alexa shopping-list items by market and store walking route without creating or deleting list entries.",
   "author": "RaviniZib",
   "license": "MIT",

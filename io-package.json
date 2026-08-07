@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "shoppingroute",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "titleLang": {
       "en": "Shopping Route",
       "de": "Einkaufsroute"
@@ -38,7 +38,8 @@
       {
         "js-controller": ">=7.1.0"
       }
-    ]
+    ],
+    "messagebox": true
   },
   "native": {
     "alexaInstance": "alexa2.0",
@@ -423,6 +424,50 @@
         "aliases": "Grober Pinsel",
         "category": "Nonfood",
         "defaultMarket": ""
+      }
+    ],
+    "productGroups": [
+      {
+        "name": "Obst/Gemüse"
+      },
+      {
+        "name": "Tee/Kaffee"
+      },
+      {
+        "name": "Brot/Gebäck"
+      },
+      {
+        "name": "Schokolade/Naschen"
+      },
+      {
+        "name": "Fleisch/Fisch"
+      },
+      {
+        "name": "Wurst/Salate/Teigwaren"
+      },
+      {
+        "name": "Milchprodukte"
+      },
+      {
+        "name": "Nonfood"
+      },
+      {
+        "name": "Konserven"
+      },
+      {
+        "name": "H-Milch/Nudeln"
+      },
+      {
+        "name": "Kosmetikartikel"
+      },
+      {
+        "name": "Getränke"
+      },
+      {
+        "name": "TK-Produkte"
+      },
+      {
+        "name": "Sonstiges"
       }
     ]
   },

@@ -27,6 +27,7 @@ It therefore does not create, delete or complete Alexa list entries.
 - unlimited market/main-category configuration
 - market aliases, e.g. `Aldi,Aldi Nord`
 - separate category walking route for every market
+- central product-group catalogue; product and route assignments use dynamic drop-downs
 - product catalogue with aliases, category and optional default market
 - optional priority market for all products without an explicit or product-specific default market
 - deterministic precedence: explicit market → product default → priority market → fallback market

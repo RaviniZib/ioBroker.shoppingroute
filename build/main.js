@@ -66,6 +66,7 @@ class ShoppingRoute extends utils.Adapter {
         });
         this.on('ready', this.onReady.bind(this));
         this.on('stateChange', this.onStateChange.bind(this));
+        this.on('message', this.onMessage.bind(this));
         this.on('unload', this.onUnload.bind(this));
     }
     get cfg() {
@@ -86,6 +87,21 @@ class ShoppingRoute extends utils.Adapter {
     }
     get routes() {
         return Array.isArray(this.cfg.routes) ? this.cfg.routes.filter(Boolean) : [];
+    }
+    get productGroups() {
+        const configured = Array.isArray(this.cfg.productGroups) ? this.cfg.productGroups : [];
+        const source = configured.length > 0 ? configured : DEFAULT_CATEGORIES.map(name => ({ name }));
+        const seen = new Set();
+        const result = [];
+        for (const entry of source) {
+            const name = String(entry?.name || '').trim();
+            const key = name.toLocaleLowerCase('de');
+            if (!name || seen.has(key))
+                continue;
+            seen.add(key);
+            result.push({ name });
+        }
+        return result;
     }
     get products() {
         if (this.runtimeProducts)
@@ -114,6 +130,7 @@ class ShoppingRoute extends utils.Adapter {
         this.runtimeProducts = (Array.isArray(this.cfg.products) ? this.cfg.products : [])
             .filter(product => product && product.name)
             .map(product => ({ ...product }));
+        await this.ensureProductGroupsConfig();
         await this.setStateAsync('info.connection', false, true);
         await this.setStateAsync('info.lastError', '', true);
         const enabled = await this.getStateAsync('control.enabled');
@@ -134,6 +151,17 @@ class ShoppingRoute extends utils.Adapter {
             `Artikel automatisch lernen: ${this.autoLearnProducts ? 'JA' : 'NEIN'}.`);
         this.log.info('WICHTIG: Die Alexa-App muss für diese Liste auf „Älteste bis neueste“ gestellt sein.');
         this.scheduleSort(500);
+    }
+    onMessage(obj) {
+        if (!obj || !obj.callback)
+            return;
+        if (obj.command === 'getProductGroups') {
+            const options = this.productGroups.map(group => ({
+                value: group.name,
+                label: group.name,
+            }));
+            this.sendTo(obj.from, obj.command, options, obj.callback);
+        }
     }
     async onStateChange(id, state) {
         if (!state)
@@ -298,6 +326,27 @@ class ShoppingRoute extends utils.Adapter {
                 this.listChangedDuringSort = false;
                 this.scheduleSort(this.debounceMs);
             }
+        }
+    }
+    async ensureProductGroupsConfig() {
+        if (Array.isArray(this.cfg.productGroups) && this.cfg.productGroups.length > 0)
+            return;
+        try {
+            const instanceId = `system.adapter.${this.namespace}`;
+            const object = await this.getForeignObjectAsync(instanceId);
+            if (!object)
+                return;
+            const currentNative = (object.native || {});
+            object.native = {
+                ...currentNative,
+                productGroups: DEFAULT_CATEGORIES.map(name => ({ name })),
+            };
+            await this.setForeignObjectAsync(instanceId, object);
+            this.log.info('Standard-Produktgruppen wurden in die Adapterkonfiguration übernommen.');
+        }
+        catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            this.log.warn(`Produktgruppen konnten nicht initialisiert werden: ${message}`);
         }
     }
     async persistProductsConfig() {

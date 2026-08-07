@@ -13,6 +13,11 @@ export interface MarketConfig {
     enabled?: boolean;
 }
 
+
+export interface ProductGroupConfig {
+    name: string;
+}
+
 export interface RouteConfig {
     market: string;
     category: string;
@@ -35,6 +40,7 @@ export interface AdapterConfigShape {
     writePauseMs?: number;
     fallbackMarket?: string;
     priorityMarket?: string;
+    productGroups?: ProductGroupConfig[];
     markets?: MarketConfig[];
     routes?: RouteConfig[];
     products?: ProductConfig[];

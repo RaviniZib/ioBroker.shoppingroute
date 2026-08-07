@@ -2,7 +2,7 @@ import * as utils from '@iobroker/adapter-core';
 
 declare const require: any;
 declare const module: any;
-import type { AdapterConfigShape, AlexaListItem, MarketConfig, ProductConfig, RouteConfig } from './lib/model';
+import type { AdapterConfigShape, AlexaListItem, MarketConfig, ProductConfig, ProductGroupConfig, RouteConfig } from './lib/model';
 import { activeIdSignature, activeItems, collectUnknownItems, createSortPlan, mergeUnknownProducts } from './lib/sorter';
 
 const DEFAULT_CATEGORIES = [
@@ -38,6 +38,7 @@ export class ShoppingRoute extends utils.Adapter {
 
         this.on('ready', this.onReady.bind(this));
         this.on('stateChange', this.onStateChange.bind(this));
+        this.on('message', this.onMessage.bind(this));
         this.on('unload', this.onUnload.bind(this));
     }
 
@@ -64,6 +65,23 @@ export class ShoppingRoute extends utils.Adapter {
 
     private get routes(): RouteConfig[] {
         return Array.isArray(this.cfg.routes) ? this.cfg.routes.filter(Boolean) : [];
+    }
+
+    private get productGroups(): ProductGroupConfig[] {
+        const configured = Array.isArray(this.cfg.productGroups) ? this.cfg.productGroups : [];
+        const source = configured.length > 0 ? configured : DEFAULT_CATEGORIES.map(name => ({ name }));
+        const seen = new Set<string>();
+        const result: ProductGroupConfig[] = [];
+
+        for (const entry of source) {
+            const name = String(entry?.name || '').trim();
+            const key = name.toLocaleLowerCase('de');
+            if (!name || seen.has(key)) continue;
+            seen.add(key);
+            result.push({ name });
+        }
+
+        return result;
     }
 
     private get products(): ProductConfig[] {
@@ -100,6 +118,8 @@ export class ShoppingRoute extends utils.Adapter {
             .filter(product => product && product.name)
             .map(product => ({ ...product }));
 
+        await this.ensureProductGroupsConfig();
+
         await this.setStateAsync('info.connection', false, true);
         await this.setStateAsync('info.lastError', '', true);
 
@@ -125,6 +145,18 @@ export class ShoppingRoute extends utils.Adapter {
         );
         this.log.info('WICHTIG: Die Alexa-App muss für diese Liste auf „Älteste bis neueste“ gestellt sein.');
         this.scheduleSort(500);
+    }
+
+    private onMessage(obj: { command: string; from: string; callback?: any }): void {
+        if (!obj || !obj.callback) return;
+
+        if (obj.command === 'getProductGroups') {
+            const options = this.productGroups.map(group => ({
+                value: group.name,
+                label: group.name,
+            }));
+            this.sendTo(obj.from, obj.command, options, obj.callback);
+        }
     }
 
     private async onStateChange(
@@ -354,6 +386,27 @@ export class ShoppingRoute extends utils.Adapter {
                 this.listChangedDuringSort = false;
                 this.scheduleSort(this.debounceMs);
             }
+        }
+    }
+
+    private async ensureProductGroupsConfig(): Promise<void> {
+        if (Array.isArray(this.cfg.productGroups) && this.cfg.productGroups.length > 0) return;
+
+        try {
+            const instanceId = `system.adapter.${this.namespace}`;
+            const object = await this.getForeignObjectAsync(instanceId);
+            if (!object) return;
+
+            const currentNative = (object.native || {}) as Record<string, unknown>;
+            object.native = {
+                ...currentNative,
+                productGroups: DEFAULT_CATEGORIES.map(name => ({ name })),
+            };
+            await this.setForeignObjectAsync(instanceId, object);
+            this.log.info('Standard-Produktgruppen wurden in die Adapterkonfiguration übernommen.');
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            this.log.warn(`Produktgruppen konnten nicht initialisiert werden: ${message}`);
         }
     }
 
