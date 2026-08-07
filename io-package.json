@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "shoppingroute",
-    "version": "0.1.0-beta.1",
+    "version": "0.1.0-beta.2",
     "titleLang": {
       "en": "Shopping Route",
       "de": "Einkaufsroute"
@@ -39,7 +39,8 @@
         "js-controller": ">=7.1.0"
       }
     ],
-    "messagebox": true
+    "messagebox": true,
+    "icon": "shoppingroute.png"
   },
   "native": {
     "alexaInstance": "alexa2.0",

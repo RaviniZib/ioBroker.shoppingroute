@@ -60,7 +60,7 @@ test('dynamic dropdown handlers sort market and product-group labels alphabetica
 });
 
 test('beta build keeps Dry-Run default on and exposes compatibility diagnostics', () => {
-    assert.equal(ioPackage.common.version, '0.1.0-beta.1');
+    assert.equal(ioPackage.common.version, '0.1.0-beta.2');
     assert.equal(ioPackage.native.dryRun, true);
 
     const ids = new Set(ioPackage.instanceObjects.map(object => object._id));
@@ -82,4 +82,13 @@ test('beta runtime blocks real sorting writes unless Alexa write compatibility i
     assert.match(source, /if \(!canWriteAlexa\(this\.writeCapability\)\)/);
     assert.match(source, /BETA-Sicherheitsblock/);
     assert.match(source, /control\.compatibilityTest/);
+});
+
+
+test('adapter branding is configured and logo file exists', () => {
+    assert.equal(ioPackage.common.icon, 'shoppingroute.png');
+    const iconPath = path.join(root, 'admin', ioPackage.common.icon);
+    assert.ok(fs.existsSync(iconPath), 'adapter icon should exist');
+    const header = fs.readFileSync(iconPath).subarray(0, 8).toString('hex');
+    assert.equal(header, '89504e470d0a1a0a', 'adapter icon should be a PNG');
 });

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.0-beta.2 (2026-08-07)
+
+- Added the official ShoppingRoute logo and ioBroker adapter icon.
+- Added the logo to the English and German GitHub README files.
+- Added `common.icon` metadata so ioBroker Admin can display the adapter branding.
+- Includes all closed-beta safety and compatibility checks introduced in beta.1.
+
 ## 0.1.0-beta.1 (2026-08-07)
 
 - First closed-beta preparation build.

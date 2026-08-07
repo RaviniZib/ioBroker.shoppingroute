@@ -1,6 +1,10 @@
 # ioBroker.shoppingroute
 
-**Development status: 0.1.0-beta.1 – closed beta**
+<p align="center">
+  <img src="admin/shoppingroute.png" width="190" alt="ShoppingRoute logo">
+</p>
+
+**Development status: 0.1.0-beta.2 – closed beta**
 
 `ioBroker.shoppingroute` sorts existing Alexa shopping-list entries by **store** and by the **configured walking route inside each store**, while keeping the original Alexa app as the only shopping app.
 

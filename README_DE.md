@@ -1,6 +1,10 @@
 # ioBroker.shoppingroute
 
-**Entwicklungsstand: 0.1.0-beta.1 – geschlossene Beta**
+<p align="center">
+  <img src="admin/shoppingroute.png" width="190" alt="ShoppingRoute logo">
+</p>
+
+**Entwicklungsstand: 0.1.0-beta.2 – geschlossene Beta**
 
 `ioBroker.shoppingroute` sortiert eine vorhandene Alexa-Einkaufsliste nach **Einkaufsmarkt** und dem **individuellen Laufweg durch den jeweiligen Markt**. Die originale Alexa-App bleibt die einzige App für den Einkauf und die Artikel werden dort weiterhin ganz normal abgehakt.
 

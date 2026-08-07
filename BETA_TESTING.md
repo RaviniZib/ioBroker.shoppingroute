@@ -1,4 +1,4 @@
-# Beta testing ioBroker.shoppingroute 0.1.0-beta.1
+# Beta testing ioBroker.shoppingroute 0.1.0-beta.2
 
 This beta is intended for a small closed group of testers on different ioBroker/Alexa2 systems.
 
