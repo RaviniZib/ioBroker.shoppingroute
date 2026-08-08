@@ -1,234 +1,66 @@
-# ioBroker.shoppingroute
-
-<p align="center">
-  <img src="admin/shoppingroute.png" width="190" alt="ShoppingRoute logo">
-</p>
-
-**Entwicklungsstand: 0.1.0-beta.2 – geschlossene Beta**
-
-`ioBroker.shoppingroute` sortiert eine vorhandene Alexa-Einkaufsliste nach **Einkaufsmarkt** und dem **individuellen Laufweg durch den jeweiligen Markt**. Die originale Alexa-App bleibt die einzige App für den Einkauf und die Artikel werden dort weiterhin ganz normal abgehakt.
-
-## Grundidee
-
-Alexa vergibt für jeden Listeneintrag eine ID und einen Erstellungszeitpunkt. Wenn die Alexa-App auf **„Älteste bis neueste“** eingestellt ist, können diese vorhandenen IDs als feste Listenplätze verwendet werden.
-
-Der Adapter:
-
-1. liest ausschließlich die **aktiven** Einträge aus `alexa2.x.Lists.<LISTE>.json`,
-2. sortiert die vorhandenen IDs nach `createdDateTime` von alt nach neu,
-3. analysiert unabhängig davon die Artikelnamen,
-4. sortiert die Artikel nach **Markt → Laufweg/Kategorie → Artikelname**,
-5. schreibt ausschließlich die sichtbaren `value`-Texte auf die bereits vorhandenen IDs zurück.
-
-### Harte Sicherheitsregel
-
-Der Adapter verwendet **niemals**:
-
-- `#New`
-- `#delete`
-- `completed`
-
-Er legt also selbst keine Alexa-Listeneinträge an, löscht keine und hakt keine ab.
-
-## Alexa-App vorbereiten
-
-In der Alexa-App für die Einkaufsliste einstellen:
-
-**Sortieren nach → Älteste bis neueste**
-
-Ohne diese Einstellung kann die App ihre eigene A–Z-Sortierung über die vom Adapter erzeugte Reihenfolge legen.
-
-## Beispiele
-
-### Markt explizit nennen
-
-Sprachbefehl sinngemäß:
-
-`Alexa, setze Bananen von Aldi auf die Einkaufsliste.`
-
-Der sichtbare Eintrag bleibt:
-
-`Bananen von Aldi`
-
-Intern erkennt der Adapter:
-
-- Artikel: `Bananen`
-- Markt: `ALDI`
-- Kategorie: `Obst/Gemüse`
-
-### Mengenangaben
-
-Auch folgende Einträge bleiben sichtbar unverändert:
-
-- `3 Bananen von Aldi`
-- `2 Packungen Eier von Penny`
-- `500 Gramm Hackfleisch von Lidl`
-
-Die Menge wird nur für die Artikelerkennung ausgeblendet, niemals aus dem Alexa-Text entfernt.
-
-### Prioritätsmarkt
-
-Optional kann ein **Prioritätsmarkt** festgelegt werden. Damit muss der bevorzugte Markt nicht bei jedem Artikel mitgesprochen werden.
-
-Beispiel mit `Prioritätsmarkt = LIDL`:
-
-- `Milch` → LIDL
-- `Bananen` → LIDL
-- `Cola von Rewe` → REWE
-- hat `Katzenfutter` im Artikelstamm den Standardmarkt ALDI → ALDI
-
-Die Reihenfolge der Marktentscheidung ist verbindlich:
-
-**ausdrücklich genannter Markt → Artikel-Standardmarkt → Prioritätsmarkt → Fallback-Markt**
-
-Der Prioritätsmarkt wird beim automatischen Lernen eines Artikels **nicht** als fester Standardmarkt gespeichert. Ein späterer Wechsel des Prioritätsmarkts wirkt dadurch auch auf bereits gelernte Artikel ohne eigenen Standardmarkt.
-
-## Konfiguration
-
-### Allgemein
-
-- Alexa2-Instanz, z. B. `alexa2.0`
-- Listenname, normalerweise `SHOP`
-- Dry-Run
-- unbekannte Artikel automatisch lernen
-- Wartezeit nach Listenänderungen
-- Pause zwischen Alexa-`value`-Updates
-- Fallback-Hauptkategorie/Markt
-- Prioritätsmarkt, z. B. `LIDL` (optional)
-
-### Märkte / Hauptkategorien
-
-Beliebig viele Märkte können angelegt und in eine Reihenfolge gebracht werden.
-
-Beispiel:
-
-1. ALDI
-2. PENNY
-3. LIDL
-4. REWE
-5. Ohne Markt
-
-Aliase ermöglichen z. B. `Aldi` und `Aldi Nord` für denselben Markt.
-
-### Produktgruppen
-
-Produktgruppen wie `Obst/Gemüse`, `TK-Produkte`, `Milchprodukte` oder `Nonfood` werden zentral in einem eigenen Reiter gepflegt. In **Artikel** und **Laufwege** werden Produktgruppen nicht mehr frei eingetippt, sondern aus dieser Liste per Pulldown ausgewählt. Nach Änderungen an den Produktgruppen die Konfiguration speichern, damit die Auswahllisten neu geladen werden.
-
-### Laufwege
-
-Jeder Markt bekommt eine eigene Kategorienreihenfolge.
-
-Beispiel ALDI:
-
-1. Obst/Gemüse
-2. Brot/Gebäck
-3. Fleisch/Fisch
-4. Wurst/Salate/Teigwaren
-5. Milchprodukte
-6. Konserven
-7. Getränke
-8. TK-Produkte
-9. Nonfood
-
-PENNY kann eine vollständig andere Reihenfolge besitzen.
-
-### Artikelstamm
-
-Pro Artikel können gepflegt werden:
-
-- Name
-- Aliase
-- Kategorie
-- Standardmarkt
-
-Ein ausdrücklich genannter Markt (`Bananen von Penny`) hat Vorrang vor dem Standardmarkt des Artikels.
-
-## Unbekannte Artikel und automatisches Lernen
-
-Nicht im Artikelstamm vorhandene Artikel werden nicht blockiert. Ab 0.0.2 können sie automatisch in den Artikelstamm übernommen werden. Dabei wird eine Kategorie heuristisch vorgeschlagen; ein globaler Prioritätsmarkt wird **nicht** als fester Artikel-Standardmarkt gespeichert.
-
-Dry-Run verhindert ausschließlich Alexa-Schreibzugriffe. Das Lernen neuer Artikel darf weiterhin stattfinden, damit sich der Artikelstamm gefahrlos aufbauen lässt.
-
-Nicht automatisch gelernte unbekannte Artikel werden nach
-
-`shoppingroute.0.info.unknownItems`
-
-geschrieben. Neu gelernte Artikel stehen zusätzlich unter
-
-`shoppingroute.0.info.lastLearnedItems`.
-
-Ein unbekannter Text mit einem nicht erkannten Suffix wie `35 Sushi von Ukuhama` wird aus Sicherheitsgründen nicht automatisch als Produkt `Sushi von Ukuhama` gelernt. `Ukuhama` könnte ein noch nicht angelegter Markt oder auch eine Marke sein. Solche Einträge übernehmen deshalb auch **nicht** den Prioritätsmarkt, sondern bleiben im Fallback-Markt und zur manuellen Klärung in `info.unknownItems`.
-
-## Verhalten während des Einkaufs
-
-Wenn während einer laufenden Umsortierung ein Artikel hinzugefügt oder abgehakt wird, erkennt der Adapter die geänderte Menge aktiver IDs, bricht den aktuellen Durchlauf ab und berechnet die Liste anschließend neu.
-
-Es werden außerdem nur Plätze beschrieben, deren Text sich tatsächlich ändern muss.
-
-## Datenpunkte
-
-- `info.connection`
-- `info.activeItems`
-- `info.lastSort`
-- `info.lastError`
-- `info.lastPlan`
-- `info.unknownItems`
-- `info.lastLearnedItems`
-- `info.writeCapability`
-- `info.compatibility`
-- `info.lastCompatibilityTest`
-- `control.enabled`
-- `control.sortNow`
-- `control.compatibilityTest`
-
-`info.lastPlan` ist besonders für den Dry-Run gedacht und zeigt vor dem echten Schreiben exakt, welcher Text auf welche vorhandene Alexa-ID geschrieben würde.
-
-## Dry-Run
-
-Neue Installationen starten standardmäßig mit **Dry-Run = EIN**.
-
-Damit wird die Sortierung vollständig berechnet und protokolliert, aber Alexa wird nicht verändert. Erst wenn das Ergebnis plausibel ist, sollte Dry-Run in der Adapterkonfiguration deaktiviert werden.
-
-
-## Beta-Sicherheitsprüfung ab 0.1.0-beta.1
-
-Vor echten Alexa-Schreibzugriffen prüft die Beta den installierten Alexa2/alexa-remote2-Pfad auf den bekannten `updateListItem`-Fehler. Das Ergebnis steht in `shoppingroute.0.info.writeCapability` und ausführlich in `shoppingroute.0.info.compatibility`.
-
-Bei `source-ok` oder `live-ok` sind echte Sortier-Schreibzugriffe freigegeben. Bei `known-bug`, `live-failed` oder `unknown` werden sie blockiert; Dry-Run funktioniert weiterhin. Ist der Status `unknown`, kann mit mindestens einem aktiven Listeneintrag `shoppingroute.0.control.compatibilityTest` einmal auf `true` gesetzt werden. Der Test schreibt ausschließlich denselben sichtbaren `value` erneut und verändert den sichtbaren Artikelnamen nicht.
-
-Eine Schritt-für-Schritt-Anleitung für Tester steht in [BETA_TESTING_DE.md](BETA_TESTING_DE.md).
-
-## Aktueller Alexa2-Hinweis
-
-Während der Entwicklung im August 2026 wurde in einer verwendeten `alexa-remote2`-Version ein Fehler beim Aktualisieren von Listeneinträgen gefunden. In `updateListItem` war die Versions-Query als
-
-`?version =${options.version}`
-
-statt
-
-`?version=${options.version}`
-
-gebildet. In der Testinstallation musste dieser Fehler korrigiert werden, bevor `value`/`completed`-Updates von Amazon akzeptiert wurden.
-
-**Für eine öffentliche Release-Version von shoppingroute ist ein upstream behobener Alexa2/alexa-remote2-Stand Voraussetzung.** Nutzer sollen später keine Dateien in `node_modules` manuell verändern müssen.
-
-## Entwicklungsinstallation
-
-Das Repository ist zunächst für Tests über GitHub vorgesehen. Nach dem Push auf GitHub kann es in ioBroker im Expertenmodus über die benutzerdefinierte GitHub-/URL-Installation installiert werden.
-
-Vor einem späteren offiziellen Release folgen mindestens:
-
-- Test auf mehreren ioBroker-Systemen
-- Prüfung der Admin-JSONConfig
-- Kompatibilitätstest mit aktuellen Alexa2-Versionen
-- npm-Veröffentlichung
-- Antrag für das ioBroker-Latest-Repository
-
-## Lizenz
-
-MIT © 2026 RaviniZib
-
-
-### Admin-Oberfläche ab 0.0.4
-
-Fallback-Markt und Prioritätsmarkt werden als Pulldown aus den aktiven Märkten angeboten. Auch Standardmarkt im Artikelstamm und Markt im Laufweg sind Pulldowns. Dynamische Markt- und Produktgruppenlisten werden alphabetisch sortiert. Im Artikelstamm können die Spalten Artikel, Produktgruppe und Standardmarkt über den Spaltenkopf sortiert werden; innerhalb gleicher Gruppen bleibt die alphabetische Artikelreihenfolge erhalten.
+# ShoppingRoute für ioBroker
+
+![ShoppingRoute](admin/shoppingroute.png)
+
+**Entwicklungsstand: 0.2.0-beta.1 – Beta**
+
+ShoppingRoute sortiert vorhandene Alexa-Einkaufslisteneinträge nach Markt, Produktgruppe und dem individuellen Laufweg durch den jeweiligen Markt. Dabei werden **keine Einträge angelegt, gelöscht oder automatisch abgehakt**. Der Adapter verteilt ausschließlich die sichtbaren Texte auf bereits vorhandene aktive Alexa-IDs. Die Alexa-App muss für verwaltete Listen auf **„Älteste bis neueste“** gestellt sein.
+
+## Funktionen
+
+- mehrere Alexa-Einkaufslisten mit eigenem Prioritätsmarkt
+- globale, listenbezogene und temporäre Marktpriorität
+- Markt-Aliase und automatische Erkennung häufiger Marktvarianten
+- frei pflegbare Produktgruppen und marktbezogene Laufwege
+- Laufweg nach Tabellenreihenfolge; Reihenfolgen werden automatisch neu nummeriert
+- Artikelstamm mit Aliasen, Produktgruppe, bevorzugtem Markt und verfügbaren Märkten
+- verbesserter Mengenparser für Zahlen, Zahlwörter, Packungen, Kisten, halbes Kilo, `6x` usw.
+- Duplikaterkennung beim Lernen unbekannter Produkte
+- Prüfliste für unbekannte Artikel mit Übernehmen/Ändern/Ignorieren
+- automatische oder manuelle Lernstrategie
+- intelligente Kategorie-Vorschläge aus Regeln und bereits bekannten Artikeln
+- Alias-Vorschläge für erkannte Schreibvarianten
+- Sortiervorschau vor Alexa-Schreibzugriffen
+- API-Schonmodus mit Rate-Limit, Blöcken und Retry-Backoff
+- lokale Einkaufsstatistik ohne Cloud-Telemetrie
+- Konfigurations-Export/Import
+- exportierbare/importierbare Marktprofile zum Teilen von Laufwegen
+- npm-Beta-Versionsprüfung im Adapter
+- datenschutzfreundlicher Diagnose-/Feedbackbericht
+- Alexa2/alexa-remote2-Kompatibilitätsprüfung vor echten Schreibzugriffen
+- Dry-Run für sichere Tests
+
+## Prioritätslogik
+
+Bei der Marktzuordnung gilt:
+
+1. ausdrücklich genannter Markt (`Milch von REWE`)
+2. Artikel-Standardmarkt
+3. temporärer Prioritätsmarkt
+4. Prioritätsmarkt der jeweiligen Alexa-Liste
+5. globaler Prioritätsmarkt
+6. erster erlaubter Markt aus „Verfügbare Märkte“
+7. Fallback-Markt
+
+## Wichtige Datenpunkte
+
+- `info.previewText` – lesbare Sortiervorschau
+- `info.reviewQueue` – unbekannte Artikel
+- `info.statistics` – lokale Einkaufsstatistik
+- `info.traffic` – API-/Schreibzähler
+- `info.configExport` – komplette Konfigurationssicherung
+- `info.marketProfiles` – teilbare Marktprofile
+- `info.versionInstalled`, `info.versionBeta`, `info.updateAvailable` – Versionsstatus
+- `info.feedbackReport` – bereinigter Beta-Fehlerbericht ohne Einkaufsinhalte
+- `control.temporaryPriorityMarket` – temporärer Markt für den aktuellen Einkauf
+- `control.clearTemporaryPriorityMarket` – temporären Markt löschen
+- `control.importConfigJson` – Konfiguration importieren
+- `control.marketProfileImport` – Marktprofil importieren
+
+## Hinweis zur ioBroker-Adapterkarte
+
+Solange ShoppingRoute noch nicht im offiziellen ioBroker-Repository geführt wird, kann ioBroker Admin bei **„Verfügbare Version“** generisch **„nicht gewartet“** anzeigen. Das ist keine Aussage des laufenden Adapters. ShoppingRoute zeigt deshalb seinen eigenen npm-Versionsstatus über die `info.version*`-Datenpunkte an.
+
+## Beta-Lizenz
+
+Für diese Beta gilt die im Paket enthaltene **ShoppingRoute Closed Beta License 1.0**. Frühere separat unter einer anderen Lizenz veröffentlichte Versionen bleiben unter der jeweils damals gültigen Lizenz.

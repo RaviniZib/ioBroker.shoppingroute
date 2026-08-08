@@ -1,13 +1,39 @@
 import * as utils from '@iobroker/adapter-core';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import * as https from 'node:https';
 
 declare const require: any;
 declare const module: any;
-import type { AdapterConfigShape, AlexaListItem, MarketConfig, ProductConfig, ProductGroupConfig, RouteConfig } from './lib/model';
-import { canWriteAlexa, inspectAlexaRemoteSource, type WriteCapability } from './lib/compatibility';
-import { activeIdSignature, activeItems, collectUnknownItems, createSortPlan, mergeUnknownProducts, sortSlotsOldestFirst } from './lib/sorter';
 
+import type {
+    AdapterConfigShape,
+    AlexaListItem,
+    MarketConfig,
+    ProductConfig,
+    ProductGroupConfig,
+    ReviewItemConfig,
+    RouteConfig,
+    ShoppingListConfig,
+} from './lib/model';
+import { canWriteAlexa, inspectAlexaRemoteSource, type WriteCapability } from './lib/compatibility';
+import { emptyTrafficMetrics, normalizeTrafficMetrics, type TrafficMetrics } from './lib/metrics';
+import {
+    activeIdSignature,
+    activeItems,
+    applyReviewActions,
+    collectUnknownItems,
+    createSortPlan,
+    makePreviewText,
+    mergeReviewQueue,
+    mergeUnknownProducts,
+    sortSlotsOldestFirst,
+} from './lib/sorter';
+import { findProduct, parseItem, suggestAliases } from './lib/parser';
+import { buildMarketProfiles, exportConfig, importMarketProfile, parseConfigImport, reindexRoutes } from './lib/config-tools';
+import { emptyUsageStatistics, normalizeUsageStatistics, recordAddedItem, type UsageStatistics } from './lib/statistics';
+
+const VERSION = '0.2.0-beta.1';
 const DEFAULT_CATEGORIES = [
     'Obst/Gemüse',
     'Tee/Kaffee',
@@ -16,6 +42,7 @@ const DEFAULT_CATEGORIES = [
     'Fleisch/Fisch',
     'Wurst/Salate/Teigwaren',
     'Milchprodukte',
+    'Haushalt/Hygiene',
     'Nonfood',
     'Konserven',
     'H-Milch/Nudeln',
@@ -27,24 +54,33 @@ const DEFAULT_CATEGORIES = [
 
 export class ShoppingRoute extends utils.Adapter {
     private sortTimer: ReturnType<typeof setTimeout> | null = null;
-    private sorting = false;
-    private abortAndRerun = false;
+    private versionTimer: ReturnType<typeof setInterval> | null = null;
+    private pendingLists = new Set<string>();
+    private sortingListName = '';
     private listChangedDuringSort = false;
-    private runtimeProducts: ProductConfig[] | null = null;
+    private runtimeProducts: ProductConfig[] = [];
+    private runtimeReviews: ReviewItemConfig[] = [];
     private productsDirty = false;
+    private reviewsDirty = false;
+    private routesDirty = false;
+    private runtimeRoutes: RouteConfig[] = [];
     private compatibilityTesting = false;
     private writeCapability: WriteCapability = 'unknown';
     private compatibilityDetail = 'Noch nicht geprüft.';
     private alexa2Version = 'unbekannt';
     private alexaRemote2Version = 'unbekannt';
     private lastCompatibilityTest = 'Noch nicht ausgeführt.';
+    private traffic: TrafficMetrics = emptyTrafficMetrics();
+    private statistics: UsageStatistics = emptyUsageStatistics();
+    private knownActiveIds = new Map<string, Set<string>>();
+    private activeCountByList = new Map<string, number>();
+    private writeTimestamps: number[] = [];
+    private temporaryPriorityMarket = '';
+    private latestBetaVersion = '';
+    private lastVersionCheck = '';
 
     public constructor(options: Partial<utils.AdapterOptions> = {}) {
-        super({
-            ...options,
-            name: 'shoppingroute',
-        });
-
+        super({ ...options, name: 'shoppingroute' });
         this.on('ready', this.onReady.bind(this));
         this.on('stateChange', this.onStateChange.bind(this));
         this.on('message', this.onMessage.bind(this));
@@ -59,12 +95,16 @@ export class ShoppingRoute extends utils.Adapter {
         return String(this.cfg.alexaInstance || 'alexa2.0').trim() || 'alexa2.0';
     }
 
-    private get listName(): string {
-        return String(this.cfg.listName || 'SHOP').trim() || 'SHOP';
+    private get listConfigs(): ShoppingListConfig[] {
+        const configured = Array.isArray(this.cfg.lists)
+            ? this.cfg.lists.filter(item => item && item.name && item.enabled !== false)
+            : [];
+        if (configured.length > 0) return configured;
+        return [{ name: String(this.cfg.listName || 'SHOP').trim() || 'SHOP', enabled: true, priorityMarket: '' }];
     }
 
-    private get listStateId(): string {
-        return `${this.alexaInstance}.Lists.${this.listName}.json`;
+    private listStateId(listName: string): string {
+        return `${this.alexaInstance}.Lists.${listName}.json`;
     }
 
     private get markets(): MarketConfig[] {
@@ -73,7 +113,7 @@ export class ShoppingRoute extends utils.Adapter {
     }
 
     private get routes(): RouteConfig[] {
-        return Array.isArray(this.cfg.routes) ? this.cfg.routes.filter(Boolean) : [];
+        return this.runtimeRoutes.length ? this.runtimeRoutes : (Array.isArray(this.cfg.routes) ? this.cfg.routes.filter(Boolean) : []);
     }
 
     private get productGroups(): ProductGroupConfig[] {
@@ -81,7 +121,6 @@ export class ShoppingRoute extends utils.Adapter {
         const source = configured.length > 0 ? configured : DEFAULT_CATEGORIES.map(name => ({ name }));
         const seen = new Set<string>();
         const result: ProductGroupConfig[] = [];
-
         for (const entry of source) {
             const name = String(entry?.name || '').trim();
             const key = name.toLocaleLowerCase('de');
@@ -89,13 +128,11 @@ export class ShoppingRoute extends utils.Adapter {
             seen.add(key);
             result.push({ name });
         }
-
         return result.sort((a, b) => a.name.localeCompare(b.name, 'de', { sensitivity: 'base' }));
     }
 
     private get products(): ProductConfig[] {
-        if (this.runtimeProducts) return this.runtimeProducts.filter(product => product && product.name);
-        return Array.isArray(this.cfg.products) ? this.cfg.products.filter(product => product && product.name) : [];
+        return this.runtimeProducts.filter(product => product && product.name);
     }
 
     private get fallbackMarket(): string {
@@ -106,140 +143,254 @@ export class ShoppingRoute extends utils.Adapter {
         return String(this.cfg.priorityMarket || '').trim();
     }
 
-    private get debounceMs(): number {
-        return Math.max(250, Number(this.cfg.debounceMs) || 2500);
+    private priorityMarketForList(listName: string): string {
+        if (this.temporaryPriorityMarket) return this.temporaryPriorityMarket;
+        const list = this.listConfigs.find(entry => entry.name === listName);
+        return String(list?.priorityMarket || this.priorityMarket || '').trim();
     }
 
-    private get writePauseMs(): number {
-        return Math.max(250, Number(this.cfg.writePauseMs) || 1000);
+    private get learningMode(): 'automatic' | 'review' | 'off' {
+        const configured = String(this.cfg.learningMode || '').trim();
+        if (configured === 'automatic' || configured === 'review' || configured === 'off') return configured;
+        return this.cfg.autoLearnProducts === false ? 'off' : 'automatic';
     }
 
-    private get dryRun(): boolean {
-        return this.cfg.dryRun !== false;
-    }
-
-    private get autoLearnProducts(): boolean {
-        return this.cfg.autoLearnProducts !== false;
-    }
+    private get debounceMs(): number { return Math.max(250, Number(this.cfg.debounceMs) || 5000); }
+    private get writePauseMs(): number { return Math.max(250, Number(this.cfg.writePauseMs) || 1000); }
+    private get dryRun(): boolean { return this.cfg.dryRun !== false; }
+    private get apiSafeMode(): boolean { return this.cfg.apiSafeMode !== false; }
+    private get maxWritesPerMinute(): number { return Math.max(1, Number(this.cfg.maxWritesPerMinute) || 20); }
+    private get batchSize(): number { return Math.max(1, Number(this.cfg.batchSize) || 10); }
+    private get batchPauseMs(): number { return Math.max(0, Number(this.cfg.batchPauseMs) || 5000); }
+    private get maxWriteRetries(): number { return Math.max(0, Math.min(5, Number(this.cfg.maxWriteRetries) || 2)); }
+    private get retryBaseMs(): number { return Math.max(250, Number(this.cfg.retryBaseMs) || 1500); }
 
     private async onReady(): Promise<void> {
-        const configuredProducts = (Array.isArray(this.cfg.products) ? this.cfg.products : [])
+        this.runtimeProducts = (Array.isArray(this.cfg.products) ? this.cfg.products : [])
             .filter(product => product && product.name)
-            .map(product => ({ ...product }));
-        this.runtimeProducts = [...configuredProducts]
+            .map(product => ({ ...product }))
             .sort((a, b) => a.name.localeCompare(b.name, 'de', { sensitivity: 'base' }));
-        this.productsDirty = configuredProducts.some((product, index) => product.name !== this.runtimeProducts?.[index]?.name);
+        this.runtimeReviews = (Array.isArray(this.cfg.reviewItems) ? this.cfg.reviewItems : []).map(item => ({ ...item }));
+        this.runtimeRoutes = reindexRoutes(Array.isArray(this.cfg.routes) ? this.cfg.routes.filter(Boolean) : []);
+        this.routesDirty = JSON.stringify(this.runtimeRoutes) !== JSON.stringify(Array.isArray(this.cfg.routes) ? this.cfg.routes : []);
+
+        await this.loadTrafficMetrics();
+        await this.loadStatistics();
+
+        const reviewResult = applyReviewActions(this.runtimeProducts, this.runtimeReviews);
+        if (reviewResult.accepted.length) {
+            this.runtimeProducts = reviewResult.products;
+            this.runtimeReviews = reviewResult.remainingReviews;
+            this.productsDirty = true;
+            this.reviewsDirty = true;
+            this.statistics.reviewAccepted += reviewResult.accepted.length;
+            await this.persistStatistics();
+            this.log.info(`Aus der Prüfliste übernommen: ${reviewResult.accepted.map(item => `„${item.name}“`).join(', ')}.`);
+        }
 
         await this.ensureProductGroupsConfig();
-        if (this.productsDirty) await this.persistProductsConfig();
+        await this.updateTemporaryMarketStateOptions();
+        await this.persistRuntimeConfig();
 
         await this.setStateAsync('info.connection', false, true);
         await this.setStateAsync('info.lastError', '', true);
+        await this.setStateAsync('info.versionInstalled', VERSION, true);
+        await this.setStateAsync('control.sortNow', false, true);
+        await this.setStateAsync('control.compatibilityTest', false, true);
+        await this.setStateAsync('control.resetTrafficStats', false, true);
+        await this.setStateAsync('control.resetStatistics', false, true);
+        await this.setStateAsync('control.exportConfig', false, true);
+        await this.setStateAsync('control.refreshFeedbackReport', false, true);
+        await this.setStateAsync('control.clearTemporaryPriorityMarket', false, true);
 
         const enabled = await this.getStateAsync('control.enabled');
         if (!enabled) await this.setStateAsync('control.enabled', true, true);
-        await this.setStateAsync('control.sortNow', false, true);
-        await this.setStateAsync('control.compatibilityTest', false, true);
+        const temp = await this.getStateAsync('control.temporaryPriorityMarket');
+        this.temporaryPriorityMarket = String(temp?.val || this.cfg.temporaryPriorityMarket || '').trim();
+        await this.setStateAsync('control.temporaryPriorityMarket', this.temporaryPriorityMarket, true);
 
         this.subscribeStates('control.*');
-        this.subscribeForeignStates(this.listStateId);
+        for (const list of this.listConfigs) this.subscribeForeignStates(this.listStateId(list.name));
 
-        const listState = await this.getForeignStateAsync(this.listStateId);
-        if (!listState || typeof listState.val !== 'string') {
-            await this.setError(`Alexa list state not found or unreadable: ${this.listStateId}`);
-            this.log.error(`Alexa-Liste nicht gefunden: ${this.listStateId}`);
+        let connected = false;
+        for (const list of this.listConfigs) {
+            const listState = await this.getForeignStateAsync(this.listStateId(list.name));
+            if (!listState || typeof listState.val !== 'string') {
+                this.log.warn(`Alexa-Liste nicht gefunden: ${this.listStateId(list.name)}`);
+                continue;
+            }
+            connected = true;
+            try {
+                const parsed = JSON.parse(listState.val) as AlexaListItem[];
+                const active = activeItems(Array.isArray(parsed) ? parsed : []);
+                this.knownActiveIds.set(list.name, new Set(active.map(item => String(item.id))));
+                this.activeCountByList.set(list.name, active.length);
+            } catch {
+                this.knownActiveIds.set(list.name, new Set());
+            }
+        }
+        await this.setStateAsync('info.connection', connected, true);
+        await this.updateActiveItemCount();
+
+        if (!connected) {
+            await this.setError(`Keine der konfigurierten Alexa-Listen ist lesbar: ${this.listConfigs.map(item => item.name).join(', ')}`);
             return;
         }
 
-        await this.setStateAsync('info.connection', true, true);
         await this.runStartupCompatibilityCheck();
-        this.log.warn('BETA-Version: Dry-Run ist für Ersttests ausdrücklich empfohlen. Alexa-Einträge werden weiterhin niemals angelegt, gelöscht oder automatisch abgehakt.');
-        this.log.info(`Verbunden mit ${this.listStateId}. Dry-Run: ${this.dryRun ? 'JA' : 'NEIN'}.`);
-        this.log.info(
-            `Prioritätsmarkt: ${this.priorityMarket || 'keiner'}. ` +
-            `Artikel automatisch lernen: ${this.autoLearnProducts ? 'JA' : 'NEIN'}.`,
-        );
-        this.log.info('WICHTIG: Die Alexa-App muss für diese Liste auf „Älteste bis neueste“ gestellt sein.');
-        this.scheduleSort(500);
+        await this.refreshExports();
+        await this.checkNpmVersion();
+        await this.updateFeedbackReport();
+        this.versionTimer = setInterval(() => void this.checkNpmVersion(), 6 * 60 * 60 * 1000);
+
+        this.log.warn(`ShoppingRoute ${VERSION} BETA: Dry-Run ist für Ersttests ausdrücklich empfohlen.`);
+        this.log.info(`Listen: ${this.listConfigs.map(item => item.name).join(', ')}. Lernmodus: ${this.learningMode}.`);
+        this.log.info('WICHTIG: Die Alexa-App muss für jede verwaltete Liste auf „Älteste bis neueste“ gestellt sein.');
+        this.scheduleAll(700);
     }
 
     private onMessage(obj: { command: string; from: string; callback?: any }): void {
         if (!obj || !obj.callback) return;
-
         if (obj.command === 'getProductGroups') {
-            const options = this.productGroups
-                .map(group => ({ value: group.name, label: group.name }))
+            const options = this.productGroups.map(group => ({ value: group.name, label: group.name }))
                 .sort((a, b) => a.label.localeCompare(b.label, 'de', { sensitivity: 'base' }));
             this.sendTo(obj.from, obj.command, options, obj.callback);
             return;
         }
-
         if (obj.command === 'getMarkets' || obj.command === 'getMarketsOptional') {
-            const options = this.markets
-                .map(market => ({ value: market.name, label: market.name }))
+            const options = this.markets.map(market => ({ value: market.name, label: market.name }))
                 .sort((a, b) => a.label.localeCompare(b.label, 'de', { sensitivity: 'base' }));
-
-            if (obj.command === 'getMarketsOptional') {
-                options.unshift({ value: '', label: '—' });
-            }
-
+            if (obj.command === 'getMarketsOptional') options.unshift({ value: '', label: '—' });
+            this.sendTo(obj.from, obj.command, options, obj.callback);
+            return;
+        }
+        if (obj.command === 'getLists') {
+            const options = this.listConfigs.map(list => ({ value: list.name, label: list.name }))
+                .sort((a, b) => a.label.localeCompare(b.label, 'de', { sensitivity: 'base' }));
             this.sendTo(obj.from, obj.command, options, obj.callback);
         }
     }
 
-    private async onStateChange(
-        id: string,
-        state: { val: unknown; ack: boolean } | null | undefined,
-    ): Promise<void> {
+    private async onStateChange(id: string, state: { val: unknown; ack: boolean } | null | undefined): Promise<void> {
         if (!state) return;
-
-        if (id === `${this.namespace}.control.sortNow`) {
-            if (!state.ack && state.val === true) {
-                await this.setStateAsync('control.sortNow', false, true);
-                this.scheduleSort(100);
+        const local = `${this.namespace}.`;
+        if (id === `${local}control.sortNow` && !state.ack && state.val === true) {
+            await this.setStateAsync('control.sortNow', false, true);
+            this.scheduleAll(100);
+            return;
+        }
+        if (id === `${local}control.compatibilityTest` && !state.ack && state.val === true) {
+            await this.setStateAsync('control.compatibilityTest', false, true);
+            await this.runLiveCompatibilityTest();
+            return;
+        }
+        if (id === `${local}control.resetTrafficStats` && !state.ack && state.val === true) {
+            await this.setStateAsync('control.resetTrafficStats', false, true);
+            this.traffic = emptyTrafficMetrics();
+            await this.persistTrafficMetrics();
+            return;
+        }
+        if (id === `${local}control.resetStatistics` && !state.ack && state.val === true) {
+            await this.setStateAsync('control.resetStatistics', false, true);
+            this.statistics = emptyUsageStatistics();
+            await this.persistStatistics();
+            return;
+        }
+        if (id === `${local}control.exportConfig` && !state.ack && state.val === true) {
+            await this.setStateAsync('control.exportConfig', false, true);
+            await this.refreshExports();
+            return;
+        }
+        if (id === `${local}control.refreshFeedbackReport` && !state.ack && state.val === true) {
+            await this.setStateAsync('control.refreshFeedbackReport', false, true);
+            await this.updateFeedbackReport();
+            return;
+        }
+        if (id === `${local}control.clearTemporaryPriorityMarket` && !state.ack && state.val === true) {
+            await this.setStateAsync('control.clearTemporaryPriorityMarket', false, true);
+            this.temporaryPriorityMarket = '';
+            await this.setStateAsync('control.temporaryPriorityMarket', '', true);
+            this.scheduleAll(100);
+            return;
+        }
+        if (id === `${local}control.temporaryPriorityMarket` && !state.ack) {
+            this.temporaryPriorityMarket = String(state.val || '').trim();
+            await this.setStateAsync('control.temporaryPriorityMarket', this.temporaryPriorityMarket, true);
+            this.scheduleAll(100);
+            return;
+        }
+        if (id === `${local}control.importConfigJson` && !state.ack && String(state.val || '').trim()) {
+            try {
+                const imported = parseConfigImport(String(state.val));
+                await this.setStateAsync('control.importConfigJson', '', true);
+                await this.updateConfig(imported as Record<string, unknown>);
+                this.log.info('ShoppingRoute-Konfiguration importiert; Instanz wird durch ioBroker neu gestartet.');
+            } catch (error) {
+                await this.setStateAsync('control.importConfigJson', '', true);
+                await this.setError(`Konfigurationsimport fehlgeschlagen: ${error instanceof Error ? error.message : String(error)}`);
             }
             return;
         }
-
-        if (id === `${this.namespace}.control.compatibilityTest`) {
-            if (!state.ack && state.val === true) {
-                await this.setStateAsync('control.compatibilityTest', false, true);
-                await this.runLiveCompatibilityTest();
+        if (id === `${local}control.marketProfileImport` && !state.ack && String(state.val || '').trim()) {
+            try {
+                const imported = importMarketProfile(String(state.val), this.markets, this.routes);
+                await this.setStateAsync('control.marketProfileImport', '', true);
+                await this.updateConfig({ markets: imported.markets, routes: imported.routes } as Record<string, unknown>);
+                this.log.info(`Marktprofil „${imported.market}“ importiert.`);
+            } catch (error) {
+                await this.setStateAsync('control.marketProfileImport', '', true);
+                await this.setError(`Marktprofil-Import fehlgeschlagen: ${error instanceof Error ? error.message : String(error)}`);
             }
             return;
         }
-
-        if (id === `${this.namespace}.control.enabled`) {
-            if (!state.ack) {
-                await this.setStateAsync('control.enabled', Boolean(state.val), true);
-                if (state.val === true) this.scheduleSort(250);
-            }
+        if (id === `${local}control.enabled` && !state.ack) {
+            await this.setStateAsync('control.enabled', Boolean(state.val), true);
+            if (state.val === true) this.scheduleAll(250);
             return;
         }
 
-        if (id === this.listStateId) {
+        const list = this.listConfigs.find(entry => id === this.listStateId(entry.name));
+        if (list) {
             await this.setStateAsync('info.connection', true, true);
             if (this.compatibilityTesting) return;
-            if (this.sorting) {
-                this.listChangedDuringSort = true;
-                return;
-            }
-            this.scheduleSort(this.debounceMs);
+            if (this.sortingListName === list.name) this.listChangedDuringSort = true;
+            this.scheduleSort(list.name, this.debounceMs);
         }
     }
 
     private onUnload(callback: () => void): void {
         if (this.sortTimer) clearTimeout(this.sortTimer);
+        if (this.versionTimer) clearInterval(this.versionTimer);
         this.setState('info.connection', false, true);
         callback();
     }
 
-    private scheduleSort(delay: number): void {
+    private scheduleAll(delay: number): void {
+        for (const list of this.listConfigs) this.pendingLists.add(list.name);
+        this.armSortTimer(delay);
+    }
+
+    private scheduleSort(listName: string, delay: number): void {
+        this.pendingLists.add(listName);
+        this.armSortTimer(delay);
+    }
+
+    private armSortTimer(delay: number): void {
         if (this.sortTimer) clearTimeout(this.sortTimer);
         this.sortTimer = setTimeout(() => {
             this.sortTimer = null;
-            void this.sortList();
+            void this.processPendingSorts();
         }, delay);
+    }
+
+    private async processPendingSorts(): Promise<void> {
+        if (this.sortingListName) return;
+        while (this.pendingLists.size > 0) {
+            const listName = this.pendingLists.values().next().value as string | undefined;
+            if (!listName) break;
+            this.pendingLists.delete(listName);
+            await this.sortList(listName);
+        }
     }
 
     private async isEnabled(): Promise<boolean> {
@@ -247,205 +398,238 @@ export class ShoppingRoute extends utils.Adapter {
         return !state || state.val !== false;
     }
 
-    private async readList(): Promise<AlexaListItem[]> {
-        const state = await this.getForeignStateAsync(this.listStateId);
-        if (!state || typeof state.val !== 'string' || !state.val.trim()) {
-            throw new Error(`Datenpunkt ${this.listStateId} enthält keine lesbare Liste.`);
-        }
-
+    private async readList(listName: string): Promise<AlexaListItem[]> {
+        const stateId = this.listStateId(listName);
+        const state = await this.getForeignStateAsync(stateId);
+        if (!state || typeof state.val !== 'string' || !state.val.trim()) throw new Error(`Datenpunkt ${stateId} enthält keine lesbare Liste.`);
         const parsed: unknown = JSON.parse(state.val);
-        if (!Array.isArray(parsed)) throw new Error(`${this.listStateId} enthält kein JSON-Array.`);
-
+        if (!Array.isArray(parsed)) throw new Error(`${stateId} enthält kein JSON-Array.`);
         return parsed as AlexaListItem[];
     }
 
-    private async sortList(): Promise<void> {
-        if (this.sorting) {
-            this.abortAndRerun = true;
+    private async sortList(listName: string): Promise<void> {
+        if (this.sortingListName) {
+            this.pendingLists.add(listName);
             return;
         }
         if (!(await this.isEnabled())) return;
-
-        this.sorting = true;
-        this.abortAndRerun = false;
+        this.sortingListName = listName;
         this.listChangedDuringSort = false;
-        let learnedThisRun: ProductConfig[] = [];
+
+        await this.ensureTrafficDay();
+        this.traffic.localChecks += 1;
+        await this.persistTrafficMetrics();
 
         try {
-            const list = await this.readList();
+            const list = await this.readList(listName);
             const active = activeItems(list);
-            await this.setStateAsync('info.activeItems', active.length, true);
-            await this.setStateAsync('info.connection', true, true);
+            this.activeCountByList.set(listName, active.length);
+            await this.updateActiveItemCount();
+            await this.recordNewItems(listName, list);
 
-            if (this.autoLearnProducts) {
-                const merged = mergeUnknownProducts(
-                    list,
-                    this.markets,
-                    this.products,
-                    this.fallbackMarket,
-                    this.priorityMarket,
-                );
+            const priority = this.priorityMarketForList(listName);
+            let unknown = collectUnknownItems(list, this.markets, this.products, this.fallbackMarket, priority);
+
+            if (this.learningMode === 'automatic') {
+                const merged = mergeUnknownProducts(list, this.markets, this.products, this.fallbackMarket, priority);
                 if (merged.learned.length > 0) {
                     this.runtimeProducts = merged.products;
                     this.productsDirty = true;
-                    learnedThisRun = merged.learned;
-                    await this.setStateAsync('info.lastLearnedItems', JSON.stringify(learnedThisRun, null, 2), true);
-                    this.log.info(
-                        `Neue Artikel gelernt: ${merged.learned.map(product => `„${product.name}“`).join(', ')}.`,
-                    );
+                    this.statistics.automaticLearned += merged.learned.length;
+                    await this.persistStatistics();
+                    await this.setStateAsync('info.lastLearnedItems', JSON.stringify(merged.learned, null, 2), true);
+                    this.log.info(`Neue Artikel automatisch gelernt: ${merged.learned.map(product => `„${product.name}“`).join(', ')}.`);
+                    unknown = collectUnknownItems(list, this.markets, this.products, this.fallbackMarket, priority);
                 }
+            } else if (this.learningMode === 'review') {
+                const before = JSON.stringify(this.runtimeReviews);
+                this.runtimeReviews = mergeReviewQueue(this.runtimeReviews, unknown);
+                if (JSON.stringify(this.runtimeReviews) !== before) this.reviewsDirty = true;
             }
 
-            const unknown = collectUnknownItems(
-                list,
-                this.markets,
-                this.products,
-                this.fallbackMarket,
-                this.priorityMarket,
-            );
-            await this.setStateAsync('info.unknownItems', JSON.stringify(unknown, null, 2), true);
+            await this.setStateAsync('info.unknownItems', JSON.stringify({ listName, items: unknown }, null, 2), true);
+            await this.setStateAsync('info.reviewQueue', JSON.stringify(this.runtimeReviews, null, 2), true);
+            await this.updateAliasSuggestions(list);
 
-            const plan = createSortPlan(
-                list,
-                this.markets,
-                this.routes,
-                this.products,
-                this.fallbackMarket,
-                this.priorityMarket,
-            );
-            await this.setStateAsync('info.lastPlan', JSON.stringify(plan, null, 2), true);
+            const plan = createSortPlan(list, this.markets, this.routes, this.products, this.fallbackMarket, priority);
+            await this.setStateAsync('info.lastPlan', JSON.stringify({ listName, plan }, null, 2), true);
+            await this.setStateAsync('info.preview', JSON.stringify({ listName, changes: plan.filter(entry => entry.changed), plan }, null, 2), true);
+            await this.setStateAsync('info.previewText', makePreviewText(listName, plan), true);
 
             const changes = plan.filter(entry => entry.changed);
             const now = new Date().toISOString();
-
+            if (changes.length > 0) {
+                this.traffic.plannedChanges += changes.length;
+                await this.persistTrafficMetrics();
+            }
             if (changes.length === 0) {
-                await this.setStateAsync('info.lastSort', `${now} – bereits sortiert (${active.length} aktiv)`, true);
+                await this.setStateAsync('info.lastSort', `${now} – ${listName}: bereits sortiert (${active.length} aktiv)`, true);
                 await this.setStateAsync('info.lastError', '', true);
                 return;
             }
 
-            this.log.info(
-                `Sortierplan: ${active.length} aktive Artikel, ${changes.length} Textänderung(en)` +
-                `${this.dryRun ? ' [DRY-RUN]' : ''}.`,
-            );
-            for (const entry of changes) {
-                this.log.info(
-                    `Platz ${entry.position}: „${entry.from}“ → „${entry.to}“ ` +
-                    `[${entry.market} / ${entry.category}]`,
-                );
-            }
-
+            this.log.info(`${listName}: ${active.length} aktive Artikel, ${changes.length} Änderung(en)${this.dryRun ? ' [DRY-RUN]' : ''}.`);
             if (this.dryRun) {
-                await this.setStateAsync(
-                    'info.lastSort',
-                    `${now} – Dry-Run: ${changes.length} Änderung(en) geplant`,
-                    true,
-                );
+                await this.setStateAsync('info.lastSort', `${now} – ${listName} Dry-Run: ${changes.length} Änderung(en) geplant`, true);
                 await this.setStateAsync('info.lastError', '', true);
                 return;
             }
-
             if (!canWriteAlexa(this.writeCapability)) {
                 const message = this.writeCapability === 'known-bug'
-                    ? 'Alexa-Schreibzugriffe blockiert: Die bekannte fehlerhafte alexa-remote2 version-Query wurde erkannt. Bitte Alexa2/alexa-remote2 aktualisieren oder den Fehler upstream beheben lassen.'
+                    ? 'Alexa-Schreibzugriffe blockiert: bekannte fehlerhafte alexa-remote2 version-Query erkannt.'
                     : this.writeCapability === 'live-failed'
-                        ? 'Alexa-Schreibzugriffe blockiert: Der Kompatibilitätstest ist fehlgeschlagen. Dry-Run kann weiter verwendet werden.'
-                        : 'Alexa-Schreibzugriffe blockiert: Die Schreibkompatibilität konnte nicht sicher bestätigt werden. Bitte control.compatibilityTest einmal mit mindestens einem aktiven Listeneintrag ausführen.';
+                        ? 'Alexa-Schreibzugriffe blockiert: Kompatibilitätstest fehlgeschlagen.'
+                        : 'Alexa-Schreibzugriffe blockiert: Schreibkompatibilität noch nicht bestätigt; control.compatibilityTest ausführen.';
                 await this.setStateAsync('info.lastSort', `${now} – BETA-Sicherheitsblock: keine Alexa-Schreibzugriffe`, true);
                 await this.setStateAsync('info.lastError', message, true);
                 this.log.error(message);
                 return;
             }
 
+            this.traffic.sortRuns += 1;
+            this.traffic.lastSortRun = new Date().toISOString();
+            await this.persistTrafficMetrics();
             const originalSignature = activeIdSignature(list);
+            let written = 0;
 
             for (const entry of changes) {
-                const fresh = await this.readList();
+                const fresh = await this.readList(listName);
                 if (activeIdSignature(fresh) !== originalSignature) {
-                    this.abortAndRerun = true;
-                    this.log.warn('Liste wurde während der Sortierung ergänzt oder abgehakt. Durchlauf wird neu berechnet.');
-                    break;
+                    this.traffic.abortedRuns += 1;
+                    await this.persistTrafficMetrics();
+                    this.pendingLists.add(listName);
+                    this.log.warn(`${listName}: Liste wurde während der Sortierung ergänzt oder abgehakt. Neue Berechnung folgt.`);
+                    return;
                 }
-
                 const currentItem = activeItems(fresh).find(item => String(item.id) === entry.id);
                 if (!currentItem || String(currentItem.value).trim() !== entry.from) {
-                    this.abortAndRerun = true;
-                    this.log.warn(
-                        `Eintrag ${entry.id} wurde während der Sortierung verändert. Durchlauf wird neu berechnet.`,
-                    );
-                    break;
+                    this.traffic.abortedRuns += 1;
+                    await this.persistTrafficMetrics();
+                    this.pendingLists.add(listName);
+                    this.log.warn(`${listName}: Eintrag wurde während der Sortierung verändert. Neue Berechnung folgt.`);
+                    return;
                 }
-
-                const valueStateId = `${this.alexaInstance}.Lists.${this.listName}.items.${entry.id}.value`;
+                const valueStateId = `${this.alexaInstance}.Lists.${listName}.items.${entry.id}.value`;
                 const valueObject = await this.getForeignObjectAsync(valueStateId);
                 if (!valueObject) throw new Error(`Alexa-Wertedatenpunkt fehlt: ${valueStateId}`);
-
-                await this.setForeignStateAsync(valueStateId, { val: entry.to, ack: false });
-                await this.wait(this.writePauseMs);
+                await this.writeAlexaValue(valueStateId, entry.to);
+                written += 1;
+                if (this.apiSafeMode && written % this.batchSize === 0 && written < changes.length && this.batchPauseMs > 0) {
+                    this.log.info(`API-Schonmodus: Batch-Pause nach ${written} Schreibzugriffen (${this.batchPauseMs} ms).`);
+                    await this.wait(this.batchPauseMs);
+                } else {
+                    await this.wait(this.writePauseMs);
+                }
             }
-
-            if (this.abortAndRerun) return;
 
             await this.wait(Math.max(1000, this.writePauseMs));
-            const verifyList = await this.readList();
-
+            const verifyList = await this.readList(listName);
             if (activeIdSignature(verifyList) !== originalSignature) {
-                this.abortAndRerun = true;
-                this.log.warn('Liste wurde unmittelbar nach der Sortierung verändert. Neue Berechnung folgt.');
+                this.traffic.abortedRuns += 1;
+                await this.persistTrafficMetrics();
+                this.pendingLists.add(listName);
                 return;
             }
-
-            const verifyPlan = createSortPlan(
-                verifyList,
-                this.markets,
-                this.routes,
-                this.products,
-                this.fallbackMarket,
-                this.priorityMarket,
-            );
+            const verifyPlan = createSortPlan(verifyList, this.markets, this.routes, this.products, this.fallbackMarket, priority);
             const remaining = verifyPlan.filter(entry => entry.changed);
-
             if (remaining.length > 0) {
-                const message =
-                    `Alexa hat ${remaining.length} geplante Textänderung(en) nicht bestätigt. ` +
-                    'Kein automatischer Wiederholungsloop wird gestartet.';
+                const message = `${listName}: Alexa hat ${remaining.length} geplante Textänderung(en) nicht bestätigt; kein automatischer Endlos-Retry.`;
                 await this.setError(message);
-                this.log.error(message);
                 return;
             }
-
-            await this.setStateAsync(
-                'info.lastSort',
-                `${new Date().toISOString()} – ${changes.length} Änderung(en), ${active.length} aktive Artikel`,
-                true,
-            );
+            await this.setStateAsync('info.lastSort', `${new Date().toISOString()} – ${listName}: ${changes.length} Änderung(en), ${active.length} aktiv`, true);
             await this.setStateAsync('info.lastError', '', true);
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
             await this.setError(message);
             this.log.error(message);
         } finally {
-            this.sorting = false;
-            if (this.productsDirty) await this.persistProductsConfig();
-            if (this.abortAndRerun) {
-                this.abortAndRerun = false;
-                this.scheduleSort(this.debounceMs);
-            } else if (this.listChangedDuringSort) {
-                // Own value writes also update SHOP.json. Verify once, but the no-change plan prevents a loop.
-                this.listChangedDuringSort = false;
-                this.scheduleSort(this.debounceMs);
+            this.sortingListName = '';
+            await this.persistRuntimeConfig();
+            await this.refreshExports();
+            await this.updateFeedbackReport();
+            if (this.listChangedDuringSort) this.pendingLists.add(listName);
+            if (this.pendingLists.size > 0) this.armSortTimer(this.debounceMs);
+        }
+    }
+
+    private async writeAlexaValue(stateId: string, value: string): Promise<void> {
+        let lastError: unknown;
+        for (let attempt = 0; attempt <= this.maxWriteRetries; attempt++) {
+            try {
+                if (this.apiSafeMode) await this.waitForWriteBudget();
+                await this.setForeignStateAsync(stateId, { val: value, ack: false });
+                this.writeTimestamps.push(Date.now());
+                this.traffic.alexaWrites += 1;
+                this.traffic.lastAlexaWrite = new Date().toISOString();
+                await this.persistTrafficMetrics();
+                return;
+            } catch (error) {
+                lastError = error;
+                if (attempt >= this.maxWriteRetries) break;
+                const delay = this.retryBaseMs * Math.pow(2, attempt);
+                this.log.warn(`Alexa-value-Schreibzugriff fehlgeschlagen; Retry ${attempt + 1}/${this.maxWriteRetries} in ${delay} ms.`);
+                await this.wait(delay);
             }
         }
+        throw lastError instanceof Error ? lastError : new Error(String(lastError));
+    }
+
+    private async waitForWriteBudget(): Promise<void> {
+        while (true) {
+            const now = Date.now();
+            this.writeTimestamps = this.writeTimestamps.filter(timestamp => now - timestamp < 60000);
+            if (this.writeTimestamps.length < this.maxWritesPerMinute) return;
+            const waitMs = Math.max(500, 60000 - (now - this.writeTimestamps[0]) + 100);
+            this.log.info(`API-Schonmodus: Schreiblimit ${this.maxWritesPerMinute}/Minute erreicht, Pause ${waitMs} ms.`);
+            await this.wait(waitMs);
+        }
+    }
+
+    private async updateAliasSuggestions(list: AlexaListItem[]): Promise<void> {
+        if (this.cfg.autoAliasSuggestions === false) {
+            await this.setStateAsync('info.aliasSuggestions', '[]', true);
+            return;
+        }
+        const suggestions: Array<{ product: string; alias: string }> = [];
+        for (const item of activeItems(list)) {
+            const parsed = parseItem(String(item.value), this.markets, this.products, this.fallbackMarket, this.priorityMarket);
+            const product = findProduct(parsed.productText, this.products);
+            if (!product) continue;
+            for (const alias of suggestAliases(parsed.productText, product)) suggestions.push({ product: product.name, alias });
+        }
+        const unique = [...new Map(suggestions.map(entry => [`${entry.product}|${entry.alias}`.toLocaleLowerCase('de'), entry])).values()];
+        await this.setStateAsync('info.aliasSuggestions', JSON.stringify(unique, null, 2), true);
+    }
+
+    private async recordNewItems(listName: string, list: AlexaListItem[]): Promise<void> {
+        const active = activeItems(list);
+        const previous = this.knownActiveIds.get(listName);
+        const current = new Set(active.map(item => String(item.id)));
+        if (!previous) {
+            this.knownActiveIds.set(listName, current);
+            return;
+        }
+        for (const item of active) {
+            if (previous.has(String(item.id))) continue;
+            const parsed = parseItem(String(item.value), this.markets, this.products, this.fallbackMarket, this.priorityMarketForList(listName));
+            this.statistics = recordAddedItem(this.statistics, listName, parsed);
+        }
+        this.knownActiveIds.set(listName, current);
+        await this.persistStatistics();
+    }
+
+    private async updateActiveItemCount(): Promise<void> {
+        const total = [...this.activeCountByList.values()].reduce((sum, value) => sum + value, 0);
+        await this.setStateAsync('info.activeItems', total, true);
+        await this.setStateAsync('info.activeItemsByList', JSON.stringify(Object.fromEntries(this.activeCountByList), null, 2), true);
     }
 
     private async runStartupCompatibilityCheck(): Promise<void> {
         try {
             const alexaObject = await this.getForeignObjectAsync(`system.adapter.${this.alexaInstance}`);
             this.alexa2Version = String((alexaObject?.common as { version?: unknown } | undefined)?.version || 'unbekannt');
-        } catch {
-            this.alexa2Version = 'unbekannt';
-        }
-
+        } catch { this.alexa2Version = 'unbekannt'; }
         try {
             const resolved = require.resolve('alexa-remote2');
             const source = fs.readFileSync(resolved, 'utf8');
@@ -454,26 +638,10 @@ export class ShoppingRoute extends utils.Adapter {
             this.compatibilityDetail = inspection.detail;
             this.alexaRemote2Version = this.findPackageVersion(resolved, 'alexa-remote2');
         } catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
             this.writeCapability = 'unknown';
-            this.compatibilityDetail = `alexa-remote2 konnte nicht automatisch geprüft werden: ${message}`;
+            this.compatibilityDetail = `alexa-remote2 konnte nicht automatisch geprüft werden: ${error instanceof Error ? error.message : String(error)}`;
             this.alexaRemote2Version = 'unbekannt';
         }
-
-        if (this.writeCapability === 'known-bug') {
-            this.log.error(
-                'Bekannte inkompatible alexa-remote2 updateListItem-Version erkannt. ' +
-                'Echte Alexa-Schreibzugriffe werden von shoppingroute blockiert; Dry-Run bleibt möglich.',
-            );
-        } else if (this.writeCapability === 'source-ok') {
-            this.log.info('Alexa2-Schreibkompatibilität: bekannte version-Query ist in alexa-remote2 korrigiert.');
-        } else {
-            this.log.warn(
-                'Alexa2-Schreibkompatibilität konnte aus der installierten Quelle nicht eindeutig bestimmt werden. ' +
-                'Vor echten Schreibzugriffen bitte control.compatibilityTest ausführen.',
-            );
-        }
-
         await this.updateCompatibilityDiagnostics();
     }
 
@@ -483,10 +651,8 @@ export class ShoppingRoute extends utils.Adapter {
             const packageFile = path.join(current, 'package.json');
             try {
                 const parsed = JSON.parse(fs.readFileSync(packageFile, 'utf8')) as { name?: string; version?: string };
-                if (parsed.name === expectedName && parsed.version) return String(parsed.version);
-            } catch {
-                // Continue walking towards the package root.
-            }
+                if (parsed.name === expectedName && parsed.version) return parsed.version;
+            } catch { /* continue */ }
             const parent = path.dirname(current);
             if (parent === current) break;
             current = parent;
@@ -495,187 +661,231 @@ export class ShoppingRoute extends utils.Adapter {
     }
 
     private async runLiveCompatibilityTest(): Promise<void> {
-        if (this.compatibilityTesting) return;
+        if (this.compatibilityTesting || this.sortingListName) return;
         this.compatibilityTesting = true;
-
         try {
-            if (this.writeCapability === 'known-bug') {
-                this.lastCompatibilityTest = `${new Date().toISOString()} – NICHT AUSGEFÜHRT: bekannte inkompatible alexa-remote2-Version erkannt`;
-                await this.setStateAsync('info.lastCompatibilityTest', this.lastCompatibilityTest, true);
-                await this.updateCompatibilityDiagnostics();
-                this.log.error('Kompatibilitätstest nicht ausgeführt: bekannte fehlerhafte alexa-remote2 version-Query erkannt.');
-                return;
-            }
-
-            const list = await this.readList();
-            const active = sortSlotsOldestFirst(activeItems(list));
-            if (active.length === 0) {
-                this.lastCompatibilityTest = `${new Date().toISOString()} – nicht möglich: kein aktiver Alexa-Listeneintrag vorhanden`;
-                await this.setStateAsync('info.lastCompatibilityTest', this.lastCompatibilityTest, true);
-                await this.updateCompatibilityDiagnostics();
-                this.log.warn('Kompatibilitätstest benötigt mindestens einen aktiven Alexa-Listeneintrag.');
-                return;
-            }
-
-            const testItem = active[0];
-            const originalValue = String(testItem.value || '').trim();
-            const valueStateId = `${this.alexaInstance}.Lists.${this.listName}.items.${testItem.id}.value`;
-            const valueObject = await this.getForeignObjectAsync(valueStateId);
+            const listName = this.listConfigs[0]?.name;
+            if (!listName) throw new Error('Keine aktive Alexa-Liste konfiguriert.');
+            const list = await this.readList(listName);
+            const item = sortSlotsOldestFirst(activeItems(list))[0];
+            if (!item) throw new Error('Für den Kompatibilitätstest wird mindestens ein aktiver Listeneintrag benötigt.');
+            const valueStateId = `${this.alexaInstance}.Lists.${listName}.items.${item.id}.value`;
             const before = await this.getForeignStateAsync(valueStateId);
-            if (!valueObject || !before) throw new Error(`Alexa-Wertedatenpunkt fehlt oder ist nicht lesbar: ${valueStateId}`);
-
-            const beforeTs = Number((before as { ts?: number }).ts || 0);
-            this.log.info(
-                `Starte Alexa-Schreibkompatibilitätstest mit „${originalValue}“. ` +
-                'Es wird ausschließlich derselbe value-Text erneut geschrieben; der sichtbare Listentext bleibt unverändert.',
-            );
-
+            const originalValue = String(before?.val ?? item.value).trim();
+            if (!originalValue) throw new Error('Der Testeintrag enthält keinen sichtbaren value-Text.');
+            const beforeTs = Number((before as { ts?: number } | null)?.ts || 0);
             await this.setForeignStateAsync(valueStateId, { val: originalValue, ack: false });
-
+            this.traffic.alexaWrites += 1;
+            this.traffic.compatibilityWrites += 1;
+            this.traffic.lastAlexaWrite = new Date().toISOString();
+            await this.persistTrafficMetrics();
             const timeoutAt = Date.now() + 10000;
             let confirmed = false;
             while (Date.now() < timeoutAt) {
                 await this.wait(250);
                 const current = await this.getForeignStateAsync(valueStateId);
-                if (
-                    current &&
-                    current.ack === true &&
-                    String(current.val ?? '').trim() === originalValue &&
-                    Number((current as { ts?: number }).ts || 0) > beforeTs
-                ) {
+                if (current && current.ack === true && String(current.val ?? '').trim() === originalValue && Number((current as { ts?: number }).ts || 0) > beforeTs) {
                     confirmed = true;
                     break;
                 }
             }
-
             if (confirmed) {
                 this.writeCapability = 'live-ok';
-                this.compatibilityDetail = 'Live-Test erfolgreich: Alexa2 hat einen erneuten Schreibzugriff mit unverändertem value bestätigt.';
+                this.compatibilityDetail = 'Live-Test erfolgreich: Alexa2 hat einen unveränderten value-Schreibzugriff bestätigt.';
                 this.lastCompatibilityTest = `${new Date().toISOString()} – ERFOLG mit „${originalValue}“`;
                 await this.setStateAsync('info.lastError', '', true);
-                this.log.info('Alexa-Schreibkompatibilitätstest erfolgreich.');
             } else {
                 this.writeCapability = 'live-failed';
-                this.compatibilityDetail = 'Live-Test fehlgeschlagen: Alexa2 hat den erneuten value-Schreibzugriff nicht innerhalb von 10 Sekunden bestätigt.';
+                this.compatibilityDetail = 'Live-Test fehlgeschlagen: Alexa2 hat den value-Schreibzugriff nicht innerhalb von 10 Sekunden bestätigt.';
                 this.lastCompatibilityTest = `${new Date().toISOString()} – FEHLGESCHLAGEN mit „${originalValue}“`;
-                await this.setStateAsync(
-                    'info.lastError',
-                    'Alexa-Schreibkompatibilitätstest fehlgeschlagen. Echte Sortier-Schreibzugriffe bleiben aus Sicherheitsgründen blockiert; Dry-Run kann weiter verwendet werden.',
-                    true,
-                );
-                this.log.error('Alexa-Schreibkompatibilitätstest fehlgeschlagen. Schreibzugriffe bleiben blockiert.');
+                await this.setStateAsync('info.lastError', 'Alexa-Schreibkompatibilitätstest fehlgeschlagen; Sortierschreibzugriffe bleiben blockiert.', true);
             }
-
-            await this.setStateAsync('info.lastCompatibilityTest', this.lastCompatibilityTest, true);
             await this.updateCompatibilityDiagnostics();
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
             this.writeCapability = 'live-failed';
             this.compatibilityDetail = `Live-Test konnte nicht abgeschlossen werden: ${message}`;
             this.lastCompatibilityTest = `${new Date().toISOString()} – FEHLER: ${message}`;
-            await this.setStateAsync('info.lastCompatibilityTest', this.lastCompatibilityTest, true);
             await this.setStateAsync('info.lastError', `Kompatibilitätstest: ${message}`, true);
             await this.updateCompatibilityDiagnostics();
-            this.log.error(`Kompatibilitätstest: ${message}`);
-        } finally {
-            this.compatibilityTesting = false;
-        }
+        } finally { this.compatibilityTesting = false; }
     }
 
     private async updateCompatibilityDiagnostics(): Promise<void> {
         await this.setStateAsync('info.writeCapability', this.writeCapability, true);
         await this.setStateAsync('info.lastCompatibilityTest', this.lastCompatibilityTest, true);
-        await this.setStateAsync(
-            'info.compatibility',
-            JSON.stringify(
-                {
-                    shoppingrouteVersion: '0.1.0-beta.1',
-                    beta: true,
-                    alexaInstance: this.alexaInstance,
-                    alexa2Version: this.alexa2Version,
-                    alexaRemote2Version: this.alexaRemote2Version,
-                    listName: this.listName,
-                    listStateId: this.listStateId,
-                    dryRun: this.dryRun,
-                    writeCapability: this.writeCapability,
-                    detail: this.compatibilityDetail,
-                    lastCompatibilityTest: this.lastCompatibilityTest,
-                    requiredAlexaAppSorting: 'Älteste bis neueste / Oldest to newest',
-                    checkedAt: new Date().toISOString(),
-                },
-                null,
-                2,
-            ),
-            true,
-        );
+        await this.setStateAsync('info.compatibility', JSON.stringify({
+            shoppingrouteVersion: VERSION,
+            beta: true,
+            alexaInstance: this.alexaInstance,
+            alexa2Version: this.alexa2Version,
+            alexaRemote2Version: this.alexaRemote2Version,
+            lists: this.listConfigs.map(item => item.name),
+            dryRun: this.dryRun,
+            writeCapability: this.writeCapability,
+            detail: this.compatibilityDetail,
+            lastCompatibilityTest: this.lastCompatibilityTest,
+            requiredAlexaAppSorting: 'Älteste bis neueste / Oldest to newest',
+            checkedAt: new Date().toISOString(),
+        }, null, 2), true);
+    }
+
+    private async updateTemporaryMarketStateOptions(): Promise<void> {
+        try {
+            const states: Record<string, string> = { '': '—' };
+            for (const market of [...this.markets].sort((a, b) => a.name.localeCompare(b.name, 'de', { sensitivity: 'base' }))) {
+                states[market.name] = market.name;
+            }
+            await this.extendObjectAsync('control.temporaryPriorityMarket', { common: { states } });
+        } catch (error) {
+            this.log.warn(`Temporäre Markt-Auswahlliste konnte nicht aktualisiert werden: ${error instanceof Error ? error.message : String(error)}`);
+        }
     }
 
     private async ensureProductGroupsConfig(): Promise<void> {
         if (Array.isArray(this.cfg.productGroups) && this.cfg.productGroups.length > 0) return;
-
         try {
-            const instanceId = `system.adapter.${this.namespace}`;
-            const object = await this.getForeignObjectAsync(instanceId);
-            if (!object) return;
-
-            const currentNative = (object.native || {}) as Record<string, unknown>;
-            object.native = {
-                ...currentNative,
-                productGroups: DEFAULT_CATEGORIES.map(name => ({ name })),
-            };
-            await this.setForeignObjectAsync(instanceId, object);
-            this.log.info('Standard-Produktgruppen wurden in die Adapterkonfiguration übernommen.');
+            await this.updateConfig({ productGroups: DEFAULT_CATEGORIES.map(name => ({ name })) } as Record<string, unknown>);
         } catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
-            this.log.warn(`Produktgruppen konnten nicht initialisiert werden: ${message}`);
+            this.log.warn(`Produktgruppen konnten nicht initialisiert werden: ${error instanceof Error ? error.message : String(error)}`);
         }
     }
 
-    private async persistProductsConfig(): Promise<void> {
-        if (!this.productsDirty || !this.runtimeProducts) return;
-
+    private async persistRuntimeConfig(): Promise<void> {
+        if (!this.productsDirty && !this.reviewsDirty && !this.routesDirty) return;
         try {
             const instanceId = `system.adapter.${this.namespace}`;
             const object = await this.getForeignObjectAsync(instanceId);
             if (!object) throw new Error(`Instanzobjekt nicht gefunden: ${instanceId}`);
-
             const currentNative = (object.native || {}) as Record<string, unknown>;
             object.native = {
                 ...currentNative,
-                products: [...this.runtimeProducts]
-                    .sort((a, b) => a.name.localeCompare(b.name, 'de', { sensitivity: 'base' }))
-                    .map(product => ({ ...product })),
+                ...(this.productsDirty ? { products: this.runtimeProducts.map(product => ({ ...product })) } : {}),
+                ...(this.reviewsDirty ? { reviewItems: this.runtimeReviews.map(item => ({ ...item })) } : {}),
+                ...(this.routesDirty ? { routes: this.runtimeRoutes.map(route => ({ ...route })) } : {}),
             };
-
             await this.setForeignObjectAsync(instanceId, object);
             this.productsDirty = false;
-            this.log.info(
-                `Artikelstamm gespeichert (${this.runtimeProducts.length} Artikel). ` +
-                'Die Admin-Konfigurationsseite ggf. neu öffnen, um neue Artikel zu sehen.',
-            );
+            this.reviewsDirty = false;
+            this.routesDirty = false;
         } catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
-            await this.setStateAsync('info.lastError', `Artikelstamm konnte nicht gespeichert werden: ${message}`, true);
-            this.log.error(`Artikelstamm konnte nicht gespeichert werden: ${message}`);
+            await this.setStateAsync('info.lastError', `Lern-/Konfigurationsdaten konnten nicht gespeichert werden: ${error instanceof Error ? error.message : String(error)}`, true);
         }
+    }
+
+    private async refreshExports(): Promise<void> {
+        const cfg = { ...(this.cfg as unknown as Record<string, unknown>), products: this.runtimeProducts, routes: this.routes, reviewItems: this.runtimeReviews } as AdapterConfigShape;
+        await this.setStateAsync('info.configExport', JSON.stringify(exportConfig(cfg, VERSION), null, 2), true);
+        await this.setStateAsync('info.marketProfiles', JSON.stringify(buildMarketProfiles(this.markets, this.routes), null, 2), true);
+    }
+
+    private async loadTrafficMetrics(): Promise<void> {
+        try {
+            const state = await this.getStateAsync('info.traffic');
+            this.traffic = normalizeTrafficMetrics(state && typeof state.val === 'string' && state.val.trim() ? JSON.parse(state.val) : null);
+        } catch { this.traffic = emptyTrafficMetrics(); }
+        await this.persistTrafficMetrics();
+    }
+
+    private async ensureTrafficDay(): Promise<void> {
+        const normalized = normalizeTrafficMetrics(this.traffic);
+        if (normalized.date !== this.traffic.date) {
+            this.traffic = normalized;
+            await this.persistTrafficMetrics();
+        }
+    }
+
+    private async persistTrafficMetrics(): Promise<void> {
+        this.traffic = normalizeTrafficMetrics(this.traffic);
+        await this.setStateAsync('info.localChecksToday', this.traffic.localChecks, true);
+        await this.setStateAsync('info.plannedChangesToday', this.traffic.plannedChanges, true);
+        await this.setStateAsync('info.sortRunsToday', this.traffic.sortRuns, true);
+        await this.setStateAsync('info.alexaWritesToday', this.traffic.alexaWrites, true);
+        await this.setStateAsync('info.compatibilityWritesToday', this.traffic.compatibilityWrites, true);
+        await this.setStateAsync('info.abortedRunsToday', this.traffic.abortedRuns, true);
+        await this.setStateAsync('info.traffic', JSON.stringify({ ...this.traffic, note: 'Zählt Operationen, keine Netzwerk-Bytes.' }, null, 2), true);
+    }
+
+    private async loadStatistics(): Promise<void> {
+        try {
+            const state = await this.getStateAsync('info.statistics');
+            this.statistics = normalizeUsageStatistics(state && typeof state.val === 'string' && state.val.trim() ? JSON.parse(state.val) : null);
+        } catch { this.statistics = emptyUsageStatistics(); }
+        await this.persistStatistics();
+    }
+
+    private async persistStatistics(): Promise<void> {
+        this.statistics.lastUpdated = new Date().toISOString();
+        await this.setStateAsync('info.statistics', JSON.stringify(this.statistics, null, 2), true);
+    }
+
+    private async checkNpmVersion(): Promise<void> {
+        try {
+            const data = await this.httpJson('https://registry.npmjs.org/iobroker.shoppingroute');
+            const tags = (data['dist-tags'] || {}) as Record<string, unknown>;
+            this.latestBetaVersion = String(tags.beta || tags.latest || '');
+            this.lastVersionCheck = new Date().toISOString();
+            await this.setStateAsync('info.versionBeta', this.latestBetaVersion || 'unbekannt', true);
+            await this.setStateAsync('info.updateAvailable', Boolean(this.latestBetaVersion && this.latestBetaVersion !== VERSION), true);
+            await this.setStateAsync('info.versionCheck', `${this.lastVersionCheck} – npm beta: ${this.latestBetaVersion || 'unbekannt'}`, true);
+        } catch (error) {
+            this.lastVersionCheck = new Date().toISOString();
+            await this.setStateAsync('info.versionCheck', `${this.lastVersionCheck} – npm-Abfrage fehlgeschlagen: ${error instanceof Error ? error.message : String(error)}`, true);
+        }
+        await this.updateFeedbackReport();
+    }
+
+    private httpJson(url: string): Promise<Record<string, any>> {
+        return new Promise((resolve, reject) => {
+            const request = https.get(url, { headers: { 'User-Agent': `ioBroker.shoppingroute/${VERSION}` } }, (response: any) => {
+                if ((response.statusCode || 500) >= 400) {
+                    response.resume();
+                    reject(new Error(`HTTP ${response.statusCode}`));
+                    return;
+                }
+                let data = '';
+                response.setEncoding('utf8');
+                response.on('data', (chunk: string) => { data += chunk; });
+                response.on('end', () => {
+                    try { resolve(JSON.parse(data) as Record<string, any>); }
+                    catch (error) { reject(error); }
+                });
+            });
+            request.setTimeout(8000, () => request.destroy(new Error('Timeout')));
+            request.on('error', reject);
+        });
+    }
+
+    private async updateFeedbackReport(): Promise<void> {
+        const report = {
+            generatedAt: new Date().toISOString(),
+            shoppingrouteVersion: VERSION,
+            node: process.version,
+            alexaInstance: this.alexaInstance,
+            alexa2Version: this.alexa2Version,
+            alexaRemote2Version: this.alexaRemote2Version,
+            lists: this.listConfigs.map(list => ({ name: list.name, activeItems: this.activeCountByList.get(list.name) || 0 })),
+            dryRun: this.dryRun,
+            learningMode: this.learningMode,
+            apiSafeMode: this.apiSafeMode,
+            writeCapability: this.writeCapability,
+            lastCompatibilityTest: this.lastCompatibilityTest,
+            lastError: String((await this.getStateAsync('info.lastError'))?.val || ''),
+            traffic: this.traffic,
+            update: { installed: VERSION, npmBeta: this.latestBetaVersion || 'unbekannt', checkedAt: this.lastVersionCheck || 'noch nicht' },
+            privacy: 'Produktnamen, Einkaufslistentexte, Aliase und komplette Konfiguration sind absichtlich nicht enthalten.',
+        };
+        await this.setStateAsync('info.feedbackReport', JSON.stringify(report, null, 2), true);
     }
 
     private async setError(message: string): Promise<void> {
         await this.setStateAsync('info.lastError', message, true);
-        await this.setStateAsync('info.connection', false, true);
     }
 
-    private wait(ms: number): Promise<void> {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    }
+    private wait(ms: number): Promise<void> { return new Promise(resolve => setTimeout(resolve, ms)); }
 
-    public static getDefaultCategories(): string[] {
-        return [...DEFAULT_CATEGORIES];
-    }
+    public static getDefaultCategories(): string[] { return [...DEFAULT_CATEGORIES]; }
 }
 
-if (require.main !== module) {
-    module.exports = (options: Partial<utils.AdapterOptions> | undefined) => new ShoppingRoute(options);
-} else {
-    (() => new ShoppingRoute())();
-}
+if (require.main !== module) module.exports = (options: Partial<utils.AdapterOptions> | undefined) => new ShoppingRoute(options);
+else (() => new ShoppingRoute())();

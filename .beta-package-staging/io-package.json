@@ -1,14 +1,14 @@
 {
   "common": {
     "name": "shoppingroute",
-    "version": "0.2.0-beta.1",
+    "version": "0.1.0-beta.3",
     "titleLang": {
-      "en": "ShoppingRoute",
-      "de": "ShoppingRoute"
+      "en": "Shopping Route",
+      "de": "Einkaufsroute"
     },
     "desc": {
-      "en": "Smart Alexa shopping-list routing by market, product group and individual store walking route. Includes learning, review queue, multi-list support and API protection.",
-      "de": "Intelligente Alexa-Einkaufslisten nach Markt, Produktgruppe und individuellem Laufweg sortieren – mit Lernfunktion, Prüfliste, mehreren Listen und API-Schutz."
+      "en": "Sorts existing Alexa shopping-list entries by market and store walking route without creating or deleting entries.",
+      "de": "Sortiert bestehende Alexa-Einkaufslisteneinträge nach Markt und Laufweg, ohne Einträge anzulegen oder zu löschen."
     },
     "authors": [
       "RaviniZib"
@@ -40,21 +40,14 @@
       }
     ],
     "messagebox": true,
-    "icon": "shoppingroute.png",
-    "tier": 3,
-    "news": {
-      "0.2.0-beta.1": {
-        "en": "Major beta expansion: review queue, improved parser, API safe mode, multiple lists, temporary market, product availability, statistics, config/profile transfer, version check and feedback report.",
-        "de": "Großes Beta-Update: Prüfliste, verbesserter Parser, API-Schonmodus, mehrere Listen, temporärer Markt, Artikel-Verfügbarkeit, Statistik, Konfig-/Profiltransfer, Versionsprüfung und Feedbackbericht."
-      }
-    }
+    "icon": "shoppingroute.png"
   },
   "native": {
     "alexaInstance": "alexa2.0",
     "listName": "SHOP",
     "dryRun": true,
     "autoLearnProducts": true,
-    "debounceMs": 5000,
+    "debounceMs": 2500,
     "writePauseMs": 1000,
     "fallbackMarket": "Ohne Markt",
     "priorityMarket": "",
@@ -143,18 +136,13 @@
       },
       {
         "market": "ALDI",
-        "category": "Haushalt/Hygiene",
+        "category": "Nonfood",
         "order": 110
       },
       {
         "market": "ALDI",
-        "category": "Nonfood",
-        "order": 120
-      },
-      {
-        "market": "ALDI",
         "category": "Sonstiges",
-        "order": 130
+        "order": 999
       },
       {
         "market": "PENNY",
@@ -208,18 +196,13 @@
       },
       {
         "market": "PENNY",
-        "category": "Haushalt/Hygiene",
+        "category": "Nonfood",
         "order": 110
       },
       {
         "market": "PENNY",
-        "category": "Nonfood",
-        "order": 120
-      },
-      {
-        "market": "PENNY",
         "category": "Sonstiges",
-        "order": 130
+        "order": 999
       },
       {
         "market": "LIDL",
@@ -273,18 +256,13 @@
       },
       {
         "market": "LIDL",
-        "category": "Haushalt/Hygiene",
+        "category": "Nonfood",
         "order": 110
       },
       {
         "market": "LIDL",
-        "category": "Nonfood",
-        "order": 120
-      },
-      {
-        "market": "LIDL",
         "category": "Sonstiges",
-        "order": 130
+        "order": 999
       },
       {
         "market": "REWE",
@@ -338,18 +316,13 @@
       },
       {
         "market": "REWE",
-        "category": "Haushalt/Hygiene",
+        "category": "Nonfood",
         "order": 110
       },
       {
         "market": "REWE",
-        "category": "Nonfood",
-        "order": 120
-      },
-      {
-        "market": "REWE",
         "category": "Sonstiges",
-        "order": 130
+        "order": 999
       },
       {
         "market": "Ohne Markt",
@@ -388,43 +361,38 @@
       },
       {
         "market": "Ohne Markt",
-        "category": "Haushalt/Hygiene",
+        "category": "Nonfood",
         "order": 80
       },
       {
         "market": "Ohne Markt",
-        "category": "Nonfood",
+        "category": "Konserven",
         "order": 90
       },
       {
         "market": "Ohne Markt",
-        "category": "Konserven",
+        "category": "H-Milch/Nudeln",
         "order": 100
       },
       {
         "market": "Ohne Markt",
-        "category": "H-Milch/Nudeln",
+        "category": "Kosmetikartikel",
         "order": 110
       },
       {
         "market": "Ohne Markt",
-        "category": "Kosmetikartikel",
+        "category": "Getränke",
         "order": 120
       },
       {
         "market": "Ohne Markt",
-        "category": "Getränke",
+        "category": "TK-Produkte",
         "order": 130
       },
       {
         "market": "Ohne Markt",
-        "category": "TK-Produkte",
-        "order": 140
-      },
-      {
-        "market": "Ohne Markt",
         "category": "Sonstiges",
-        "order": 150
+        "order": 999
       }
     ],
     "products": [
@@ -432,36 +400,31 @@
         "name": "Bananen",
         "aliases": "Banane",
         "category": "Obst/Gemüse",
-        "defaultMarket": "",
-        "availableMarkets": ""
+        "defaultMarket": ""
       },
       {
         "name": "Eier",
         "aliases": "Ei",
         "category": "Milchprodukte",
-        "defaultMarket": "",
-        "availableMarkets": ""
+        "defaultMarket": ""
       },
       {
         "name": "Grillfleisch",
         "aliases": "",
         "category": "Fleisch/Fisch",
-        "defaultMarket": "",
-        "availableMarkets": ""
+        "defaultMarket": ""
       },
       {
         "name": "Hackfleisch",
         "aliases": "Hack,Rinderhack",
         "category": "Fleisch/Fisch",
-        "defaultMarket": "",
-        "availableMarkets": ""
+        "defaultMarket": ""
       },
       {
         "name": "Pinsel",
         "aliases": "Grober Pinsel",
         "category": "Nonfood",
-        "defaultMarket": "",
-        "availableMarkets": ""
+        "defaultMarket": ""
       }
     ],
     "productGroups": [
@@ -487,9 +450,6 @@
         "name": "Milchprodukte"
       },
       {
-        "name": "Haushalt/Hygiene"
-      },
-      {
         "name": "Nonfood"
       },
       {
@@ -510,24 +470,7 @@
       {
         "name": "Sonstiges"
       }
-    ],
-    "lists": [
-      {
-        "name": "SHOP",
-        "enabled": true,
-        "priorityMarket": ""
-      }
-    ],
-    "learningMode": "review",
-    "autoAliasSuggestions": true,
-    "apiSafeMode": true,
-    "maxWritesPerMinute": 20,
-    "batchSize": 10,
-    "batchPauseMs": 5000,
-    "maxWriteRetries": 2,
-    "retryBaseMs": 1500,
-    "temporaryPriorityMarket": "",
-    "reviewItems": []
+    ]
   },
   "objects": [],
   "instanceObjects": [
@@ -536,110 +479,6 @@
       "type": "channel",
       "common": {
         "name": "Information"
-      },
-      "native": {}
-    },
-    {
-      "_id": "info.abortedRunsToday",
-      "type": "state",
-      "common": {
-        "name": "Aborted sorting runs today",
-        "type": "number",
-        "role": "value",
-        "read": true,
-        "write": false,
-        "def": 0
-      },
-      "native": {}
-    },
-    {
-      "_id": "info.activeItems",
-      "type": "state",
-      "common": {
-        "name": "Active shopping items",
-        "type": "number",
-        "role": "value",
-        "read": true,
-        "write": false,
-        "def": 0
-      },
-      "native": {}
-    },
-    {
-      "_id": "info.activeItemsByList",
-      "type": "state",
-      "common": {
-        "name": "Active shopping items by list",
-        "type": "string",
-        "role": "json",
-        "read": true,
-        "write": false,
-        "def": "{}"
-      },
-      "native": {}
-    },
-    {
-      "_id": "info.alexaWritesToday",
-      "type": "state",
-      "common": {
-        "name": "Alexa value writes today",
-        "type": "number",
-        "role": "value",
-        "read": true,
-        "write": false,
-        "def": 0
-      },
-      "native": {}
-    },
-    {
-      "_id": "info.aliasSuggestions",
-      "type": "state",
-      "common": {
-        "name": "Suggested product aliases",
-        "type": "string",
-        "role": "json",
-        "read": true,
-        "write": false,
-        "def": "[]"
-      },
-      "native": {}
-    },
-    {
-      "_id": "info.compatibility",
-      "type": "state",
-      "common": {
-        "name": "Compatibility diagnostics",
-        "type": "string",
-        "role": "json",
-        "read": true,
-        "write": false,
-        "def": "{}"
-      },
-      "native": {}
-    },
-    {
-      "_id": "info.compatibilityWritesToday",
-      "type": "state",
-      "common": {
-        "name": "Compatibility-test writes today",
-        "type": "number",
-        "role": "value",
-        "read": true,
-        "write": false,
-        "def": 0
-      },
-      "native": {}
-    },
-    {
-      "_id": "info.configExport",
-      "type": "state",
-      "common": {
-        "name": "Exportable ShoppingRoute configuration",
-        "type": "string",
-        "role": "json",
-        "read": true,
-        "write": false,
-        "def": "{}"
       },
       "native": {}
     },
@@ -657,10 +496,101 @@
       "native": {}
     },
     {
-      "_id": "info.feedbackReport",
+      "_id": "info.activeItems",
       "type": "state",
       "common": {
-        "name": "Privacy-safe beta feedback report",
+        "name": "Active shopping items",
+        "type": "number",
+        "role": "value",
+        "read": true,
+        "write": false,
+        "def": 0
+      },
+      "native": {}
+    },
+    {
+      "_id": "info.lastSort",
+      "type": "state",
+      "common": {
+        "name": "Last sorting run",
+        "type": "string",
+        "role": "text",
+        "read": true,
+        "write": false,
+        "def": ""
+      },
+      "native": {}
+    },
+    {
+      "_id": "info.lastError",
+      "type": "state",
+      "common": {
+        "name": "Last error",
+        "type": "string",
+        "role": "text",
+        "read": true,
+        "write": false,
+        "def": ""
+      },
+      "native": {}
+    },
+    {
+      "_id": "info.lastPlan",
+      "type": "state",
+      "common": {
+        "name": "Last sorting plan",
+        "type": "string",
+        "role": "json",
+        "read": true,
+        "write": false,
+        "def": "[]"
+      },
+      "native": {}
+    },
+    {
+      "_id": "info.unknownItems",
+      "type": "state",
+      "common": {
+        "name": "Unknown items",
+        "type": "string",
+        "role": "json",
+        "read": true,
+        "write": false,
+        "def": "[]"
+      },
+      "native": {}
+    },
+    {
+      "_id": "info.lastLearnedItems",
+      "type": "state",
+      "common": {
+        "name": "Last automatically learned items",
+        "type": "string",
+        "role": "json",
+        "read": true,
+        "write": false,
+        "def": "[]"
+      },
+      "native": {}
+    },
+    {
+      "_id": "info.writeCapability",
+      "type": "state",
+      "common": {
+        "name": "Alexa write capability",
+        "type": "string",
+        "role": "text",
+        "read": true,
+        "write": false,
+        "def": "unknown"
+      },
+      "native": {}
+    },
+    {
+      "_id": "info.compatibility",
+      "type": "state",
+      "common": {
+        "name": "Compatibility diagnostics",
         "type": "string",
         "role": "json",
         "read": true,
@@ -683,58 +613,6 @@
       "native": {}
     },
     {
-      "_id": "info.lastError",
-      "type": "state",
-      "common": {
-        "name": "Last error",
-        "type": "string",
-        "role": "text",
-        "read": true,
-        "write": false,
-        "def": ""
-      },
-      "native": {}
-    },
-    {
-      "_id": "info.lastLearnedItems",
-      "type": "state",
-      "common": {
-        "name": "Last automatically learned items",
-        "type": "string",
-        "role": "json",
-        "read": true,
-        "write": false,
-        "def": "[]"
-      },
-      "native": {}
-    },
-    {
-      "_id": "info.lastPlan",
-      "type": "state",
-      "common": {
-        "name": "Last sorting plan",
-        "type": "string",
-        "role": "json",
-        "read": true,
-        "write": false,
-        "def": "[]"
-      },
-      "native": {}
-    },
-    {
-      "_id": "info.lastSort",
-      "type": "state",
-      "common": {
-        "name": "Last sorting run",
-        "type": "string",
-        "role": "text",
-        "read": true,
-        "write": false,
-        "def": ""
-      },
-      "native": {}
-    },
-    {
       "_id": "info.localChecksToday",
       "type": "state",
       "common": {
@@ -744,19 +622,6 @@
         "read": true,
         "write": false,
         "def": 0
-      },
-      "native": {}
-    },
-    {
-      "_id": "info.marketProfiles",
-      "type": "state",
-      "common": {
-        "name": "Exportable market profiles",
-        "type": "string",
-        "role": "json",
-        "read": true,
-        "write": false,
-        "def": "[]"
       },
       "native": {}
     },
@@ -774,45 +639,6 @@
       "native": {}
     },
     {
-      "_id": "info.preview",
-      "type": "state",
-      "common": {
-        "name": "Sorting preview",
-        "type": "string",
-        "role": "json",
-        "read": true,
-        "write": false,
-        "def": "{}"
-      },
-      "native": {}
-    },
-    {
-      "_id": "info.previewText",
-      "type": "state",
-      "common": {
-        "name": "Human-readable sorting preview",
-        "type": "string",
-        "role": "text",
-        "read": true,
-        "write": false,
-        "def": ""
-      },
-      "native": {}
-    },
-    {
-      "_id": "info.reviewQueue",
-      "type": "state",
-      "common": {
-        "name": "Unknown-product review queue",
-        "type": "string",
-        "role": "json",
-        "read": true,
-        "write": false,
-        "def": "[]"
-      },
-      "native": {}
-    },
-    {
       "_id": "info.sortRunsToday",
       "type": "state",
       "common": {
@@ -826,15 +652,41 @@
       "native": {}
     },
     {
-      "_id": "info.statistics",
+      "_id": "info.alexaWritesToday",
       "type": "state",
       "common": {
-        "name": "Local shopping statistics",
-        "type": "string",
-        "role": "json",
+        "name": "Alexa value writes today",
+        "type": "number",
+        "role": "value",
         "read": true,
         "write": false,
-        "def": "{}"
+        "def": 0
+      },
+      "native": {}
+    },
+    {
+      "_id": "info.compatibilityWritesToday",
+      "type": "state",
+      "common": {
+        "name": "Compatibility-test writes today",
+        "type": "number",
+        "role": "value",
+        "read": true,
+        "write": false,
+        "def": 0
+      },
+      "native": {}
+    },
+    {
+      "_id": "info.abortedRunsToday",
+      "type": "state",
+      "common": {
+        "name": "Aborted sorting runs today",
+        "type": "number",
+        "role": "value",
+        "read": true,
+        "write": false,
+        "def": 0
       },
       "native": {}
     },
@@ -852,84 +704,6 @@
       "native": {}
     },
     {
-      "_id": "info.unknownItems",
-      "type": "state",
-      "common": {
-        "name": "Unknown items",
-        "type": "string",
-        "role": "json",
-        "read": true,
-        "write": false,
-        "def": "[]"
-      },
-      "native": {}
-    },
-    {
-      "_id": "info.updateAvailable",
-      "type": "state",
-      "common": {
-        "name": "ShoppingRoute update available",
-        "type": "boolean",
-        "role": "indicator",
-        "read": true,
-        "write": false,
-        "def": false
-      },
-      "native": {}
-    },
-    {
-      "_id": "info.versionBeta",
-      "type": "state",
-      "common": {
-        "name": "Latest npm beta version",
-        "type": "string",
-        "role": "text",
-        "read": true,
-        "write": false,
-        "def": ""
-      },
-      "native": {}
-    },
-    {
-      "_id": "info.versionCheck",
-      "type": "state",
-      "common": {
-        "name": "Last npm version check",
-        "type": "string",
-        "role": "text",
-        "read": true,
-        "write": false,
-        "def": ""
-      },
-      "native": {}
-    },
-    {
-      "_id": "info.versionInstalled",
-      "type": "state",
-      "common": {
-        "name": "Installed ShoppingRoute version",
-        "type": "string",
-        "role": "text",
-        "read": true,
-        "write": false,
-        "def": ""
-      },
-      "native": {}
-    },
-    {
-      "_id": "info.writeCapability",
-      "type": "state",
-      "common": {
-        "name": "Alexa write capability",
-        "type": "string",
-        "role": "text",
-        "read": true,
-        "write": false,
-        "def": "unknown"
-      },
-      "native": {}
-    },
-    {
       "_id": "control",
       "type": "channel",
       "common": {
@@ -938,10 +712,23 @@
       "native": {}
     },
     {
-      "_id": "control.clearTemporaryPriorityMarket",
+      "_id": "control.enabled",
       "type": "state",
       "common": {
-        "name": "Clear temporary priority market",
+        "name": "Automatic sorting enabled",
+        "type": "boolean",
+        "role": "switch.enable",
+        "read": true,
+        "write": true,
+        "def": true
+      },
+      "native": {}
+    },
+    {
+      "_id": "control.sortNow",
+      "type": "state",
+      "common": {
+        "name": "Sort now",
         "type": "boolean",
         "role": "button",
         "read": true,
@@ -964,84 +751,6 @@
       "native": {}
     },
     {
-      "_id": "control.enabled",
-      "type": "state",
-      "common": {
-        "name": "Automatic sorting enabled",
-        "type": "boolean",
-        "role": "switch.enable",
-        "read": true,
-        "write": true,
-        "def": true
-      },
-      "native": {}
-    },
-    {
-      "_id": "control.exportConfig",
-      "type": "state",
-      "common": {
-        "name": "Refresh configuration export",
-        "type": "boolean",
-        "role": "button",
-        "read": true,
-        "write": true,
-        "def": false
-      },
-      "native": {}
-    },
-    {
-      "_id": "control.importConfigJson",
-      "type": "state",
-      "common": {
-        "name": "Import ShoppingRoute configuration JSON",
-        "type": "string",
-        "role": "json",
-        "read": true,
-        "write": true,
-        "def": ""
-      },
-      "native": {}
-    },
-    {
-      "_id": "control.marketProfileImport",
-      "type": "state",
-      "common": {
-        "name": "Import ShoppingRoute market profile JSON",
-        "type": "string",
-        "role": "json",
-        "read": true,
-        "write": true,
-        "def": ""
-      },
-      "native": {}
-    },
-    {
-      "_id": "control.refreshFeedbackReport",
-      "type": "state",
-      "common": {
-        "name": "Refresh privacy-safe feedback report",
-        "type": "boolean",
-        "role": "button",
-        "read": true,
-        "write": true,
-        "def": false
-      },
-      "native": {}
-    },
-    {
-      "_id": "control.resetStatistics",
-      "type": "state",
-      "common": {
-        "name": "Reset local shopping statistics",
-        "type": "boolean",
-        "role": "button",
-        "read": true,
-        "write": true,
-        "def": false
-      },
-      "native": {}
-    },
-    {
       "_id": "control.resetTrafficStats",
       "type": "state",
       "common": {
@@ -1051,32 +760,6 @@
         "read": true,
         "write": true,
         "def": false
-      },
-      "native": {}
-    },
-    {
-      "_id": "control.sortNow",
-      "type": "state",
-      "common": {
-        "name": "Sort now",
-        "type": "boolean",
-        "role": "button",
-        "read": true,
-        "write": true,
-        "def": false
-      },
-      "native": {}
-    },
-    {
-      "_id": "control.temporaryPriorityMarket",
-      "type": "state",
-      "common": {
-        "name": "Temporary priority market",
-        "type": "string",
-        "role": "text",
-        "read": true,
-        "write": true,
-        "def": ""
       },
       "native": {}
     }

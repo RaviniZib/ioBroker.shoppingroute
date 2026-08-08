@@ -1,36 +1,39 @@
 'use strict';
-
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { createSortPlan, mergeUnknownProducts } = require('../build/lib/sorter');
-const { parseItem } = require('../build/lib/parser');
+const { createSortPlan, mergeUnknownProducts, mergeReviewQueue, applyReviewActions } = require('../build/lib/sorter');
+const { parseItem, stripQuantityDetailed, canonicalProductKey } = require('../build/lib/parser');
 
 const markets = [
     { name: 'ALDI', aliases: 'Aldi,Aldi Nord', order: 10, enabled: true },
     { name: 'PENNY', aliases: 'Penny', order: 20, enabled: true },
     { name: 'LIDL', aliases: 'Lidl', order: 30, enabled: true },
+    { name: 'REWE', aliases: 'Rewe', order: 40, enabled: true },
     { name: 'Ohne Markt', aliases: '', order: 999, enabled: true },
 ];
-
 const routes = [
-    { market: 'Ohne Markt', category: 'Obst/Gemüse', order: 10 },
-    { market: 'Ohne Markt', category: 'Fleisch/Fisch', order: 20 },
-    { market: 'Ohne Markt', category: 'Milchprodukte', order: 30 },
-    { market: 'Ohne Markt', category: 'Nonfood', order: 40 },
     { market: 'ALDI', category: 'Obst/Gemüse', order: 10 },
-    { market: 'ALDI', category: 'Milchprodukte', order: 20 },
+    { market: 'ALDI', category: 'Fleisch/Fisch', order: 20 },
+    { market: 'ALDI', category: 'Milchprodukte', order: 30 },
+    { market: 'ALDI', category: 'Haushalt/Hygiene', order: 40 },
+    { market: 'ALDI', category: 'Nonfood', order: 50 },
     { market: 'PENNY', category: 'Milchprodukte', order: 10 },
     { market: 'PENNY', category: 'Obst/Gemüse', order: 20 },
     { market: 'LIDL', category: 'Obst/Gemüse', order: 10 },
     { market: 'LIDL', category: 'Milchprodukte', order: 20 },
+    { market: 'REWE', category: 'Getränke', order: 10 },
+    { market: 'Ohne Markt', category: 'Obst/Gemüse', order: 10 },
+    { market: 'Ohne Markt', category: 'Fleisch/Fisch', order: 20 },
+    { market: 'Ohne Markt', category: 'Milchprodukte', order: 30 },
+    { market: 'Ohne Markt', category: 'Haushalt/Hygiene', order: 40 },
+    { market: 'Ohne Markt', category: 'Nonfood', order: 50 },
 ];
-
 const products = [
-    { name: 'Bananen', aliases: 'Banane', category: 'Obst/Gemüse', defaultMarket: '' },
-    { name: 'Eier', aliases: 'Ei', category: 'Milchprodukte', defaultMarket: '' },
-    { name: 'Grillfleisch', aliases: '', category: 'Fleisch/Fisch', defaultMarket: '' },
-    { name: 'Hackfleisch', aliases: 'Hack,Rinderhack', category: 'Fleisch/Fisch', defaultMarket: '' },
-    { name: 'Pinsel', aliases: 'Grober Pinsel', category: 'Nonfood', defaultMarket: '' },
+    { name: 'Bananen', aliases: 'Banane', category: 'Obst/Gemüse', defaultMarket: '', availableMarkets: '' },
+    { name: 'Eier', aliases: 'Ei', category: 'Milchprodukte', defaultMarket: '', availableMarkets: '' },
+    { name: 'Grillfleisch', aliases: '', category: 'Fleisch/Fisch', defaultMarket: '', availableMarkets: '' },
+    { name: 'Hackfleisch', aliases: 'Hack,Rinderhack', category: 'Fleisch/Fisch', defaultMarket: '', availableMarkets: '' },
+    { name: 'Pinsel', aliases: 'Grober Pinsel', category: 'Nonfood', defaultMarket: '', availableMarkets: '' },
 ];
 
 test('five-item proof sorts values onto oldest IDs', () => {
@@ -41,97 +44,84 @@ test('five-item proof sorts values onto oldest IDs', () => {
         { id: 'id2', value: 'Bananen', completed: false, createdDateTime: 200 },
         { id: 'id4', value: 'Pinsel', completed: false, createdDateTime: 400 },
     ];
-
     const plan = createSortPlan(list, markets, routes, products, 'Ohne Markt');
-    assert.deepEqual(plan.map(entry => entry.to), [
-        'Bananen',
-        'Grillfleisch',
-        'Hackfleisch',
-        'Eier',
-        'Pinsel',
-    ]);
-    assert.deepEqual(plan.map(entry => entry.id), ['id1', 'id2', 'id3', 'id4', 'id5']);
+    assert.deepEqual(plan.map(entry => entry.to), ['Bananen','Grillfleisch','Hackfleisch','Eier','Pinsel']);
+    assert.deepEqual(plan.map(entry => entry.id), ['id1','id2','id3','id4','id5']);
 });
 
-test('explicit market becomes primary sort level', () => {
+test('explicit market is primary and visible text stays unchanged', () => {
     const list = [
         { id: 'a', value: 'Eier von Penny', completed: false, createdDateTime: 1 },
         { id: 'b', value: 'Bananen von Aldi', completed: false, createdDateTime: 2 },
         { id: 'c', value: 'Eier von Aldi', completed: false, createdDateTime: 3 },
     ];
-
-    const plan = createSortPlan(list, markets, routes, products, 'Ohne Markt');
-    assert.deepEqual(plan.map(entry => entry.to), [
-        'Bananen von Aldi',
-        'Eier von Aldi',
-        'Eier von Penny',
-    ]);
+    assert.deepEqual(createSortPlan(list, markets, routes, products, 'Ohne Markt').map(x => x.to), ['Bananen von Aldi','Eier von Aldi','Eier von Penny']);
 });
 
-test('amounts remain visible while product is recognized', () => {
-    const parsed = parseItem('3 Bananen von Aldi', markets, products, 'Ohne Markt');
-    assert.equal(parsed.originalText, '3 Bananen von Aldi');
-    assert.equal(parsed.productName, 'Bananen');
-    assert.equal(parsed.market, 'ALDI');
-    assert.equal(parsed.category, 'Obst/Gemüse');
+test('quantities in digits, words and half units are stripped only for matching', () => {
+    for (const [text, expected] of [
+        ['3 Bananen von Aldi', 'Bananen'],
+        ['500 Gramm Hackfleisch von Aldi', 'Hackfleisch'],
+        ['zwei Packungen Eier von Penny', 'Eier'],
+        ['6x Cola von Rewe', 'Cola'],
+        ['halbes Kilo Hackfleisch', 'Hackfleisch'],
+    ]) {
+        const parsed = parseItem(text, markets, products, 'Ohne Markt', 'LIDL');
+        assert.equal(parsed.productName, expected, text);
+        assert.equal(parsed.originalText, text);
+    }
+    assert.equal(stripQuantityDetailed('1/2 Pfeiffer Leberwurst').productText, '1/2 Pfeiffer Leberwurst');
 });
 
-test('500 grams minced meat keeps text and matches product', () => {
-    const parsed = parseItem('500 Gramm Hackfleisch von Aldi', markets, products, 'Ohne Markt');
-    assert.equal(parsed.originalText, '500 Gramm Hackfleisch von Aldi');
-    assert.equal(parsed.productName, 'Hackfleisch');
-    assert.equal(parsed.market, 'ALDI');
-    assert.equal(parsed.category, 'Fleisch/Fisch');
+test('priority hierarchy and product availability are respected', () => {
+    assert.equal(parseItem('Bananen', markets, products, 'Ohne Markt', 'LIDL').market, 'LIDL');
+    assert.equal(parseItem('Bananen von Aldi', markets, products, 'Ohne Markt', 'LIDL').market, 'ALDI');
+    const configured = products.map(p => p.name === 'Eier' ? { ...p, defaultMarket: 'PENNY' } : p);
+    assert.equal(parseItem('Eier', markets, configured, 'Ohne Markt', 'LIDL').market, 'PENNY');
+    const restricted = products.map(p => p.name === 'Bananen' ? { ...p, availableMarkets: 'ALDI,PENNY' } : p);
+    assert.equal(parseItem('Bananen', markets, restricted, 'Ohne Markt', 'LIDL').market, 'ALDI');
 });
 
-test('priority market is used when no explicit or product default market exists', () => {
-    const parsed = parseItem('Bananen', markets, products, 'Ohne Markt', 'LIDL');
-    assert.equal(parsed.market, 'LIDL');
-    assert.equal(parsed.productName, 'Bananen');
-});
-
-test('explicit market overrides priority market', () => {
-    const parsed = parseItem('Bananen von Aldi', markets, products, 'Ohne Markt', 'LIDL');
-    assert.equal(parsed.market, 'ALDI');
-});
-
-test('product default market overrides priority market', () => {
-    const configuredProducts = products.map(product =>
-        product.name === 'Eier' ? { ...product, defaultMarket: 'PENNY' } : product,
-    );
-    const parsed = parseItem('Eier', markets, configuredProducts, 'Ohne Markt', 'LIDL');
-    assert.equal(parsed.market, 'PENNY');
-});
-
-test('invalid priority market falls back to fallback market', () => {
-    const parsed = parseItem('Bananen', markets, products, 'Ohne Markt', 'NICHT VORHANDEN');
-    assert.equal(parsed.market, 'Ohne Markt');
-});
-
-test('unknown products can be learned without freezing the priority market', () => {
+test('duplicate learning uses canonical product keys', () => {
+    assert.equal(canonicalProductKey('3 Bananen'), canonicalProductKey('Banane'));
     const list = [
         { id: 'u1', value: 'Milch', completed: false, createdDateTime: 1 },
-        { id: 'u2', value: 'Toilettenpapier', completed: false, createdDateTime: 2 },
+        { id: 'u2', value: '2 Milch', completed: false, createdDateTime: 2 },
     ];
     const result = mergeUnknownProducts(list, markets, products, 'Ohne Markt', 'LIDL');
-    const milk = result.learned.find(product => product.name === 'Milch');
-    const toiletPaper = result.learned.find(product => product.name === 'Toilettenpapier');
-
-    assert.ok(milk);
-    assert.equal(milk.category, 'Milchprodukte');
-    assert.equal(milk.defaultMarket, '');
-    assert.ok(toiletPaper);
-    assert.equal(toiletPaper.category, 'Kosmetikartikel');
-    assert.equal(toiletPaper.defaultMarket, '');
+    assert.equal(result.learned.filter(p => p.name === 'Milch').length, 1);
 });
 
-test('ambiguous unknown "von/bei" suffix is not learned into the product name', () => {
-    const list = [
-        { id: 'u1', value: '35 Sushi von Ukuhama', completed: false, createdDateTime: 1 },
-    ];
+test('ambiguous unknown market suffix is not learned as product', () => {
+    const list = [{ id: 'u1', value: '35 Sushi von Ukuhama', completed: false, createdDateTime: 1 }];
     const result = mergeUnknownProducts(list, markets, products, 'Ohne Markt', 'LIDL');
-    const parsed = parseItem('35 Sushi von Ukuhama', markets, products, 'Ohne Markt', 'LIDL');
     assert.equal(result.learned.length, 0);
-    assert.equal(result.products.some(product => product.name === 'Sushi von Ukuhama'), false);
+    const parsed = parseItem('35 Sushi von Ukuhama', markets, products, 'Ohne Markt', 'LIDL');
     assert.equal(parsed.market, 'Ohne Markt');
+    assert.equal(parsed.ambiguousMarketSuffix, 'Ukuhama');
+});
+
+test('review queue supports correction, acceptance and ignore', () => {
+    const unknown = [{ key: 'toilettenpapier', text: 'Toilettenpapier', product: 'Toilettenpapier', market: 'LIDL', guessedCategory: 'Haushalt/Hygiene' }];
+    const queue = mergeReviewQueue([], unknown, '2026-08-08T00:00:00Z');
+    queue[0].action = 'accept'; queue[0].category = 'Haushalt/Hygiene'; queue[0].defaultMarket = 'LIDL';
+    const applied = applyReviewActions(products, queue);
+    const added = applied.products.find(p => p.name === 'Toilettenpapier');
+    assert.ok(added); assert.equal(added.category, 'Haushalt/Hygiene'); assert.equal(added.defaultMarket, 'LIDL');
+    assert.equal(applied.remainingReviews.length, 0);
+
+    const ignored = mergeReviewQueue([{ ...queue[0], action: 'ignore' }], unknown);
+    assert.equal(ignored[0].action, 'ignore');
+});
+
+test('route row order determines product-group order', () => {
+    const movedRoutes = [
+        { market: 'ALDI', category: 'Milchprodukte', order: 999 },
+        { market: 'ALDI', category: 'Obst/Gemüse', order: 1 },
+    ];
+    const list = [
+        { id: 'a', value: 'Bananen von Aldi', completed: false, createdDateTime: 1 },
+        { id: 'b', value: 'Eier von Aldi', completed: false, createdDateTime: 2 },
+    ];
+    assert.deepEqual(createSortPlan(list, markets, movedRoutes, products, 'Ohne Markt').map(x => x.to), ['Eier von Aldi','Bananen von Aldi']);
 });

@@ -23,7 +23,14 @@ The adapter itself does **not** patch another adapter or its node_modules. A pub
 The list in the Alexa app must be configured to **Oldest to newest**. Alphabetical sorting overrides the positional effect of redistributing values across existing IDs.
 ## Beta compatibility guard
 
-`0.1.0-beta.2` does not patch foreign modules. It detects the known malformed query where possible and blocks real Alexa sorting writes if compatibility is unsafe or unknown. An explicit same-value compatibility test is available through `control.compatibilityTest`.
+`0.2.0-beta.1` does not patch foreign modules. It detects the known malformed query where possible and blocks real Alexa sorting writes if compatibility is unsafe or unknown. An explicit same-value compatibility test is available through `control.compatibilityTest`.
 
 This is a beta safety mechanism, not a replacement for an upstream Alexa2/alexa-remote2 fix.
 
+
+
+## GitHub URL vs npm beta
+
+Installing from the GitHub repository URL installs the version committed to the repository branch/commit. Publishing a newer beta to npm does not update GitHub automatically. Therefore the GitHub URL can legitimately install an older build until the newer source is committed and pushed.
+
+The ioBroker Admin card can also show a generic “not maintained”/“nicht gewartet” value while ShoppingRoute is not part of an official ioBroker repository. ShoppingRoute exposes its own installed/beta version status in the Diagnostics tab; it cannot overwrite that repository-level Admin card field.

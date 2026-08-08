@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.2.0-beta.1 (2026-08-08)
+
+- Added multi-list support with per-list priority markets.
+- Added temporary priority market for one-off shopping trips.
+- Added unknown-product review queue with accept/change/ignore workflow.
+- Improved quantity parsing, duplicate detection, category suggestions and alias suggestions.
+- Added product availability across multiple markets.
+- Walking-route order now follows the table row order and is automatically reindexed.
+- Added sorting preview in JSON and human-readable form.
+- Added API Safe Mode with write-rate limiting, batching and exponential retry backoff.
+- Added local shopping statistics without telemetry.
+- Added configuration export/import and shareable market profiles.
+- Added npm beta version check and privacy-safe feedback report.
+- Improved adapter branding and German card title to `ShoppingRoute`.
+- Added explicit documentation for ioBroker Admin's generic `not maintained` display while the adapter is outside the official repository.
+- Alexa safety invariant remains unchanged: no `#New`, no `#delete`, no automatic `completed` writes.
+
+## 0.1.0-beta.3 (2026-08-08)
+
+- Added daily API/traffic operation counters for local checks, planned changes, real sorting runs, Alexa value writes, compatibility-test writes and safely aborted runs.
+- Added `info.traffic` consolidated diagnostics and `control.resetTrafficStats`.
+- Added automatic daily counter reset.
+- Added closed-beta license/terms and marked the development package private to prevent accidental publishing. The separately generated closed-beta tarball is publishable with an npm beta tag.
+- Added source-free closed-beta packaging workflow with JavaScript obfuscation.
+- Added German closed-beta installation guide and tester invitation draft.
+- Updated beta diagnostics/version strings to beta.3.
+
 ## 0.1.0-beta.2 (2026-08-07)
 
 - Added the official ShoppingRoute logo and ioBroker adapter icon.

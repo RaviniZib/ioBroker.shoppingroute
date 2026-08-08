@@ -11,16 +11,8 @@
         "betaWarning": {
           "type": "staticText",
           "text": {
-            "en": "BETA 0.1.0-beta.1: Start with Dry-Run enabled. Before real Alexa writes, check info.writeCapability. If it is unknown, trigger shoppingroute.0.control.compatibilityTest once with at least one active list item.",
-            "de": "BETA 0.1.0-beta.1: Zuerst mit aktiviertem Dry-Run testen. Vor echten Alexa-Schreibzugriffen info.writeCapability prüfen. Steht dort unknown, einmal shoppingroute.0.control.compatibilityTest mit mindestens einem aktiven Listeneintrag auslösen."
-          }
-        },
-        "warning": {
-          "type": "staticText",
-          "newLine": true,
-          "text": {
-            "en": "IMPORTANT: Set the Alexa app shopping list to 'Oldest to newest'. This adapter never creates, deletes or completes list items; it only redistributes the visible value texts across existing active item IDs.",
-            "de": "WICHTIG: Die Einkaufsliste in der Alexa-App auf 'Älteste bis neueste' stellen. Dieser Adapter legt niemals Listeneinträge an, löscht keine und hakt keine ab; er verteilt ausschließlich die sichtbaren value-Texte auf vorhandene aktive IDs."
+            "en": "BETA 0.2.0-beta.1. Start with Dry-Run enabled. ShoppingRoute never creates, deletes or completes Alexa list items; it only redistributes visible value texts across existing active IDs.",
+            "de": "BETA 0.2.0-beta.1. Zuerst mit Dry-Run testen. ShoppingRoute legt niemals Alexa-Listeneinträge an, löscht keine und hakt keine ab; es verteilt ausschließlich sichtbare value-Texte auf vorhandene aktive IDs."
           }
         },
         "alexaInstance": {
@@ -29,22 +21,7 @@
             "en": "Alexa2 instance",
             "de": "Alexa2-Instanz"
           },
-          "help": {
-            "en": "Example: alexa2.0",
-            "de": "Beispiel: alexa2.0"
-          },
           "newLine": true
-        },
-        "listName": {
-          "type": "text",
-          "label": {
-            "en": "Alexa list name",
-            "de": "Alexa-Listenname"
-          },
-          "help": {
-            "en": "Usually SHOP",
-            "de": "Normalerweise SHOP"
-          }
         },
         "dryRun": {
           "type": "checkbox",
@@ -54,35 +31,43 @@
           },
           "newLine": true
         },
-        "autoLearnProducts": {
+        "learningMode": {
+          "type": "select",
+          "label": {
+            "en": "Unknown-product handling",
+            "de": "Umgang mit unbekannten Artikeln"
+          },
+          "options": [
+            {
+              "value": "review",
+              "label": {
+                "en": "Review first",
+                "de": "Erst prüfen"
+              }
+            },
+            {
+              "value": "automatic",
+              "label": {
+                "en": "Learn automatically",
+                "de": "Automatisch lernen"
+              }
+            },
+            {
+              "value": "off",
+              "label": {
+                "en": "Do not learn",
+                "de": "Nicht lernen"
+              }
+            }
+          ],
+          "newLine": true
+        },
+        "autoAliasSuggestions": {
           "type": "checkbox",
           "label": {
-            "en": "Automatically learn unknown products",
-            "de": "Unbekannte Artikel automatisch lernen"
-          },
-          "help": {
-            "en": "Adds newly recognized products to the product catalogue. Dry-run only blocks Alexa writes; learning remains active.",
-            "de": "Übernimmt neu erkannte Artikel in den Artikelstamm. Dry-Run sperrt nur Alexa-Schreibzugriffe; das Lernen bleibt aktiv."
-          },
-          "default": true
-        },
-        "debounceMs": {
-          "type": "number",
-          "label": {
-            "en": "Wait after list changes (ms)",
-            "de": "Wartezeit nach Listenänderungen (ms)"
-          },
-          "min": 250,
-          "max": 30000
-        },
-        "writePauseMs": {
-          "type": "number",
-          "label": {
-            "en": "Pause between value updates (ms)",
-            "de": "Pause zwischen value-Updates (ms)"
-          },
-          "min": 250,
-          "max": 10000
+            "en": "Suggest aliases automatically",
+            "de": "Aliase automatisch vorschlagen"
+          }
         },
         "fallbackMarket": {
           "type": "selectSendTo",
@@ -93,11 +78,7 @@
             "en": "Fallback market",
             "de": "Fallback-Markt"
           },
-          "newLine": true,
-          "help": {
-            "en": "Used only when no explicit market, product default or priority market applies. The list is built from active markets.",
-            "de": "Wird nur verwendet, wenn weder ein ausdrücklich genannter Markt noch Artikel-Standardmarkt noch Prioritätsmarkt greift. Die Auswahl wird aus den aktiven Märkten erzeugt."
-          }
+          "newLine": true
         },
         "priorityMarket": {
           "type": "selectSendTo",
@@ -107,12 +88,113 @@
           "label": {
             "en": "Priority market",
             "de": "Prioritätsmarkt"
-          },
-          "help": {
-            "en": "Optional. Products without an explicit or product-specific default market are assigned here. The list is built from active markets; choose the empty entry for no priority market.",
-            "de": "Optional. Artikel ohne ausdrücklich genannten oder artikelbezogenen Standardmarkt werden diesem Markt zugeordnet. Die Auswahl wird aus den aktiven Märkten erzeugt; der leere Eintrag bedeutet kein Prioritätsmarkt."
+          }
+        },
+        "temporaryMarketHelp": {
+          "type": "staticText",
+          "newLine": true,
+          "text": {
+            "en": "For a one-off shopping trip, write a market name to shoppingroute.0.control.temporaryPriorityMarket. It overrides list and global priority markets until control.clearTemporaryPriorityMarket is triggered.",
+            "de": "Für einen einzelnen Einkauf kann unter shoppingroute.0.control.temporaryPriorityMarket vorübergehend ein Markt gesetzt werden. Er übersteuert Listen- und globalen Prioritätsmarkt, bis control.clearTemporaryPriorityMarket ausgelöst wird."
+          }
+        },
+        "temporaryMarketState": {
+          "type": "state",
+          "oid": "control.temporaryPriorityMarket",
+          "control": "select",
+          "controlled": true,
+          "label": {
+            "en": "Temporary priority market",
+            "de": "Temporärer Prioritätsmarkt"
           },
           "newLine": true
+        },
+        "clearTemporaryMarket": {
+          "type": "setState",
+          "id": "control.clearTemporaryPriorityMarket",
+          "val": true,
+          "ack": false,
+          "label": {
+            "en": "Clear temporary market",
+            "de": "Temporären Markt löschen"
+          },
+          "variant": "outlined"
+        },
+        "debounceMs": {
+          "type": "number",
+          "label": {
+            "en": "Collect list changes for (ms)",
+            "de": "Listenänderungen sammeln für (ms)"
+          },
+          "min": 250,
+          "max": 60000,
+          "newLine": true
+        },
+        "writePauseMs": {
+          "type": "number",
+          "label": {
+            "en": "Pause between Alexa value writes (ms)",
+            "de": "Pause zwischen Alexa-value-Schreibzugriffen (ms)"
+          },
+          "min": 250,
+          "max": 10000
+        }
+      }
+    },
+    "listsTab": {
+      "type": "panel",
+      "label": {
+        "en": "Lists",
+        "de": "Listen"
+      },
+      "items": {
+        "listsHelp": {
+          "type": "staticText",
+          "text": {
+            "en": "ShoppingRoute can manage several Alexa lists. Each list may have its own priority market. The Alexa app must use 'Oldest to newest' for every managed list.",
+            "de": "ShoppingRoute kann mehrere Alexa-Listen verwalten. Jede Liste kann einen eigenen Prioritätsmarkt erhalten. In der Alexa-App muss jede verwaltete Liste auf „Älteste bis neueste“ stehen."
+          }
+        },
+        "lists": {
+          "type": "table",
+          "label": {
+            "en": "Managed Alexa lists",
+            "de": "Verwaltete Alexa-Listen"
+          },
+          "items": [
+            {
+              "type": "checkbox",
+              "attr": "enabled",
+              "title": {
+                "en": "Active",
+                "de": "Aktiv"
+              },
+              "width": "15%"
+            },
+            {
+              "type": "text",
+              "attr": "name",
+              "title": {
+                "en": "List name",
+                "de": "Listenname"
+              },
+              "width": "40%",
+              "sort": true
+            },
+            {
+              "type": "selectSendTo",
+              "attr": "priorityMarket",
+              "command": "getMarketsOptional",
+              "manual": false,
+              "noTranslation": true,
+              "title": {
+                "en": "List priority market",
+                "de": "Listen-Prioritätsmarkt"
+              },
+              "width": "45%",
+              "sort": true
+            }
+          ]
         }
       }
     },
@@ -126,8 +208,8 @@
         "marketsHelp": {
           "type": "staticText",
           "text": {
-            "en": "Market order is the main sorting level. Aliases are comma-separated and are recognized in phrases such as 'bananas from Aldi' or 'bananas at Aldi'.",
-            "de": "Die Marktreihenfolge ist die oberste Sortierebene. Aliase werden kommagetrennt angegeben und z. B. in 'Bananen von Aldi' oder 'Bananen bei Aldi' erkannt."
+            "en": "Market order is the top sorting level. Aliases are comma-separated. Common variants for ALDI, LIDL, REWE and PENNY are additionally recognized automatically.",
+            "de": "Die Marktreihenfolge ist die oberste Sortierebene. Aliase werden kommagetrennt angegeben. Häufige Varianten für ALDI, LIDL, REWE und PENNY werden zusätzlich automatisch erkannt."
           }
         },
         "markets": {
@@ -153,7 +235,8 @@
                 "en": "Order",
                 "de": "Reihenfolge"
               },
-              "width": "12%"
+              "width": "12%",
+              "sort": true
             },
             {
               "type": "text",
@@ -162,7 +245,8 @@
                 "en": "Market",
                 "de": "Markt"
               },
-              "width": "28%"
+              "width": "28%",
+              "sort": true
             },
             {
               "type": "text",
@@ -187,8 +271,8 @@
         "productGroupsHelp": {
           "type": "staticText",
           "text": {
-            "en": "Maintain the product groups used for product assignments and store walking routes here. After adding or renaming a product group, save the configuration so the drop-down lists are refreshed.",
-            "de": "Hier werden die Produktgruppen gepflegt, die bei Artikeln und Laufwegen ausgewählt werden können. Nach dem Anlegen oder Umbenennen einer Produktgruppe die Konfiguration speichern, damit die Pulldown-Listen aktualisiert werden."
+            "en": "Central list for all product-group drop-downs. Drop-down values are alphabetically sorted.",
+            "de": "Zentrale Liste für alle Produktgruppen-Pulldowns. Die Pulldown-Werte werden alphabetisch sortiert."
           }
         },
         "productGroups": {
@@ -205,7 +289,8 @@
                 "en": "Product group",
                 "de": "Produktgruppe"
               },
-              "width": "100%"
+              "width": "100%",
+              "sort": true
             }
           ]
         }
@@ -221,15 +306,15 @@
         "routesHelp": {
           "type": "staticText",
           "text": {
-            "en": "Define a separate category order for every market. Lower numbers appear earlier in the shopping route.",
-            "de": "Für jeden Markt kann eine eigene Kategorienreihenfolge definiert werden. Kleine Zahlen erscheinen im Laufweg zuerst."
+            "en": "The row order within each market is the shopping route. Move rows with the table arrows (or drag them when supported by your Admin version). ShoppingRoute reindexes route numbers automatically after saving.",
+            "de": "Die Zeilenreihenfolge innerhalb eines Marktes ist der Laufweg. Zeilen mit den Tabellenpfeilen verschieben (oder per Drag & Drop, wenn die Admin-Version dies unterstützt). ShoppingRoute nummeriert die Reihenfolge nach dem Speichern automatisch neu."
           }
         },
         "routes": {
           "type": "table",
           "label": {
-            "en": "Market/category order",
-            "de": "Markt-/Kategorienreihenfolge"
+            "en": "Market / product-group route",
+            "de": "Markt-/Produktgruppen-Laufweg"
           },
           "items": [
             {
@@ -242,7 +327,7 @@
                 "en": "Market",
                 "de": "Markt"
               },
-              "width": "35%",
+              "width": "40%",
               "sort": true
             },
             {
@@ -263,10 +348,10 @@
               "type": "number",
               "attr": "order",
               "title": {
-                "en": "Order",
-                "de": "Reihenfolge"
+                "en": "Auto order",
+                "de": "Auto-Reihenfolge"
               },
-              "width": "20%"
+              "width": "15%"
             }
           ]
         }
@@ -282,8 +367,8 @@
         "productsHelp": {
           "type": "staticText",
           "text": {
-            "en": "The visible Alexa text is never replaced with category markers. Amounts remain visible unchanged. Product aliases are comma-separated. New unknown products can be learned automatically; the priority market is not stored as a permanent product default. The Product, Product group and Default market columns are sortable; lists and drop-downs are shown alphabetically.",
-            "de": "Der sichtbare Alexa-Text bekommt keine Kategorienummern oder Marker. Mengen bleiben unverändert sichtbar. Artikel-Aliase werden kommagetrennt angegeben. Neue unbekannte Artikel können automatisch in den Artikelstamm übernommen werden; der Prioritätsmarkt wird dabei nicht als fester Standardmarkt gespeichert. Die Spalten Artikel, Produktgruppe und Standardmarkt sind sortierbar; Listen und Pulldowns werden alphabetisch angezeigt."
+            "en": "Click Product, Product group or Default market headers to sort. The catalogue itself is stored alphabetically, so equal groups/markets stay alphabetic. Available markets are comma-separated; the default market is the preferred exception to global/list priorities.",
+            "de": "Über die Spaltenköpfe Artikel, Produktgruppe oder Standardmarkt sortieren. Der Artikelstamm wird grundsätzlich alphabetisch gespeichert, dadurch bleiben gleiche Gruppen/Märkte innerhalb der Sortierung alphabetisch. Verfügbare Märkte werden kommagetrennt angegeben; der Standardmarkt ist die bevorzugte Ausnahme von globalen/Listen-Prioritäten."
           }
         },
         "products": {
@@ -300,7 +385,7 @@
                 "en": "Product",
                 "de": "Artikel"
               },
-              "width": "25%",
+              "width": "20%",
               "sort": true
             },
             {
@@ -310,7 +395,7 @@
                 "en": "Aliases",
                 "de": "Aliase"
               },
-              "width": "25%"
+              "width": "20%"
             },
             {
               "type": "selectSendTo",
@@ -323,7 +408,7 @@
                 "en": "Product group",
                 "de": "Produktgruppe"
               },
-              "width": "25%",
+              "width": "20%",
               "sort": true
             },
             {
@@ -336,10 +421,273 @@
                 "en": "Default market",
                 "de": "Standardmarkt"
               },
-              "width": "25%",
+              "width": "18%",
               "sort": true
+            },
+            {
+              "type": "text",
+              "attr": "availableMarkets",
+              "title": {
+                "en": "Available markets",
+                "de": "Verfügbare Märkte"
+              },
+              "width": "22%"
             }
           ]
+        }
+      }
+    },
+    "reviewTab": {
+      "type": "panel",
+      "label": {
+        "en": "Review",
+        "de": "Prüfliste"
+      },
+      "items": {
+        "reviewHelp": {
+          "type": "staticText",
+          "text": {
+            "en": "Unknown products appear here in review mode. Correct product, product group, default market or aliases, choose Accept or Ignore, then save. Accepted entries are moved into the product catalogue after restart.",
+            "de": "Im Prüfmodus erscheinen unbekannte Artikel hier. Artikelname, Produktgruppe, Standardmarkt oder Aliase korrigieren, dann Übernehmen oder Ignorieren wählen und speichern. Übernommene Einträge wandern nach dem Neustart in den Artikelstamm."
+          }
+        },
+        "reviewItems": {
+          "type": "table",
+          "label": {
+            "en": "Unknown products",
+            "de": "Unbekannte Artikel prüfen"
+          },
+          "items": [
+            {
+              "type": "text",
+              "attr": "product",
+              "title": {
+                "en": "Product",
+                "de": "Artikel"
+              },
+              "width": "18%",
+              "sort": true
+            },
+            {
+              "type": "text",
+              "attr": "text",
+              "title": {
+                "en": "Alexa text",
+                "de": "Alexa-Text"
+              },
+              "width": "22%"
+            },
+            {
+              "type": "selectSendTo",
+              "attr": "category",
+              "command": "getProductGroups",
+              "manual": false,
+              "noTranslation": true,
+              "title": {
+                "en": "Product group",
+                "de": "Produktgruppe"
+              },
+              "width": "18%",
+              "sort": true
+            },
+            {
+              "type": "selectSendTo",
+              "attr": "defaultMarket",
+              "command": "getMarketsOptional",
+              "manual": false,
+              "noTranslation": true,
+              "title": {
+                "en": "Default market",
+                "de": "Standardmarkt"
+              },
+              "width": "16%",
+              "sort": true
+            },
+            {
+              "type": "text",
+              "attr": "aliases",
+              "title": {
+                "en": "Aliases",
+                "de": "Aliase"
+              },
+              "width": "14%"
+            },
+            {
+              "type": "select",
+              "attr": "action",
+              "title": {
+                "en": "Action",
+                "de": "Aktion"
+              },
+              "width": "12%",
+              "options": [
+                {
+                  "value": "pending",
+                  "label": {
+                    "en": "Pending",
+                    "de": "Offen"
+                  }
+                },
+                {
+                  "value": "accept",
+                  "label": {
+                    "en": "Accept",
+                    "de": "Übernehmen"
+                  }
+                },
+                {
+                  "value": "ignore",
+                  "label": {
+                    "en": "Ignore",
+                    "de": "Ignorieren"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "apiTab": {
+      "type": "panel",
+      "label": {
+        "en": "API protection",
+        "de": "API-Schutz"
+      },
+      "items": {
+        "apiHelp": {
+          "type": "staticText",
+          "text": {
+            "en": "API Safe Mode limits Alexa write frequency, groups large sorts into batches and retries temporary write errors with exponential backoff. It protects against unnecessary bursts; it does not poll Amazon.",
+            "de": "Der API-Schonmodus begrenzt Alexa-Schreibzugriffe, teilt große Sortierungen in Blöcke und wiederholt vorübergehende Schreibfehler mit wachsender Pause. Er schützt vor unnötigen Zugriffsspitzen; ShoppingRoute pollt Amazon nicht."
+          }
+        },
+        "apiSafeMode": {
+          "type": "checkbox",
+          "label": {
+            "en": "Enable API Safe Mode",
+            "de": "API-Schonmodus aktivieren"
+          },
+          "newLine": true
+        },
+        "maxWritesPerMinute": {
+          "type": "number",
+          "label": {
+            "en": "Maximum writes per minute",
+            "de": "Maximale Schreibzugriffe pro Minute"
+          },
+          "min": 1,
+          "max": 120
+        },
+        "batchSize": {
+          "type": "number",
+          "label": {
+            "en": "Writes per batch",
+            "de": "Schreibzugriffe pro Block"
+          },
+          "min": 1,
+          "max": 100,
+          "newLine": true
+        },
+        "batchPauseMs": {
+          "type": "number",
+          "label": {
+            "en": "Pause between batches (ms)",
+            "de": "Pause zwischen Blöcken (ms)"
+          },
+          "min": 0,
+          "max": 60000
+        },
+        "maxWriteRetries": {
+          "type": "number",
+          "label": {
+            "en": "Maximum retries",
+            "de": "Maximale Wiederholungen"
+          },
+          "min": 0,
+          "max": 5,
+          "newLine": true
+        },
+        "retryBaseMs": {
+          "type": "number",
+          "label": {
+            "en": "Retry base delay (ms)",
+            "de": "Grundpause für Wiederholungen (ms)"
+          },
+          "min": 250,
+          "max": 30000
+        }
+      }
+    },
+    "transferTab": {
+      "type": "panel",
+      "label": {
+        "en": "Backup / Sharing",
+        "de": "Sicherung / Teilen"
+      },
+      "items": {
+        "backupHelp": {
+          "type": "staticText",
+          "text": {
+            "en": "Configuration export is available in info.configExport. Paste an export into control.importConfigJson to restore it. Market-only profiles are in info.marketProfiles and can be imported through control.marketProfileImport. This allows store routes to be shared without sharing the adapter source code.",
+            "de": "Die komplette Konfigurationssicherung steht in info.configExport. Zum Wiederherstellen den Export in control.importConfigJson schreiben. Einzelne Marktprofile stehen in info.marketProfiles und werden über control.marketProfileImport importiert. So können Laufwege geteilt werden, ohne den Adapter-Quellcode zu teilen."
+          }
+        },
+        "refreshExport": {
+          "type": "setState",
+          "id": "control.exportConfig",
+          "val": true,
+          "ack": false,
+          "label": {
+            "en": "Refresh configuration export",
+            "de": "Konfigurations-Export aktualisieren"
+          },
+          "variant": "outlined",
+          "newLine": true
+        },
+        "configExportState": {
+          "type": "state",
+          "oid": "info.configExport",
+          "control": "text",
+          "controlled": false,
+          "label": {
+            "en": "Configuration export JSON",
+            "de": "Konfigurations-Export JSON"
+          },
+          "newLine": true
+        },
+        "configImportState": {
+          "type": "state",
+          "oid": "control.importConfigJson",
+          "control": "input",
+          "controlled": true,
+          "label": {
+            "en": "Paste configuration JSON to import",
+            "de": "Konfigurations-JSON zum Import einfügen"
+          },
+          "newLine": true
+        },
+        "marketProfilesState": {
+          "type": "state",
+          "oid": "info.marketProfiles",
+          "control": "text",
+          "controlled": false,
+          "label": {
+            "en": "Market profiles JSON",
+            "de": "Marktprofile JSON"
+          },
+          "newLine": true
+        },
+        "marketProfileImportState": {
+          "type": "state",
+          "oid": "control.marketProfileImport",
+          "control": "input",
+          "controlled": true,
+          "label": {
+            "en": "Paste one market profile JSON",
+            "de": "Ein Marktprofil-JSON zum Import einfügen"
+          },
+          "newLine": true
         }
       }
     },
@@ -350,26 +698,101 @@
         "de": "Diagnose"
       },
       "items": {
-        "betaDiagnostics": {
+        "versionInfo": {
           "type": "staticText",
           "text": {
-            "en": "Beta diagnostics are collected in shoppingroute.0.info.compatibility. info.writeCapability shows whether real Alexa value writes are allowed: source-ok or live-ok = allowed; known-bug, live-failed or unknown = blocked. Dry-Run remains usable in every case.",
-            "de": "Die Beta-Diagnose wird gesammelt in shoppingroute.0.info.compatibility abgelegt. info.writeCapability zeigt, ob echte Alexa-value-Schreibzugriffe freigegeben sind: source-ok oder live-ok = freigegeben; known-bug, live-failed oder unknown = blockiert. Dry-Run bleibt in jedem Fall nutzbar."
+            "en": "Version information is exposed through info.versionInstalled, info.versionBeta, info.updateAvailable and info.versionCheck. Note: ioBroker Admin may show 'not maintained' as the available version while ShoppingRoute is not yet in the official ioBroker repository; ShoppingRoute cannot override that generic Admin card itself.",
+            "de": "Versionsinformationen stehen unter info.versionInstalled, info.versionBeta, info.updateAvailable und info.versionCheck. Hinweis: Solange ShoppingRoute noch nicht im offiziellen ioBroker-Repository geführt wird, kann ioBroker Admin bei „Verfügbare Version“ generisch „nicht gewartet“ anzeigen; diese Kartenanzeige kann der Adapter selbst nicht überschreiben."
           }
         },
-        "compatibilityTestHelp": {
+        "previewHelp": {
           "type": "staticText",
+          "newLine": true,
           "text": {
-            "en": "Live compatibility test: with at least one active shopping-list item, set shoppingroute.0.control.compatibilityTest to true. The adapter writes the SAME visible value once and waits for Alexa2 to acknowledge it. It does not create, delete, complete or visibly rename an item. The result is stored in info.lastCompatibilityTest.",
-            "de": "Live-Kompatibilitätstest: Bei mindestens einem aktiven Einkaufslisteneintrag shoppingroute.0.control.compatibilityTest auf true setzen. Der Adapter schreibt einmal denselben sichtbaren value-Text und wartet auf die Bestätigung von Alexa2. Es wird kein Eintrag angelegt, gelöscht, abgehakt oder sichtbar umbenannt. Das Ergebnis steht in info.lastCompatibilityTest."
+            "en": "Sort preview: info.preview and info.previewText show current and target order before writes. Statistics stay local in info.statistics. API counters are in info.traffic.",
+            "de": "Sortiervorschau: info.preview und info.previewText zeigen aktuelle und geplante Reihenfolge vor Schreibzugriffen. Die Einkaufsstatistik bleibt lokal in info.statistics. API-Zähler stehen in info.traffic."
           }
         },
-        "diagnostics": {
+        "feedbackHelp": {
           "type": "staticText",
+          "newLine": true,
           "text": {
-            "en": "Further runtime diagnostics: info.connection, info.activeItems, info.lastSort, info.lastError, info.lastPlan, info.unknownItems and info.lastLearnedItems. Use control.sortNow to trigger a manual sorting run. For beta feedback, copy info.compatibility together with info.lastError and the relevant log lines.",
-            "de": "Weitere Laufzeitdiagnosen: info.connection, info.activeItems, info.lastSort, info.lastError, info.lastPlan, info.unknownItems und info.lastLearnedItems. Mit control.sortNow kann ein Sortierlauf manuell ausgelöst werden. Für Beta-Feedback bitte info.compatibility zusammen mit info.lastError und den betreffenden Logzeilen kopieren."
+            "en": "For beta feedback trigger control.refreshFeedbackReport and copy info.feedbackReport. Product names, list texts, aliases and the full configuration are intentionally omitted.",
+            "de": "Für Beta-Feedback control.refreshFeedbackReport auslösen und info.feedbackReport kopieren. Produktnamen, Listentexte, Aliase und die vollständige Konfiguration werden absichtlich nicht aufgenommen."
           }
+        },
+        "compatibilityHelp": {
+          "type": "staticText",
+          "newLine": true,
+          "text": {
+            "en": "If info.writeCapability is unknown, run control.compatibilityTest once with at least one active item. source-ok or live-ok permits writes; known-bug/live-failed/unknown blocks them.",
+            "de": "Wenn info.writeCapability auf unknown steht, control.compatibilityTest einmal mit mindestens einem aktiven Artikel ausführen. source-ok oder live-ok erlaubt Schreibzugriffe; known-bug/live-failed/unknown blockiert sie."
+          }
+        },
+        "versionInstalledState": {
+          "type": "state",
+          "oid": "info.versionInstalled",
+          "control": "text",
+          "controlled": false,
+          "label": {
+            "en": "Installed version",
+            "de": "Installierte Version"
+          },
+          "newLine": true
+        },
+        "versionBetaState": {
+          "type": "state",
+          "oid": "info.versionBeta",
+          "control": "text",
+          "controlled": false,
+          "label": {
+            "en": "Latest npm beta",
+            "de": "Neueste npm-Beta"
+          }
+        },
+        "updateState": {
+          "type": "state",
+          "oid": "info.updateAvailable",
+          "control": "text",
+          "controlled": false,
+          "label": {
+            "en": "Update available",
+            "de": "Update verfügbar"
+          }
+        },
+        "previewState": {
+          "type": "state",
+          "oid": "info.previewText",
+          "control": "text",
+          "controlled": false,
+          "label": {
+            "en": "Last sorting preview",
+            "de": "Letzte Sortiervorschau"
+          },
+          "newLine": true
+        },
+        "refreshFeedback": {
+          "type": "setState",
+          "id": "control.refreshFeedbackReport",
+          "val": true,
+          "ack": false,
+          "label": {
+            "en": "Refresh feedback report",
+            "de": "Feedbackbericht aktualisieren"
+          },
+          "variant": "outlined",
+          "newLine": true
+        },
+        "feedbackState": {
+          "type": "state",
+          "oid": "info.feedbackReport",
+          "control": "text",
+          "controlled": false,
+          "label": {
+            "en": "Privacy-safe feedback report",
+            "de": "Datenschutzfreundlicher Feedbackbericht"
+          },
+          "newLine": true
         }
       }
     }

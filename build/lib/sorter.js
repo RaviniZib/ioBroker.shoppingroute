@@ -8,6 +8,9 @@ exports.buildDesiredItems = buildDesiredItems;
 exports.createSortPlan = createSortPlan;
 exports.collectUnknownItems = collectUnknownItems;
 exports.mergeUnknownProducts = mergeUnknownProducts;
+exports.mergeReviewQueue = mergeReviewQueue;
+exports.applyReviewActions = applyReviewActions;
+exports.makePreviewText = makePreviewText;
 const parser_1 = require("./parser");
 function toTimestamp(value) {
     if (typeof value === 'number' && Number.isFinite(value))
@@ -27,6 +30,10 @@ function marketOrder(markets, marketName) {
     return Number.isFinite(Number(market?.order)) ? Number(market?.order) : 9999;
 }
 function categoryOrder(routes, marketName, category) {
+    const marketRoutes = routes.filter(entry => (0, parser_1.normalize)(entry.market) === (0, parser_1.normalize)(marketName));
+    const index = marketRoutes.findIndex(entry => (0, parser_1.normalize)(entry.category) === (0, parser_1.normalize)(category));
+    if (index >= 0)
+        return (index + 1) * 10;
     const route = routes.find(entry => (0, parser_1.normalize)(entry.market) === (0, parser_1.normalize)(marketName) &&
         (0, parser_1.normalize)(entry.category) === (0, parser_1.normalize)(category));
     return Number.isFinite(Number(route?.order)) ? Number(route?.order) : 9999;
@@ -90,6 +97,7 @@ function createSortPlan(items, markets, routes, products, fallbackMarket, priori
             to,
             market: target?.parsed.market || fallbackMarket,
             category: target?.parsed.category || 'Sonstiges',
+            product: target?.parsed.productName || to,
             changed: from !== to,
         };
     });
@@ -101,15 +109,17 @@ function collectUnknownItems(items, markets, products, fallbackMarket, priorityM
         const parsed = (0, parser_1.parseItem)(String(item.value), markets, products, fallbackMarket, priorityMarket);
         if (parsed.knownProduct)
             continue;
-        const key = (0, parser_1.normalize)(parsed.productName);
+        const key = (0, parser_1.canonicalProductKey)(parsed.productName) || (0, parser_1.normalize)(parsed.productName);
         if (!key || seen.has(key))
             continue;
         seen.add(key);
         result.push({
+            key,
             text: parsed.originalText,
             product: parsed.productName,
             market: parsed.market,
             guessedCategory: parsed.category,
+            ambiguousMarketSuffix: parsed.ambiguousMarketSuffix,
         });
     }
     return result;
@@ -117,29 +127,107 @@ function collectUnknownItems(items, markets, products, fallbackMarket, priorityM
 function mergeUnknownProducts(items, markets, products, fallbackMarket, priorityMarket = '') {
     const merged = products.map(product => ({ ...product }));
     const learned = [];
-    const knownNames = new Set(merged.map(product => (0, parser_1.normalize)(product.name)).filter(Boolean));
+    const knownKeys = new Set(merged.flatMap(product => [product.name, ...(String(product.aliases || '').split(/[;,]/))])
+        .map(parser_1.canonicalProductKey)
+        .filter(Boolean));
     const unknown = collectUnknownItems(items, markets, merged, fallbackMarket, priorityMarket);
     for (const entry of unknown) {
         const name = String(entry.product || '').trim();
-        const key = (0, parser_1.normalize)(name);
-        if (!key || knownNames.has(key))
+        const key = (0, parser_1.canonicalProductKey)(name);
+        if (!key || knownKeys.has(key))
             continue;
-        // A trailing "von/bei <Name>" may be a not-yet-configured market (or a brand).
-        // Do not permanently learn that ambiguous suffix into the product name automatically.
-        if (/\s+(?:von|bei)\s+\S.+$/i.test(name))
+        if (entry.ambiguousMarketSuffix)
+            continue;
+        const existing = (0, parser_1.findProduct)(name, merged);
+        if (existing)
             continue;
         const product = {
             name,
             aliases: '',
             category: entry.guessedCategory || 'Sonstiges',
-            // The current priority market is deliberately not made permanent.
-            // A product-specific default market must be a conscious user choice.
             defaultMarket: '',
+            availableMarkets: '',
         };
         merged.push(product);
         learned.push(product);
-        knownNames.add(key);
+        knownKeys.add(key);
     }
     return { products: merged, learned };
+}
+function mergeReviewQueue(current, unknown, now = new Date().toISOString()) {
+    const byKey = new Map(current.map(item => [item.key, { ...item }]));
+    for (const entry of unknown) {
+        const previous = byKey.get(entry.key);
+        if (previous?.action === 'ignore') {
+            previous.lastSeen = now;
+            byKey.set(entry.key, previous);
+            continue;
+        }
+        byKey.set(entry.key, {
+            key: entry.key,
+            text: entry.text,
+            product: previous?.product || entry.product,
+            guessedCategory: entry.guessedCategory,
+            market: entry.market,
+            category: previous?.category || entry.guessedCategory,
+            defaultMarket: previous?.defaultMarket || '',
+            aliases: previous?.aliases || '',
+            action: previous?.action || 'pending',
+            firstSeen: previous?.firstSeen || now,
+            lastSeen: now,
+        });
+    }
+    return [...byKey.values()].sort((a, b) => a.product.localeCompare(b.product, 'de', { sensitivity: 'base' }));
+}
+function applyReviewActions(products, reviewItems) {
+    const merged = products.map(product => ({ ...product }));
+    const accepted = [];
+    const remaining = [];
+    for (const review of reviewItems) {
+        if (review.action !== 'accept') {
+            remaining.push({ ...review });
+            continue;
+        }
+        const name = String(review.product || '').trim();
+        if (!name)
+            continue;
+        const existing = (0, parser_1.findProduct)(name, merged);
+        if (existing) {
+            if (review.category)
+                existing.category = review.category;
+            if (review.defaultMarket !== undefined)
+                existing.defaultMarket = review.defaultMarket;
+            if (review.aliases) {
+                const aliases = new Set(String(existing.aliases || '').split(/[;,]/).map(value => value.trim()).filter(Boolean));
+                for (const alias of review.aliases.split(/[;,]/).map(value => value.trim()).filter(Boolean))
+                    aliases.add(alias);
+                existing.aliases = [...aliases].join(',');
+            }
+            accepted.push({ ...existing });
+            continue;
+        }
+        const product = {
+            name,
+            aliases: String(review.aliases || ''),
+            category: String(review.category || review.guessedCategory || 'Sonstiges'),
+            defaultMarket: String(review.defaultMarket || ''),
+            availableMarkets: '',
+        };
+        merged.push(product);
+        accepted.push(product);
+    }
+    return {
+        products: merged.sort((a, b) => a.name.localeCompare(b.name, 'de', { sensitivity: 'base' })),
+        remainingReviews: remaining,
+        accepted,
+    };
+}
+function makePreviewText(listName, plan) {
+    const lines = [`Liste: ${listName}`, `Aktive Plätze: ${plan.length}`, `Änderungen: ${plan.filter(entry => entry.changed).length}`];
+    for (const entry of plan) {
+        const marker = entry.changed ? '→' : '=';
+        lines.push(`${String(entry.position).padStart(2, '0')}. ${entry.from} ${marker} ${entry.to} [${entry.market} / ${entry.category}]`);
+    }
+    return lines.join('\n');
 }
 //# sourceMappingURL=sorter.js.map

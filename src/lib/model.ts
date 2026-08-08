@@ -13,7 +13,6 @@ export interface MarketConfig {
     enabled?: boolean;
 }
 
-
 export interface ProductGroupConfig {
     name: string;
 }
@@ -21,7 +20,29 @@ export interface ProductGroupConfig {
 export interface RouteConfig {
     market: string;
     category: string;
-    order: number;
+    order?: number;
+}
+
+export interface ShoppingListConfig {
+    name: string;
+    enabled?: boolean;
+    priorityMarket?: string;
+}
+
+export type ReviewAction = 'pending' | 'accept' | 'ignore';
+
+export interface ReviewItemConfig {
+    key: string;
+    text: string;
+    product: string;
+    guessedCategory: string;
+    market: string;
+    category?: string;
+    defaultMarket?: string;
+    aliases?: string;
+    action?: ReviewAction;
+    firstSeen?: string;
+    lastSeen?: string;
 }
 
 export interface ProductConfig {
@@ -29,21 +50,35 @@ export interface ProductConfig {
     aliases?: string;
     category: string;
     defaultMarket?: string;
+    availableMarkets?: string;
 }
+
+export type LearningMode = 'automatic' | 'review' | 'off';
 
 export interface AdapterConfigShape {
     alexaInstance?: string;
     listName?: string;
+    lists?: ShoppingListConfig[];
     dryRun?: boolean;
     autoLearnProducts?: boolean;
+    learningMode?: LearningMode;
+    autoAliasSuggestions?: boolean;
     debounceMs?: number;
     writePauseMs?: number;
+    apiSafeMode?: boolean;
+    maxWritesPerMinute?: number;
+    batchSize?: number;
+    batchPauseMs?: number;
+    maxWriteRetries?: number;
+    retryBaseMs?: number;
     fallbackMarket?: string;
     priorityMarket?: string;
+    temporaryPriorityMarket?: string;
     productGroups?: ProductGroupConfig[];
     markets?: MarketConfig[];
     routes?: RouteConfig[];
     products?: ProductConfig[];
+    reviewItems?: ReviewItemConfig[];
 }
 
 export interface ParsedItem {
@@ -54,6 +89,8 @@ export interface ParsedItem {
     category: string;
     knownProduct: boolean;
     explicitMarket: boolean;
+    quantityPrefix: string;
+    ambiguousMarketSuffix?: string;
 }
 
 export interface SortableItem {
@@ -71,5 +108,19 @@ export interface SortPlanEntry {
     to: string;
     market: string;
     category: string;
+    product: string;
     changed: boolean;
+}
+
+export interface MarketProfile {
+    format: 'shoppingroute-market-profile-v1';
+    market: MarketConfig;
+    route: RouteConfig[];
+}
+
+export interface ConfigExport {
+    format: 'shoppingroute-config-v1';
+    exportedAt: string;
+    version: string;
+    config: Partial<AdapterConfigShape>;
 }

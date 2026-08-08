@@ -2,11 +2,12 @@ import type {
     AlexaListItem,
     MarketConfig,
     ProductConfig,
+    ReviewItemConfig,
     RouteConfig,
     SortPlanEntry,
     SortableItem,
 } from './model';
-import { normalize, parseItem } from './parser';
+import { canonicalProductKey, findProduct, normalize, parseItem } from './parser';
 
 export function toTimestamp(value: number | string | undefined): number {
     if (typeof value === 'number' && Number.isFinite(value)) return value;
@@ -25,6 +26,10 @@ function marketOrder(markets: MarketConfig[], marketName: string): number {
 }
 
 function categoryOrder(routes: RouteConfig[], marketName: string, category: string): number {
+    const marketRoutes = routes.filter(entry => normalize(entry.market) === normalize(marketName));
+    const index = marketRoutes.findIndex(entry => normalize(entry.category) === normalize(category));
+    if (index >= 0) return (index + 1) * 10;
+
     const route = routes.find(entry =>
         normalize(entry.market) === normalize(marketName) &&
         normalize(entry.category) === normalize(category),
@@ -108,9 +113,19 @@ export function createSortPlan(
             to,
             market: target?.parsed.market || fallbackMarket,
             category: target?.parsed.category || 'Sonstiges',
+            product: target?.parsed.productName || to,
             changed: from !== to,
         };
     });
+}
+
+export interface UnknownItem {
+    key: string;
+    text: string;
+    product: string;
+    market: string;
+    guessedCategory: string;
+    ambiguousMarketSuffix?: string;
 }
 
 export function collectUnknownItems(
@@ -119,21 +134,23 @@ export function collectUnknownItems(
     products: ProductConfig[],
     fallbackMarket: string,
     priorityMarket = '',
-): Array<{ text: string; product: string; market: string; guessedCategory: string }> {
+): UnknownItem[] {
     const seen = new Set<string>();
-    const result: Array<{ text: string; product: string; market: string; guessedCategory: string }> = [];
+    const result: UnknownItem[] = [];
 
     for (const item of activeItems(items)) {
         const parsed = parseItem(String(item.value), markets, products, fallbackMarket, priorityMarket);
         if (parsed.knownProduct) continue;
-        const key = normalize(parsed.productName);
+        const key = canonicalProductKey(parsed.productName) || normalize(parsed.productName);
         if (!key || seen.has(key)) continue;
         seen.add(key);
         result.push({
+            key,
             text: parsed.originalText,
             product: parsed.productName,
             market: parsed.market,
             guessedCategory: parsed.category,
+            ambiguousMarketSuffix: parsed.ambiguousMarketSuffix,
         });
     }
 
@@ -149,31 +166,120 @@ export function mergeUnknownProducts(
 ): { products: ProductConfig[]; learned: ProductConfig[] } {
     const merged = products.map(product => ({ ...product }));
     const learned: ProductConfig[] = [];
-    const knownNames = new Set(merged.map(product => normalize(product.name)).filter(Boolean));
+    const knownKeys = new Set(
+        merged.flatMap(product => [product.name, ...(String(product.aliases || '').split(/[;,]/))])
+            .map(canonicalProductKey)
+            .filter(Boolean),
+    );
     const unknown = collectUnknownItems(items, markets, merged, fallbackMarket, priorityMarket);
 
     for (const entry of unknown) {
         const name = String(entry.product || '').trim();
-        const key = normalize(name);
-        if (!key || knownNames.has(key)) continue;
+        const key = canonicalProductKey(name);
+        if (!key || knownKeys.has(key)) continue;
+        if (entry.ambiguousMarketSuffix) continue;
 
-        // A trailing "von/bei <Name>" may be a not-yet-configured market (or a brand).
-        // Do not permanently learn that ambiguous suffix into the product name automatically.
-        if (/\s+(?:von|bei)\s+\S.+$/i.test(name)) continue;
+        const existing = findProduct(name, merged);
+        if (existing) continue;
 
         const product: ProductConfig = {
             name,
             aliases: '',
             category: entry.guessedCategory || 'Sonstiges',
-            // The current priority market is deliberately not made permanent.
-            // A product-specific default market must be a conscious user choice.
             defaultMarket: '',
+            availableMarkets: '',
         };
 
         merged.push(product);
         learned.push(product);
-        knownNames.add(key);
+        knownKeys.add(key);
     }
 
     return { products: merged, learned };
+}
+
+export function mergeReviewQueue(
+    current: ReviewItemConfig[],
+    unknown: UnknownItem[],
+    now = new Date().toISOString(),
+): ReviewItemConfig[] {
+    const byKey = new Map(current.map(item => [item.key, { ...item }]));
+    for (const entry of unknown) {
+        const previous = byKey.get(entry.key);
+        if (previous?.action === 'ignore') {
+            previous.lastSeen = now;
+            byKey.set(entry.key, previous);
+            continue;
+        }
+        byKey.set(entry.key, {
+            key: entry.key,
+            text: entry.text,
+            product: previous?.product || entry.product,
+            guessedCategory: entry.guessedCategory,
+            market: entry.market,
+            category: previous?.category || entry.guessedCategory,
+            defaultMarket: previous?.defaultMarket || '',
+            aliases: previous?.aliases || '',
+            action: previous?.action || 'pending',
+            firstSeen: previous?.firstSeen || now,
+            lastSeen: now,
+        });
+    }
+    return [...byKey.values()].sort((a, b) => a.product.localeCompare(b.product, 'de', { sensitivity: 'base' }));
+}
+
+export function applyReviewActions(
+    products: ProductConfig[],
+    reviewItems: ReviewItemConfig[],
+): { products: ProductConfig[]; remainingReviews: ReviewItemConfig[]; accepted: ProductConfig[] } {
+    const merged = products.map(product => ({ ...product }));
+    const accepted: ProductConfig[] = [];
+    const remaining: ReviewItemConfig[] = [];
+
+    for (const review of reviewItems) {
+        if (review.action !== 'accept') {
+            remaining.push({ ...review });
+            continue;
+        }
+
+        const name = String(review.product || '').trim();
+        if (!name) continue;
+        const existing = findProduct(name, merged);
+        if (existing) {
+            if (review.category) existing.category = review.category;
+            if (review.defaultMarket !== undefined) existing.defaultMarket = review.defaultMarket;
+            if (review.aliases) {
+                const aliases = new Set(String(existing.aliases || '').split(/[;,]/).map(value => value.trim()).filter(Boolean));
+                for (const alias of review.aliases.split(/[;,]/).map(value => value.trim()).filter(Boolean)) aliases.add(alias);
+                existing.aliases = [...aliases].join(',');
+            }
+            accepted.push({ ...existing });
+            continue;
+        }
+
+        const product: ProductConfig = {
+            name,
+            aliases: String(review.aliases || ''),
+            category: String(review.category || review.guessedCategory || 'Sonstiges'),
+            defaultMarket: String(review.defaultMarket || ''),
+            availableMarkets: '',
+        };
+        merged.push(product);
+        accepted.push(product);
+    }
+
+    return {
+        products: merged.sort((a, b) => a.name.localeCompare(b.name, 'de', { sensitivity: 'base' })),
+        remainingReviews: remaining,
+        accepted,
+    };
+}
+
+export function makePreviewText(listName: string, plan: SortPlanEntry[]): string {
+    const lines = [`Liste: ${listName}`, `Aktive Plätze: ${plan.length}`, `Änderungen: ${plan.filter(entry => entry.changed).length}`];
+    for (const entry of plan) {
+        const marker = entry.changed ? '→' : '=';
+        lines.push(`${String(entry.position).padStart(2, '0')}. ${entry.from} ${marker} ${entry.to} [${entry.market} / ${entry.category}]`);
+    }
+    return lines.join('\n');
 }
