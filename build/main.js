@@ -44,7 +44,7 @@ const sorter_1 = require("./lib/sorter");
 const parser_1 = require("./lib/parser");
 const config_tools_1 = require("./lib/config-tools");
 const statistics_1 = require("./lib/statistics");
-const VERSION = '0.2.0-beta.7';
+const VERSION = '0.2.0-beta.10';
 const DEFAULT_CATEGORIES = [
     'Obst/Gemüse',
     'Tee/Kaffee',
@@ -269,6 +269,13 @@ class ShoppingRoute extends utils.Adapter {
     async onMessage(obj) {
         if (!obj || !obj.callback)
             return;
+        if (obj.command === 'getBackupUiUrl') {
+            this.sendTo(obj.from, obj.command, {
+                openUrl: `./adapter/shoppingroute/backup-transfer.html?instance=${encodeURIComponent(this.namespace)}`,
+                window: 'shoppingrouteBackup',
+            }, obj.callback);
+            return;
+        }
         if (obj.command === 'getProductGroups') {
             const options = this.productGroups.map(group => ({ value: group.name, label: group.name }))
                 .sort((a, b) => a.label.localeCompare(b.label, 'de', { sensitivity: 'base' }));

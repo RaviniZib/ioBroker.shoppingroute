@@ -8,7 +8,12 @@ const ioPackage=JSON.parse(fs.readFileSync(path.join(root,'io-package.json'),'ut
 const jsonConfig=JSON.parse(fs.readFileSync(path.join(root,'admin','jsonConfig.json'),'utf8'));
 
 test('beta version and branding are consistent',()=>{
-  assert.equal(ioPackage.common.version,'0.2.0-beta.9');
+  const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
+  assert.equal(ioPackage.common.version,pkg.version);
+  const runtimeSource=fs.readFileSync(path.join(root,'src','main.ts'),'utf8');
+  const runtimeVersion=runtimeSource.match(/const VERSION = '([^']+)'/);
+  assert.ok(runtimeVersion,'runtime VERSION');
+  assert.equal(runtimeVersion[1],pkg.version);
   assert.equal(ioPackage.common.titleLang.de,'ShoppingRoute');
   assert.equal(ioPackage.common.icon,'shoppingroute.png');
   assert.ok(fs.existsSync(path.join(root,'admin',ioPackage.common.icon)));
@@ -18,17 +23,34 @@ test('user-facing admin areas are present and diagnostics tab is hidden',()=>{
   for(const tab of ['listsTab','productGroupsTab','routesTab','productsTab','reviewTab','transferTab']) assert.ok(jsonConfig.items[tab],tab);
   assert.equal(jsonConfig.items.diagnosticsTab,undefined);
 });
-test('backup and sharing use file buttons without raw JSON controls',()=>{
+test('backup and sharing use an Admin 7.6 compatible launcher without raw JSON controls',()=>{
   const transfer=jsonConfig.items.transferTab.items;
   assert.deepEqual(Object.keys(transfer),['backupHelp','backupTransfer']);
-  assert.equal(transfer.backupTransfer.type,'custom');
-  assert.equal(transfer.backupTransfer.name,'BackupTransfer');
-  assert.equal(transfer.backupTransfer.url,'custom/routeEditor.js');
-  for(const oldControl of ['refreshExport','configExportState','configImportState','marketProfilesState','marketProfileImportState']) assert.equal(transfer[oldControl],undefined,oldControl);
-  const customSource=fs.readFileSync(path.join(root,'admin','custom','routeEditor.js'),'utf8');
-  assert.match(customSource,/class BackupTransfer extends React\.Component/);
-  assert.match(customSource,/Sicherung herunterladen/);
-  assert.match(customSource,/Marktprofil importieren/);
+
+  const launcher=transfer.backupTransfer;
+  assert.equal(launcher.type,'sendTo');
+  assert.equal(launcher.command,'getBackupUiUrl');
+  assert.equal(launcher.openUrl,true);
+  assert.equal(launcher.window,'shoppingrouteBackup');
+
+  assert.ok(fs.existsSync(path.join(root,'admin','backup-transfer.html')));
+
+  const html=fs.readFileSync(path.join(root,'admin','backup-transfer.html'),'utf8');
+  assert.match(html,/Sicherung herunterladen/);
+  assert.match(html,/Sicherung wiederherstellen/);
+  assert.match(html,/Marktprofil herunterladen/);
+  assert.match(html,/Marktprofil importieren/);
+  assert.match(html,/control\.importConfigJson/);
+  assert.match(html,/control\.marketProfileImport/);
+
+  const source=fs.readFileSync(path.join(root,'src','main.ts'),'utf8');
+  assert.match(source,/getBackupUiUrl/);
+  assert.match(source,/openUrl:/);
+
+  const ioPackage=JSON.parse(fs.readFileSync(path.join(root,'io-package.json'),'utf8'));
+  const adminDependency=ioPackage.common.globalDependencies.find(entry=>entry.admin);
+  assert.ok(adminDependency);
+  assert.equal(adminDependency.admin,'>=7.6.20');
 });
 
 test('known instances, lists, markets and product groups use dropdown controls',()=>{

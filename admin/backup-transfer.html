@@ -1,0 +1,731 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ShoppingRoute – Sicherung / Teilen</title>
+
+<style>
+    :root {
+        color-scheme: light dark;
+        font-family: Arial, Helvetica, sans-serif;
+    }
+
+    * {
+        box-sizing: border-box;
+    }
+
+    html, body {
+        margin: 0;
+        padding: 0;
+    }
+
+    body {
+        padding: 8px 2px;
+        background: #ffffff;
+        color: #202020;
+    }
+
+    @media (prefers-color-scheme: dark) {
+        body {
+            background: #121212;
+            color: #eeeeee;
+        }
+    }
+
+    .section {
+        border: 1px solid rgba(128,128,128,.35);
+        border-radius: 6px;
+        padding: 16px;
+        margin-bottom: 16px;
+    }
+
+    h2 {
+        font-size: 17px;
+        margin: 0 0 6px 0;
+        font-weight: 600;
+    }
+
+    p {
+        margin: 0 0 14px 0;
+        opacity: .78;
+        line-height: 1.45;
+    }
+
+    .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+    }
+
+    button,
+    select {
+        font: inherit;
+        min-height: 40px;
+        border-radius: 4px;
+        border: 1px solid rgba(128,128,128,.55);
+        background: rgba(128,128,128,.08);
+        color: inherit;
+    }
+
+    button {
+        padding: 8px 15px;
+        cursor: pointer;
+        font-weight: 500;
+    }
+
+    button:hover:not(:disabled) {
+        background: rgba(128,128,128,.18);
+    }
+
+    button:disabled {
+        cursor: default;
+        opacity: .45;
+    }
+
+    select {
+        padding: 8px 12px;
+        min-width: 240px;
+        max-width: 100%;
+    }
+
+    input[type=file] {
+        display: none;
+    }
+
+    #status {
+        min-height: 24px;
+        margin-top: 4px;
+        font-weight: 500;
+        line-height: 1.4;
+    }
+
+    #status.error {
+        color: #d32f2f;
+    }
+
+    #status.ok {
+        color: #2e7d32;
+    }
+
+    @media (max-width: 600px) {
+        button,
+        select {
+            width: 100%;
+        }
+    }
+</style>
+</head>
+
+<body>
+
+<input id="configFile" type="file" accept=".json,application/json">
+<input id="marketFile" type="file" accept=".json,application/json">
+
+<div class="section">
+    <h2 id="configTitle">Komplette Konfiguration</h2>
+    <p id="configText">
+        Alle ShoppingRoute-Einstellungen direkt als JSON-Datei sichern oder aus einer Sicherungsdatei wiederherstellen.
+    </p>
+
+    <div class="row">
+        <button id="downloadConfig" type="button">↓ Sicherung herunterladen</button>
+        <button id="uploadConfig" type="button">↑ Sicherung wiederherstellen</button>
+    </div>
+</div>
+
+<div class="section">
+    <h2 id="marketTitle">Marktprofil teilen</h2>
+    <p id="marketText">
+        Einen einzelnen Markt mit seinem Laufweg herunterladen oder ein Marktprofil aus einer JSON-Datei importieren.
+    </p>
+
+    <div class="row">
+        <select id="marketSelect" disabled>
+            <option value="">Marktprofile werden geladen …</option>
+        </select>
+
+        <button id="downloadMarket" type="button" disabled>↓ Marktprofil herunterladen</button>
+        <button id="uploadMarket" type="button">↑ Marktprofil importieren</button>
+    </div>
+</div>
+
+<div id="status"></div>
+
+<script src="../../lib/js/socket.io.js"></script>
+
+<script>
+'use strict';
+
+(() => {
+    const params = new URLSearchParams(window.location.search);
+    const instance = params.get('instance');
+
+    const statusEl = document.getElementById('status');
+    const marketSelect = document.getElementById('marketSelect');
+    const downloadMarketButton = document.getElementById('downloadMarket');
+
+    let marketProfiles = [];
+
+    const de = String(navigator.language || '').toLowerCase().startsWith('de');
+
+    const texts = de ? {
+        configTitle: 'Komplette Konfiguration',
+        configText: 'Alle ShoppingRoute-Einstellungen direkt als JSON-Datei sichern oder aus einer Sicherungsdatei wiederherstellen.',
+        downloadConfig: '↓ Sicherung herunterladen',
+        uploadConfig: '↑ Sicherung wiederherstellen',
+        marketTitle: 'Marktprofil teilen',
+        marketText: 'Einen einzelnen Markt mit seinem Laufweg herunterladen oder ein Marktprofil aus einer JSON-Datei importieren.',
+        downloadMarket: '↓ Marktprofil herunterladen',
+        uploadMarket: '↑ Marktprofil importieren',
+        loading: 'Marktprofile werden geladen …',
+        noMarkets: 'Keine Marktprofile vorhanden',
+        backupDownloaded: 'Sicherung wurde heruntergeladen.',
+        profileDownloaded: 'Marktprofil wurde heruntergeladen.',
+        configImportStarted: 'Sicherung wurde übergeben. ShoppingRoute übernimmt die Konfiguration und startet anschließend neu.',
+        profileImportStarted: 'Marktprofil wurde übergeben und wird von ShoppingRoute übernommen.',
+        invalidBackup: 'Die gewählte Datei ist keine gültige JSON-Sicherung.',
+        invalidProfile: 'Die gewählte Datei ist kein gültiges ShoppingRoute-Marktprofil.',
+        noInstance: 'ShoppingRoute-Instanz konnte nicht ermittelt werden.',
+        connectionError: 'Verbindung zu ioBroker konnte nicht hergestellt werden.',
+        exportError: 'Sicherung konnte nicht erstellt werden.',
+        profileError: 'Marktprofile konnten nicht geladen werden.'
+    } : {
+        configTitle: 'Complete configuration',
+        configText: 'Download all ShoppingRoute settings directly as a JSON file or restore them from a backup file.',
+        downloadConfig: '↓ Download backup',
+        uploadConfig: '↑ Restore backup',
+        marketTitle: 'Share market profile',
+        marketText: 'Download one market with its walking route or import a market profile from a JSON file.',
+        downloadMarket: '↓ Download market profile',
+        uploadMarket: '↑ Import market profile',
+        loading: 'Loading market profiles …',
+        noMarkets: 'No market profiles available',
+        backupDownloaded: 'Backup downloaded.',
+        profileDownloaded: 'Market profile downloaded.',
+        configImportStarted: 'Backup submitted. ShoppingRoute will apply the configuration and restart afterwards.',
+        profileImportStarted: 'Market profile submitted and will be applied by ShoppingRoute.',
+        invalidBackup: 'The selected file is not a valid JSON backup.',
+        invalidProfile: 'The selected file is not a valid ShoppingRoute market profile.',
+        noInstance: 'ShoppingRoute instance could not be determined.',
+        connectionError: 'Could not connect to ioBroker.',
+        exportError: 'Backup could not be created.',
+        profileError: 'Market profiles could not be loaded.'
+    };
+
+    for (const id of [
+        'configTitle', 'configText', 'downloadConfig', 'uploadConfig',
+        'marketTitle', 'marketText', 'downloadMarket', 'uploadMarket'
+    ]) {
+        document.getElementById(id).textContent = texts[id];
+    }
+
+    function setStatus(message, error = false) {
+        statusEl.textContent = message || '';
+        statusEl.className = error ? 'error' : (message ? 'ok' : '');
+    }
+
+    if (!instance || !/^shoppingroute\.\d+$/.test(instance)) {
+        setStatus(texts.noInstance, true);
+        return;
+    }
+
+    let socket = null;
+
+    function versionAtLeast(version, minimum) {
+        const a = String(version || '')
+            .split('.')
+            .map(value => parseInt(value, 10) || 0);
+
+        const b = String(minimum || '')
+            .split('.')
+            .map(value => parseInt(value, 10) || 0);
+
+        for (let index = 0; index < Math.max(a.length, b.length); index++) {
+            const av = a[index] || 0;
+            const bv = b[index] || 0;
+
+            if (av > bv) {
+                return true;
+            }
+
+            if (av < bv) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    function connectIoBroker() {
+        return new Promise((resolve, reject) => {
+            const socketLibrary = window.io || window.iob;
+
+            if (
+                !socketLibrary ||
+                typeof socketLibrary.connect !== 'function'
+            ) {
+                reject(
+                    new Error(
+                        'ioBroker Socket-Bibliothek ist nicht verfügbar'
+                    )
+                );
+                return;
+            }
+
+            let finished = false;
+
+            const done = () => {
+                if (finished) {
+                    return;
+                }
+
+                finished = true;
+                resolve();
+            };
+
+            const fail = error => {
+                if (finished) {
+                    return;
+                }
+
+                finished = true;
+
+                reject(
+                    error instanceof Error
+                        ? error
+                        : new Error(String(error || 'Socket-Verbindungsfehler'))
+                );
+            };
+
+            socket = socketLibrary.connect(
+                window.location.origin,
+                {
+                    path: '/socket.io',
+                    query: 'ws=true',
+                    name: 'shoppingroute-backup',
+                    timeout: 20000
+                }
+            );
+
+            socket.on('connect_error', fail);
+
+            socket.on('connect', legacyAuthenticated => {
+                /*
+                 * Ältere Socket-Server können bereits beim Connect
+                 * signalisieren, dass die Verbindung freigegeben ist.
+                 */
+                if (legacyAuthenticated === true) {
+                    done();
+                    return;
+                }
+
+                /*
+                 * ioBroker unterscheidet alte und neue Socket-Server.
+                 * Ab Socket-Server 4.1.2 wird explizit authenticate
+                 * ausgeführt. Das entspricht dem Verfahren des
+                 * ioBroker-Admin-Clients.
+                 */
+                socket.emit(
+                    'getVersion',
+                    (first, second) => {
+                        let error = null;
+                        let version = '';
+
+                        if (
+                            typeof first === 'string' &&
+                            /^\d+\.\d+\.\d+/.test(first) &&
+                            !second
+                        ) {
+                            version = first;
+                        } else {
+                            error = first;
+                            version = second || '';
+                        }
+
+                        if (error) {
+                            fail(error);
+                            return;
+                        }
+
+                        if (
+                            version &&
+                            versionAtLeast(version, '4.1.2')
+                        ) {
+                            socket.emit(
+                                'authenticate',
+                                authError => {
+                                    if (authError) {
+                                        fail(authError);
+                                        return;
+                                    }
+
+                                    done();
+                                }
+                            );
+                        } else {
+                            done();
+                        }
+                    }
+                );
+            });
+        });
+    }
+
+    function getState(id) {
+        return new Promise((resolve, reject) => {
+            if (!socket) {
+                reject(new Error('Keine ioBroker-Verbindung'));
+                return;
+            }
+
+            socket.emit(
+                'getState',
+                id,
+                (error, state) => {
+                    if (error) {
+                        reject(new Error(String(error)));
+                        return;
+                    }
+
+                    resolve(state || null);
+                }
+            );
+        });
+    }
+
+    function setState(id, val) {
+        return new Promise((resolve, reject) => {
+            if (!socket) {
+                reject(new Error('Keine ioBroker-Verbindung'));
+                return;
+            }
+
+            socket.emit(
+                'setState',
+                id,
+                {
+                    val,
+                    ack: false
+                },
+                error => {
+                    if (error) {
+                        reject(new Error(String(error)));
+                        return;
+                    }
+
+                    resolve();
+                }
+            );
+        });
+    }
+
+    function sleep(ms) {
+        return new Promise(resolve => window.setTimeout(resolve, ms));
+    }
+
+    function safeFilename(value) {
+        return String(value || 'markt')
+            .trim()
+            .replace(/[^a-zA-Z0-9._-]+/g, '-')
+            .replace(/^-+|-+$/g, '') || 'markt';
+    }
+
+    function datePart() {
+        return new Date().toISOString().slice(0, 10);
+    }
+
+    function downloadText(filename, text) {
+        const blob = new Blob(
+            [text],
+            {
+                type: 'application/json;charset=utf-8'
+            }
+        );
+
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+
+        link.href = url;
+        link.download = filename;
+
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+
+        window.setTimeout(() => URL.revokeObjectURL(url), 0);
+    }
+
+    async function refreshExports() {
+        const configId = instance + '.info.configExport';
+
+        let oldTs = 0;
+
+        try {
+            const oldState = await getState(configId);
+            oldTs = Number(oldState && oldState.ts) || 0;
+        } catch (_) {
+            oldTs = 0;
+        }
+
+        await setState(instance + '.control.exportConfig', true);
+
+        for (let attempt = 0; attempt < 25; attempt++) {
+            await sleep(100);
+
+            const state = await getState(configId);
+
+            if (
+                state &&
+                typeof state.val === 'string' &&
+                state.val.trim() &&
+                (
+                    Number(state.ts) > oldTs ||
+                    attempt >= 5
+                )
+            ) {
+                return;
+            }
+        }
+    }
+
+    async function readJsonState(id, fallback) {
+        const state = await getState(id);
+
+        if (!state || typeof state.val !== 'string' || !state.val.trim()) {
+            return fallback;
+        }
+
+        return JSON.parse(state.val);
+    }
+
+    async function loadMarketProfiles(refresh = false) {
+        try {
+            if (refresh) {
+                await refreshExports();
+            }
+
+            const parsed = await readJsonState(
+                instance + '.info.marketProfiles',
+                []
+            );
+
+            marketProfiles = Array.isArray(parsed) ? parsed : [];
+
+            marketProfiles.sort((a, b) =>
+                String(a && a.market && a.market.name || '')
+                    .localeCompare(
+                        String(b && b.market && b.market.name || ''),
+                        'de',
+                        { sensitivity: 'base' }
+                    )
+            );
+
+            marketSelect.innerHTML = '';
+
+            if (!marketProfiles.length) {
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = texts.noMarkets;
+                marketSelect.appendChild(option);
+                marketSelect.disabled = true;
+                downloadMarketButton.disabled = true;
+                return;
+            }
+
+            for (let index = 0; index < marketProfiles.length; index++) {
+                const profile = marketProfiles[index];
+                const option = document.createElement('option');
+
+                option.value = String(index);
+                option.textContent =
+                    String(profile && profile.market && profile.market.name || 'Markt');
+
+                marketSelect.appendChild(option);
+            }
+
+            marketSelect.disabled = false;
+            downloadMarketButton.disabled = false;
+
+        } catch (_) {
+            marketProfiles = [];
+            marketSelect.innerHTML = '';
+
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = texts.noMarkets;
+            marketSelect.appendChild(option);
+
+            marketSelect.disabled = true;
+            downloadMarketButton.disabled = true;
+
+            setStatus(texts.profileError, true);
+        }
+    }
+
+    document.getElementById('downloadConfig').addEventListener('click', async () => {
+        try {
+            setStatus('');
+            await refreshExports();
+
+            const state = await getState(instance + '.info.configExport');
+
+            if (
+                !state ||
+                typeof state.val !== 'string' ||
+                !state.val.trim()
+            ) {
+                throw new Error('empty export');
+            }
+
+            JSON.parse(state.val);
+
+            downloadText(
+                'shoppingroute-backup-' + datePart() + '.json',
+                state.val
+            );
+
+            setStatus(texts.backupDownloaded);
+
+        } catch (_) {
+            setStatus(texts.exportError, true);
+        }
+    });
+
+    document.getElementById('uploadConfig').addEventListener('click', () => {
+        document.getElementById('configFile').click();
+    });
+
+    document.getElementById('configFile').addEventListener('change', async event => {
+        const file = event.target.files && event.target.files[0];
+
+        if (!file) {
+            return;
+        }
+
+        try {
+            const text = await file.text();
+            const parsed = JSON.parse(text);
+
+            if (
+                !parsed ||
+                typeof parsed !== 'object' ||
+                Array.isArray(parsed)
+            ) {
+                throw new Error('invalid');
+            }
+
+            await setState(
+                instance + '.control.importConfigJson',
+                text
+            );
+
+            setStatus(texts.configImportStarted);
+
+        } catch (_) {
+            setStatus(texts.invalidBackup, true);
+        } finally {
+            event.target.value = '';
+        }
+    });
+
+    downloadMarketButton.addEventListener('click', async () => {
+        try {
+            setStatus('');
+
+            await loadMarketProfiles(true);
+
+            const index = Number(marketSelect.value);
+            const profile = marketProfiles[index];
+
+            if (
+                !profile ||
+                profile.format !== 'shoppingroute-market-profile-v1' ||
+                !profile.market ||
+                !profile.market.name
+            ) {
+                throw new Error('invalid profile');
+            }
+
+            downloadText(
+                'shoppingroute-marktprofil-' +
+                    safeFilename(profile.market.name) +
+                    '-' +
+                    datePart() +
+                    '.json',
+                JSON.stringify(profile, null, 2)
+            );
+
+            setStatus(texts.profileDownloaded);
+
+        } catch (_) {
+            setStatus(texts.profileError, true);
+        }
+    });
+
+    document.getElementById('uploadMarket').addEventListener('click', () => {
+        document.getElementById('marketFile').click();
+    });
+
+    document.getElementById('marketFile').addEventListener('change', async event => {
+        const file = event.target.files && event.target.files[0];
+
+        if (!file) {
+            return;
+        }
+
+        try {
+            const text = await file.text();
+            const profile = JSON.parse(text);
+
+            if (
+                !profile ||
+                profile.format !== 'shoppingroute-market-profile-v1' ||
+                !profile.market ||
+                !String(profile.market.name || '').trim() ||
+                !Array.isArray(profile.route)
+            ) {
+                throw new Error('invalid profile');
+            }
+
+            await setState(
+                instance + '.control.marketProfileImport',
+                text
+            );
+
+            setStatus(texts.profileImportStarted);
+
+            window.setTimeout(
+                () => loadMarketProfiles(false),
+                1200
+            );
+
+        } catch (_) {
+            setStatus(texts.invalidProfile, true);
+        } finally {
+            event.target.value = '';
+        }
+    });
+
+    marketSelect.innerHTML = '';
+    const loadingOption = document.createElement('option');
+    loadingOption.value = '';
+    loadingOption.textContent = texts.loading;
+    marketSelect.appendChild(loadingOption);
+
+    (async () => {
+        try {
+            await connectIoBroker();
+            setStatus('');
+            await loadMarketProfiles(true);
+        } catch (error) {
+            console.error('ShoppingRoute Backup UI:', error);
+            setStatus(texts.connectionError, true);
+        }
+    })();
+})();
+</script>
+
+</body>
+</html>

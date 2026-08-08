@@ -33,7 +33,7 @@ import { findProduct, parseItem, suggestAliases } from './lib/parser';
 import { buildMarketProfiles, ensureMarketRoutes, exportConfig, importMarketProfile, normalizeRoutesForAdmin, parseConfigImport } from './lib/config-tools';
 import { emptyUsageStatistics, normalizeUsageStatistics, recordAddedItem, type UsageStatistics } from './lib/statistics';
 
-const VERSION = '0.2.0-beta.7';
+const VERSION = '0.2.0-beta.10';
 const DEFAULT_CATEGORIES = [
     'Obst/Gemüse',
     'Tee/Kaffee',
@@ -273,6 +273,18 @@ export class ShoppingRoute extends utils.Adapter {
 
     private async onMessage(obj: { command: string; from: string; callback?: any; message?: any }): Promise<void> {
         if (!obj || !obj.callback) return;
+        if (obj.command === 'getBackupUiUrl') {
+            this.sendTo(
+                obj.from,
+                obj.command,
+                {
+                    openUrl: `./adapter/shoppingroute/backup-transfer.html?instance=${encodeURIComponent(this.namespace)}`,
+                    window: 'shoppingrouteBackup',
+                },
+                obj.callback,
+            );
+            return;
+        }
         if (obj.command === 'getProductGroups') {
             const options = this.productGroups.map(group => ({ value: group.name, label: group.name }))
                 .sort((a, b) => a.label.localeCompare(b.label, 'de', { sensitivity: 'base' }));
