@@ -1,4 +1,4 @@
-import type { AdapterConfigShape, ConfigExport, MarketConfig, MarketProfile, RouteConfig } from './model';
+import type { AdapterConfigShape, ConfigExport, MarketConfig, MarketProfile, ProductGroupConfig, RouteConfig } from './model';
 
 const EXPORT_KEYS: Array<keyof AdapterConfigShape> = [
     'alexaInstance', 'listName', 'lists', 'dryRun', 'autoLearnProducts', 'learningMode',
@@ -73,6 +73,41 @@ export function importMarketProfile(
     }));
 
     return { markets: nextMarkets, routes: nextRoutes, market: name };
+}
+
+export function ensureMarketRoutes(
+    markets: MarketConfig[],
+    productGroups: ProductGroupConfig[],
+    routes: RouteConfig[],
+): { routes: RouteConfig[]; added: number } {
+    const result = routes.filter(Boolean).map(route => ({ ...route }));
+    const existing = new Set(
+        result.map(route => `${String(route.market || '').trim().toLocaleLowerCase('de')}\u0000${String(route.category || '').trim().toLocaleLowerCase('de')}`),
+    );
+    let added = 0;
+
+    const activeMarkets = markets
+        .filter(market => market && market.name && market.enabled !== false)
+        .slice()
+        .sort((a, b) => (Number(a.order) || 9999) - (Number(b.order) || 9999));
+    const groups = productGroups
+        .filter(group => group && group.name)
+        .map(group => String(group.name).trim())
+        .filter(Boolean);
+
+    for (const market of activeMarkets) {
+        const marketName = String(market.name).trim();
+        const marketKey = marketName.toLocaleLowerCase('de');
+        for (const category of groups) {
+            const key = `${marketKey}\u0000${category.toLocaleLowerCase('de')}`;
+            if (existing.has(key)) continue;
+            result.push({ market: marketName, category, order: 0 });
+            existing.add(key);
+            added += 1;
+        }
+    }
+
+    return { routes: reindexRoutes(result), added };
 }
 
 export function reindexRoutes(routes: RouteConfig[]): RouteConfig[] {

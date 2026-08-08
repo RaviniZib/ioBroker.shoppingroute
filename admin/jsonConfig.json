@@ -11,8 +11,8 @@
         "betaWarning": {
           "type": "staticText",
           "text": {
-            "en": "BETA 0.2.0-beta.1. Start with Dry-Run enabled. ShoppingRoute never creates, deletes or completes Alexa list items; it only redistributes visible value texts across existing active IDs.",
-            "de": "BETA 0.2.0-beta.1. Zuerst mit Dry-Run testen. ShoppingRoute legt niemals Alexa-Listeneinträge an, löscht keine und hakt keine ab; es verteilt ausschließlich sichtbare value-Texte auf vorhandene aktive IDs."
+            "en": "BETA 0.2.0-beta.2. Start with Dry-Run enabled. ShoppingRoute never creates, deletes or completes Alexa list items; it only redistributes visible value texts across existing active IDs.",
+            "de": "BETA 0.2.0-beta.2. Zuerst mit Dry-Run testen. ShoppingRoute legt niemals Alexa-Listeneinträge an, löscht keine und hakt keine ab; es verteilt ausschließlich sichtbare value-Texte auf vorhandene aktive IDs."
           }
         },
         "alexaInstance": {

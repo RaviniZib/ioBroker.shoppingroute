@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.0-beta.2 (2026-08-08)
+
+- Fix: Newly added active markets now automatically receive walking-route rows for every configured product group.
+- Existing route order is preserved; only missing market/product-group combinations are appended.
+- Newly added product groups are likewise appended to every active market on the next adapter start.
+
 ## 0.2.0-beta.1 (2026-08-08)
 
 - Added multi-list support with per-list priority markets.

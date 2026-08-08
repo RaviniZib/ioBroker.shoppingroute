@@ -23,7 +23,7 @@ The adapter itself does **not** patch another adapter or its node_modules. A pub
 The list in the Alexa app must be configured to **Oldest to newest**. Alphabetical sorting overrides the positional effect of redistributing values across existing IDs.
 ## Beta compatibility guard
 
-`0.2.0-beta.1` does not patch foreign modules. It detects the known malformed query where possible and blocks real Alexa sorting writes if compatibility is unsafe or unknown. An explicit same-value compatibility test is available through `control.compatibilityTest`.
+`0.2.0-beta.2` does not patch foreign modules. It detects the known malformed query where possible and blocks real Alexa sorting writes if compatibility is unsafe or unknown. An explicit same-value compatibility test is available through `control.compatibilityTest`.
 
 This is a beta safety mechanism, not a replacement for an upstream Alexa2/alexa-remote2 fix.
 

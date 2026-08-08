@@ -25,7 +25,7 @@ Das Testerpaket wird als `.tgz` persönlich bereitgestellt. Nach dem Kopieren au
 
 ```bash
 cd /opt/iobroker
-npm install /PFAD/ZU/iobroker.shoppingroute-0.2.0-beta.1.tgz
+npm install /PFAD/ZU/iobroker.shoppingroute-0.2.0-beta.2.tgz
 iobroker upload shoppingroute
 ```
 

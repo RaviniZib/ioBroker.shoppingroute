@@ -1,8 +1,8 @@
-# Test report – 0.2.0-beta.1
+# Test report – 0.2.0-beta.2
 
 Local checks before server validation:
 
-- Source/unit tests that do not need the unavailable local ioBroker npm dependency: **26/26 passed**
+- Source/unit tests that do not need the unavailable local ioBroker npm dependency: **27/27 passed**
 - Runtime and package-builder JavaScript syntax checks: passed
 - Safety rule: no Alexa `#New`, `#delete` or `.completed` write path detected
 - Daily API/traffic metric tests: passed

@@ -44,7 +44,7 @@ const sorter_1 = require("./lib/sorter");
 const parser_1 = require("./lib/parser");
 const config_tools_1 = require("./lib/config-tools");
 const statistics_1 = require("./lib/statistics");
-const VERSION = '0.2.0-beta.1';
+const VERSION = '0.2.0-beta.2';
 const DEFAULT_CATEGORIES = [
     'Obst/Gemüse',
     'Tee/Kaffee',
@@ -185,6 +185,7 @@ class ShoppingRoute extends utils.Adapter {
             this.log.info(`Aus der Prüfliste übernommen: ${reviewResult.accepted.map(item => `„${item.name}“`).join(', ')}.`);
         }
         await this.ensureProductGroupsConfig();
+        this.ensureRoutesForMarketsAndGroups();
         await this.updateTemporaryMarketStateOptions();
         await this.persistRuntimeConfig();
         await this.setStateAsync('info.connection', false, true);
@@ -749,6 +750,14 @@ class ShoppingRoute extends utils.Adapter {
         catch (error) {
             this.log.warn(`Temporäre Markt-Auswahlliste konnte nicht aktualisiert werden: ${error instanceof Error ? error.message : String(error)}`);
         }
+    }
+    ensureRoutesForMarketsAndGroups() {
+        const synchronized = (0, config_tools_1.ensureMarketRoutes)(this.markets, this.productGroups, this.runtimeRoutes);
+        if (synchronized.added <= 0)
+            return;
+        this.runtimeRoutes = synchronized.routes;
+        this.routesDirty = true;
+        this.log.info(`${synchronized.added} fehlende Laufweg-Zuordnung(en) für neue Märkte/Produktgruppen automatisch ergänzt.`);
     }
     async ensureProductGroupsConfig() {
         if (Array.isArray(this.cfg.productGroups) && this.cfg.productGroups.length > 0)

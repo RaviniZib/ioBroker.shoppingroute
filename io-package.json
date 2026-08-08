@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "shoppingroute",
-    "version": "0.2.0-beta.1",
+    "version": "0.2.0-beta.2",
     "titleLang": {
       "en": "ShoppingRoute",
       "de": "ShoppingRoute"
@@ -43,7 +43,7 @@
     "icon": "shoppingroute.png",
     "tier": 3,
     "news": {
-      "0.2.0-beta.1": {
+      "0.2.0-beta.2": {
         "en": "Major beta expansion: review queue, improved parser, API safe mode, multiple lists, temporary market, product availability, statistics, config/profile transfer, version check and feedback report.",
         "de": "Großes Beta-Update: Prüfliste, verbesserter Parser, API-Schonmodus, mehrere Listen, temporärer Markt, Artikel-Verfügbarkeit, Statistik, Konfig-/Profiltransfer, Versionsprüfung und Feedbackbericht."
       }

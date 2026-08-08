@@ -30,10 +30,10 @@ import {
     sortSlotsOldestFirst,
 } from './lib/sorter';
 import { findProduct, parseItem, suggestAliases } from './lib/parser';
-import { buildMarketProfiles, exportConfig, importMarketProfile, parseConfigImport, reindexRoutes } from './lib/config-tools';
+import { buildMarketProfiles, ensureMarketRoutes, exportConfig, importMarketProfile, parseConfigImport, reindexRoutes } from './lib/config-tools';
 import { emptyUsageStatistics, normalizeUsageStatistics, recordAddedItem, type UsageStatistics } from './lib/statistics';
 
-const VERSION = '0.2.0-beta.1';
+const VERSION = '0.2.0-beta.2';
 const DEFAULT_CATEGORIES = [
     'Obst/Gemüse',
     'Tee/Kaffee',
@@ -189,6 +189,7 @@ export class ShoppingRoute extends utils.Adapter {
         }
 
         await this.ensureProductGroupsConfig();
+        this.ensureRoutesForMarketsAndGroups();
         await this.updateTemporaryMarketStateOptions();
         await this.persistRuntimeConfig();
 
@@ -740,6 +741,15 @@ export class ShoppingRoute extends utils.Adapter {
         } catch (error) {
             this.log.warn(`Temporäre Markt-Auswahlliste konnte nicht aktualisiert werden: ${error instanceof Error ? error.message : String(error)}`);
         }
+    }
+
+
+    private ensureRoutesForMarketsAndGroups(): void {
+        const synchronized = ensureMarketRoutes(this.markets, this.productGroups, this.runtimeRoutes);
+        if (synchronized.added <= 0) return;
+        this.runtimeRoutes = synchronized.routes;
+        this.routesDirty = true;
+        this.log.info(`${synchronized.added} fehlende Laufweg-Zuordnung(en) für neue Märkte/Produktgruppen automatisch ergänzt.`);
     }
 
     private async ensureProductGroupsConfig(): Promise<void> {
