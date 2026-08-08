@@ -33,7 +33,7 @@ import { findProduct, parseItem, suggestAliases } from './lib/parser';
 import { buildMarketProfiles, ensureMarketRoutes, exportConfig, importMarketProfile, normalizeRoutesForAdmin, parseConfigImport } from './lib/config-tools';
 import { emptyUsageStatistics, normalizeUsageStatistics, recordAddedItem, type UsageStatistics } from './lib/statistics';
 
-const VERSION = '0.2.0-beta.4';
+const VERSION = '0.2.0-beta.5';
 const DEFAULT_CATEGORIES = [
     'Obst/Gemüse',
     'Tee/Kaffee',
@@ -250,7 +250,27 @@ export class ShoppingRoute extends utils.Adapter {
         this.scheduleAll(700);
     }
 
-    private onMessage(obj: { command: string; from: string; callback?: any }): void {
+    private async discoverAlexaLists(instanceName = this.alexaInstance): Promise<string[]> {
+        const instance = String(instanceName || this.alexaInstance).trim() || this.alexaInstance;
+        const prefix = `${instance}.Lists.`;
+        const suffix = '.json';
+        const names = new Set<string>();
+        try {
+            const objects = await (this as any).getForeignObjectsAsync(`${instance}.Lists.*.json`, 'state') as Record<string, unknown> | undefined;
+            for (const id of Object.keys(objects || {})) {
+                if (!id.startsWith(prefix) || !id.endsWith(suffix)) continue;
+                const name = id.slice(prefix.length, -suffix.length).trim();
+                if (name && !name.includes('.')) names.add(name);
+            }
+        } catch (error) {
+            this.log.debug(`Alexa-Listen konnten für ${instance} nicht automatisch gelesen werden: ${String(error)}`);
+        }
+        // Keep already configured names available as a fallback, e.g. while Alexa2 is reconnecting.
+        for (const list of this.listConfigs) if (list.name) names.add(String(list.name).trim());
+        return [...names].filter(Boolean).sort((a, b) => a.localeCompare(b, 'de', { sensitivity: 'base' }));
+    }
+
+    private async onMessage(obj: { command: string; from: string; callback?: any; message?: any }): Promise<void> {
         if (!obj || !obj.callback) return;
         if (obj.command === 'getProductGroups') {
             const options = this.productGroups.map(group => ({ value: group.name, label: group.name }))
@@ -265,9 +285,10 @@ export class ShoppingRoute extends utils.Adapter {
             this.sendTo(obj.from, obj.command, options, obj.callback);
             return;
         }
-        if (obj.command === 'getLists') {
-            const options = this.listConfigs.map(list => ({ value: list.name, label: list.name }))
-                .sort((a, b) => a.label.localeCompare(b.label, 'de', { sensitivity: 'base' }));
+        if (obj.command === 'getAlexaLists' || obj.command === 'getLists') {
+            const requestedInstance = String(obj.message?.alexaInstance || this.alexaInstance).trim() || this.alexaInstance;
+            const lists = await this.discoverAlexaLists(requestedInstance);
+            const options = lists.map(name => ({ value: name, label: name }));
             this.sendTo(obj.from, obj.command, options, obj.callback);
         }
     }

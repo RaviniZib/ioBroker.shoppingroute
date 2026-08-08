@@ -11,8 +11,8 @@
         "betaWarning": {
           "type": "staticText",
           "text": {
-            "en": "BETA 0.2.0-beta.4. Start with Dry-Run enabled. ShoppingRoute never creates, deletes or completes Alexa list items; it only redistributes visible value texts across existing active IDs.",
-            "de": "BETA 0.2.0-beta.4. Zuerst mit Dry-Run testen. ShoppingRoute legt niemals Alexa-Listeneinträge an, löscht keine und hakt keine ab; es verteilt ausschließlich sichtbare value-Texte auf vorhandene aktive IDs."
+            "en": "BETA 0.2.0-beta.5. Start with Dry-Run enabled. ShoppingRoute never creates, deletes or completes Alexa list items; it only redistributes visible value texts across existing active IDs.",
+            "de": "BETA 0.2.0-beta.5. Zuerst mit Dry-Run testen. ShoppingRoute legt niemals Alexa-Listeneinträge an, löscht keine und hakt keine ab; es verteilt ausschließlich sichtbare value-Texte auf vorhandene aktive IDs."
           },
           "xs": 12,
           "sm": 12,
@@ -21,10 +21,16 @@
           "xl": 12
         },
         "alexaInstance": {
-          "type": "text",
+          "type": "instance",
+          "adapter": "alexa2",
+          "onlyEnabled": true,
           "label": {
             "en": "Alexa2 instance",
             "de": "Alexa2-Instanz"
+          },
+          "help": {
+            "en": "Only installed and enabled Alexa2 instances are offered. After changing the instance, save once so the list dropdowns can be refreshed from that instance.",
+            "de": "Es werden nur installierte und aktivierte Alexa2-Instanzen angeboten. Nach einem Wechsel einmal speichern, damit die Listen-Auswahl aus dieser Instanz neu geladen werden kann."
           },
           "newLine": true,
           "xs": 12,
@@ -116,21 +122,25 @@
           "manual": false,
           "noTranslation": true,
           "label": {
-            "en": "Priority market",
-            "de": "Prioritätsmarkt"
+            "en": "Default market for shopping",
+            "de": "Standardmarkt für Einkäufe"
           },
           "xs": 12,
           "sm": 12,
           "md": 6,
           "lg": 4,
-          "xl": 3
+          "xl": 3,
+          "help": {
+            "en": "Used when an item has no explicit market and no product-specific default market.",
+            "de": "Wird verwendet, wenn beim Artikel kein Markt genannt und für den Artikel kein eigener Standardmarkt hinterlegt ist."
+          }
         },
         "temporaryMarketHelp": {
           "type": "staticText",
           "newLine": true,
           "text": {
-            "en": "For a one-off shopping trip, write a market name to shoppingroute.0.control.temporaryPriorityMarket. It overrides list and global priority markets until control.clearTemporaryPriorityMarket is triggered.",
-            "de": "Für einen einzelnen Einkauf kann unter shoppingroute.0.control.temporaryPriorityMarket vorübergehend ein Markt gesetzt werden. Er übersteuert Listen- und globalen Prioritätsmarkt, bis control.clearTemporaryPriorityMarket ausgelöst wird."
+            "en": "Market for current shopping temporarily overrides list and global default markets. Clear it after the one-off shopping trip to return to the normal defaults.",
+            "de": "Der Markt für den aktuellen Einkauf überschreibt vorübergehend Listen- und Standardmarkt. Nach diesem Einkauf wieder löschen, damit die normalen Vorgaben gelten."
           },
           "xs": 12,
           "sm": 12,
@@ -144,8 +154,8 @@
           "control": "select",
           "controlled": true,
           "label": {
-            "en": "Temporary priority market",
-            "de": "Temporärer Prioritätsmarkt"
+            "en": "Market for current shopping",
+            "de": "Markt für aktuellen Einkauf"
           },
           "newLine": true,
           "xs": 12,
@@ -160,8 +170,8 @@
           "val": true,
           "ack": false,
           "label": {
-            "en": "Clear temporary market",
-            "de": "Temporären Markt löschen"
+            "en": "Clear market for current shopping",
+            "de": "Markt für aktuellen Einkauf löschen"
           },
           "variant": "outlined",
           "xs": 12,
@@ -198,6 +208,130 @@
           "md": 6,
           "lg": 4,
           "xl": 3
+        },
+        "apiDivider": {
+          "type": "divider",
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
+        },
+        "apiSectionTitle": {
+          "type": "staticText",
+          "text": {
+            "en": "API protection",
+            "de": "API-Schutz"
+          },
+          "style": {
+            "fontSize": "1.15rem",
+            "fontWeight": "600",
+            "marginTop": "8px"
+          },
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
+        },
+        "apiHelp": {
+          "type": "staticText",
+          "text": {
+            "en": "API Safe Mode limits Alexa write frequency, groups large sorts into batches and retries temporary write errors with exponential backoff. It protects against unnecessary bursts; it does not poll Amazon.",
+            "de": "Der API-Schonmodus begrenzt Alexa-Schreibzugriffe, teilt große Sortierungen in Blöcke und wiederholt vorübergehende Schreibfehler mit wachsender Pause. Er schützt vor unnötigen Zugriffsspitzen; ShoppingRoute pollt Amazon nicht."
+          },
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12,
+          "newLine": true
+        },
+        "apiSafeMode": {
+          "type": "checkbox",
+          "label": {
+            "en": "Enable API Safe Mode",
+            "de": "API-Schonmodus aktivieren"
+          },
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
+          "xl": 3
+        },
+        "maxWritesPerMinute": {
+          "type": "number",
+          "label": {
+            "en": "Maximum writes per minute",
+            "de": "Maximale Schreibzugriffe pro Minute"
+          },
+          "min": 1,
+          "max": 120,
+          "xs": 12,
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
+          "xl": 3
+        },
+        "batchSize": {
+          "type": "number",
+          "label": {
+            "en": "Writes per batch",
+            "de": "Schreibzugriffe pro Block"
+          },
+          "min": 1,
+          "max": 100,
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
+          "xl": 3
+        },
+        "batchPauseMs": {
+          "type": "number",
+          "label": {
+            "en": "Pause between batches (ms)",
+            "de": "Pause zwischen Blöcken (ms)"
+          },
+          "min": 0,
+          "max": 60000,
+          "xs": 12,
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
+          "xl": 3
+        },
+        "maxWriteRetries": {
+          "type": "number",
+          "label": {
+            "en": "Maximum retries",
+            "de": "Maximale Wiederholungen"
+          },
+          "min": 0,
+          "max": 5,
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
+          "xl": 3
+        },
+        "retryBaseMs": {
+          "type": "number",
+          "label": {
+            "en": "Retry base delay (ms)",
+            "de": "Grundpause für Wiederholungen (ms)"
+          },
+          "min": 250,
+          "max": 30000,
+          "xs": 12,
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
+          "xl": 3
         }
       }
     },
@@ -211,8 +345,8 @@
         "listsHelp": {
           "type": "staticText",
           "text": {
-            "en": "ShoppingRoute can manage several Alexa lists. Each list may have its own priority market. The Alexa app must use 'Oldest to newest' for every managed list.",
-            "de": "ShoppingRoute kann mehrere Alexa-Listen verwalten. Jede Liste kann einen eigenen Prioritätsmarkt erhalten. In der Alexa-App muss jede verwaltete Liste auf „Älteste bis neueste“ stehen."
+            "en": "ShoppingRoute reads the available lists from the selected Alexa2 instance. After changing the Alexa2 instance, save once and reopen this page. Each list may have its own default market. The Alexa app must use 'Oldest to newest' for every managed list.",
+            "de": "ShoppingRoute liest die verfügbaren Listen aus der gewählten Alexa2-Instanz. Nach einem Wechsel der Alexa2-Instanz einmal speichern und diese Seite neu öffnen. Jede Liste kann einen eigenen Standardmarkt erhalten. In der Alexa-App muss jede verwaltete Liste auf „Älteste bis neueste“ stehen."
           },
           "xs": 12,
           "sm": 12,
@@ -237,11 +371,14 @@
               "width": "15%"
             },
             {
-              "type": "text",
+              "type": "selectSendTo",
               "attr": "name",
+              "command": "getAlexaLists",
+              "manual": false,
+              "noTranslation": true,
               "title": {
-                "en": "List name",
-                "de": "Listenname"
+                "en": "Alexa list",
+                "de": "Alexa-Liste"
               },
               "width": "40%",
               "sort": true
@@ -253,8 +390,8 @@
               "manual": false,
               "noTranslation": true,
               "title": {
-                "en": "List priority market",
-                "de": "Listen-Prioritätsmarkt"
+                "en": "Default market for this list",
+                "de": "Standardmarkt dieser Liste"
               },
               "width": "45%",
               "sort": true
@@ -381,8 +518,8 @@
         "routesHelp": {
           "type": "staticText",
           "text": {
-            "en": "Select a market with the Market filter above the table. Only this market's walking route is then shown. Route rows are grouped alphabetically by market; within a market, the row order is the walking route. Move rows with the table arrows (or drag them when supported).",
-            "de": "Oben in der Tabelle über den Filter „Markt“ einen Markt auswählen. Danach wird nur der Laufweg dieses Marktes angezeigt. Die Märkte werden alphabetisch gruppiert; innerhalb eines Marktes ist die Zeilenreihenfolge der Laufweg. Zeilen mit den Tabellenpfeilen verschieben (oder per Drag & Drop, wenn unterstützt)."
+            "en": "Choose one market from the dropdown. Only that market’s walking route is shown. Use the arrows to move product groups into the order in which you normally walk through the store. New markets and product groups are added automatically.",
+            "de": "Einen Markt im Pulldown auswählen. Es wird ausschließlich der Laufweg dieses Marktes angezeigt. Mit den Pfeilen die Produktgruppen in die Reihenfolge bringen, in der du normalerweise durch den Markt gehst. Neue Märkte und Produktgruppen werden automatisch ergänzt."
           },
           "xs": 12,
           "sm": 12,
@@ -390,52 +527,77 @@
           "lg": 12,
           "xl": 12
         },
-        "routes": {
-          "type": "table",
+        "routeEditor": {
+          "type": "custom",
+          "url": "custom/routeEditor.js",
+          "name": "ShoppingRouteAdminSet/Components/RouteEditor",
+          "i18n": false,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
+        },
+        "routesExpert": {
+          "type": "accordion",
           "label": {
-            "en": "Market / product-group route",
-            "de": "Markt-/Produktgruppen-Laufweg"
+            "en": "Expert view: all walking routes",
+            "de": "Expertenansicht: alle Laufwege"
           },
-          "items": [
-            {
-              "type": "selectSendTo",
-              "attr": "market",
-              "command": "getMarkets",
-              "manual": false,
-              "noTranslation": true,
-              "title": {
-                "en": "Market",
-                "de": "Markt"
+          "items": {
+            "routes": {
+              "type": "table",
+              "label": {
+                "en": "Market / product-group route",
+                "de": "Markt-/Produktgruppen-Laufweg"
               },
-              "width": "40%",
-              "sort": true,
-              "filter": true
-            },
-            {
-              "type": "selectSendTo",
-              "attr": "category",
-              "command": "getProductGroups",
-              "manual": false,
-              "noTranslation": true,
-              "default": "Sonstiges",
-              "title": {
-                "en": "Product group",
-                "de": "Produktgruppe"
-              },
-              "width": "45%",
-              "sort": true
-            },
-            {
-              "type": "number",
-              "attr": "order",
-              "title": {
-                "en": "Auto order",
-                "de": "Auto-Reihenfolge"
-              },
-              "width": "15%"
+              "items": [
+                {
+                  "type": "selectSendTo",
+                  "attr": "market",
+                  "command": "getMarkets",
+                  "manual": false,
+                  "noTranslation": true,
+                  "title": {
+                    "en": "Market",
+                    "de": "Markt"
+                  },
+                  "width": "40%",
+                  "sort": true,
+                  "filter": true
+                },
+                {
+                  "type": "selectSendTo",
+                  "attr": "category",
+                  "command": "getProductGroups",
+                  "manual": false,
+                  "noTranslation": true,
+                  "default": "Sonstiges",
+                  "title": {
+                    "en": "Product group",
+                    "de": "Produktgruppe"
+                  },
+                  "width": "45%",
+                  "sort": true
+                },
+                {
+                  "type": "number",
+                  "attr": "order",
+                  "title": {
+                    "en": "Auto order",
+                    "de": "Auto-Reihenfolge"
+                  },
+                  "width": "15%"
+                }
+              ],
+              "allowAddByFilter": true
             }
-          ],
-          "allowAddByFilter": true
+          },
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         }
       }
     },
@@ -637,112 +799,6 @@
               ]
             }
           ]
-        }
-      }
-    },
-    "apiTab": {
-      "type": "panel",
-      "label": {
-        "en": "API protection",
-        "de": "API-Schutz"
-      },
-      "items": {
-        "apiHelp": {
-          "type": "staticText",
-          "text": {
-            "en": "API Safe Mode limits Alexa write frequency, groups large sorts into batches and retries temporary write errors with exponential backoff. It protects against unnecessary bursts; it does not poll Amazon.",
-            "de": "Der API-Schonmodus begrenzt Alexa-Schreibzugriffe, teilt große Sortierungen in Blöcke und wiederholt vorübergehende Schreibfehler mit wachsender Pause. Er schützt vor unnötigen Zugriffsspitzen; ShoppingRoute pollt Amazon nicht."
-          },
-          "xs": 12,
-          "sm": 12,
-          "md": 12,
-          "lg": 12,
-          "xl": 12
-        },
-        "apiSafeMode": {
-          "type": "checkbox",
-          "label": {
-            "en": "Enable API Safe Mode",
-            "de": "API-Schonmodus aktivieren"
-          },
-          "newLine": true,
-          "xs": 12,
-          "sm": 12,
-          "md": 6,
-          "lg": 4,
-          "xl": 3
-        },
-        "maxWritesPerMinute": {
-          "type": "number",
-          "label": {
-            "en": "Maximum writes per minute",
-            "de": "Maximale Schreibzugriffe pro Minute"
-          },
-          "min": 1,
-          "max": 120,
-          "xs": 12,
-          "sm": 12,
-          "md": 6,
-          "lg": 4,
-          "xl": 3
-        },
-        "batchSize": {
-          "type": "number",
-          "label": {
-            "en": "Writes per batch",
-            "de": "Schreibzugriffe pro Block"
-          },
-          "min": 1,
-          "max": 100,
-          "newLine": true,
-          "xs": 12,
-          "sm": 12,
-          "md": 6,
-          "lg": 4,
-          "xl": 3
-        },
-        "batchPauseMs": {
-          "type": "number",
-          "label": {
-            "en": "Pause between batches (ms)",
-            "de": "Pause zwischen Blöcken (ms)"
-          },
-          "min": 0,
-          "max": 60000,
-          "xs": 12,
-          "sm": 12,
-          "md": 6,
-          "lg": 4,
-          "xl": 3
-        },
-        "maxWriteRetries": {
-          "type": "number",
-          "label": {
-            "en": "Maximum retries",
-            "de": "Maximale Wiederholungen"
-          },
-          "min": 0,
-          "max": 5,
-          "newLine": true,
-          "xs": 12,
-          "sm": 12,
-          "md": 6,
-          "lg": 4,
-          "xl": 3
-        },
-        "retryBaseMs": {
-          "type": "number",
-          "label": {
-            "en": "Retry base delay (ms)",
-            "de": "Grundpause für Wiederholungen (ms)"
-          },
-          "min": 250,
-          "max": 30000,
-          "xs": 12,
-          "sm": 12,
-          "md": 6,
-          "lg": 4,
-          "xl": 3
         }
       }
     },

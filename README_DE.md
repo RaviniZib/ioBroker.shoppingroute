@@ -2,7 +2,7 @@
 
 ![ShoppingRoute](admin/shoppingroute.png)
 
-**Entwicklungsstand: 0.2.0-beta.4 – Beta**
+**Entwicklungsstand: 0.2.0-beta.5 – Beta**
 
 ShoppingRoute sortiert vorhandene Alexa-Einkaufslisteneinträge nach Markt, Produktgruppe und dem individuellen Laufweg durch den jeweiligen Markt. Dabei werden **keine Einträge angelegt, gelöscht oder automatisch abgehakt**. Der Adapter verteilt ausschließlich die sichtbaren Texte auf bereits vorhandene aktive Alexa-IDs. Die Alexa-App muss für verwaltete Listen auf **„Älteste bis neueste“** gestellt sein.
 
@@ -66,6 +66,14 @@ Solange ShoppingRoute noch nicht im offiziellen ioBroker-Repository geführt wir
 Für diese Beta gilt die im Paket enthaltene **ShoppingRoute Closed Beta License 1.0**. Frühere separat unter einer anderen Lizenz veröffentlichte Versionen bleiben unter der jeweils damals gültigen Lizenz.
 
 ## Changelog
+
+### 0.2.0-beta.5 (2026-08-08)
+
+- Alexa2-Instanz wird aus den installierten/aktiven Alexa2-Instanzen ausgewählt statt frei eingetippt.
+- Alexa-Listen werden dynamisch erkannt und als Pulldown angeboten.
+- Laufwege erhalten einen übersichtlichen Ein-Markt-Editor mit alphabetischem Markt-Pulldown; die Gesamttabelle bleibt nur noch eingeklappt als Expertenansicht verfügbar.
+- Dauerhafter Standardmarkt und einmaliger Markt für den aktuellen Einkauf sind verständlicher benannt.
+- API-Schutz wurde direkt in „Allgemein“ integriert, damit die Einstellungen nicht übersehen werden.
 
 ### 0.2.0-beta.4 (2026-08-08)
 

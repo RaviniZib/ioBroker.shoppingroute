@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "shoppingroute",
-    "version": "0.2.0-beta.4",
+    "version": "0.2.0-beta.5",
     "titleLang": {
       "en": "ShoppingRoute",
       "de": "ShoppingRoute",
@@ -61,18 +61,18 @@
     "icon": "shoppingroute.png",
     "tier": 3,
     "news": {
-      "0.2.0-beta.4": {
-        "en": "Walking-route usability and ioBroker compliance update: market filter, alphabetically grouped market routes, responsive Admin UI, current metadata, standard testing workflow and timer cleanup.",
-        "de": "Laufweg- und ioBroker-Kompatibilitätsupdate: Marktfilter, alphabetisch gruppierte Laufwege, responsive Admin-Oberfläche, aktuelle Metadaten, Standard-Testworkflow und Timer-Bereinigung.",
-        "ru": "Улучшение маршрутов и совместимости ioBroker: фильтр магазинов, алфавитная группировка маршрутов, адаптивный интерфейс Admin, актуальные метаданные, стандартный тестовый workflow и корректные таймеры.",
-        "pt": "Melhorias de percurso e compatibilidade ioBroker: filtro de mercados, rotas agrupadas alfabeticamente, Admin responsivo, metadados atuais, workflow de testes padrão e temporizadores corrigidos.",
-        "nl": "Verbetering voor winkelroutes en ioBroker-compatibiliteit: winkelfilter, alfabetisch gegroepeerde routes, responsieve Admin-UI, actuele metadata, standaard testworkflow en correcte timers.",
-        "fr": "Amélioration des parcours et de la conformité ioBroker : filtre de magasins, parcours regroupés par ordre alphabétique, Admin responsive, métadonnées à jour, workflow de test standard et minuteries corrigées.",
-        "it": "Miglioramenti ai percorsi e alla conformità ioBroker: filtro negozio, percorsi raggruppati alfabeticamente, Admin responsive, metadati aggiornati, workflow di test standard e timer corretti.",
-        "es": "Mejoras de rutas y compatibilidad con ioBroker: filtro de tiendas, rutas agrupadas alfabéticamente, Admin adaptable, metadatos actuales, flujo de pruebas estándar y temporizadores corregidos.",
-        "pl": "Ulepszenia tras i zgodności z ioBroker: filtr sklepów, alfabetyczne grupowanie tras, responsywny panel Admin, aktualne metadane, standardowy workflow testów i poprawione timery.",
-        "uk": "Покращення маршрутів і сумісності з ioBroker: фільтр магазинів, алфавітне групування маршрутів, адаптивний Admin, актуальні метадані, стандартний workflow тестів і правильні таймери.",
-        "zh-cn": "路线易用性与 ioBroker 兼容性更新：商店筛选、按字母分组的商店路线、响应式管理界面、最新元数据、标准测试工作流和定时器修正。"
+      "0.2.0-beta.5": {
+        "en": "Admin usability update: Alexa2 instance and Alexa lists are selectable from detected values, walking routes use a single-market editor, clearer market terminology, and API protection is integrated into General settings.",
+        "de": "Admin-Komfortupdate: Alexa2-Instanz und Alexa-Listen werden aus gefundenen Werten gewählt, Laufwege erhalten einen Ein-Markt-Editor, Marktbegriffe sind eindeutiger und der API-Schutz ist in Allgemein integriert.",
+        "ru": "Обновление удобства Admin: выбор найденных экземпляров Alexa2 и списков Alexa, редактор маршрута одного магазина, более понятные названия рынков и защита API в общих настройках.",
+        "pt": "Atualização de usabilidade do Admin: seleção de instâncias Alexa2 e listas Alexa detectadas, editor de percurso por mercado, termos de mercado mais claros e proteção de API integrada em Geral.",
+        "nl": "Admin-gebruiksgemak: gevonden Alexa2-instanties en Alexa-lijsten zijn selecteerbaar, winkelroutes krijgen een één-winkel-editor, duidelijkere winkelnamen en API-beveiliging staat onder Algemeen.",
+        "fr": "Amélioration de l’Admin : sélection des instances Alexa2 et listes détectées, éditeur de parcours pour un seul magasin, terminologie plus claire et protection API intégrée dans Général.",
+        "it": "Aggiornamento usabilità Admin: selezione delle istanze Alexa2 e liste Alexa rilevate, editor percorso per singolo negozio, termini più chiari e protezione API integrata in Generale.",
+        "es": "Mejora de usabilidad del Admin: selección de instancias Alexa2 y listas detectadas, editor de ruta para una sola tienda, términos más claros y protección de API integrada en General.",
+        "pl": "Aktualizacja wygody Admin: wybór wykrytych instancji Alexa2 i list Alexa, edytor trasy jednego sklepu, jaśniejsze nazwy oraz ochrona API w ustawieniach ogólnych.",
+        "uk": "Оновлення зручності Admin: вибір знайдених екземплярів Alexa2 і списків Alexa, редактор маршруту одного магазину, зрозуміліші назви та захист API в загальних налаштуваннях.",
+        "zh-cn": "管理界面易用性更新：可从检测到的 Alexa2 实例和 Alexa 列表中选择，单商店路线编辑器，更清晰的市场术语，并将 API 保护整合到常规设置。"
       }
     },
     "extIcon": "https://raw.githubusercontent.com/RaviniZib/ioBroker.shoppingroute/main/admin/shoppingroute.png",

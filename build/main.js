@@ -44,7 +44,7 @@ const sorter_1 = require("./lib/sorter");
 const parser_1 = require("./lib/parser");
 const config_tools_1 = require("./lib/config-tools");
 const statistics_1 = require("./lib/statistics");
-const VERSION = '0.2.0-beta.4';
+const VERSION = '0.2.0-beta.5';
 const DEFAULT_CATEGORIES = [
     'Obst/Gemüse',
     'Tee/Kaffee',
@@ -241,7 +241,31 @@ class ShoppingRoute extends utils.Adapter {
         this.log.info('WICHTIG: Die Alexa-App muss für jede verwaltete Liste auf „Älteste bis neueste“ gestellt sein.');
         this.scheduleAll(700);
     }
-    onMessage(obj) {
+    async discoverAlexaLists(instanceName = this.alexaInstance) {
+        const instance = String(instanceName || this.alexaInstance).trim() || this.alexaInstance;
+        const prefix = `${instance}.Lists.`;
+        const suffix = '.json';
+        const names = new Set();
+        try {
+            const objects = await this.getForeignObjectsAsync(`${instance}.Lists.*.json`, 'state');
+            for (const id of Object.keys(objects || {})) {
+                if (!id.startsWith(prefix) || !id.endsWith(suffix))
+                    continue;
+                const name = id.slice(prefix.length, -suffix.length).trim();
+                if (name && !name.includes('.'))
+                    names.add(name);
+            }
+        }
+        catch (error) {
+            this.log.debug(`Alexa-Listen konnten für ${instance} nicht automatisch gelesen werden: ${String(error)}`);
+        }
+        // Keep already configured names available as a fallback, e.g. while Alexa2 is reconnecting.
+        for (const list of this.listConfigs)
+            if (list.name)
+                names.add(String(list.name).trim());
+        return [...names].filter(Boolean).sort((a, b) => a.localeCompare(b, 'de', { sensitivity: 'base' }));
+    }
+    async onMessage(obj) {
         if (!obj || !obj.callback)
             return;
         if (obj.command === 'getProductGroups') {
@@ -258,9 +282,10 @@ class ShoppingRoute extends utils.Adapter {
             this.sendTo(obj.from, obj.command, options, obj.callback);
             return;
         }
-        if (obj.command === 'getLists') {
-            const options = this.listConfigs.map(list => ({ value: list.name, label: list.name }))
-                .sort((a, b) => a.label.localeCompare(b.label, 'de', { sensitivity: 'base' }));
+        if (obj.command === 'getAlexaLists' || obj.command === 'getLists') {
+            const requestedInstance = String(obj.message?.alexaInstance || this.alexaInstance).trim() || this.alexaInstance;
+            const lists = await this.discoverAlexaLists(requestedInstance);
+            const options = lists.map(name => ({ value: name, label: name }));
             this.sendTo(obj.from, obj.command, options, obj.callback);
         }
     }

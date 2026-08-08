@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const { exportConfig, parseConfigImport, buildMarketProfiles, importMarketProfile, reindexRoutes, ensureMarketRoutes } = require('../build/lib/config-tools');
 
 test('configuration can be exported and imported with format marker', () => {
-  const exported = exportConfig({ priorityMarket:'LIDL', products:[{name:'Milch',category:'Milchprodukte'}] }, '0.2.0-beta.4', new Date('2026-08-08T00:00:00Z'));
+  const exported = exportConfig({ priorityMarket:'LIDL', products:[{name:'Milch',category:'Milchprodukte'}] }, '0.2.0-beta.5', new Date('2026-08-08T00:00:00Z'));
   assert.equal(exported.format, 'shoppingroute-config-v1');
   const imported = parseConfigImport(JSON.stringify(exported));
   assert.equal(imported.priorityMarket, 'LIDL');
