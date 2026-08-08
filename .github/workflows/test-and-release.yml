@@ -53,7 +53,7 @@ jobs:
       - name: Build public-beta package
         run: npm run beta:package
       - name: Upload public-beta artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: shoppingroute-public-beta
           path: beta-package/*.tgz
