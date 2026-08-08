@@ -14,8 +14,21 @@ test('beta version and branding are consistent',()=>{
   assert.ok(fs.existsSync(path.join(root,'admin',ioPackage.common.icon)));
 });
 
-test('new admin areas are present',()=>{
-  for(const tab of ['listsTab','productGroupsTab','routesTab','productsTab','reviewTab','transferTab','diagnosticsTab']) assert.ok(jsonConfig.items[tab],tab);
+test('user-facing admin areas are present and diagnostics tab is hidden',()=>{
+  for(const tab of ['listsTab','productGroupsTab','routesTab','productsTab','reviewTab','transferTab']) assert.ok(jsonConfig.items[tab],tab);
+  assert.equal(jsonConfig.items.diagnosticsTab,undefined);
+});
+test('backup and sharing use file buttons without raw JSON controls',()=>{
+  const transfer=jsonConfig.items.transferTab.items;
+  assert.deepEqual(Object.keys(transfer),['backupHelp','backupTransfer']);
+  assert.equal(transfer.backupTransfer.type,'custom');
+  assert.equal(transfer.backupTransfer.name,'BackupTransfer');
+  assert.equal(transfer.backupTransfer.url,'custom/routeEditor.js');
+  for(const oldControl of ['refreshExport','configExportState','configImportState','marketProfilesState','marketProfileImportState']) assert.equal(transfer[oldControl],undefined,oldControl);
+  const customSource=fs.readFileSync(path.join(root,'admin','custom','routeEditor.js'),'utf8');
+  assert.match(customSource,/class BackupTransfer extends React\.Component/);
+  assert.match(customSource,/Sicherung herunterladen/);
+  assert.match(customSource,/Marktprofil importieren/);
 });
 
 test('known instances, lists, markets and product groups use dropdown controls',()=>{

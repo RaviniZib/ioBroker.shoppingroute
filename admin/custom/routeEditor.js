@@ -3101,9 +3101,1110 @@ class RouteEditor extends React.Component {
     }
 }
 
+
+const BACKUP_EXPORT_KEYS = [
+    'alexaInstance', 'listName', 'lists', 'dryRun',
+    'autoLearnProducts', 'learningMode',
+    'autoAliasSuggestions', 'debounceMs', 'writePauseMs',
+    'apiSafeMode', 'maxWritesPerMinute',
+    'batchSize', 'batchPauseMs', 'maxWriteRetries',
+    'retryBaseMs', 'fallbackMarket', 'priorityMarket',
+    'temporaryPriorityMarket', 'productGroups',
+    'markets', 'routes', 'products', 'reviewItems',
+];
+
+const backupClone = value =>
+    JSON.parse(JSON.stringify(value));
+
+const backupDate = () =>
+    new Date().toISOString().slice(0, 10);
+
+const backupSafeName = value =>
+    String(value || 'markt')
+        .trim()
+        .replace(/[^a-zA-Z0-9._-]+/g, '-')
+        .replace(/^-+|-+$/g, '') || 'markt';
+
+
+class BackupTransfer extends React.Component {
+
+    constructor(props) {
+        super(props);
+
+        this.state = {
+            selectedMarket: this.firstMarket(props.data),
+            status: '',
+            error: false,
+        };
+
+        this.configFile = React.createRef();
+        this.marketFile = React.createRef();
+    }
+
+
+    markets(data) {
+        return (
+            Array.isArray(data && data.markets)
+                ? data.markets
+                : []
+        )
+            .filter(
+                market =>
+                    market &&
+                    String(market.name || '').trim()
+            )
+            .slice()
+            .sort(
+                (a, b) =>
+                    (Number(a.order) || 9999) -
+                        (Number(b.order) || 9999) ||
+                    ciCompare(a.name, b.name)
+            );
+    }
+
+
+    firstMarket(data) {
+        const first = this.markets(data)[0];
+
+        return first
+            ? String(first.name).trim()
+            : '';
+    }
+
+
+    componentDidUpdate(prevProps) {
+
+        if (prevProps.data === this.props.data) {
+            return;
+        }
+
+        const markets = this.markets(this.props.data);
+
+        if (
+            !markets.some(
+                market =>
+                    sameMarket(
+                        market.name,
+                        this.state.selectedMarket
+                    )
+            )
+        ) {
+            const selectedMarket = markets[0]
+                ? String(markets[0].name).trim()
+                : '';
+
+            if (
+                selectedMarket !==
+                this.state.selectedMarket
+            ) {
+                this.setState({
+                    selectedMarket
+                });
+            }
+        }
+    }
+
+
+    setStatus(status, error) {
+        this.setState({
+            status,
+            error: Boolean(error)
+        });
+    }
+
+
+    downloadJson(filename, payload) {
+
+        const blob = new Blob(
+            [JSON.stringify(payload, null, 2)],
+            {
+                type: 'application/json;charset=utf-8'
+            }
+        );
+
+        const url =
+            URL.createObjectURL(blob);
+
+        const link =
+            document.createElement('a');
+
+        link.href = url;
+        link.download = filename;
+
+        document.body.appendChild(link);
+
+        link.click();
+        link.remove();
+
+        window.setTimeout(
+            () => URL.revokeObjectURL(url),
+            0
+        );
+    }
+
+
+    downloadConfig() {
+
+        try {
+
+            const data =
+                this.props.data || {};
+
+            const clean = {};
+
+            for (
+                const key of BACKUP_EXPORT_KEYS
+            ) {
+                if (
+                    data[key] !== undefined
+                ) {
+                    clean[key] =
+                        backupClone(data[key]);
+                }
+            }
+
+            const payload = {
+                format:
+                    'shoppingroute-config-v1',
+
+                exportedAt:
+                    new Date().toISOString(),
+
+                config:
+                    clean
+            };
+
+            const version =
+                this.props.instanceObj &&
+                this.props.instanceObj.common &&
+                this.props.instanceObj.common.version;
+
+            if (version) {
+                payload.version =
+                    String(version);
+            }
+
+            this.downloadJson(
+                'shoppingroute-backup-' +
+                    backupDate() +
+                    '.json',
+                payload
+            );
+
+            this.setStatus(
+                text(
+                    'Sicherung wurde heruntergeladen.',
+                    'Backup downloaded.'
+                ),
+                false
+            );
+
+        } catch (_) {
+
+            this.setStatus(
+                text(
+                    'Sicherung konnte nicht erstellt werden.',
+                    'Backup could not be created.'
+                ),
+                true
+            );
+        }
+    }
+
+
+    async importConfig(event) {
+
+        const input =
+            event.target;
+
+        const file =
+            input.files &&
+            input.files[0];
+
+        if (!file) {
+            return;
+        }
+
+        try {
+
+            const parsed =
+                JSON.parse(
+                    await file.text()
+                );
+
+            const source =
+                parsed &&
+                parsed.format ===
+                    'shoppingroute-config-v1'
+                    ? parsed.config
+                    : parsed;
+
+            if (
+                !source ||
+                typeof source !== 'object' ||
+                Array.isArray(source)
+            ) {
+                throw new Error(
+                    'no-object'
+                );
+            }
+
+            const clean = {};
+            let found = 0;
+
+            for (
+                const key of BACKUP_EXPORT_KEYS
+            ) {
+                if (
+                    source[key] !== undefined
+                ) {
+                    clean[key] =
+                        backupClone(
+                            source[key]
+                        );
+
+                    found += 1;
+                }
+            }
+
+            if (!found) {
+                throw new Error(
+                    'no-settings'
+                );
+            }
+
+            this.props.onChange(
+                {
+                    ...(this.props.data || {}),
+                    ...clean
+                },
+                true
+            );
+
+            this.setStatus(
+                text(
+                    'Sicherung geladen. Zum Übernehmen oben Speichern klicken.',
+                    'Backup loaded. Click Save above to apply it.'
+                ),
+                false
+            );
+
+        } catch (_) {
+
+            this.setStatus(
+                text(
+                    'Diese Datei ist keine gültige ShoppingRoute-Sicherung.',
+                    'This file is not a valid ShoppingRoute backup.'
+                ),
+                true
+            );
+
+        } finally {
+
+            input.value = '';
+        }
+    }
+
+
+    selectedProfile() {
+
+        const data =
+            this.props.data || {};
+
+        const market =
+            this.markets(data).find(
+                entry =>
+                    sameMarket(
+                        entry.name,
+                        this.state.selectedMarket
+                    )
+            );
+
+        if (!market) {
+            return null;
+        }
+
+        const name =
+            String(market.name).trim();
+
+        const routes =
+            (
+                Array.isArray(data.routes)
+                    ? data.routes
+                    : []
+            )
+                .map(
+                    (route, index) => ({
+                        route,
+                        index
+                    })
+                )
+                .filter(
+                    entry =>
+                        entry.route &&
+                        sameMarket(
+                            entry.route.market,
+                            name
+                        )
+                )
+                .sort(
+                    (a, b) =>
+                        (Number(a.route.order) || 9999) -
+                            (Number(b.route.order) || 9999) ||
+                        a.index -
+                            b.index
+                )
+                .map(
+                    (entry, index) => ({
+                        ...backupClone(
+                            entry.route
+                        ),
+                        market:
+                            name,
+                        order:
+                            (index + 1) * 10
+                    })
+                );
+
+        return {
+            format:
+                'shoppingroute-market-profile-v1',
+
+            market:
+                backupClone(market),
+
+            route:
+                routes
+        };
+    }
+
+
+    downloadMarket() {
+
+        const profile =
+            this.selectedProfile();
+
+        if (!profile) {
+
+            this.setStatus(
+                text(
+                    'Bitte zuerst einen Markt auswählen.',
+                    'Please select a market first.'
+                ),
+                true
+            );
+
+            return;
+        }
+
+        this.downloadJson(
+            'shoppingroute-marktprofil-' +
+                backupSafeName(
+                    profile.market.name
+                ) +
+                '-' +
+                backupDate() +
+                '.json',
+
+            profile
+        );
+
+        this.setStatus(
+            text(
+                'Marktprofil wurde heruntergeladen.',
+                'Market profile downloaded.'
+            ),
+            false
+        );
+    }
+
+
+    async importMarket(event) {
+
+        const input =
+            event.target;
+
+        const file =
+            input.files &&
+            input.files[0];
+
+        if (!file) {
+            return;
+        }
+
+        try {
+
+            const profile =
+                JSON.parse(
+                    await file.text()
+                );
+
+            if (
+                !profile ||
+                profile.format !==
+                    'shoppingroute-market-profile-v1' ||
+                !profile.market ||
+                !String(
+                    profile.market.name || ''
+                ).trim() ||
+                !Array.isArray(
+                    profile.route
+                )
+            ) {
+                throw new Error(
+                    'invalid-profile'
+                );
+            }
+
+            const name =
+                String(
+                    profile.market.name
+                ).trim();
+
+            const data =
+                this.props.data || {};
+
+            const markets =
+                (
+                    Array.isArray(data.markets)
+                        ? data.markets
+                        : []
+                )
+                    .filter(
+                        market =>
+                            market &&
+                            !sameMarket(
+                                market.name,
+                                name
+                            )
+                    )
+                    .map(
+                        backupClone
+                    );
+
+            markets.push({
+                ...backupClone(
+                    profile.market
+                ),
+                name
+            });
+
+            markets.sort(
+                (a, b) =>
+                    (Number(a.order) || 9999) -
+                        (Number(b.order) || 9999) ||
+                    ciCompare(
+                        a.name,
+                        b.name
+                    )
+            );
+
+            const routes =
+                (
+                    Array.isArray(data.routes)
+                        ? data.routes
+                        : []
+                )
+                    .filter(
+                        route =>
+                            route &&
+                            !sameMarket(
+                                route.market,
+                                name
+                            )
+                    )
+                    .map(
+                        backupClone
+                    );
+
+            profile.route.forEach(
+                (route, index) => {
+
+                    routes.push({
+                        market:
+                            name,
+
+                        category:
+                            route.category,
+
+                        order:
+                            (index + 1) * 10
+                    });
+                }
+            );
+
+            this.props.onChange(
+                {
+                    ...data,
+                    markets,
+                    routes
+                },
+                true
+            );
+
+            this.setState({
+                selectedMarket:
+                    name,
+
+                status:
+                    text(
+                        'Marktprofil geladen. Zum Übernehmen oben Speichern klicken.',
+                        'Market profile loaded. Click Save above to apply it.'
+                    ),
+
+                error:
+                    false
+            });
+
+        } catch (_) {
+
+            this.setStatus(
+                text(
+                    'Diese Datei ist kein gültiges ShoppingRoute-Marktprofil.',
+                    'This file is not a valid ShoppingRoute market profile.'
+                ),
+                true
+            );
+
+        } finally {
+
+            input.value = '';
+        }
+    }
+
+
+    render() {
+
+        const data =
+            this.props.data || {};
+
+        const markets =
+            this.markets(data);
+
+        const dark =
+            String(
+                this.props.themeType || ''
+            ).toLowerCase() === 'dark';
+
+        const border =
+            dark
+                ? '#555'
+                : '#d5d5d5';
+
+        const background =
+            dark
+                ? '#2b2b2b'
+                : '#fff';
+
+        const buttonBackground =
+            dark
+                ? '#3b3b3b'
+                : '#f4f4f4';
+
+        const muted =
+            dark
+                ? '#bbb'
+                : '#666';
+
+        const buttonStyle = {
+            padding:
+                '10px 16px',
+
+            border:
+                '1px solid ' +
+                border,
+
+            borderRadius:
+                '4px',
+
+            background:
+                buttonBackground,
+
+            color:
+                'inherit',
+
+            cursor:
+                'pointer',
+
+            fontWeight:
+                500
+        };
+
+        const sectionStyle = {
+            border:
+                '1px solid ' +
+                border,
+
+            borderRadius:
+                '6px',
+
+            padding:
+                '16px',
+
+            marginBottom:
+                '16px',
+
+            background
+        };
+
+        const buttonsStyle = {
+            display:
+                'flex',
+
+            flexWrap:
+                'wrap',
+
+            gap:
+                '10px',
+
+            marginTop:
+                '12px'
+        };
+
+
+        return h(
+            'div',
+            {
+                style: {
+                    width: '100%'
+                }
+            },
+            [
+
+                h('input', {
+                    key:
+                        'config-file',
+
+                    ref:
+                        this.configFile,
+
+                    type:
+                        'file',
+
+                    accept:
+                        '.json,application/json',
+
+                    style: {
+                        display: 'none'
+                    },
+
+                    onChange:
+                        event =>
+                            this.importConfig(
+                                event
+                            )
+                }),
+
+
+                h('input', {
+                    key:
+                        'market-file',
+
+                    ref:
+                        this.marketFile,
+
+                    type:
+                        'file',
+
+                    accept:
+                        '.json,application/json',
+
+                    style: {
+                        display: 'none'
+                    },
+
+                    onChange:
+                        event =>
+                            this.importMarket(
+                                event
+                            )
+                }),
+
+
+                h(
+                    'div',
+                    {
+                        key:
+                            'config',
+
+                        style:
+                            sectionStyle
+                    },
+                    [
+
+                        h(
+                            'div',
+                            {
+                                key:
+                                    'title',
+
+                                style: {
+                                    fontWeight:
+                                        600,
+
+                                    fontSize:
+                                        '1.05rem'
+                                }
+                            },
+
+                            text(
+                                'Komplette Konfiguration',
+                                'Complete configuration'
+                            )
+                        ),
+
+
+                        h(
+                            'div',
+                            {
+                                key:
+                                    'help',
+
+                                style: {
+                                    color:
+                                        muted,
+
+                                    marginTop:
+                                        '6px'
+                                }
+                            },
+
+                            text(
+                                'Alle ShoppingRoute-Einstellungen als Datei sichern oder aus einer Sicherungsdatei wieder laden.',
+                                'Save all ShoppingRoute settings to a file or restore them from a backup file.'
+                            )
+                        ),
+
+
+                        h(
+                            'div',
+                            {
+                                key:
+                                    'buttons',
+
+                                style:
+                                    buttonsStyle
+                            },
+                            [
+
+                                h(
+                                    'button',
+                                    {
+                                        key:
+                                            'download',
+
+                                        type:
+                                            'button',
+
+                                        style:
+                                            buttonStyle,
+
+                                        onClick:
+                                            () =>
+                                                this.downloadConfig()
+                                    },
+
+                                    text(
+                                        '↓ Sicherung herunterladen',
+                                        '↓ Download backup'
+                                    )
+                                ),
+
+
+                                h(
+                                    'button',
+                                    {
+                                        key:
+                                            'upload',
+
+                                        type:
+                                            'button',
+
+                                        style:
+                                            buttonStyle,
+
+                                        onClick:
+                                            () =>
+                                                this.configFile.current &&
+                                                this.configFile.current.click()
+                                    },
+
+                                    text(
+                                        '↑ Sicherung wiederherstellen',
+                                        '↑ Restore backup'
+                                    )
+                                )
+                            ]
+                        )
+                    ]
+                ),
+
+
+                h(
+                    'div',
+                    {
+                        key:
+                            'market',
+
+                        style:
+                            sectionStyle
+                    },
+                    [
+
+                        h(
+                            'div',
+                            {
+                                key:
+                                    'title',
+
+                                style: {
+                                    fontWeight:
+                                        600,
+
+                                    fontSize:
+                                        '1.05rem'
+                                }
+                            },
+
+                            text(
+                                'Marktprofil teilen',
+                                'Share market profile'
+                            )
+                        ),
+
+
+                        h(
+                            'div',
+                            {
+                                key:
+                                    'help',
+
+                                style: {
+                                    color:
+                                        muted,
+
+                                    marginTop:
+                                        '6px',
+
+                                    marginBottom:
+                                        '12px'
+                                }
+                            },
+
+                            text(
+                                'Einen einzelnen Markt mit seinem Laufweg als Datei weitergeben oder eine solche Datei importieren.',
+                                'Share a single market with its walking route as a file or import such a file.'
+                            )
+                        ),
+
+
+                        h(
+                            'select',
+                            {
+                                key:
+                                    'select',
+
+                                value:
+                                    this.state.selectedMarket,
+
+                                disabled:
+                                    !markets.length,
+
+                                onChange:
+                                    event =>
+                                        this.setState({
+                                            selectedMarket:
+                                                event.target.value,
+
+                                            status:
+                                                '',
+
+                                            error:
+                                                false
+                                        }),
+
+                                style: {
+                                    minWidth:
+                                        '240px',
+
+                                    maxWidth:
+                                        '100%',
+
+                                    padding:
+                                        '9px 12px',
+
+                                    borderRadius:
+                                        '4px',
+
+                                    border:
+                                        '1px solid ' +
+                                        border,
+
+                                    background,
+
+                                    color:
+                                        'inherit'
+                                }
+                            },
+
+                            markets.length
+
+                                ? markets.map(
+                                    market => {
+
+                                        const name =
+                                            String(
+                                                market.name
+                                            ).trim();
+
+                                        return h(
+                                            'option',
+                                            {
+                                                key:
+                                                    name,
+
+                                                value:
+                                                    name
+                                            },
+
+                                            name
+                                        );
+                                    }
+                                )
+
+                                : [
+                                    h(
+                                        'option',
+                                        {
+                                            key:
+                                                'none',
+
+                                            value:
+                                                ''
+                                        },
+
+                                        text(
+                                            'Kein Markt vorhanden',
+                                            'No market configured'
+                                        )
+                                    )
+                                ]
+                        ),
+
+
+                        h(
+                            'div',
+                            {
+                                key:
+                                    'buttons',
+
+                                style:
+                                    buttonsStyle
+                            },
+                            [
+
+                                h(
+                                    'button',
+                                    {
+                                        key:
+                                            'download',
+
+                                        type:
+                                            'button',
+
+                                        disabled:
+                                            !markets.length,
+
+                                        style: {
+                                            ...buttonStyle,
+
+                                            opacity:
+                                                markets.length
+                                                    ? 1
+                                                    : 0.45,
+
+                                            cursor:
+                                                markets.length
+                                                    ? 'pointer'
+                                                    : 'default'
+                                        },
+
+                                        onClick:
+                                            () =>
+                                                this.downloadMarket()
+                                    },
+
+                                    text(
+                                        '↓ Marktprofil herunterladen',
+                                        '↓ Download market profile'
+                                    )
+                                ),
+
+
+                                h(
+                                    'button',
+                                    {
+                                        key:
+                                            'upload',
+
+                                        type:
+                                            'button',
+
+                                        style:
+                                            buttonStyle,
+
+                                        onClick:
+                                            () =>
+                                                this.marketFile.current &&
+                                                this.marketFile.current.click()
+                                    },
+
+                                    text(
+                                        '↑ Marktprofil importieren',
+                                        '↑ Import market profile'
+                                    )
+                                )
+                            ]
+                        )
+                    ]
+                ),
+
+
+                this.state.status
+
+                    ? h(
+                        'div',
+                        {
+                            key:
+                                'status',
+
+                            style: {
+                                marginTop:
+                                    '4px',
+
+                                fontWeight:
+                                    500,
+
+                                color:
+                                    this.state.error
+                                        ? '#c62828'
+                                        : 'inherit'
+                            }
+                        },
+
+                        this.state.status
+                    )
+
+                    : null
+            ]
+        );
+    }
+}
+
 module.exports = {
     Components: {
         RouteEditor,
+        BackupTransfer,
     },
 };
 
