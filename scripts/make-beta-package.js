@@ -48,7 +48,7 @@ for (const file of [
     'BETA_TESTING_DE.md',
     'BETA_LICENSE.md',
     'BETA_LICENSE_DE.md',
-    'CLOSED_BETA_INSTALL_DE.md',
+    'BETA_INSTALL_DE.md',
     'BETA_TESTER_AUFRUF_DE.md',
 ]) copyFile(file);
 copyDir('admin');
@@ -90,7 +90,7 @@ delete testerPackage.devDependencies;
 testerPackage.files = [
     'admin', 'build', 'io-package.json', 'LICENSE', 'README.md', 'README_DE.md',
     'BETA_TESTING.md', 'BETA_TESTING_DE.md', 'BETA_LICENSE.md', 'BETA_LICENSE_DE.md',
-    'CLOSED_BETA_INSTALL_DE.md', 'BETA_TESTER_AUFRUF_DE.md',
+    'BETA_INSTALL_DE.md', 'BETA_TESTER_AUFRUF_DE.md',
 ];
 fs.writeFileSync(path.join(stage, 'package.json'), JSON.stringify(testerPackage, null, 2) + '\n');
 
@@ -103,6 +103,6 @@ if (pack.status !== 0) process.exit(pack.status || 1);
 
 const generated = fs.readdirSync(outDir).filter(name => name.endsWith('.tgz'));
 if (generated.length !== 1) throw new Error(`Expected exactly one tgz, found ${generated.length}`);
-console.log(`Closed beta package created: ${path.join(outDir, generated[0])}`);
+console.log(`Public beta package created: ${path.join(outDir, generated[0])}`);
 console.log('Package contains no TypeScript sources, tests, GitHub workflow files or source maps. Runtime JavaScript is obfuscated.');
 console.log(`Version: ${version}`);

@@ -1,4 +1,4 @@
-# ShoppingRoute – Installation einer geschlossenen Beta
+# ShoppingRoute – Installation der öffentlichen Beta
 
 ## Voraussetzungen
 
@@ -19,13 +19,13 @@
 
 ShoppingRoute legt keine Alexa-Listeneinträge an, löscht keine und hakt keine automatisch ab. Für die Sortierung werden nur die sichtbaren `value`-Texte vorhandener aktiver IDs verteilt.
 
-## Installation des privaten Testerpakets
+## Installation der öffentlichen Beta
 
-Das Testerpaket wird als `.tgz` persönlich bereitgestellt. Nach dem Kopieren auf den ioBroker-Server kann es entsprechend der ioBroker-Entwicklerdokumentation über npm installiert und anschließend in ioBroker hochgeladen werden:
+Die aktuelle öffentliche Beta wird über npm unter dem Tag `beta` bereitgestellt.
 
 ```bash
 cd /opt/iobroker
-npm install /PFAD/ZU/iobroker.shoppingroute-0.2.0-beta.7.tgz
+npm install iobroker.shoppingroute@beta
 iobroker upload shoppingroute
 ```
 

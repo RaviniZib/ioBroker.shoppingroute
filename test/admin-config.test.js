@@ -66,13 +66,13 @@ test('dynamic dropdown handlers sort alphabetically',()=>{
   assert.match(source,/getMarkets[\s\S]*localeCompare\(b\.label/);
 });
 
-test('closed beta publishing is protected by a root publish guard and package builder',()=>{
+test('public beta publishing is protected by a root publish guard and package builder',()=>{
   const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
   assert.equal('private' in pkg,false);
   assert.equal(pkg.license,'SEE LICENSE IN LICENSE');
   assert.equal(pkg.scripts.prepublishOnly,'node scripts/block-root-publish.js');
   assert.ok(fs.existsSync(path.join(root,'scripts','block-root-publish.js')));
-  assert.ok(fs.existsSync(path.join(root,'scripts','make-closed-beta-package.js')));
+  assert.ok(fs.existsSync(path.join(root,'scripts','make-beta-package.js')));
 });
 
 test('walking routes use a standalone market dropdown and a calculated one-market editor',()=>{

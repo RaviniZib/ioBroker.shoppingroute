@@ -67,10 +67,10 @@ See `README_DE.md` for the detailed German documentation.
 
 ### 0.1.0-beta.3 (2026-08-08)
 
-- First closed beta npm package with safe value-only Alexa list sorting and fixed-slot ordering.
+- First public beta npm package with safe value-only Alexa list sorting and fixed-slot ordering.
 
 ## License
 
-ShoppingRoute Closed Beta License 1.0. See [LICENSE](LICENSE) for the complete terms.
+ShoppingRoute Public Beta License 1.0. See [LICENSE](LICENSE) for the complete terms.
 
 Copyright (c) 2026 RaviniZib. All rights reserved.

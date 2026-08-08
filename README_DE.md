@@ -62,7 +62,7 @@ Solange ShoppingRoute noch nicht im offiziellen ioBroker-Repository geführt wir
 
 ## Beta-Lizenz
 
-Für diese Beta gilt die im Paket enthaltene **ShoppingRoute Closed Beta License 1.0**. Frühere separat unter einer anderen Lizenz veröffentlichte Versionen bleiben unter der jeweils damals gültigen Lizenz.
+Für diese Beta gilt die im Paket enthaltene **ShoppingRoute Public Beta License 1.0**. Frühere separat unter einer anderen Lizenz veröffentlichte Versionen bleiben unter der jeweils damals gültigen Lizenz.
 
 ## Changelog
 
@@ -93,10 +93,10 @@ Für diese Beta gilt die im Paket enthaltene **ShoppingRoute Closed Beta License
 
 ### 0.1.0-beta.3 (2026-08-08)
 
-- Erstes geschlossenes npm-Betapaket mit sicherer Alexa-Listensortierung nur über value-Texte und feste Positions-IDs.
+- Erstes öffentliches npm-Betapaket mit sicherer Alexa-Listensortierung nur über value-Texte und feste Positions-IDs.
 
 ## Lizenz
 
-ShoppingRoute Closed Beta License 1.0. Die vollständigen Bedingungen stehen in [LICENSE](LICENSE).
+ShoppingRoute Public Beta License 1.0. Die vollständigen Bedingungen stehen in [LICENSE](LICENSE).
 
 Copyright (c) 2026 RaviniZib. Alle Rechte vorbehalten.

@@ -50,11 +50,11 @@ jobs:
           node-version: '22.x'
           cache: npm
       - run: npm ci
-      - name: Build closed-beta package only
+      - name: Build public-beta package
         run: npm run beta:package
-      - name: Upload closed-beta artifact
+      - name: Upload public-beta artifact
         uses: actions/upload-artifact@v4
         with:
-          name: shoppingroute-closed-beta
+          name: shoppingroute-public-beta
           path: beta-package/*.tgz
           if-no-files-found: error

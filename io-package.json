@@ -40,7 +40,7 @@
     ],
     "licenseInformation": {
       "type": "free",
-      "license": "ShoppingRoute Closed Beta License 1.0"
+      "license": "ShoppingRoute Public Beta License 1.0"
     },
     "platform": "Javascript/Node.js",
     "mode": "daemon",
@@ -61,17 +61,17 @@
     "tier": 3,
     "news": {
       "0.1.0-beta.3": {
-        "en": "First closed beta npm package with safe value-only Alexa list sorting and fixed-slot ordering.",
-        "de": "Erstes geschlossenes npm-Betapaket mit sicherer Alexa-Listensortierung nur über value-Texte und feste Positions-IDs.",
-        "ru": "Первый закрытый бета-пакет npm с безопасной сортировкой списка Alexa только по значениям и фиксированными позиционными ID.",
-        "pt": "Primeiro pacote beta fechado no npm com ordenação segura da lista Alexa apenas pelos valores e IDs de posição fixos.",
-        "nl": "Eerste gesloten npm-bèta met veilige Alexa-lijstsortering alleen via waardeteksten en vaste positie-ID’s.",
-        "fr": "Premier paquet bêta fermé npm avec tri sûr de la liste Alexa uniquement via les valeurs et des ID de position fixes.",
-        "it": "Primo pacchetto beta chiuso npm con ordinamento sicuro della lista Alexa solo tramite valori e ID di posizione fissi.",
-        "es": "Primer paquete beta cerrado de npm con ordenación segura de la lista Alexa solo mediante valores e ID de posición fijos.",
-        "pl": "Pierwszy zamknięty pakiet beta npm z bezpiecznym sortowaniem listy Alexa wyłącznie przez wartości i stałe identyfikatory pozycji.",
-        "uk": "Перший закритий бета-пакет npm із безпечним сортуванням списку Alexa лише через значення та фіксовані ID позицій.",
-        "zh-cn": "首个封闭测试版 npm 包，仅通过 value 文本安全排序 Alexa 列表，并使用固定位置 ID。"
+        "en": "First public beta npm package with safe value-only Alexa list sorting and fixed-slot ordering.",
+        "de": "Erstes öffentliches npm-Betapaket mit sicherer Alexa-Listensortierung nur über value-Texte und feste Positions-IDs.",
+        "ru": "Первый общедоступный бета-пакет npm с безопасной сортировкой списка Alexa только по значениям и фиксированными позиционными ID.",
+        "pt": "Primeiro pacote beta público no npm com ordenação segura da lista Alexa apenas pelos valores e IDs de posição fixos.",
+        "nl": "Eerste openbare npm-bèta met veilige Alexa-lijstsortering alleen via waardeteksten en vaste positie-ID’s.",
+        "fr": "Premier paquet bêta public npm avec tri sûr de la liste Alexa uniquement via les valeurs et des ID de position fixes.",
+        "it": "Primo pacchetto beta pubblico npm con ordinamento sicuro della lista Alexa solo tramite valori e ID di posizione fissi.",
+        "es": "Primer paquete beta público de npm con ordenación segura de la lista Alexa solo mediante valores e ID de posición fijos.",
+        "pl": "Pierwszy publiczny pakiet beta npm z bezpiecznym sortowaniem listy Alexa wyłącznie przez wartości i stałe identyfikatory pozycji.",
+        "uk": "Перший загальнодоступний бета-пакет npm із безпечним сортуванням списку Alexa лише через значення та фіксовані ID позицій.",
+        "zh-cn": "首个公开测试版 npm 包，仅通过 value 文本安全排序 Alexa 列表，并使用固定位置 ID。"
       }
     },
     "extIcon": "https://raw.githubusercontent.com/RaviniZib/ioBroker.shoppingroute/main/admin/shoppingroute.png",

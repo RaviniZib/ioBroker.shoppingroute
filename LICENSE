@@ -1,11 +1,14 @@
-ShoppingRoute Closed Beta License 1.0
+ShoppingRoute Public Beta License 1.0
+
 Copyright (c) 2026 RaviniZib. All rights reserved.
 
-Permission is granted only to persons expressly invited by the copyright holder to install and use this beta version for private testing and to provide feedback.
+Permission is granted to anyone to download, install and use this public beta version for private testing and to provide feedback.
 
-Without prior written permission from the copyright holder, you may not:
-- redistribute, publish, mirror, sell, sublicense or otherwise make the software or beta package available to third parties;
-- use the software or any substantial part of it in another adapter, application, service or commercial product;
+The copyright holder may publicly distribute the software through official distribution channels, including npm and the official ShoppingRoute GitHub repository.
+
+Without prior written permission from the copyright holder, third parties may not:
+- redistribute, republish, mirror, sell, sublicense or otherwise independently distribute the software or beta package;
+- use the software or any substantial part of its implementation in another adapter, application, service or commercial product;
 - create or distribute derivative works based on this beta version;
 - remove or alter copyright, license or attribution notices;
 - use the software for commercial purposes.
@@ -14,4 +17,4 @@ Reverse engineering solely for the purpose of reproducing, extracting or reusing
 
 THE SOFTWARE IS A BETA VERSION AND IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND. USE IS AT YOUR OWN RISK.
 
-This license applies to ShoppingRoute versions distributed under this license. Earlier versions that were separately distributed under another license remain governed by the license applicable to those versions.
+This license applies to ShoppingRoute versions distributed under this license. Earlier versions separately distributed under another license remain governed by the license applicable to those versions.

@@ -36,7 +36,7 @@
     "BETA_TESTING_DE.md",
     "BETA_LICENSE.md",
     "BETA_LICENSE_DE.md",
-    "CLOSED_BETA_INSTALL_DE.md",
+    "BETA_INSTALL_DE.md",
     "BETA_TESTER_AUFRUF_DE.md"
   ],
   "scripts": {
@@ -44,7 +44,7 @@
     "check": "tsc -p tsconfig.json --noEmit",
     "test": "npm run build && node --test test/*.test.js",
     "test:unit": "node --test test/*.test.js",
-    "beta:package": "npm run build && node scripts/make-closed-beta-package.js",
+    "beta:package": "npm run build && node scripts/make-beta-package.js",
     "lint": "npm run check",
     "prepublishOnly": "node scripts/block-root-publish.js"
   },
