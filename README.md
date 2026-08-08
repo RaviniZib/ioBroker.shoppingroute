@@ -2,7 +2,7 @@
 
 ![ShoppingRoute](admin/shoppingroute.png)
 
-**Development status: 0.2.0-beta.6 – beta**
+**Development status: 0.2.0-beta.7 – beta**
 
 ShoppingRoute sorts existing Alexa shopping-list entries by market, product group and each store's individual walking route. It **never creates, deletes or automatically completes Alexa list items**. It only redistributes visible texts across existing active Alexa IDs. Managed Alexa lists must be set to **Oldest to newest** in the Alexa app.
 
@@ -32,11 +32,18 @@ See `README_DE.md` for the detailed German documentation.
 
 ## Changelog
 
+### 0.2.0-beta.7 (2026-08-08)
+
+- Added a real standalone market dropdown for the walking-route editor; only the selected market route is shown while the complete route list remains stored internally.
+- Centralized Admin translations in reusable JSON Config i18n variables for all required ioBroker languages.
+- Added further repository-checker compliance fixes for responsive tables, CI, Dependabot, button roles and VS Code schemas.
+
+
 ### 0.2.0-beta.6 (2026-08-08)
 
 - Alexa2 instance is now selected from installed/enabled Alexa2 instances instead of free text.
 - Alexa lists are offered as dynamically detected dropdown values.
-- Walking routes use native ioBroker JSON Config controls again: select the market through the Market column filter/dropdown; the faulty custom Module Federation editor has been removed.
+- Walking routes use native ioBroker JSON Config controls again; the faulty custom Module Federation editor has been removed.
 - The current-shopping market can be visibly reset to “— No market —” directly in its dropdown; the separate clear button has been removed.
 - Renamed the permanent and one-off market settings to make their purpose clearer.
 - API protection settings moved into General so they are not overlooked.
@@ -57,6 +64,10 @@ See `README_DE.md` for the detailed German documentation.
 ### 0.2.0-beta.1 (2026-08-08)
 
 - Added review queue, improved parser and aliases, API safe mode, multi-list support, statistics, transfer tools and beta diagnostics.
+
+### 0.1.0-beta.3 (2026-08-08)
+
+- First closed beta npm package with safe value-only Alexa list sorting and fixed-slot ordering.
 
 ## License
 

@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "shoppingroute",
-    "version": "0.2.0-beta.6",
+    "version": "0.2.0-beta.7",
     "titleLang": {
       "en": "ShoppingRoute",
       "de": "ShoppingRoute",
@@ -32,7 +32,6 @@
       "RaviniZib"
     ],
     "keywords": [
-      "ioBroker",
       "alexa",
       "shopping",
       "shopping-list",
@@ -61,31 +60,18 @@
     "icon": "shoppingroute.png",
     "tier": 3,
     "news": {
-      "0.2.0-beta.6": {
-        "en": "Fixed current-shopping market clearing and replaced the custom walking-route editor with the native ioBroker table/filter UI for Admin compatibility.",
-        "de": "Löschen des Markts für den aktuellen Einkauf korrigiert und den eigenen Laufweg-Editor durch die native ioBroker Tabellen-/Filter-Oberfläche ersetzt.",
-        "ru": "Fixed current-shopping market clearing and replaced the custom walking-route editor with the native ioBroker table/filter UI for Admin compatibility.",
-        "pt": "Fixed current-shopping market clearing and replaced the custom walking-route editor with the native ioBroker table/filter UI for Admin compatibility.",
-        "nl": "Fixed current-shopping market clearing and replaced the custom walking-route editor with the native ioBroker table/filter UI for Admin compatibility.",
-        "fr": "Fixed current-shopping market clearing and replaced the custom walking-route editor with the native ioBroker table/filter UI for Admin compatibility.",
-        "it": "Fixed current-shopping market clearing and replaced the custom walking-route editor with the native ioBroker table/filter UI for Admin compatibility.",
-        "es": "Fixed current-shopping market clearing and replaced the custom walking-route editor with the native ioBroker table/filter UI for Admin compatibility.",
-        "pl": "Fixed current-shopping market clearing and replaced the custom walking-route editor with the native ioBroker table/filter UI for Admin compatibility.",
-        "uk": "Fixed current-shopping market clearing and replaced the custom walking-route editor with the native ioBroker table/filter UI for Admin compatibility.",
-        "zh-cn": "Fixed current-shopping market clearing and replaced the custom walking-route editor with the native ioBroker table/filter UI for Admin compatibility."
-      },
-      "0.2.0-beta.5": {
-        "en": "Admin usability update: Alexa2 instance and Alexa lists are selectable from detected values, walking routes use a single-market editor, clearer market terminology, and API protection is integrated into General settings.",
-        "de": "Admin-Komfortupdate: Alexa2-Instanz und Alexa-Listen werden aus gefundenen Werten gewählt, Laufwege erhalten einen Ein-Markt-Editor, Marktbegriffe sind eindeutiger und der API-Schutz ist in Allgemein integriert.",
-        "ru": "Обновление удобства Admin: выбор найденных экземпляров Alexa2 и списков Alexa, редактор маршрута одного магазина, более понятные названия рынков и защита API в общих настройках.",
-        "pt": "Atualização de usabilidade do Admin: seleção de instâncias Alexa2 e listas Alexa detectadas, editor de percurso por mercado, termos de mercado mais claros e proteção de API integrada em Geral.",
-        "nl": "Admin-gebruiksgemak: gevonden Alexa2-instanties en Alexa-lijsten zijn selecteerbaar, winkelroutes krijgen een één-winkel-editor, duidelijkere winkelnamen en API-beveiliging staat onder Algemeen.",
-        "fr": "Amélioration de l’Admin : sélection des instances Alexa2 et listes détectées, éditeur de parcours pour un seul magasin, terminologie plus claire et protection API intégrée dans Général.",
-        "it": "Aggiornamento usabilità Admin: selezione delle istanze Alexa2 e liste Alexa rilevate, editor percorso per singolo negozio, termini più chiari e protezione API integrata in Generale.",
-        "es": "Mejora de usabilidad del Admin: selección de instancias Alexa2 y listas detectadas, editor de ruta para una sola tienda, términos más claros y protección de API integrada en General.",
-        "pl": "Aktualizacja wygody Admin: wybór wykrytych instancji Alexa2 i list Alexa, edytor trasy jednego sklepu, jaśniejsze nazwy oraz ochrona API w ustawieniach ogólnych.",
-        "uk": "Оновлення зручності Admin: вибір знайдених екземплярів Alexa2 і списків Alexa, редактор маршруту одного магазину, зрозуміліші назви та захист API в загальних налаштуваннях.",
-        "zh-cn": "管理界面易用性更新：可从检测到的 Alexa2 实例和 Alexa 列表中选择，单商店路线编辑器，更清晰的市场术语，并将 API 保护整合到常规设置。"
+      "0.1.0-beta.3": {
+        "en": "First closed beta npm package with safe value-only Alexa list sorting and fixed-slot ordering.",
+        "de": "Erstes geschlossenes npm-Betapaket mit sicherer Alexa-Listensortierung nur über value-Texte und feste Positions-IDs.",
+        "ru": "Первый закрытый бета-пакет npm с безопасной сортировкой списка Alexa только по значениям и фиксированными позиционными ID.",
+        "pt": "Primeiro pacote beta fechado no npm com ordenação segura da lista Alexa apenas pelos valores e IDs de posição fixos.",
+        "nl": "Eerste gesloten npm-bèta met veilige Alexa-lijstsortering alleen via waardeteksten en vaste positie-ID’s.",
+        "fr": "Premier paquet bêta fermé npm avec tri sûr de la liste Alexa uniquement via les valeurs et des ID de position fixes.",
+        "it": "Primo pacchetto beta chiuso npm con ordinamento sicuro della lista Alexa solo tramite valori e ID di posizione fissi.",
+        "es": "Primer paquete beta cerrado de npm con ordenación segura de la lista Alexa solo mediante valores e ID de posición fijos.",
+        "pl": "Pierwszy zamknięty pakiet beta npm z bezpiecznym sortowaniem listy Alexa wyłącznie przez wartości i stałe identyfikatory pozycji.",
+        "uk": "Перший закритий бета-пакет npm із безпечним сортуванням списку Alexa лише через значення та фіксовані ID позицій.",
+        "zh-cn": "首个封闭测试版 npm 包，仅通过 value 文本安全排序 Alexa 列表，并使用固定位置 ID。"
       }
     },
     "extIcon": "https://raw.githubusercontent.com/RaviniZib/ioBroker.shoppingroute/main/admin/shoppingroute.png",
@@ -992,7 +978,7 @@
         "name": "Clear temporary priority market",
         "type": "boolean",
         "role": "button",
-        "read": true,
+        "read": false,
         "write": true,
         "def": false
       },
@@ -1031,7 +1017,7 @@
         "name": "Refresh configuration export",
         "type": "boolean",
         "role": "button",
-        "read": true,
+        "read": false,
         "write": true,
         "def": false
       },
@@ -1070,7 +1056,7 @@
         "name": "Refresh privacy-safe feedback report",
         "type": "boolean",
         "role": "button",
-        "read": true,
+        "read": false,
         "write": true,
         "def": false
       },
@@ -1083,7 +1069,7 @@
         "name": "Reset local shopping statistics",
         "type": "boolean",
         "role": "button",
-        "read": true,
+        "read": false,
         "write": true,
         "def": false
       },
@@ -1096,7 +1082,7 @@
         "name": "Reset API/traffic counters",
         "type": "boolean",
         "role": "button",
-        "read": true,
+        "read": false,
         "write": true,
         "def": false
       },

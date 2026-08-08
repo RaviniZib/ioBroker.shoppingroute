@@ -1,6 +1,6 @@
 {
   "name": "iobroker.shoppingroute",
-  "version": "0.2.0-beta.6",
+  "version": "0.2.0-beta.7",
   "description": "Smart Alexa shopping-list routing by market, product group and individual store walking route with learning, multi-list support and API protection.",
   "author": "RaviniZib",
   "license": "SEE LICENSE IN LICENSE",
@@ -45,7 +45,8 @@
     "test": "npm run build && node --test test/*.test.js",
     "test:unit": "node --test test/*.test.js",
     "beta:package": "npm run build && node scripts/make-closed-beta-package.js",
-    "lint": "npm run check"
+    "lint": "npm run check",
+    "prepublishOnly": "node scripts/block-root-publish.js"
   },
   "dependencies": {
     "@iobroker/adapter-core": "^3.4.1"
@@ -54,8 +55,7 @@
     "@types/node": "^22.15.0",
     "typescript": "^5.8.3",
     "javascript-obfuscator": "^5.5.0",
-    "@iobroker/testing": "5.2.2",
+    "@iobroker/testing": "^5.2.2",
     "@tsconfig/node22": "^22.0.5"
-  },
-  "private": true
+  }
 }

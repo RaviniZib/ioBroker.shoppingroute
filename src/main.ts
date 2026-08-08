@@ -33,7 +33,7 @@ import { findProduct, parseItem, suggestAliases } from './lib/parser';
 import { buildMarketProfiles, ensureMarketRoutes, exportConfig, importMarketProfile, normalizeRoutesForAdmin, parseConfigImport } from './lib/config-tools';
 import { emptyUsageStatistics, normalizeUsageStatistics, recordAddedItem, type UsageStatistics } from './lib/statistics';
 
-const VERSION = '0.2.0-beta.6';
+const VERSION = '0.2.0-beta.7';
 const DEFAULT_CATEGORIES = [
     'Obst/Gemüse',
     'Tee/Kaffee',
@@ -279,8 +279,9 @@ export class ShoppingRoute extends utils.Adapter {
             this.sendTo(obj.from, obj.command, options, obj.callback);
             return;
         }
-        if (obj.command === 'getMarkets' || obj.command === 'getMarketsOptional') {
-            const options = this.markets.map(market => ({ value: market.name, label: market.name }))
+        if (obj.command === 'getMarkets' || obj.command === 'getMarketsOptional' || obj.command === 'getActiveMarkets') {
+            const sourceMarkets = obj.command === 'getActiveMarkets' ? this.markets.filter(market => market.enabled !== false) : this.markets;
+            const options = sourceMarkets.map(market => ({ value: market.name, label: market.name }))
                 .sort((a, b) => a.label.localeCompare(b.label, 'de', { sensitivity: 'base' }));
             if (obj.command === 'getMarketsOptional') options.unshift({ value: '', label: '—' });
             this.sendTo(obj.from, obj.command, options, obj.callback);

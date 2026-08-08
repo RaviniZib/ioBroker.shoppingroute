@@ -2,7 +2,7 @@
 
 ![ShoppingRoute](admin/shoppingroute.png)
 
-**Entwicklungsstand: 0.2.0-beta.6 – Beta**
+**Entwicklungsstand: 0.2.0-beta.7 – Beta**
 
 ShoppingRoute sortiert vorhandene Alexa-Einkaufslisteneinträge nach Markt, Produktgruppe und dem individuellen Laufweg durch den jeweiligen Markt. Dabei werden **keine Einträge angelegt, gelöscht oder automatisch abgehakt**. Der Adapter verteilt ausschließlich die sichtbaren Texte auf bereits vorhandene aktive Alexa-IDs. Die Alexa-App muss für verwaltete Listen auf **„Älteste bis neueste“** gestellt sein.
 
@@ -66,11 +66,18 @@ Für diese Beta gilt die im Paket enthaltene **ShoppingRoute Closed Beta License
 
 ## Changelog
 
+### 0.2.0-beta.7 (2026-08-08)
+
+- Echter Markt-Pulldown für den Laufweg-Editor; sichtbar ist nur der ausgewählte Markt, die vollständige Laufwegliste bleibt intern erhalten.
+- Admin-Übersetzungen zentral als wiederverwendbare JSON-Config-i18n-Variablen für alle von ioBroker geforderten Sprachen hinterlegt.
+- Weitere Checker-Korrekturen für responsive Tabellen, CI, Dependabot, Button-Rollen und VS-Code-Schemas.
+
+
 ### 0.2.0-beta.6 (2026-08-08)
 
 - Alexa2-Instanz wird aus den installierten/aktiven Alexa2-Instanzen ausgewählt statt frei eingetippt.
 - Alexa-Listen werden dynamisch erkannt und als Pulldown angeboten.
-- Laufwege verwenden wieder ausschließlich native ioBroker-JSON-Config-Komponenten: Der Markt wird über den Filter der Marktspalte per Pulldown ausgewählt; damit entfällt der fehlerhafte Custom-/Module-Federation-Editor.
+- Laufwege verwenden wieder ausschließlich native ioBroker-JSON-Config-Komponenten; damit entfällt der fehlerhafte Custom-/Module-Federation-Editor.
 - „Markt für aktuellen Einkauf“ lässt sich direkt im Pulldown sichtbar auf „— Kein Markt —“ zurücksetzen; der separate Löschbutton entfällt.
 - Dauerhafter Standardmarkt und einmaliger Markt für den aktuellen Einkauf sind verständlicher benannt.
 - API-Schutz wurde direkt in „Allgemein“ integriert, damit die Einstellungen nicht übersehen werden.
@@ -83,6 +90,10 @@ Für diese Beta gilt die im Paket enthaltene **ShoppingRoute Closed Beta License
 - ioBroker-Abhängigkeiten und Entwicklungs-Testmetadaten aktualisiert.
 - Globale Timer durch adapterverwaltete Timer ersetzt.
 - Standard-GitHub-Testworkflow und Dependabot ergänzt.
+
+### 0.1.0-beta.3 (2026-08-08)
+
+- Erstes geschlossenes npm-Betapaket mit sicherer Alexa-Listensortierung nur über value-Texte und feste Positions-IDs.
 
 ## Lizenz
 

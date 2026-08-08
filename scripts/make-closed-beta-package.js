@@ -82,7 +82,8 @@ for (const sourceFile of walkJs(path.join(root, 'build'))) {
 }
 
 const testerPackage = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
-// The development repository stays private, but the generated tester tarball must be publishable to npm.
+// Direct publishing from the development repository is blocked by prepublishOnly.
+// The generated tester tarball removes all scripts and remains publishable to npm.
 delete testerPackage.private;
 testerPackage.scripts = {};
 delete testerPackage.devDependencies;

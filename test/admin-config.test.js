@@ -8,7 +8,7 @@ const ioPackage=JSON.parse(fs.readFileSync(path.join(root,'io-package.json'),'ut
 const jsonConfig=JSON.parse(fs.readFileSync(path.join(root,'admin','jsonConfig.json'),'utf8'));
 
 test('beta version and branding are consistent',()=>{
-  assert.equal(ioPackage.common.version,'0.2.0-beta.6');
+  assert.equal(ioPackage.common.version,'0.2.0-beta.7');
   assert.equal(ioPackage.common.titleLang.de,'ShoppingRoute');
   assert.equal(ioPackage.common.icon,'shoppingroute.png');
   assert.ok(fs.existsSync(path.join(root,'admin',ioPackage.common.icon)));
@@ -28,9 +28,11 @@ test('known instances, lists, markets and product groups use dropdown controls',
   const listFields=jsonConfig.items.listsTab.items.lists.items;
   assert.equal(listFields.find(x=>x.attr==='name').type,'selectSendTo');
   assert.equal(listFields.find(x=>x.attr==='name').command,'getAlexaLists');
-  const routeFields=jsonConfig.items.routesTab.items.routes.items;
-  assert.equal(routeFields.find(x=>x.attr==='market').command,'getMarkets');
-  assert.equal(routeFields.find(x=>x.attr==='category').command,'getProductGroups');
+  const route=jsonConfig.items.routesTab.items;
+  assert.equal(route.routeMarketFilter.type,'selectSendTo');
+  assert.equal(route.routeMarketFilter.command,'getActiveMarkets');
+  assert.equal(route.routeMarketFilter.manual,false);
+  assert.equal(route.routeEditorRows.items.find(x=>x.attr==='category').command,'getProductGroups');
 });
 
 test('product list is sortable by product, group and market',()=>{
@@ -51,24 +53,45 @@ test('dynamic dropdown handlers sort alphabetically',()=>{
   assert.match(source,/getMarkets[\s\S]*localeCompare\(b\.label/);
 });
 
-test('closed beta project remains private and package builder exists',()=>{
+test('closed beta publishing is protected by a root publish guard and package builder',()=>{
   const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
-  assert.equal(pkg.private,true);
+  assert.equal('private' in pkg,false);
   assert.equal(pkg.license,'SEE LICENSE IN LICENSE');
+  assert.equal(pkg.scripts.prepublishOnly,'node scripts/block-root-publish.js');
+  assert.ok(fs.existsSync(path.join(root,'scripts','block-root-publish.js')));
   assert.ok(fs.existsSync(path.join(root,'scripts','make-closed-beta-package.js')));
 });
 
-test('walking routes use native ioBroker table filtering instead of a custom federation component',()=>{
-  const routes=jsonConfig.items.routesTab.items;
-  assert.equal(routes.routeEditor,undefined);
-  assert.equal(routes.routesExpert,undefined);
-  assert.equal(routes.routes.type,'table');
-  const market=routes.routes.items.find(x=>x.attr==='market');
-  assert.equal(market.type,'selectSendTo');
-  assert.equal(market.command,'getMarkets');
-  assert.equal(market.filter,true);
+test('walking routes use a standalone market dropdown and a calculated one-market editor',()=>{
+  const route=jsonConfig.items.routesTab.items;
+  assert.equal(route.routeMarketFilter.type,'selectSendTo');
+  assert.equal(route.routeMarketFilter.command,'getActiveMarkets');
+  assert.equal(route.routeMarketFilter.manual,false);
+  assert.equal(route.routeEditorRows.type,'table');
+  assert.equal(route.routeEditorRows.doNotSave,true);
+  assert.ok(route.routeEditorRows.onChange.alsoDependsOn.includes('routeMarketFilter'));
+  assert.equal(route.routes.type,'table');
+  assert.equal(route.routes.hidden,true);
+  assert.ok(route.routes.onChange.alsoDependsOn.includes('routeEditorRows'));
   const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
   assert.equal(pkg.scripts['build:admin'],undefined);
+});
+
+test('walking-route calculate functions keep only the selected market visible and merge edits back',()=>{
+  const route=jsonConfig.items.routesTab.items;
+  const source=[
+    {market:'ALDI',category:'Obst/Gemüse',order:10},
+    {market:'ALDI',category:'Milchprodukte',order:20},
+    {market:'REWE',category:'Getränke',order:10},
+  ];
+  const calcEditor=new Function('data',`return ${route.routeEditorRows.onChange.calculateFunc}`);
+  const editor=calcEditor({routes:source,routeMarketFilter:'ALDI'});
+  assert.deepEqual(editor.map(x=>x.category),['Obst/Gemüse','Milchprodukte']);
+  const calcRoutes=new Function('data',`return ${route.routes.onChange.calculateFunc}`);
+  const merged=calcRoutes({routes:source,routeMarketFilter:'ALDI',routeEditorRows:[editor[1],editor[0]]});
+  assert.deepEqual(merged.filter(x=>x.market==='ALDI').map(x=>x.category),['Milchprodukte','Obst/Gemüse']);
+  assert.deepEqual(merged.filter(x=>x.market==='ALDI').map(x=>x.order),[10,20]);
+  assert.deepEqual(merged.filter(x=>x.market==='REWE').map(x=>x.category),['Getränke']);
 });
 
 test('API protection is integrated into General and no longer has its own tab',()=>{
@@ -79,8 +102,8 @@ test('API protection is integrated into General and no longer has its own tab',(
 
 test('market terminology distinguishes normal default from current-shopping override',()=>{
   const general=jsonConfig.items.general.items;
-  assert.equal(general.priorityMarket.label.de,'Standardmarkt für Einkäufe');
-  assert.equal(general.temporaryMarketState.label.de,'Markt für aktuellen Einkauf');
+  assert.equal(jsonConfig.i18n[general.priorityMarket.label].de,'Standardmarkt für Einkäufe');
+  assert.equal(jsonConfig.i18n[general.temporaryMarketState.label].de,'Markt für aktuellen Einkauf');
 });
 
 
@@ -102,17 +125,35 @@ test('Alexa list discovery scans actual list objects instead of configured names
 test('ioBroker checker metadata is present',()=>{
   const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
   assert.ok(pkg.keywords.includes('ioBroker'));
-  assert.equal(pkg.devDependencies['@iobroker/testing'],'5.2.2');
+  assert.equal(pkg.devDependencies['@iobroker/testing'],'^5.2.2');
   assert.equal(ioPackage.common.type,'logic');
   assert.equal(ioPackage.common.tier,3);
   assert.ok(ioPackage.common.extIcon);
   assert.ok(Array.isArray(ioPackage.common.globalDependencies));
-  assert.equal(jsonConfig.i18n,false);
+  assert.equal(typeof jsonConfig.i18n,'object');
+  assert.ok(Object.keys(jsonConfig.i18n).length > 20);
+  for(const entry of Object.values(jsonConfig.i18n)) {
+    for(const lang of ['en','de','ru','pt','nl','fr','it','es','pl','uk','zh-cn']) assert.ok(entry[lang] !== undefined,`admin i18n ${lang}`);
+  }
   assert.equal('main' in ioPackage.common,false);
   for(const lang of ['en','de','ru','pt','nl','fr','it','es','pl','uk','zh-cn']) {
     assert.ok(ioPackage.common.titleLang[lang],`titleLang ${lang}`);
     assert.ok(ioPackage.common.desc[lang],`desc ${lang}`);
   }
+});
+
+test('checker workflow and responsive tables are configured',()=>{
+  const workflow=fs.readFileSync(path.join(root,'.github','workflows','test-and-release.yml'),'utf8');
+  assert.match(workflow,/check-and-lint:/);
+  assert.match(workflow,/adapter-tests:/);
+  assert.match(workflow,/deploy:/);
+  assert.match(workflow,/v\[0-9\]\+\.\[0-9\]\+\.\[0-9\]\+/);
+  function walk(node){
+    if(!node||typeof node!=='object') return;
+    if(node.type==='table') for(const bp of ['xs','sm','md','lg','xl']) assert.ok(bp in node,`table ${bp}`);
+    for(const value of Object.values(node)) walk(value);
+  }
+  walk(jsonConfig);
 });
 
 test('adapter source uses adapter-managed timers',()=>{

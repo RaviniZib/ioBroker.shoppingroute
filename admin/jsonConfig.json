@@ -3,17 +3,11 @@
   "items": {
     "general": {
       "type": "panel",
-      "label": {
-        "en": "General",
-        "de": "Allgemein"
-      },
+      "label": "ui.items.general.label",
       "items": {
         "betaWarning": {
           "type": "staticText",
-          "text": {
-            "en": "BETA 0.2.0-beta.6. Start with Dry-Run enabled. ShoppingRoute never creates, deletes or completes Alexa list items; it only redistributes visible value texts across existing active IDs.",
-            "de": "BETA 0.2.0-beta.6. Zuerst mit Dry-Run testen. ShoppingRoute legt niemals Alexa-Listeneinträge an, löscht keine und hakt keine ab; es verteilt ausschließlich sichtbare value-Texte auf vorhandene aktive IDs."
-          },
+          "text": "ui.items.general.items.betawarning.text",
           "xs": 12,
           "sm": 12,
           "md": 12,
@@ -24,14 +18,8 @@
           "type": "instance",
           "adapter": "alexa2",
           "onlyEnabled": true,
-          "label": {
-            "en": "Alexa2 instance",
-            "de": "Alexa2-Instanz"
-          },
-          "help": {
-            "en": "Only installed and enabled Alexa2 instances are offered. After changing the instance, save once so the list dropdowns can be refreshed from that instance.",
-            "de": "Es werden nur installierte und aktivierte Alexa2-Instanzen angeboten. Nach einem Wechsel einmal speichern, damit die Listen-Auswahl aus dieser Instanz neu geladen werden kann."
-          },
+          "label": "ui.items.general.items.alexainstance.label",
+          "help": "ui.items.general.items.alexainstance.help",
           "newLine": true,
           "xs": 12,
           "sm": 12,
@@ -41,10 +29,7 @@
         },
         "dryRun": {
           "type": "checkbox",
-          "label": {
-            "en": "Dry run (do not write to Alexa)",
-            "de": "Dry-Run (nichts zu Alexa schreiben)"
-          },
+          "label": "ui.items.general.items.dryrun.label",
           "newLine": true,
           "xs": 12,
           "sm": 12,
@@ -54,31 +39,19 @@
         },
         "learningMode": {
           "type": "select",
-          "label": {
-            "en": "Unknown-product handling",
-            "de": "Umgang mit unbekannten Artikeln"
-          },
+          "label": "ui.items.general.items.learningmode.label",
           "options": [
             {
               "value": "review",
-              "label": {
-                "en": "Review first",
-                "de": "Erst prüfen"
-              }
+              "label": "ui.items.general.items.learningmode.options.0.label"
             },
             {
               "value": "automatic",
-              "label": {
-                "en": "Learn automatically",
-                "de": "Automatisch lernen"
-              }
+              "label": "ui.items.general.items.learningmode.options.1.label"
             },
             {
               "value": "off",
-              "label": {
-                "en": "Do not learn",
-                "de": "Nicht lernen"
-              }
+              "label": "ui.items.general.items.learningmode.options.2.label"
             }
           ],
           "newLine": true,
@@ -90,10 +63,7 @@
         },
         "autoAliasSuggestions": {
           "type": "checkbox",
-          "label": {
-            "en": "Suggest aliases automatically",
-            "de": "Aliase automatisch vorschlagen"
-          },
+          "label": "ui.items.general.items.autoaliassuggestions.label",
           "xs": 12,
           "sm": 12,
           "md": 6,
@@ -105,10 +75,7 @@
           "command": "getMarkets",
           "manual": false,
           "noTranslation": true,
-          "label": {
-            "en": "Fallback market",
-            "de": "Fallback-Markt"
-          },
+          "label": "ui.items.general.items.fallbackmarket.label",
           "newLine": true,
           "xs": 12,
           "sm": 12,
@@ -121,27 +88,18 @@
           "command": "getMarketsOptional",
           "manual": false,
           "noTranslation": true,
-          "label": {
-            "en": "Default market for shopping",
-            "de": "Standardmarkt für Einkäufe"
-          },
+          "label": "ui.items.general.items.prioritymarket.label",
           "xs": 12,
           "sm": 12,
           "md": 6,
           "lg": 4,
           "xl": 3,
-          "help": {
-            "en": "Used when an item has no explicit market and no product-specific default market.",
-            "de": "Wird verwendet, wenn beim Artikel kein Markt genannt und für den Artikel kein eigener Standardmarkt hinterlegt ist."
-          }
+          "help": "ui.items.general.items.prioritymarket.help"
         },
         "temporaryMarketHelp": {
           "type": "staticText",
           "newLine": true,
-          "text": {
-            "en": "The market for the current shopping trip temporarily overrides list and global default markets. Select “— No market —” in the dropdown to return to the normal defaults.",
-            "de": "Der Markt für den aktuellen Einkauf überschreibt vorübergehend Listen- und Standardmarkt. Zum Zurücksetzen im Pulldown „— Kein Markt —“ auswählen."
-          },
+          "text": "ui.items.general.items.temporarymarkethelp.text",
           "xs": 12,
           "sm": 12,
           "md": 12,
@@ -153,10 +111,7 @@
           "oid": "control.temporaryPriorityMarket",
           "control": "select",
           "controlled": true,
-          "label": {
-            "en": "Market for current shopping",
-            "de": "Markt für aktuellen Einkauf"
-          },
+          "label": "ui.items.general.items.temporarymarketstate.label",
           "newLine": true,
           "xs": 12,
           "sm": 12,
@@ -166,10 +121,7 @@
         },
         "debounceMs": {
           "type": "number",
-          "label": {
-            "en": "Collect list changes for (ms)",
-            "de": "Listenänderungen sammeln für (ms)"
-          },
+          "label": "ui.items.general.items.debouncems.label",
           "min": 250,
           "max": 60000,
           "newLine": true,
@@ -181,10 +133,7 @@
         },
         "writePauseMs": {
           "type": "number",
-          "label": {
-            "en": "Pause between Alexa value writes (ms)",
-            "de": "Pause zwischen Alexa-value-Schreibzugriffen (ms)"
-          },
+          "label": "ui.items.general.items.writepausems.label",
           "min": 250,
           "max": 10000,
           "xs": 12,
@@ -204,10 +153,7 @@
         },
         "apiSectionTitle": {
           "type": "staticText",
-          "text": {
-            "en": "API protection",
-            "de": "API-Schutz"
-          },
+          "text": "ui.items.general.items.apisectiontitle.text",
           "style": {
             "fontSize": "1.15rem",
             "fontWeight": "600",
@@ -221,10 +167,7 @@
         },
         "apiHelp": {
           "type": "staticText",
-          "text": {
-            "en": "API Safe Mode limits Alexa write frequency, groups large sorts into batches and retries temporary write errors with exponential backoff. It protects against unnecessary bursts; it does not poll Amazon.",
-            "de": "Der API-Schonmodus begrenzt Alexa-Schreibzugriffe, teilt große Sortierungen in Blöcke und wiederholt vorübergehende Schreibfehler mit wachsender Pause. Er schützt vor unnötigen Zugriffsspitzen; ShoppingRoute pollt Amazon nicht."
-          },
+          "text": "ui.items.general.items.apihelp.text",
           "xs": 12,
           "sm": 12,
           "md": 12,
@@ -234,10 +177,7 @@
         },
         "apiSafeMode": {
           "type": "checkbox",
-          "label": {
-            "en": "Enable API Safe Mode",
-            "de": "API-Schonmodus aktivieren"
-          },
+          "label": "ui.items.general.items.apisafemode.label",
           "newLine": true,
           "xs": 12,
           "sm": 12,
@@ -247,10 +187,7 @@
         },
         "maxWritesPerMinute": {
           "type": "number",
-          "label": {
-            "en": "Maximum writes per minute",
-            "de": "Maximale Schreibzugriffe pro Minute"
-          },
+          "label": "ui.items.general.items.maxwritesperminute.label",
           "min": 1,
           "max": 120,
           "xs": 12,
@@ -261,10 +198,7 @@
         },
         "batchSize": {
           "type": "number",
-          "label": {
-            "en": "Writes per batch",
-            "de": "Schreibzugriffe pro Block"
-          },
+          "label": "ui.items.general.items.batchsize.label",
           "min": 1,
           "max": 100,
           "newLine": true,
@@ -276,10 +210,7 @@
         },
         "batchPauseMs": {
           "type": "number",
-          "label": {
-            "en": "Pause between batches (ms)",
-            "de": "Pause zwischen Blöcken (ms)"
-          },
+          "label": "ui.items.general.items.batchpausems.label",
           "min": 0,
           "max": 60000,
           "xs": 12,
@@ -290,10 +221,7 @@
         },
         "maxWriteRetries": {
           "type": "number",
-          "label": {
-            "en": "Maximum retries",
-            "de": "Maximale Wiederholungen"
-          },
+          "label": "ui.items.general.items.maxwriteretries.label",
           "min": 0,
           "max": 5,
           "newLine": true,
@@ -305,10 +233,7 @@
         },
         "retryBaseMs": {
           "type": "number",
-          "label": {
-            "en": "Retry base delay (ms)",
-            "de": "Grundpause für Wiederholungen (ms)"
-          },
+          "label": "ui.items.general.items.retrybasems.label",
           "min": 250,
           "max": 30000,
           "xs": 12,
@@ -321,17 +246,11 @@
     },
     "listsTab": {
       "type": "panel",
-      "label": {
-        "en": "Lists",
-        "de": "Listen"
-      },
+      "label": "ui.items.liststab.label",
       "items": {
         "listsHelp": {
           "type": "staticText",
-          "text": {
-            "en": "ShoppingRoute reads the available lists from the selected Alexa2 instance. After changing the Alexa2 instance, save once and reopen this page. Each list may have its own default market. The Alexa app must use 'Oldest to newest' for every managed list.",
-            "de": "ShoppingRoute liest die verfügbaren Listen aus der gewählten Alexa2-Instanz. Nach einem Wechsel der Alexa2-Instanz einmal speichern und diese Seite neu öffnen. Jede Liste kann einen eigenen Standardmarkt erhalten. In der Alexa-App muss jede verwaltete Liste auf „Älteste bis neueste“ stehen."
-          },
+          "text": "ui.items.liststab.items.listshelp.text",
           "xs": 12,
           "sm": 12,
           "md": 12,
@@ -340,18 +259,12 @@
         },
         "lists": {
           "type": "table",
-          "label": {
-            "en": "Managed Alexa lists",
-            "de": "Verwaltete Alexa-Listen"
-          },
+          "label": "ui.items.liststab.items.lists.label",
           "items": [
             {
               "type": "checkbox",
               "attr": "enabled",
-              "title": {
-                "en": "Active",
-                "de": "Aktiv"
-              },
+              "title": "ui.items.liststab.items.lists.items.0.title",
               "width": "15%"
             },
             {
@@ -360,10 +273,7 @@
               "command": "getAlexaLists",
               "manual": false,
               "noTranslation": true,
-              "title": {
-                "en": "Alexa list",
-                "de": "Alexa-Liste"
-              },
+              "title": "ui.items.liststab.items.lists.items.1.title",
               "width": "40%",
               "sort": true
             },
@@ -373,30 +283,26 @@
               "command": "getMarketsOptional",
               "manual": false,
               "noTranslation": true,
-              "title": {
-                "en": "Default market for this list",
-                "de": "Standardmarkt dieser Liste"
-              },
+              "title": "ui.items.liststab.items.lists.items.2.title",
               "width": "45%",
               "sort": true
             }
-          ]
+          ],
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         }
       }
     },
     "marketsTab": {
       "type": "panel",
-      "label": {
-        "en": "Markets",
-        "de": "Märkte"
-      },
+      "label": "ui.items.marketstab.label",
       "items": {
         "marketsHelp": {
           "type": "staticText",
-          "text": {
-            "en": "Market order is the top sorting level. Aliases are comma-separated. Common variants for ALDI, LIDL, REWE and PENNY are additionally recognized automatically.",
-            "de": "Die Marktreihenfolge ist die oberste Sortierebene. Aliase werden kommagetrennt angegeben. Häufige Varianten für ALDI, LIDL, REWE und PENNY werden zusätzlich automatisch erkannt."
-          },
+          "text": "ui.items.marketstab.items.marketshelp.text",
           "xs": 12,
           "sm": 12,
           "md": 12,
@@ -405,66 +311,50 @@
         },
         "markets": {
           "type": "table",
-          "label": {
-            "en": "Markets",
-            "de": "Märkte / Hauptkategorien"
-          },
+          "label": "ui.items.marketstab.items.markets.label",
           "items": [
             {
               "type": "checkbox",
               "attr": "enabled",
-              "title": {
-                "en": "Active",
-                "de": "Aktiv"
-              },
+              "title": "ui.items.liststab.items.lists.items.0.title",
               "width": "10%"
             },
             {
               "type": "number",
               "attr": "order",
-              "title": {
-                "en": "Order",
-                "de": "Reihenfolge"
-              },
+              "title": "ui.items.marketstab.items.markets.items.1.title",
               "width": "12%",
               "sort": true
             },
             {
               "type": "text",
               "attr": "name",
-              "title": {
-                "en": "Market",
-                "de": "Markt"
-              },
+              "title": "ui.items.marketstab.items.markets.items.2.title",
               "width": "28%",
               "sort": true
             },
             {
               "type": "text",
               "attr": "aliases",
-              "title": {
-                "en": "Aliases",
-                "de": "Aliase"
-              },
+              "title": "ui.items.marketstab.items.markets.items.3.title",
               "width": "50%"
             }
-          ]
+          ],
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         }
       }
     },
     "productGroupsTab": {
       "type": "panel",
-      "label": {
-        "en": "Product groups",
-        "de": "Produktgruppen"
-      },
+      "label": "ui.items.productgroupstab.label",
       "items": {
         "productGroupsHelp": {
           "type": "staticText",
-          "text": {
-            "en": "Central list for all product-group drop-downs. Drop-down values are alphabetically sorted.",
-            "de": "Zentrale Liste für alle Produktgruppen-Pulldowns. Die Pulldown-Werte werden alphabetisch sortiert."
-          },
+          "text": "ui.items.productgroupstab.items.productgroupshelp.text",
           "xs": 12,
           "sm": 12,
           "md": 12,
@@ -473,65 +363,57 @@
         },
         "productGroups": {
           "type": "table",
-          "label": {
-            "en": "Product groups",
-            "de": "Produktgruppen"
-          },
+          "label": "ui.items.productgroupstab.label",
           "items": [
             {
               "type": "text",
               "attr": "name",
-              "title": {
-                "en": "Product group",
-                "de": "Produktgruppe"
-              },
+              "title": "ui.items.productgroupstab.items.productgroups.items.0.title",
               "width": "100%",
               "sort": true
             }
-          ]
+          ],
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         }
       }
     },
     "routesTab": {
       "type": "panel",
-      "label": {
-        "en": "Walking routes",
-        "de": "Laufwege"
-      },
+      "label": "ui.items.routestab.label",
       "items": {
+        "routeMarketFilter": {
+          "type": "selectSendTo",
+          "command": "getActiveMarkets",
+          "manual": false,
+          "noTranslation": true,
+          "doNotSave": true,
+          "label": "ui.items.routestab.items.routemarketfilter.label",
+          "help": "ui.items.routestab.items.routemarketfilter.help",
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
+          "xl": 3
+        },
         "routesHelp": {
           "type": "staticText",
-          "text": {
-            "de": "In der Spalte „Markt“ den Filter verwenden und dort den gewünschten Markt aus dem Pulldown auswählen. Dann werden nur die Produktgruppen dieses Marktes angezeigt. Die Zeilen mit ↑/↓ in die tatsächliche Laufreihenfolge bringen.",
-            "en": "Use the filter in the “Market” column and select the desired market from the dropdown. Only that market’s product groups are then shown. Move the rows with ↑/↓ into the actual walking order."
-          },
+          "text": "ui.items.routestab.items.routeshelp.text",
           "xs": 12,
           "sm": 12,
           "md": 12,
           "lg": 12,
           "xl": 12
         },
-        "routes": {
+        "routeEditorRows": {
           "type": "table",
-          "label": {
-            "en": "Walking route – filter by market",
-            "de": "Laufweg – nach Markt filtern"
-          },
+          "doNotSave": true,
+          "label": "ui.items.routestab.items.routeeditorrows.label",
           "items": [
-            {
-              "type": "selectSendTo",
-              "attr": "market",
-              "command": "getMarkets",
-              "manual": false,
-              "noTranslation": true,
-              "title": {
-                "en": "Market",
-                "de": "Markt"
-              },
-              "width": "40%",
-              "sort": true,
-              "filter": true
-            },
             {
               "type": "selectSendTo",
               "attr": "category",
@@ -539,41 +421,81 @@
               "manual": false,
               "noTranslation": true,
               "default": "Sonstiges",
-              "title": {
-                "en": "Product group",
-                "de": "Produktgruppe"
-              },
-              "width": "45%",
+              "title": "ui.items.productgroupstab.items.productgroups.items.0.title",
+              "width": "75%",
               "sort": false
             },
             {
               "type": "number",
               "attr": "order",
-              "title": {
-                "en": "Auto order",
-                "de": "Auto-Reihenfolge"
-              },
-              "width": "15%"
+              "title": "ui.items.marketstab.items.markets.items.1.title",
+              "width": "25%",
+              "disabled": true
             }
           ],
-          "allowAddByFilter": true,
-          "compact": true
+          "uniqueColumns": [
+            "category"
+          ],
+          "compact": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12,
+          "onChange": {
+            "alsoDependsOn": [
+              "routes",
+              "routeMarketFilter"
+            ],
+            "calculateFunc": "(data.routes || []).filter(r => String(r.market || '') === String(data.routeMarketFilter || '')).sort((a, b) => (Number(a.order) || 9999) - (Number(b.order) || 9999)).map((r, i) => ({ category: r.category, order: (i + 1) * 10 }))",
+            "ignoreOwnChanges": true
+          }
+        },
+        "routes": {
+          "type": "table",
+          "hidden": true,
+          "items": [
+            {
+              "type": "text",
+              "attr": "market",
+              "title": "ui.items.marketstab.items.markets.items.2.title",
+              "width": "35%"
+            },
+            {
+              "type": "text",
+              "attr": "category",
+              "title": "ui.items.productgroupstab.items.productgroups.items.0.title",
+              "width": "45%"
+            },
+            {
+              "type": "number",
+              "attr": "order",
+              "title": "ui.items.marketstab.items.markets.items.1.title",
+              "width": "20%"
+            }
+          ],
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12,
+          "onChange": {
+            "alsoDependsOn": [
+              "routeEditorRows"
+            ],
+            "calculateFunc": "(() => { const market = String(data.routeMarketFilter || ''); if (!market) return data.routes || []; const kept = (data.routes || []).filter(r => String(r.market || '') !== market); const edited = (data.routeEditorRows || []).map((r, i) => ({ market, category: r.category, order: (i + 1) * 10 })); return kept.concat(edited); })()",
+            "ignoreOwnChanges": true
+          }
         }
       }
     },
     "productsTab": {
       "type": "panel",
-      "label": {
-        "en": "Products",
-        "de": "Artikel"
-      },
+      "label": "ui.items.productstab.label",
       "items": {
         "productsHelp": {
           "type": "staticText",
-          "text": {
-            "en": "Click Product, Product group or Default market headers to sort. The catalogue itself is stored alphabetically, so equal groups/markets stay alphabetic. Available markets are comma-separated; the default market is the preferred exception to global/list priorities.",
-            "de": "Über die Spaltenköpfe Artikel, Produktgruppe oder Standardmarkt sortieren. Der Artikelstamm wird grundsätzlich alphabetisch gespeichert, dadurch bleiben gleiche Gruppen/Märkte innerhalb der Sortierung alphabetisch. Verfügbare Märkte werden kommagetrennt angegeben; der Standardmarkt ist die bevorzugte Ausnahme von globalen/Listen-Prioritäten."
-          },
+          "text": "ui.items.productstab.items.productshelp.text",
           "xs": 12,
           "sm": 12,
           "md": 12,
@@ -582,28 +504,19 @@
         },
         "products": {
           "type": "table",
-          "label": {
-            "en": "Product catalogue",
-            "de": "Artikelstamm"
-          },
+          "label": "ui.items.productstab.items.products.label",
           "items": [
             {
               "type": "text",
               "attr": "name",
-              "title": {
-                "en": "Product",
-                "de": "Artikel"
-              },
+              "title": "ui.items.productstab.items.products.items.0.title",
               "width": "20%",
               "sort": true
             },
             {
               "type": "text",
               "attr": "aliases",
-              "title": {
-                "en": "Aliases",
-                "de": "Aliase"
-              },
+              "title": "ui.items.marketstab.items.markets.items.3.title",
               "width": "20%"
             },
             {
@@ -613,10 +526,7 @@
               "manual": false,
               "noTranslation": true,
               "default": "Sonstiges",
-              "title": {
-                "en": "Product group",
-                "de": "Produktgruppe"
-              },
+              "title": "ui.items.productgroupstab.items.productgroups.items.0.title",
               "width": "20%",
               "sort": true
             },
@@ -626,39 +536,32 @@
               "command": "getMarketsOptional",
               "manual": false,
               "noTranslation": true,
-              "title": {
-                "en": "Default market",
-                "de": "Standardmarkt"
-              },
+              "title": "ui.items.productstab.items.products.items.3.title",
               "width": "18%",
               "sort": true
             },
             {
               "type": "text",
               "attr": "availableMarkets",
-              "title": {
-                "en": "Available markets",
-                "de": "Verfügbare Märkte"
-              },
+              "title": "ui.items.productstab.items.products.items.4.title",
               "width": "22%"
             }
-          ]
+          ],
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         }
       }
     },
     "reviewTab": {
       "type": "panel",
-      "label": {
-        "en": "Review",
-        "de": "Prüfliste"
-      },
+      "label": "ui.items.reviewtab.label",
       "items": {
         "reviewHelp": {
           "type": "staticText",
-          "text": {
-            "en": "Unknown products appear here in review mode. Correct product, product group, default market or aliases, choose Accept or Ignore, then save. Accepted entries are moved into the product catalogue after restart.",
-            "de": "Im Prüfmodus erscheinen unbekannte Artikel hier. Artikelname, Produktgruppe, Standardmarkt oder Aliase korrigieren, dann Übernehmen oder Ignorieren wählen und speichern. Übernommene Einträge wandern nach dem Neustart in den Artikelstamm."
-          },
+          "text": "ui.items.reviewtab.items.reviewhelp.text",
           "xs": 12,
           "sm": 12,
           "md": 12,
@@ -667,28 +570,19 @@
         },
         "reviewItems": {
           "type": "table",
-          "label": {
-            "en": "Unknown products",
-            "de": "Unbekannte Artikel prüfen"
-          },
+          "label": "ui.items.reviewtab.items.reviewitems.label",
           "items": [
             {
               "type": "text",
               "attr": "product",
-              "title": {
-                "en": "Product",
-                "de": "Artikel"
-              },
+              "title": "ui.items.productstab.items.products.items.0.title",
               "width": "18%",
               "sort": true
             },
             {
               "type": "text",
               "attr": "text",
-              "title": {
-                "en": "Alexa text",
-                "de": "Alexa-Text"
-              },
+              "title": "ui.items.reviewtab.items.reviewitems.items.1.title",
               "width": "22%"
             },
             {
@@ -697,10 +591,7 @@
               "command": "getProductGroups",
               "manual": false,
               "noTranslation": true,
-              "title": {
-                "en": "Product group",
-                "de": "Produktgruppe"
-              },
+              "title": "ui.items.productgroupstab.items.productgroups.items.0.title",
               "width": "18%",
               "sort": true
             },
@@ -710,71 +601,52 @@
               "command": "getMarketsOptional",
               "manual": false,
               "noTranslation": true,
-              "title": {
-                "en": "Default market",
-                "de": "Standardmarkt"
-              },
+              "title": "ui.items.productstab.items.products.items.3.title",
               "width": "16%",
               "sort": true
             },
             {
               "type": "text",
               "attr": "aliases",
-              "title": {
-                "en": "Aliases",
-                "de": "Aliase"
-              },
+              "title": "ui.items.marketstab.items.markets.items.3.title",
               "width": "14%"
             },
             {
               "type": "select",
               "attr": "action",
-              "title": {
-                "en": "Action",
-                "de": "Aktion"
-              },
+              "title": "ui.items.reviewtab.items.reviewitems.items.5.title",
               "width": "12%",
               "options": [
                 {
                   "value": "pending",
-                  "label": {
-                    "en": "Pending",
-                    "de": "Offen"
-                  }
+                  "label": "ui.items.reviewtab.items.reviewitems.items.5.options.0.label"
                 },
                 {
                   "value": "accept",
-                  "label": {
-                    "en": "Accept",
-                    "de": "Übernehmen"
-                  }
+                  "label": "ui.items.reviewtab.items.reviewitems.items.5.options.1.label"
                 },
                 {
                   "value": "ignore",
-                  "label": {
-                    "en": "Ignore",
-                    "de": "Ignorieren"
-                  }
+                  "label": "ui.items.reviewtab.items.reviewitems.items.5.options.2.label"
                 }
               ]
             }
-          ]
+          ],
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         }
       }
     },
     "transferTab": {
       "type": "panel",
-      "label": {
-        "en": "Backup / Sharing",
-        "de": "Sicherung / Teilen"
-      },
+      "label": "ui.items.transfertab.label",
       "items": {
         "backupHelp": {
           "type": "staticText",
-          "text": {
-            "en": "Configuration export is available in info.configExport. Paste an export into control.importConfigJson to restore it. Market-only profiles are in info.marketProfiles and can be imported through control.marketProfileImport. This allows store routes to be shared without sharing the adapter source code.",
-            "de": "Die komplette Konfigurationssicherung steht in info.configExport. Zum Wiederherstellen den Export in control.importConfigJson schreiben. Einzelne Marktprofile stehen in info.marketProfiles und werden über control.marketProfileImport importiert. So können Laufwege geteilt werden, ohne den Adapter-Quellcode zu teilen."
-          },
+          "text": "ui.items.transfertab.items.backuphelp.text",
           "xs": 12,
           "sm": 12,
           "md": 12,
@@ -786,10 +658,7 @@
           "id": "control.exportConfig",
           "val": true,
           "ack": false,
-          "label": {
-            "en": "Refresh configuration export",
-            "de": "Konfigurations-Export aktualisieren"
-          },
+          "label": "ui.items.transfertab.items.refreshexport.label",
           "variant": "outlined",
           "newLine": true,
           "xs": 12,
@@ -803,10 +672,7 @@
           "oid": "info.configExport",
           "control": "text",
           "controlled": false,
-          "label": {
-            "en": "Configuration export JSON",
-            "de": "Konfigurations-Export JSON"
-          },
+          "label": "ui.items.transfertab.items.configexportstate.label",
           "newLine": true,
           "xs": 12,
           "sm": 12,
@@ -819,10 +685,7 @@
           "oid": "control.importConfigJson",
           "control": "input",
           "controlled": true,
-          "label": {
-            "en": "Paste configuration JSON to import",
-            "de": "Konfigurations-JSON zum Import einfügen"
-          },
+          "label": "ui.items.transfertab.items.configimportstate.label",
           "newLine": true,
           "xs": 12,
           "sm": 12,
@@ -835,10 +698,7 @@
           "oid": "info.marketProfiles",
           "control": "text",
           "controlled": false,
-          "label": {
-            "en": "Market profiles JSON",
-            "de": "Marktprofile JSON"
-          },
+          "label": "ui.items.transfertab.items.marketprofilesstate.label",
           "newLine": true,
           "xs": 12,
           "sm": 12,
@@ -851,10 +711,7 @@
           "oid": "control.marketProfileImport",
           "control": "input",
           "controlled": true,
-          "label": {
-            "en": "Paste one market profile JSON",
-            "de": "Ein Marktprofil-JSON zum Import einfügen"
-          },
+          "label": "ui.items.transfertab.items.marketprofileimportstate.label",
           "newLine": true,
           "xs": 12,
           "sm": 12,
@@ -866,17 +723,11 @@
     },
     "diagnosticsTab": {
       "type": "panel",
-      "label": {
-        "en": "Diagnostics",
-        "de": "Diagnose"
-      },
+      "label": "ui.items.diagnosticstab.label",
       "items": {
         "versionInfo": {
           "type": "staticText",
-          "text": {
-            "en": "Version information is exposed through info.versionInstalled, info.versionBeta, info.updateAvailable and info.versionCheck. Note: ioBroker Admin may show 'not maintained' as the available version while ShoppingRoute is not yet in the official ioBroker repository; ShoppingRoute cannot override that generic Admin card itself.",
-            "de": "Versionsinformationen stehen unter info.versionInstalled, info.versionBeta, info.updateAvailable und info.versionCheck. Hinweis: Solange ShoppingRoute noch nicht im offiziellen ioBroker-Repository geführt wird, kann ioBroker Admin bei „Verfügbare Version“ generisch „nicht gewartet“ anzeigen; diese Kartenanzeige kann der Adapter selbst nicht überschreiben."
-          },
+          "text": "ui.items.diagnosticstab.items.versioninfo.text",
           "xs": 12,
           "sm": 12,
           "md": 12,
@@ -886,10 +737,7 @@
         "previewHelp": {
           "type": "staticText",
           "newLine": true,
-          "text": {
-            "en": "Sort preview: info.preview and info.previewText show current and target order before writes. Statistics stay local in info.statistics. API counters are in info.traffic.",
-            "de": "Sortiervorschau: info.preview und info.previewText zeigen aktuelle und geplante Reihenfolge vor Schreibzugriffen. Die Einkaufsstatistik bleibt lokal in info.statistics. API-Zähler stehen in info.traffic."
-          },
+          "text": "ui.items.diagnosticstab.items.previewhelp.text",
           "xs": 12,
           "sm": 12,
           "md": 12,
@@ -899,10 +747,7 @@
         "feedbackHelp": {
           "type": "staticText",
           "newLine": true,
-          "text": {
-            "en": "For beta feedback trigger control.refreshFeedbackReport and copy info.feedbackReport. Product names, list texts, aliases and the full configuration are intentionally omitted.",
-            "de": "Für Beta-Feedback control.refreshFeedbackReport auslösen und info.feedbackReport kopieren. Produktnamen, Listentexte, Aliase und die vollständige Konfiguration werden absichtlich nicht aufgenommen."
-          },
+          "text": "ui.items.diagnosticstab.items.feedbackhelp.text",
           "xs": 12,
           "sm": 12,
           "md": 12,
@@ -912,10 +757,7 @@
         "compatibilityHelp": {
           "type": "staticText",
           "newLine": true,
-          "text": {
-            "en": "If info.writeCapability is unknown, run control.compatibilityTest once with at least one active item. source-ok or live-ok permits writes; known-bug/live-failed/unknown blocks them.",
-            "de": "Wenn info.writeCapability auf unknown steht, control.compatibilityTest einmal mit mindestens einem aktiven Artikel ausführen. source-ok oder live-ok erlaubt Schreibzugriffe; known-bug/live-failed/unknown blockiert sie."
-          },
+          "text": "ui.items.diagnosticstab.items.compatibilityhelp.text",
           "xs": 12,
           "sm": 12,
           "md": 12,
@@ -927,10 +769,7 @@
           "oid": "info.versionInstalled",
           "control": "text",
           "controlled": false,
-          "label": {
-            "en": "Installed version",
-            "de": "Installierte Version"
-          },
+          "label": "ui.items.diagnosticstab.items.versioninstalledstate.label",
           "newLine": true,
           "xs": 12,
           "sm": 12,
@@ -943,10 +782,7 @@
           "oid": "info.versionBeta",
           "control": "text",
           "controlled": false,
-          "label": {
-            "en": "Latest npm beta",
-            "de": "Neueste npm-Beta"
-          },
+          "label": "ui.items.diagnosticstab.items.versionbetastate.label",
           "xs": 12,
           "sm": 12,
           "md": 6,
@@ -958,10 +794,7 @@
           "oid": "info.updateAvailable",
           "control": "text",
           "controlled": false,
-          "label": {
-            "en": "Update available",
-            "de": "Update verfügbar"
-          },
+          "label": "ui.items.diagnosticstab.items.updatestate.label",
           "xs": 12,
           "sm": 12,
           "md": 6,
@@ -973,10 +806,7 @@
           "oid": "info.previewText",
           "control": "text",
           "controlled": false,
-          "label": {
-            "en": "Last sorting preview",
-            "de": "Letzte Sortiervorschau"
-          },
+          "label": "ui.items.diagnosticstab.items.previewstate.label",
           "newLine": true,
           "xs": 12,
           "sm": 12,
@@ -989,10 +819,7 @@
           "id": "control.refreshFeedbackReport",
           "val": true,
           "ack": false,
-          "label": {
-            "en": "Refresh feedback report",
-            "de": "Feedbackbericht aktualisieren"
-          },
+          "label": "ui.items.diagnosticstab.items.refreshfeedback.label",
           "variant": "outlined",
           "newLine": true,
           "xs": 12,
@@ -1006,10 +833,7 @@
           "oid": "info.feedbackReport",
           "control": "text",
           "controlled": false,
-          "label": {
-            "en": "Privacy-safe feedback report",
-            "de": "Datenschutzfreundlicher Feedbackbericht"
-          },
+          "label": "ui.items.diagnosticstab.items.feedbackstate.label",
           "newLine": true,
           "xs": 12,
           "sm": 12,
@@ -1020,5 +844,1007 @@
       }
     }
   },
-  "i18n": false
+  "i18n": {
+    "ui.items.general.label": {
+      "en": "General",
+      "de": "Allgemein",
+      "ru": "General",
+      "pt": "General",
+      "nl": "General",
+      "fr": "General",
+      "it": "General",
+      "es": "General",
+      "pl": "General",
+      "uk": "General",
+      "zh-cn": "General"
+    },
+    "ui.items.general.items.betawarning.text": {
+      "en": "BETA 0.2.0-beta.7. Start with Dry-Run enabled. ShoppingRoute never creates, deletes or completes Alexa list items; it only redistributes visible value texts across existing active IDs.",
+      "de": "BETA 0.2.0-beta.7. Zuerst mit Dry-Run testen. ShoppingRoute legt niemals Alexa-Listeneinträge an, löscht keine und hakt keine ab; es verteilt ausschließlich sichtbare value-Texte auf vorhandene aktive IDs.",
+      "ru": "BETA 0.2.0-beta.7. Start with Dry-Run enabled. ShoppingRoute never creates, deletes or completes Alexa list items; it only redistributes visible value texts across existing active IDs.",
+      "pt": "BETA 0.2.0-beta.7. Start with Dry-Run enabled. ShoppingRoute never creates, deletes or completes Alexa list items; it only redistributes visible value texts across existing active IDs.",
+      "nl": "BETA 0.2.0-beta.7. Start with Dry-Run enabled. ShoppingRoute never creates, deletes or completes Alexa list items; it only redistributes visible value texts across existing active IDs.",
+      "fr": "BETA 0.2.0-beta.7. Start with Dry-Run enabled. ShoppingRoute never creates, deletes or completes Alexa list items; it only redistributes visible value texts across existing active IDs.",
+      "it": "BETA 0.2.0-beta.7. Start with Dry-Run enabled. ShoppingRoute never creates, deletes or completes Alexa list items; it only redistributes visible value texts across existing active IDs.",
+      "es": "BETA 0.2.0-beta.7. Start with Dry-Run enabled. ShoppingRoute never creates, deletes or completes Alexa list items; it only redistributes visible value texts across existing active IDs.",
+      "pl": "BETA 0.2.0-beta.7. Start with Dry-Run enabled. ShoppingRoute never creates, deletes or completes Alexa list items; it only redistributes visible value texts across existing active IDs.",
+      "uk": "BETA 0.2.0-beta.7. Start with Dry-Run enabled. ShoppingRoute never creates, deletes or completes Alexa list items; it only redistributes visible value texts across existing active IDs.",
+      "zh-cn": "BETA 0.2.0-beta.7. Start with Dry-Run enabled. ShoppingRoute never creates, deletes or completes Alexa list items; it only redistributes visible value texts across existing active IDs."
+    },
+    "ui.items.general.items.alexainstance.label": {
+      "en": "Alexa2 instance",
+      "de": "Alexa2-Instanz",
+      "ru": "Alexa2 instance",
+      "pt": "Alexa2 instance",
+      "nl": "Alexa2 instance",
+      "fr": "Alexa2 instance",
+      "it": "Alexa2 instance",
+      "es": "Alexa2 instance",
+      "pl": "Alexa2 instance",
+      "uk": "Alexa2 instance",
+      "zh-cn": "Alexa2 instance"
+    },
+    "ui.items.general.items.alexainstance.help": {
+      "en": "Only installed and enabled Alexa2 instances are offered. After changing the instance, save once so the list dropdowns can be refreshed from that instance.",
+      "de": "Es werden nur installierte und aktivierte Alexa2-Instanzen angeboten. Nach einem Wechsel einmal speichern, damit die Listen-Auswahl aus dieser Instanz neu geladen werden kann.",
+      "ru": "Only installed and enabled Alexa2 instances are offered. After changing the instance, save once so the list dropdowns can be refreshed from that instance.",
+      "pt": "Only installed and enabled Alexa2 instances are offered. After changing the instance, save once so the list dropdowns can be refreshed from that instance.",
+      "nl": "Only installed and enabled Alexa2 instances are offered. After changing the instance, save once so the list dropdowns can be refreshed from that instance.",
+      "fr": "Only installed and enabled Alexa2 instances are offered. After changing the instance, save once so the list dropdowns can be refreshed from that instance.",
+      "it": "Only installed and enabled Alexa2 instances are offered. After changing the instance, save once so the list dropdowns can be refreshed from that instance.",
+      "es": "Only installed and enabled Alexa2 instances are offered. After changing the instance, save once so the list dropdowns can be refreshed from that instance.",
+      "pl": "Only installed and enabled Alexa2 instances are offered. After changing the instance, save once so the list dropdowns can be refreshed from that instance.",
+      "uk": "Only installed and enabled Alexa2 instances are offered. After changing the instance, save once so the list dropdowns can be refreshed from that instance.",
+      "zh-cn": "Only installed and enabled Alexa2 instances are offered. After changing the instance, save once so the list dropdowns can be refreshed from that instance."
+    },
+    "ui.items.general.items.dryrun.label": {
+      "en": "Dry run (do not write to Alexa)",
+      "de": "Dry-Run (nichts zu Alexa schreiben)",
+      "ru": "Dry run (do not write to Alexa)",
+      "pt": "Dry run (do not write to Alexa)",
+      "nl": "Dry run (do not write to Alexa)",
+      "fr": "Dry run (do not write to Alexa)",
+      "it": "Dry run (do not write to Alexa)",
+      "es": "Dry run (do not write to Alexa)",
+      "pl": "Dry run (do not write to Alexa)",
+      "uk": "Dry run (do not write to Alexa)",
+      "zh-cn": "Dry run (do not write to Alexa)"
+    },
+    "ui.items.general.items.learningmode.label": {
+      "en": "Unknown-product handling",
+      "de": "Umgang mit unbekannten Artikeln",
+      "ru": "Unknown-product handling",
+      "pt": "Unknown-product handling",
+      "nl": "Unknown-product handling",
+      "fr": "Unknown-product handling",
+      "it": "Unknown-product handling",
+      "es": "Unknown-product handling",
+      "pl": "Unknown-product handling",
+      "uk": "Unknown-product handling",
+      "zh-cn": "Unknown-product handling"
+    },
+    "ui.items.general.items.learningmode.options.0.label": {
+      "en": "Review first",
+      "de": "Erst prüfen",
+      "ru": "Review first",
+      "pt": "Review first",
+      "nl": "Review first",
+      "fr": "Review first",
+      "it": "Review first",
+      "es": "Review first",
+      "pl": "Review first",
+      "uk": "Review first",
+      "zh-cn": "Review first"
+    },
+    "ui.items.general.items.learningmode.options.1.label": {
+      "en": "Learn automatically",
+      "de": "Automatisch lernen",
+      "ru": "Learn automatically",
+      "pt": "Learn automatically",
+      "nl": "Learn automatically",
+      "fr": "Learn automatically",
+      "it": "Learn automatically",
+      "es": "Learn automatically",
+      "pl": "Learn automatically",
+      "uk": "Learn automatically",
+      "zh-cn": "Learn automatically"
+    },
+    "ui.items.general.items.learningmode.options.2.label": {
+      "en": "Do not learn",
+      "de": "Nicht lernen",
+      "ru": "Do not learn",
+      "pt": "Do not learn",
+      "nl": "Do not learn",
+      "fr": "Do not learn",
+      "it": "Do not learn",
+      "es": "Do not learn",
+      "pl": "Do not learn",
+      "uk": "Do not learn",
+      "zh-cn": "Do not learn"
+    },
+    "ui.items.general.items.autoaliassuggestions.label": {
+      "en": "Suggest aliases automatically",
+      "de": "Aliase automatisch vorschlagen",
+      "ru": "Suggest aliases automatically",
+      "pt": "Suggest aliases automatically",
+      "nl": "Suggest aliases automatically",
+      "fr": "Suggest aliases automatically",
+      "it": "Suggest aliases automatically",
+      "es": "Suggest aliases automatically",
+      "pl": "Suggest aliases automatically",
+      "uk": "Suggest aliases automatically",
+      "zh-cn": "Suggest aliases automatically"
+    },
+    "ui.items.general.items.fallbackmarket.label": {
+      "en": "Fallback market",
+      "de": "Fallback-Markt",
+      "ru": "Fallback market",
+      "pt": "Fallback market",
+      "nl": "Fallback market",
+      "fr": "Fallback market",
+      "it": "Fallback market",
+      "es": "Fallback market",
+      "pl": "Fallback market",
+      "uk": "Fallback market",
+      "zh-cn": "Fallback market"
+    },
+    "ui.items.general.items.prioritymarket.label": {
+      "en": "Default market for shopping",
+      "de": "Standardmarkt für Einkäufe",
+      "ru": "Default market for shopping",
+      "pt": "Default market for shopping",
+      "nl": "Default market for shopping",
+      "fr": "Default market for shopping",
+      "it": "Default market for shopping",
+      "es": "Default market for shopping",
+      "pl": "Default market for shopping",
+      "uk": "Default market for shopping",
+      "zh-cn": "Default market for shopping"
+    },
+    "ui.items.general.items.prioritymarket.help": {
+      "en": "Used when an item has no explicit market and no product-specific default market.",
+      "de": "Wird verwendet, wenn beim Artikel kein Markt genannt und für den Artikel kein eigener Standardmarkt hinterlegt ist.",
+      "ru": "Used when an item has no explicit market and no product-specific default market.",
+      "pt": "Used when an item has no explicit market and no product-specific default market.",
+      "nl": "Used when an item has no explicit market and no product-specific default market.",
+      "fr": "Used when an item has no explicit market and no product-specific default market.",
+      "it": "Used when an item has no explicit market and no product-specific default market.",
+      "es": "Used when an item has no explicit market and no product-specific default market.",
+      "pl": "Used when an item has no explicit market and no product-specific default market.",
+      "uk": "Used when an item has no explicit market and no product-specific default market.",
+      "zh-cn": "Used when an item has no explicit market and no product-specific default market."
+    },
+    "ui.items.general.items.temporarymarkethelp.text": {
+      "en": "The market for the current shopping trip temporarily overrides list and global default markets. Select “— No market —” in the dropdown to return to the normal defaults.",
+      "de": "Der Markt für den aktuellen Einkauf überschreibt vorübergehend Listen- und Standardmarkt. Zum Zurücksetzen im Pulldown „— Kein Markt —“ auswählen.",
+      "ru": "The market for the current shopping trip temporarily overrides list and global default markets. Select “— No market —” in the dropdown to return to the normal defaults.",
+      "pt": "The market for the current shopping trip temporarily overrides list and global default markets. Select “— No market —” in the dropdown to return to the normal defaults.",
+      "nl": "The market for the current shopping trip temporarily overrides list and global default markets. Select “— No market —” in the dropdown to return to the normal defaults.",
+      "fr": "The market for the current shopping trip temporarily overrides list and global default markets. Select “— No market —” in the dropdown to return to the normal defaults.",
+      "it": "The market for the current shopping trip temporarily overrides list and global default markets. Select “— No market —” in the dropdown to return to the normal defaults.",
+      "es": "The market for the current shopping trip temporarily overrides list and global default markets. Select “— No market —” in the dropdown to return to the normal defaults.",
+      "pl": "The market for the current shopping trip temporarily overrides list and global default markets. Select “— No market —” in the dropdown to return to the normal defaults.",
+      "uk": "The market for the current shopping trip temporarily overrides list and global default markets. Select “— No market —” in the dropdown to return to the normal defaults.",
+      "zh-cn": "The market for the current shopping trip temporarily overrides list and global default markets. Select “— No market —” in the dropdown to return to the normal defaults."
+    },
+    "ui.items.general.items.temporarymarketstate.label": {
+      "en": "Market for current shopping",
+      "de": "Markt für aktuellen Einkauf",
+      "ru": "Market for current shopping",
+      "pt": "Market for current shopping",
+      "nl": "Market for current shopping",
+      "fr": "Market for current shopping",
+      "it": "Market for current shopping",
+      "es": "Market for current shopping",
+      "pl": "Market for current shopping",
+      "uk": "Market for current shopping",
+      "zh-cn": "Market for current shopping"
+    },
+    "ui.items.general.items.debouncems.label": {
+      "en": "Collect list changes for (ms)",
+      "de": "Listenänderungen sammeln für (ms)",
+      "ru": "Collect list changes for (ms)",
+      "pt": "Collect list changes for (ms)",
+      "nl": "Collect list changes for (ms)",
+      "fr": "Collect list changes for (ms)",
+      "it": "Collect list changes for (ms)",
+      "es": "Collect list changes for (ms)",
+      "pl": "Collect list changes for (ms)",
+      "uk": "Collect list changes for (ms)",
+      "zh-cn": "Collect list changes for (ms)"
+    },
+    "ui.items.general.items.writepausems.label": {
+      "en": "Pause between Alexa value writes (ms)",
+      "de": "Pause zwischen Alexa-value-Schreibzugriffen (ms)",
+      "ru": "Pause between Alexa value writes (ms)",
+      "pt": "Pause between Alexa value writes (ms)",
+      "nl": "Pause between Alexa value writes (ms)",
+      "fr": "Pause between Alexa value writes (ms)",
+      "it": "Pause between Alexa value writes (ms)",
+      "es": "Pause between Alexa value writes (ms)",
+      "pl": "Pause between Alexa value writes (ms)",
+      "uk": "Pause between Alexa value writes (ms)",
+      "zh-cn": "Pause between Alexa value writes (ms)"
+    },
+    "ui.items.general.items.apisectiontitle.text": {
+      "en": "API protection",
+      "de": "API-Schutz",
+      "ru": "API protection",
+      "pt": "API protection",
+      "nl": "API protection",
+      "fr": "API protection",
+      "it": "API protection",
+      "es": "API protection",
+      "pl": "API protection",
+      "uk": "API protection",
+      "zh-cn": "API protection"
+    },
+    "ui.items.general.items.apihelp.text": {
+      "en": "API Safe Mode limits Alexa write frequency, groups large sorts into batches and retries temporary write errors with exponential backoff. It protects against unnecessary bursts; it does not poll Amazon.",
+      "de": "Der API-Schonmodus begrenzt Alexa-Schreibzugriffe, teilt große Sortierungen in Blöcke und wiederholt vorübergehende Schreibfehler mit wachsender Pause. Er schützt vor unnötigen Zugriffsspitzen; ShoppingRoute pollt Amazon nicht.",
+      "ru": "API Safe Mode limits Alexa write frequency, groups large sorts into batches and retries temporary write errors with exponential backoff. It protects against unnecessary bursts; it does not poll Amazon.",
+      "pt": "API Safe Mode limits Alexa write frequency, groups large sorts into batches and retries temporary write errors with exponential backoff. It protects against unnecessary bursts; it does not poll Amazon.",
+      "nl": "API Safe Mode limits Alexa write frequency, groups large sorts into batches and retries temporary write errors with exponential backoff. It protects against unnecessary bursts; it does not poll Amazon.",
+      "fr": "API Safe Mode limits Alexa write frequency, groups large sorts into batches and retries temporary write errors with exponential backoff. It protects against unnecessary bursts; it does not poll Amazon.",
+      "it": "API Safe Mode limits Alexa write frequency, groups large sorts into batches and retries temporary write errors with exponential backoff. It protects against unnecessary bursts; it does not poll Amazon.",
+      "es": "API Safe Mode limits Alexa write frequency, groups large sorts into batches and retries temporary write errors with exponential backoff. It protects against unnecessary bursts; it does not poll Amazon.",
+      "pl": "API Safe Mode limits Alexa write frequency, groups large sorts into batches and retries temporary write errors with exponential backoff. It protects against unnecessary bursts; it does not poll Amazon.",
+      "uk": "API Safe Mode limits Alexa write frequency, groups large sorts into batches and retries temporary write errors with exponential backoff. It protects against unnecessary bursts; it does not poll Amazon.",
+      "zh-cn": "API Safe Mode limits Alexa write frequency, groups large sorts into batches and retries temporary write errors with exponential backoff. It protects against unnecessary bursts; it does not poll Amazon."
+    },
+    "ui.items.general.items.apisafemode.label": {
+      "en": "Enable API Safe Mode",
+      "de": "API-Schonmodus aktivieren",
+      "ru": "Enable API Safe Mode",
+      "pt": "Enable API Safe Mode",
+      "nl": "Enable API Safe Mode",
+      "fr": "Enable API Safe Mode",
+      "it": "Enable API Safe Mode",
+      "es": "Enable API Safe Mode",
+      "pl": "Enable API Safe Mode",
+      "uk": "Enable API Safe Mode",
+      "zh-cn": "Enable API Safe Mode"
+    },
+    "ui.items.general.items.maxwritesperminute.label": {
+      "en": "Maximum writes per minute",
+      "de": "Maximale Schreibzugriffe pro Minute",
+      "ru": "Maximum writes per minute",
+      "pt": "Maximum writes per minute",
+      "nl": "Maximum writes per minute",
+      "fr": "Maximum writes per minute",
+      "it": "Maximum writes per minute",
+      "es": "Maximum writes per minute",
+      "pl": "Maximum writes per minute",
+      "uk": "Maximum writes per minute",
+      "zh-cn": "Maximum writes per minute"
+    },
+    "ui.items.general.items.batchsize.label": {
+      "en": "Writes per batch",
+      "de": "Schreibzugriffe pro Block",
+      "ru": "Writes per batch",
+      "pt": "Writes per batch",
+      "nl": "Writes per batch",
+      "fr": "Writes per batch",
+      "it": "Writes per batch",
+      "es": "Writes per batch",
+      "pl": "Writes per batch",
+      "uk": "Writes per batch",
+      "zh-cn": "Writes per batch"
+    },
+    "ui.items.general.items.batchpausems.label": {
+      "en": "Pause between batches (ms)",
+      "de": "Pause zwischen Blöcken (ms)",
+      "ru": "Pause between batches (ms)",
+      "pt": "Pause between batches (ms)",
+      "nl": "Pause between batches (ms)",
+      "fr": "Pause between batches (ms)",
+      "it": "Pause between batches (ms)",
+      "es": "Pause between batches (ms)",
+      "pl": "Pause between batches (ms)",
+      "uk": "Pause between batches (ms)",
+      "zh-cn": "Pause between batches (ms)"
+    },
+    "ui.items.general.items.maxwriteretries.label": {
+      "en": "Maximum retries",
+      "de": "Maximale Wiederholungen",
+      "ru": "Maximum retries",
+      "pt": "Maximum retries",
+      "nl": "Maximum retries",
+      "fr": "Maximum retries",
+      "it": "Maximum retries",
+      "es": "Maximum retries",
+      "pl": "Maximum retries",
+      "uk": "Maximum retries",
+      "zh-cn": "Maximum retries"
+    },
+    "ui.items.general.items.retrybasems.label": {
+      "en": "Retry base delay (ms)",
+      "de": "Grundpause für Wiederholungen (ms)",
+      "ru": "Retry base delay (ms)",
+      "pt": "Retry base delay (ms)",
+      "nl": "Retry base delay (ms)",
+      "fr": "Retry base delay (ms)",
+      "it": "Retry base delay (ms)",
+      "es": "Retry base delay (ms)",
+      "pl": "Retry base delay (ms)",
+      "uk": "Retry base delay (ms)",
+      "zh-cn": "Retry base delay (ms)"
+    },
+    "ui.items.liststab.label": {
+      "en": "Lists",
+      "de": "Listen",
+      "ru": "Lists",
+      "pt": "Lists",
+      "nl": "Lists",
+      "fr": "Lists",
+      "it": "Lists",
+      "es": "Lists",
+      "pl": "Lists",
+      "uk": "Lists",
+      "zh-cn": "Lists"
+    },
+    "ui.items.liststab.items.listshelp.text": {
+      "en": "ShoppingRoute reads the available lists from the selected Alexa2 instance. After changing the Alexa2 instance, save once and reopen this page. Each list may have its own default market. The Alexa app must use 'Oldest to newest' for every managed list.",
+      "de": "ShoppingRoute liest die verfügbaren Listen aus der gewählten Alexa2-Instanz. Nach einem Wechsel der Alexa2-Instanz einmal speichern und diese Seite neu öffnen. Jede Liste kann einen eigenen Standardmarkt erhalten. In der Alexa-App muss jede verwaltete Liste auf „Älteste bis neueste“ stehen.",
+      "ru": "ShoppingRoute reads the available lists from the selected Alexa2 instance. After changing the Alexa2 instance, save once and reopen this page. Each list may have its own default market. The Alexa app must use 'Oldest to newest' for every managed list.",
+      "pt": "ShoppingRoute reads the available lists from the selected Alexa2 instance. After changing the Alexa2 instance, save once and reopen this page. Each list may have its own default market. The Alexa app must use 'Oldest to newest' for every managed list.",
+      "nl": "ShoppingRoute reads the available lists from the selected Alexa2 instance. After changing the Alexa2 instance, save once and reopen this page. Each list may have its own default market. The Alexa app must use 'Oldest to newest' for every managed list.",
+      "fr": "ShoppingRoute reads the available lists from the selected Alexa2 instance. After changing the Alexa2 instance, save once and reopen this page. Each list may have its own default market. The Alexa app must use 'Oldest to newest' for every managed list.",
+      "it": "ShoppingRoute reads the available lists from the selected Alexa2 instance. After changing the Alexa2 instance, save once and reopen this page. Each list may have its own default market. The Alexa app must use 'Oldest to newest' for every managed list.",
+      "es": "ShoppingRoute reads the available lists from the selected Alexa2 instance. After changing the Alexa2 instance, save once and reopen this page. Each list may have its own default market. The Alexa app must use 'Oldest to newest' for every managed list.",
+      "pl": "ShoppingRoute reads the available lists from the selected Alexa2 instance. After changing the Alexa2 instance, save once and reopen this page. Each list may have its own default market. The Alexa app must use 'Oldest to newest' for every managed list.",
+      "uk": "ShoppingRoute reads the available lists from the selected Alexa2 instance. After changing the Alexa2 instance, save once and reopen this page. Each list may have its own default market. The Alexa app must use 'Oldest to newest' for every managed list.",
+      "zh-cn": "ShoppingRoute reads the available lists from the selected Alexa2 instance. After changing the Alexa2 instance, save once and reopen this page. Each list may have its own default market. The Alexa app must use 'Oldest to newest' for every managed list."
+    },
+    "ui.items.liststab.items.lists.label": {
+      "en": "Managed Alexa lists",
+      "de": "Verwaltete Alexa-Listen",
+      "ru": "Managed Alexa lists",
+      "pt": "Managed Alexa lists",
+      "nl": "Managed Alexa lists",
+      "fr": "Managed Alexa lists",
+      "it": "Managed Alexa lists",
+      "es": "Managed Alexa lists",
+      "pl": "Managed Alexa lists",
+      "uk": "Managed Alexa lists",
+      "zh-cn": "Managed Alexa lists"
+    },
+    "ui.items.liststab.items.lists.items.0.title": {
+      "en": "Active",
+      "de": "Aktiv",
+      "ru": "Active",
+      "pt": "Active",
+      "nl": "Active",
+      "fr": "Active",
+      "it": "Active",
+      "es": "Active",
+      "pl": "Active",
+      "uk": "Active",
+      "zh-cn": "Active"
+    },
+    "ui.items.liststab.items.lists.items.1.title": {
+      "en": "Alexa list",
+      "de": "Alexa-Liste",
+      "ru": "Alexa list",
+      "pt": "Alexa list",
+      "nl": "Alexa list",
+      "fr": "Alexa list",
+      "it": "Alexa list",
+      "es": "Alexa list",
+      "pl": "Alexa list",
+      "uk": "Alexa list",
+      "zh-cn": "Alexa list"
+    },
+    "ui.items.liststab.items.lists.items.2.title": {
+      "en": "Default market for this list",
+      "de": "Standardmarkt dieser Liste",
+      "ru": "Default market for this list",
+      "pt": "Default market for this list",
+      "nl": "Default market for this list",
+      "fr": "Default market for this list",
+      "it": "Default market for this list",
+      "es": "Default market for this list",
+      "pl": "Default market for this list",
+      "uk": "Default market for this list",
+      "zh-cn": "Default market for this list"
+    },
+    "ui.items.marketstab.label": {
+      "en": "Markets",
+      "de": "Märkte",
+      "ru": "Markets",
+      "pt": "Markets",
+      "nl": "Markets",
+      "fr": "Markets",
+      "it": "Markets",
+      "es": "Markets",
+      "pl": "Markets",
+      "uk": "Markets",
+      "zh-cn": "Markets"
+    },
+    "ui.items.marketstab.items.marketshelp.text": {
+      "en": "Market order is the top sorting level. Aliases are comma-separated. Common variants for ALDI, LIDL, REWE and PENNY are additionally recognized automatically.",
+      "de": "Die Marktreihenfolge ist die oberste Sortierebene. Aliase werden kommagetrennt angegeben. Häufige Varianten für ALDI, LIDL, REWE und PENNY werden zusätzlich automatisch erkannt.",
+      "ru": "Market order is the top sorting level. Aliases are comma-separated. Common variants for ALDI, LIDL, REWE and PENNY are additionally recognized automatically.",
+      "pt": "Market order is the top sorting level. Aliases are comma-separated. Common variants for ALDI, LIDL, REWE and PENNY are additionally recognized automatically.",
+      "nl": "Market order is the top sorting level. Aliases are comma-separated. Common variants for ALDI, LIDL, REWE and PENNY are additionally recognized automatically.",
+      "fr": "Market order is the top sorting level. Aliases are comma-separated. Common variants for ALDI, LIDL, REWE and PENNY are additionally recognized automatically.",
+      "it": "Market order is the top sorting level. Aliases are comma-separated. Common variants for ALDI, LIDL, REWE and PENNY are additionally recognized automatically.",
+      "es": "Market order is the top sorting level. Aliases are comma-separated. Common variants for ALDI, LIDL, REWE and PENNY are additionally recognized automatically.",
+      "pl": "Market order is the top sorting level. Aliases are comma-separated. Common variants for ALDI, LIDL, REWE and PENNY are additionally recognized automatically.",
+      "uk": "Market order is the top sorting level. Aliases are comma-separated. Common variants for ALDI, LIDL, REWE and PENNY are additionally recognized automatically.",
+      "zh-cn": "Market order is the top sorting level. Aliases are comma-separated. Common variants for ALDI, LIDL, REWE and PENNY are additionally recognized automatically."
+    },
+    "ui.items.marketstab.items.markets.label": {
+      "en": "Markets",
+      "de": "Märkte / Hauptkategorien",
+      "ru": "Markets",
+      "pt": "Markets",
+      "nl": "Markets",
+      "fr": "Markets",
+      "it": "Markets",
+      "es": "Markets",
+      "pl": "Markets",
+      "uk": "Markets",
+      "zh-cn": "Markets"
+    },
+    "ui.items.marketstab.items.markets.items.1.title": {
+      "en": "Order",
+      "de": "Reihenfolge",
+      "ru": "Order",
+      "pt": "Order",
+      "nl": "Order",
+      "fr": "Order",
+      "it": "Order",
+      "es": "Order",
+      "pl": "Order",
+      "uk": "Order",
+      "zh-cn": "Order"
+    },
+    "ui.items.marketstab.items.markets.items.2.title": {
+      "en": "Market",
+      "de": "Markt",
+      "ru": "Market",
+      "pt": "Market",
+      "nl": "Market",
+      "fr": "Market",
+      "it": "Market",
+      "es": "Market",
+      "pl": "Market",
+      "uk": "Market",
+      "zh-cn": "Market"
+    },
+    "ui.items.marketstab.items.markets.items.3.title": {
+      "en": "Aliases",
+      "de": "Aliase",
+      "ru": "Aliases",
+      "pt": "Aliases",
+      "nl": "Aliases",
+      "fr": "Aliases",
+      "it": "Aliases",
+      "es": "Aliases",
+      "pl": "Aliases",
+      "uk": "Aliases",
+      "zh-cn": "Aliases"
+    },
+    "ui.items.productgroupstab.label": {
+      "en": "Product groups",
+      "de": "Produktgruppen",
+      "ru": "Product groups",
+      "pt": "Product groups",
+      "nl": "Product groups",
+      "fr": "Product groups",
+      "it": "Product groups",
+      "es": "Product groups",
+      "pl": "Product groups",
+      "uk": "Product groups",
+      "zh-cn": "Product groups"
+    },
+    "ui.items.productgroupstab.items.productgroupshelp.text": {
+      "en": "Central list for all product-group drop-downs. Drop-down values are alphabetically sorted.",
+      "de": "Zentrale Liste für alle Produktgruppen-Pulldowns. Die Pulldown-Werte werden alphabetisch sortiert.",
+      "ru": "Central list for all product-group drop-downs. Drop-down values are alphabetically sorted.",
+      "pt": "Central list for all product-group drop-downs. Drop-down values are alphabetically sorted.",
+      "nl": "Central list for all product-group drop-downs. Drop-down values are alphabetically sorted.",
+      "fr": "Central list for all product-group drop-downs. Drop-down values are alphabetically sorted.",
+      "it": "Central list for all product-group drop-downs. Drop-down values are alphabetically sorted.",
+      "es": "Central list for all product-group drop-downs. Drop-down values are alphabetically sorted.",
+      "pl": "Central list for all product-group drop-downs. Drop-down values are alphabetically sorted.",
+      "uk": "Central list for all product-group drop-downs. Drop-down values are alphabetically sorted.",
+      "zh-cn": "Central list for all product-group drop-downs. Drop-down values are alphabetically sorted."
+    },
+    "ui.items.productgroupstab.items.productgroups.items.0.title": {
+      "en": "Product group",
+      "de": "Produktgruppe",
+      "ru": "Product group",
+      "pt": "Product group",
+      "nl": "Product group",
+      "fr": "Product group",
+      "it": "Product group",
+      "es": "Product group",
+      "pl": "Product group",
+      "uk": "Product group",
+      "zh-cn": "Product group"
+    },
+    "ui.items.routestab.label": {
+      "en": "Walking routes",
+      "de": "Laufwege",
+      "ru": "Walking routes",
+      "pt": "Walking routes",
+      "nl": "Walking routes",
+      "fr": "Walking routes",
+      "it": "Walking routes",
+      "es": "Walking routes",
+      "pl": "Walking routes",
+      "uk": "Walking routes",
+      "zh-cn": "Walking routes"
+    },
+    "ui.items.routestab.items.routemarketfilter.label": {
+      "en": "Select market",
+      "de": "Markt auswählen",
+      "ru": "Select market",
+      "pt": "Select market",
+      "nl": "Select market",
+      "fr": "Select market",
+      "it": "Select market",
+      "es": "Select market",
+      "pl": "Select market",
+      "uk": "Select market",
+      "zh-cn": "Select market"
+    },
+    "ui.items.routestab.items.routemarketfilter.help": {
+      "en": "Select one active market. Only this market’s walking route is shown below.",
+      "de": "Einen aktiven Markt auswählen. Darunter wird ausschließlich der Laufweg dieses Marktes angezeigt.",
+      "ru": "Select one active market. Only this market’s walking route is shown below.",
+      "pt": "Select one active market. Only this market’s walking route is shown below.",
+      "nl": "Select one active market. Only this market’s walking route is shown below.",
+      "fr": "Select one active market. Only this market’s walking route is shown below.",
+      "it": "Select one active market. Only this market’s walking route is shown below.",
+      "es": "Select one active market. Only this market’s walking route is shown below.",
+      "pl": "Select one active market. Only this market’s walking route is shown below.",
+      "uk": "Select one active market. Only this market’s walking route is shown below.",
+      "zh-cn": "Select one active market. Only this market’s walking route is shown below."
+    },
+    "ui.items.routestab.items.routeshelp.text": {
+      "en": "Choose a market above, then move its product groups with ↑/↓ into the actual walking order. The complete route list remains stored internally and is updated automatically.",
+      "de": "Oben einen Markt auswählen und anschließend dessen Produktgruppen mit ↑/↓ in die tatsächliche Laufreihenfolge bringen. Die vollständige Laufwegliste bleibt intern erhalten und wird automatisch aktualisiert.",
+      "ru": "Choose a market above, then move its product groups with ↑/↓ into the actual walking order. The complete route list remains stored internally and is updated automatically.",
+      "pt": "Choose a market above, then move its product groups with ↑/↓ into the actual walking order. The complete route list remains stored internally and is updated automatically.",
+      "nl": "Choose a market above, then move its product groups with ↑/↓ into the actual walking order. The complete route list remains stored internally and is updated automatically.",
+      "fr": "Choose a market above, then move its product groups with ↑/↓ into the actual walking order. The complete route list remains stored internally and is updated automatically.",
+      "it": "Choose a market above, then move its product groups with ↑/↓ into the actual walking order. The complete route list remains stored internally and is updated automatically.",
+      "es": "Choose a market above, then move its product groups with ↑/↓ into the actual walking order. The complete route list remains stored internally and is updated automatically.",
+      "pl": "Choose a market above, then move its product groups with ↑/↓ into the actual walking order. The complete route list remains stored internally and is updated automatically.",
+      "uk": "Choose a market above, then move its product groups with ↑/↓ into the actual walking order. The complete route list remains stored internally and is updated automatically.",
+      "zh-cn": "Choose a market above, then move its product groups with ↑/↓ into the actual walking order. The complete route list remains stored internally and is updated automatically."
+    },
+    "ui.items.routestab.items.routeeditorrows.label": {
+      "en": "Walking route for selected market",
+      "de": "Laufweg des ausgewählten Marktes",
+      "ru": "Walking route for selected market",
+      "pt": "Walking route for selected market",
+      "nl": "Walking route for selected market",
+      "fr": "Walking route for selected market",
+      "it": "Walking route for selected market",
+      "es": "Walking route for selected market",
+      "pl": "Walking route for selected market",
+      "uk": "Walking route for selected market",
+      "zh-cn": "Walking route for selected market"
+    },
+    "ui.items.productstab.label": {
+      "en": "Products",
+      "de": "Artikel",
+      "ru": "Products",
+      "pt": "Products",
+      "nl": "Products",
+      "fr": "Products",
+      "it": "Products",
+      "es": "Products",
+      "pl": "Products",
+      "uk": "Products",
+      "zh-cn": "Products"
+    },
+    "ui.items.productstab.items.productshelp.text": {
+      "en": "Click Product, Product group or Default market headers to sort. The catalogue itself is stored alphabetically, so equal groups/markets stay alphabetic. Available markets are comma-separated; the default market is the preferred exception to global/list priorities.",
+      "de": "Über die Spaltenköpfe Artikel, Produktgruppe oder Standardmarkt sortieren. Der Artikelstamm wird grundsätzlich alphabetisch gespeichert, dadurch bleiben gleiche Gruppen/Märkte innerhalb der Sortierung alphabetisch. Verfügbare Märkte werden kommagetrennt angegeben; der Standardmarkt ist die bevorzugte Ausnahme von globalen/Listen-Prioritäten.",
+      "ru": "Click Product, Product group or Default market headers to sort. The catalogue itself is stored alphabetically, so equal groups/markets stay alphabetic. Available markets are comma-separated; the default market is the preferred exception to global/list priorities.",
+      "pt": "Click Product, Product group or Default market headers to sort. The catalogue itself is stored alphabetically, so equal groups/markets stay alphabetic. Available markets are comma-separated; the default market is the preferred exception to global/list priorities.",
+      "nl": "Click Product, Product group or Default market headers to sort. The catalogue itself is stored alphabetically, so equal groups/markets stay alphabetic. Available markets are comma-separated; the default market is the preferred exception to global/list priorities.",
+      "fr": "Click Product, Product group or Default market headers to sort. The catalogue itself is stored alphabetically, so equal groups/markets stay alphabetic. Available markets are comma-separated; the default market is the preferred exception to global/list priorities.",
+      "it": "Click Product, Product group or Default market headers to sort. The catalogue itself is stored alphabetically, so equal groups/markets stay alphabetic. Available markets are comma-separated; the default market is the preferred exception to global/list priorities.",
+      "es": "Click Product, Product group or Default market headers to sort. The catalogue itself is stored alphabetically, so equal groups/markets stay alphabetic. Available markets are comma-separated; the default market is the preferred exception to global/list priorities.",
+      "pl": "Click Product, Product group or Default market headers to sort. The catalogue itself is stored alphabetically, so equal groups/markets stay alphabetic. Available markets are comma-separated; the default market is the preferred exception to global/list priorities.",
+      "uk": "Click Product, Product group or Default market headers to sort. The catalogue itself is stored alphabetically, so equal groups/markets stay alphabetic. Available markets are comma-separated; the default market is the preferred exception to global/list priorities.",
+      "zh-cn": "Click Product, Product group or Default market headers to sort. The catalogue itself is stored alphabetically, so equal groups/markets stay alphabetic. Available markets are comma-separated; the default market is the preferred exception to global/list priorities."
+    },
+    "ui.items.productstab.items.products.label": {
+      "en": "Product catalogue",
+      "de": "Artikelstamm",
+      "ru": "Product catalogue",
+      "pt": "Product catalogue",
+      "nl": "Product catalogue",
+      "fr": "Product catalogue",
+      "it": "Product catalogue",
+      "es": "Product catalogue",
+      "pl": "Product catalogue",
+      "uk": "Product catalogue",
+      "zh-cn": "Product catalogue"
+    },
+    "ui.items.productstab.items.products.items.0.title": {
+      "en": "Product",
+      "de": "Artikel",
+      "ru": "Product",
+      "pt": "Product",
+      "nl": "Product",
+      "fr": "Product",
+      "it": "Product",
+      "es": "Product",
+      "pl": "Product",
+      "uk": "Product",
+      "zh-cn": "Product"
+    },
+    "ui.items.productstab.items.products.items.3.title": {
+      "en": "Default market",
+      "de": "Standardmarkt",
+      "ru": "Default market",
+      "pt": "Default market",
+      "nl": "Default market",
+      "fr": "Default market",
+      "it": "Default market",
+      "es": "Default market",
+      "pl": "Default market",
+      "uk": "Default market",
+      "zh-cn": "Default market"
+    },
+    "ui.items.productstab.items.products.items.4.title": {
+      "en": "Available markets",
+      "de": "Verfügbare Märkte",
+      "ru": "Available markets",
+      "pt": "Available markets",
+      "nl": "Available markets",
+      "fr": "Available markets",
+      "it": "Available markets",
+      "es": "Available markets",
+      "pl": "Available markets",
+      "uk": "Available markets",
+      "zh-cn": "Available markets"
+    },
+    "ui.items.reviewtab.label": {
+      "en": "Review",
+      "de": "Prüfliste",
+      "ru": "Review",
+      "pt": "Review",
+      "nl": "Review",
+      "fr": "Review",
+      "it": "Review",
+      "es": "Review",
+      "pl": "Review",
+      "uk": "Review",
+      "zh-cn": "Review"
+    },
+    "ui.items.reviewtab.items.reviewhelp.text": {
+      "en": "Unknown products appear here in review mode. Correct product, product group, default market or aliases, choose Accept or Ignore, then save. Accepted entries are moved into the product catalogue after restart.",
+      "de": "Im Prüfmodus erscheinen unbekannte Artikel hier. Artikelname, Produktgruppe, Standardmarkt oder Aliase korrigieren, dann Übernehmen oder Ignorieren wählen und speichern. Übernommene Einträge wandern nach dem Neustart in den Artikelstamm.",
+      "ru": "Unknown products appear here in review mode. Correct product, product group, default market or aliases, choose Accept or Ignore, then save. Accepted entries are moved into the product catalogue after restart.",
+      "pt": "Unknown products appear here in review mode. Correct product, product group, default market or aliases, choose Accept or Ignore, then save. Accepted entries are moved into the product catalogue after restart.",
+      "nl": "Unknown products appear here in review mode. Correct product, product group, default market or aliases, choose Accept or Ignore, then save. Accepted entries are moved into the product catalogue after restart.",
+      "fr": "Unknown products appear here in review mode. Correct product, product group, default market or aliases, choose Accept or Ignore, then save. Accepted entries are moved into the product catalogue after restart.",
+      "it": "Unknown products appear here in review mode. Correct product, product group, default market or aliases, choose Accept or Ignore, then save. Accepted entries are moved into the product catalogue after restart.",
+      "es": "Unknown products appear here in review mode. Correct product, product group, default market or aliases, choose Accept or Ignore, then save. Accepted entries are moved into the product catalogue after restart.",
+      "pl": "Unknown products appear here in review mode. Correct product, product group, default market or aliases, choose Accept or Ignore, then save. Accepted entries are moved into the product catalogue after restart.",
+      "uk": "Unknown products appear here in review mode. Correct product, product group, default market or aliases, choose Accept or Ignore, then save. Accepted entries are moved into the product catalogue after restart.",
+      "zh-cn": "Unknown products appear here in review mode. Correct product, product group, default market or aliases, choose Accept or Ignore, then save. Accepted entries are moved into the product catalogue after restart."
+    },
+    "ui.items.reviewtab.items.reviewitems.label": {
+      "en": "Unknown products",
+      "de": "Unbekannte Artikel prüfen",
+      "ru": "Unknown products",
+      "pt": "Unknown products",
+      "nl": "Unknown products",
+      "fr": "Unknown products",
+      "it": "Unknown products",
+      "es": "Unknown products",
+      "pl": "Unknown products",
+      "uk": "Unknown products",
+      "zh-cn": "Unknown products"
+    },
+    "ui.items.reviewtab.items.reviewitems.items.1.title": {
+      "en": "Alexa text",
+      "de": "Alexa-Text",
+      "ru": "Alexa text",
+      "pt": "Alexa text",
+      "nl": "Alexa text",
+      "fr": "Alexa text",
+      "it": "Alexa text",
+      "es": "Alexa text",
+      "pl": "Alexa text",
+      "uk": "Alexa text",
+      "zh-cn": "Alexa text"
+    },
+    "ui.items.reviewtab.items.reviewitems.items.5.title": {
+      "en": "Action",
+      "de": "Aktion",
+      "ru": "Action",
+      "pt": "Action",
+      "nl": "Action",
+      "fr": "Action",
+      "it": "Action",
+      "es": "Action",
+      "pl": "Action",
+      "uk": "Action",
+      "zh-cn": "Action"
+    },
+    "ui.items.reviewtab.items.reviewitems.items.5.options.0.label": {
+      "en": "Pending",
+      "de": "Offen",
+      "ru": "Pending",
+      "pt": "Pending",
+      "nl": "Pending",
+      "fr": "Pending",
+      "it": "Pending",
+      "es": "Pending",
+      "pl": "Pending",
+      "uk": "Pending",
+      "zh-cn": "Pending"
+    },
+    "ui.items.reviewtab.items.reviewitems.items.5.options.1.label": {
+      "en": "Accept",
+      "de": "Übernehmen",
+      "ru": "Accept",
+      "pt": "Accept",
+      "nl": "Accept",
+      "fr": "Accept",
+      "it": "Accept",
+      "es": "Accept",
+      "pl": "Accept",
+      "uk": "Accept",
+      "zh-cn": "Accept"
+    },
+    "ui.items.reviewtab.items.reviewitems.items.5.options.2.label": {
+      "en": "Ignore",
+      "de": "Ignorieren",
+      "ru": "Ignore",
+      "pt": "Ignore",
+      "nl": "Ignore",
+      "fr": "Ignore",
+      "it": "Ignore",
+      "es": "Ignore",
+      "pl": "Ignore",
+      "uk": "Ignore",
+      "zh-cn": "Ignore"
+    },
+    "ui.items.transfertab.label": {
+      "en": "Backup / Sharing",
+      "de": "Sicherung / Teilen",
+      "ru": "Backup / Sharing",
+      "pt": "Backup / Sharing",
+      "nl": "Backup / Sharing",
+      "fr": "Backup / Sharing",
+      "it": "Backup / Sharing",
+      "es": "Backup / Sharing",
+      "pl": "Backup / Sharing",
+      "uk": "Backup / Sharing",
+      "zh-cn": "Backup / Sharing"
+    },
+    "ui.items.transfertab.items.backuphelp.text": {
+      "en": "Configuration export is available in info.configExport. Paste an export into control.importConfigJson to restore it. Market-only profiles are in info.marketProfiles and can be imported through control.marketProfileImport. This allows store routes to be shared without sharing the adapter source code.",
+      "de": "Die komplette Konfigurationssicherung steht in info.configExport. Zum Wiederherstellen den Export in control.importConfigJson schreiben. Einzelne Marktprofile stehen in info.marketProfiles und werden über control.marketProfileImport importiert. So können Laufwege geteilt werden, ohne den Adapter-Quellcode zu teilen.",
+      "ru": "Configuration export is available in info.configExport. Paste an export into control.importConfigJson to restore it. Market-only profiles are in info.marketProfiles and can be imported through control.marketProfileImport. This allows store routes to be shared without sharing the adapter source code.",
+      "pt": "Configuration export is available in info.configExport. Paste an export into control.importConfigJson to restore it. Market-only profiles are in info.marketProfiles and can be imported through control.marketProfileImport. This allows store routes to be shared without sharing the adapter source code.",
+      "nl": "Configuration export is available in info.configExport. Paste an export into control.importConfigJson to restore it. Market-only profiles are in info.marketProfiles and can be imported through control.marketProfileImport. This allows store routes to be shared without sharing the adapter source code.",
+      "fr": "Configuration export is available in info.configExport. Paste an export into control.importConfigJson to restore it. Market-only profiles are in info.marketProfiles and can be imported through control.marketProfileImport. This allows store routes to be shared without sharing the adapter source code.",
+      "it": "Configuration export is available in info.configExport. Paste an export into control.importConfigJson to restore it. Market-only profiles are in info.marketProfiles and can be imported through control.marketProfileImport. This allows store routes to be shared without sharing the adapter source code.",
+      "es": "Configuration export is available in info.configExport. Paste an export into control.importConfigJson to restore it. Market-only profiles are in info.marketProfiles and can be imported through control.marketProfileImport. This allows store routes to be shared without sharing the adapter source code.",
+      "pl": "Configuration export is available in info.configExport. Paste an export into control.importConfigJson to restore it. Market-only profiles are in info.marketProfiles and can be imported through control.marketProfileImport. This allows store routes to be shared without sharing the adapter source code.",
+      "uk": "Configuration export is available in info.configExport. Paste an export into control.importConfigJson to restore it. Market-only profiles are in info.marketProfiles and can be imported through control.marketProfileImport. This allows store routes to be shared without sharing the adapter source code.",
+      "zh-cn": "Configuration export is available in info.configExport. Paste an export into control.importConfigJson to restore it. Market-only profiles are in info.marketProfiles and can be imported through control.marketProfileImport. This allows store routes to be shared without sharing the adapter source code."
+    },
+    "ui.items.transfertab.items.refreshexport.label": {
+      "en": "Refresh configuration export",
+      "de": "Konfigurations-Export aktualisieren",
+      "ru": "Refresh configuration export",
+      "pt": "Refresh configuration export",
+      "nl": "Refresh configuration export",
+      "fr": "Refresh configuration export",
+      "it": "Refresh configuration export",
+      "es": "Refresh configuration export",
+      "pl": "Refresh configuration export",
+      "uk": "Refresh configuration export",
+      "zh-cn": "Refresh configuration export"
+    },
+    "ui.items.transfertab.items.configexportstate.label": {
+      "en": "Configuration export JSON",
+      "de": "Konfigurations-Export JSON",
+      "ru": "Configuration export JSON",
+      "pt": "Configuration export JSON",
+      "nl": "Configuration export JSON",
+      "fr": "Configuration export JSON",
+      "it": "Configuration export JSON",
+      "es": "Configuration export JSON",
+      "pl": "Configuration export JSON",
+      "uk": "Configuration export JSON",
+      "zh-cn": "Configuration export JSON"
+    },
+    "ui.items.transfertab.items.configimportstate.label": {
+      "en": "Paste configuration JSON to import",
+      "de": "Konfigurations-JSON zum Import einfügen",
+      "ru": "Paste configuration JSON to import",
+      "pt": "Paste configuration JSON to import",
+      "nl": "Paste configuration JSON to import",
+      "fr": "Paste configuration JSON to import",
+      "it": "Paste configuration JSON to import",
+      "es": "Paste configuration JSON to import",
+      "pl": "Paste configuration JSON to import",
+      "uk": "Paste configuration JSON to import",
+      "zh-cn": "Paste configuration JSON to import"
+    },
+    "ui.items.transfertab.items.marketprofilesstate.label": {
+      "en": "Market profiles JSON",
+      "de": "Marktprofile JSON",
+      "ru": "Market profiles JSON",
+      "pt": "Market profiles JSON",
+      "nl": "Market profiles JSON",
+      "fr": "Market profiles JSON",
+      "it": "Market profiles JSON",
+      "es": "Market profiles JSON",
+      "pl": "Market profiles JSON",
+      "uk": "Market profiles JSON",
+      "zh-cn": "Market profiles JSON"
+    },
+    "ui.items.transfertab.items.marketprofileimportstate.label": {
+      "en": "Paste one market profile JSON",
+      "de": "Ein Marktprofil-JSON zum Import einfügen",
+      "ru": "Paste one market profile JSON",
+      "pt": "Paste one market profile JSON",
+      "nl": "Paste one market profile JSON",
+      "fr": "Paste one market profile JSON",
+      "it": "Paste one market profile JSON",
+      "es": "Paste one market profile JSON",
+      "pl": "Paste one market profile JSON",
+      "uk": "Paste one market profile JSON",
+      "zh-cn": "Paste one market profile JSON"
+    },
+    "ui.items.diagnosticstab.label": {
+      "en": "Diagnostics",
+      "de": "Diagnose",
+      "ru": "Diagnostics",
+      "pt": "Diagnostics",
+      "nl": "Diagnostics",
+      "fr": "Diagnostics",
+      "it": "Diagnostics",
+      "es": "Diagnostics",
+      "pl": "Diagnostics",
+      "uk": "Diagnostics",
+      "zh-cn": "Diagnostics"
+    },
+    "ui.items.diagnosticstab.items.versioninfo.text": {
+      "en": "Version information is exposed through info.versionInstalled, info.versionBeta, info.updateAvailable and info.versionCheck. Note: ioBroker Admin may show 'not maintained' as the available version while ShoppingRoute is not yet in the official ioBroker repository; ShoppingRoute cannot override that generic Admin card itself.",
+      "de": "Versionsinformationen stehen unter info.versionInstalled, info.versionBeta, info.updateAvailable und info.versionCheck. Hinweis: Solange ShoppingRoute noch nicht im offiziellen ioBroker-Repository geführt wird, kann ioBroker Admin bei „Verfügbare Version“ generisch „nicht gewartet“ anzeigen; diese Kartenanzeige kann der Adapter selbst nicht überschreiben.",
+      "ru": "Version information is exposed through info.versionInstalled, info.versionBeta, info.updateAvailable and info.versionCheck. Note: ioBroker Admin may show 'not maintained' as the available version while ShoppingRoute is not yet in the official ioBroker repository; ShoppingRoute cannot override that generic Admin card itself.",
+      "pt": "Version information is exposed through info.versionInstalled, info.versionBeta, info.updateAvailable and info.versionCheck. Note: ioBroker Admin may show 'not maintained' as the available version while ShoppingRoute is not yet in the official ioBroker repository; ShoppingRoute cannot override that generic Admin card itself.",
+      "nl": "Version information is exposed through info.versionInstalled, info.versionBeta, info.updateAvailable and info.versionCheck. Note: ioBroker Admin may show 'not maintained' as the available version while ShoppingRoute is not yet in the official ioBroker repository; ShoppingRoute cannot override that generic Admin card itself.",
+      "fr": "Version information is exposed through info.versionInstalled, info.versionBeta, info.updateAvailable and info.versionCheck. Note: ioBroker Admin may show 'not maintained' as the available version while ShoppingRoute is not yet in the official ioBroker repository; ShoppingRoute cannot override that generic Admin card itself.",
+      "it": "Version information is exposed through info.versionInstalled, info.versionBeta, info.updateAvailable and info.versionCheck. Note: ioBroker Admin may show 'not maintained' as the available version while ShoppingRoute is not yet in the official ioBroker repository; ShoppingRoute cannot override that generic Admin card itself.",
+      "es": "Version information is exposed through info.versionInstalled, info.versionBeta, info.updateAvailable and info.versionCheck. Note: ioBroker Admin may show 'not maintained' as the available version while ShoppingRoute is not yet in the official ioBroker repository; ShoppingRoute cannot override that generic Admin card itself.",
+      "pl": "Version information is exposed through info.versionInstalled, info.versionBeta, info.updateAvailable and info.versionCheck. Note: ioBroker Admin may show 'not maintained' as the available version while ShoppingRoute is not yet in the official ioBroker repository; ShoppingRoute cannot override that generic Admin card itself.",
+      "uk": "Version information is exposed through info.versionInstalled, info.versionBeta, info.updateAvailable and info.versionCheck. Note: ioBroker Admin may show 'not maintained' as the available version while ShoppingRoute is not yet in the official ioBroker repository; ShoppingRoute cannot override that generic Admin card itself.",
+      "zh-cn": "Version information is exposed through info.versionInstalled, info.versionBeta, info.updateAvailable and info.versionCheck. Note: ioBroker Admin may show 'not maintained' as the available version while ShoppingRoute is not yet in the official ioBroker repository; ShoppingRoute cannot override that generic Admin card itself."
+    },
+    "ui.items.diagnosticstab.items.previewhelp.text": {
+      "en": "Sort preview: info.preview and info.previewText show current and target order before writes. Statistics stay local in info.statistics. API counters are in info.traffic.",
+      "de": "Sortiervorschau: info.preview und info.previewText zeigen aktuelle und geplante Reihenfolge vor Schreibzugriffen. Die Einkaufsstatistik bleibt lokal in info.statistics. API-Zähler stehen in info.traffic.",
+      "ru": "Sort preview: info.preview and info.previewText show current and target order before writes. Statistics stay local in info.statistics. API counters are in info.traffic.",
+      "pt": "Sort preview: info.preview and info.previewText show current and target order before writes. Statistics stay local in info.statistics. API counters are in info.traffic.",
+      "nl": "Sort preview: info.preview and info.previewText show current and target order before writes. Statistics stay local in info.statistics. API counters are in info.traffic.",
+      "fr": "Sort preview: info.preview and info.previewText show current and target order before writes. Statistics stay local in info.statistics. API counters are in info.traffic.",
+      "it": "Sort preview: info.preview and info.previewText show current and target order before writes. Statistics stay local in info.statistics. API counters are in info.traffic.",
+      "es": "Sort preview: info.preview and info.previewText show current and target order before writes. Statistics stay local in info.statistics. API counters are in info.traffic.",
+      "pl": "Sort preview: info.preview and info.previewText show current and target order before writes. Statistics stay local in info.statistics. API counters are in info.traffic.",
+      "uk": "Sort preview: info.preview and info.previewText show current and target order before writes. Statistics stay local in info.statistics. API counters are in info.traffic.",
+      "zh-cn": "Sort preview: info.preview and info.previewText show current and target order before writes. Statistics stay local in info.statistics. API counters are in info.traffic."
+    },
+    "ui.items.diagnosticstab.items.feedbackhelp.text": {
+      "en": "For beta feedback trigger control.refreshFeedbackReport and copy info.feedbackReport. Product names, list texts, aliases and the full configuration are intentionally omitted.",
+      "de": "Für Beta-Feedback control.refreshFeedbackReport auslösen und info.feedbackReport kopieren. Produktnamen, Listentexte, Aliase und die vollständige Konfiguration werden absichtlich nicht aufgenommen.",
+      "ru": "For beta feedback trigger control.refreshFeedbackReport and copy info.feedbackReport. Product names, list texts, aliases and the full configuration are intentionally omitted.",
+      "pt": "For beta feedback trigger control.refreshFeedbackReport and copy info.feedbackReport. Product names, list texts, aliases and the full configuration are intentionally omitted.",
+      "nl": "For beta feedback trigger control.refreshFeedbackReport and copy info.feedbackReport. Product names, list texts, aliases and the full configuration are intentionally omitted.",
+      "fr": "For beta feedback trigger control.refreshFeedbackReport and copy info.feedbackReport. Product names, list texts, aliases and the full configuration are intentionally omitted.",
+      "it": "For beta feedback trigger control.refreshFeedbackReport and copy info.feedbackReport. Product names, list texts, aliases and the full configuration are intentionally omitted.",
+      "es": "For beta feedback trigger control.refreshFeedbackReport and copy info.feedbackReport. Product names, list texts, aliases and the full configuration are intentionally omitted.",
+      "pl": "For beta feedback trigger control.refreshFeedbackReport and copy info.feedbackReport. Product names, list texts, aliases and the full configuration are intentionally omitted.",
+      "uk": "For beta feedback trigger control.refreshFeedbackReport and copy info.feedbackReport. Product names, list texts, aliases and the full configuration are intentionally omitted.",
+      "zh-cn": "For beta feedback trigger control.refreshFeedbackReport and copy info.feedbackReport. Product names, list texts, aliases and the full configuration are intentionally omitted."
+    },
+    "ui.items.diagnosticstab.items.compatibilityhelp.text": {
+      "en": "If info.writeCapability is unknown, run control.compatibilityTest once with at least one active item. source-ok or live-ok permits writes; known-bug/live-failed/unknown blocks them.",
+      "de": "Wenn info.writeCapability auf unknown steht, control.compatibilityTest einmal mit mindestens einem aktiven Artikel ausführen. source-ok oder live-ok erlaubt Schreibzugriffe; known-bug/live-failed/unknown blockiert sie.",
+      "ru": "If info.writeCapability is unknown, run control.compatibilityTest once with at least one active item. source-ok or live-ok permits writes; known-bug/live-failed/unknown blocks them.",
+      "pt": "If info.writeCapability is unknown, run control.compatibilityTest once with at least one active item. source-ok or live-ok permits writes; known-bug/live-failed/unknown blocks them.",
+      "nl": "If info.writeCapability is unknown, run control.compatibilityTest once with at least one active item. source-ok or live-ok permits writes; known-bug/live-failed/unknown blocks them.",
+      "fr": "If info.writeCapability is unknown, run control.compatibilityTest once with at least one active item. source-ok or live-ok permits writes; known-bug/live-failed/unknown blocks them.",
+      "it": "If info.writeCapability is unknown, run control.compatibilityTest once with at least one active item. source-ok or live-ok permits writes; known-bug/live-failed/unknown blocks them.",
+      "es": "If info.writeCapability is unknown, run control.compatibilityTest once with at least one active item. source-ok or live-ok permits writes; known-bug/live-failed/unknown blocks them.",
+      "pl": "If info.writeCapability is unknown, run control.compatibilityTest once with at least one active item. source-ok or live-ok permits writes; known-bug/live-failed/unknown blocks them.",
+      "uk": "If info.writeCapability is unknown, run control.compatibilityTest once with at least one active item. source-ok or live-ok permits writes; known-bug/live-failed/unknown blocks them.",
+      "zh-cn": "If info.writeCapability is unknown, run control.compatibilityTest once with at least one active item. source-ok or live-ok permits writes; known-bug/live-failed/unknown blocks them."
+    },
+    "ui.items.diagnosticstab.items.versioninstalledstate.label": {
+      "en": "Installed version",
+      "de": "Installierte Version",
+      "ru": "Installed version",
+      "pt": "Installed version",
+      "nl": "Installed version",
+      "fr": "Installed version",
+      "it": "Installed version",
+      "es": "Installed version",
+      "pl": "Installed version",
+      "uk": "Installed version",
+      "zh-cn": "Installed version"
+    },
+    "ui.items.diagnosticstab.items.versionbetastate.label": {
+      "en": "Latest npm beta",
+      "de": "Neueste npm-Beta",
+      "ru": "Latest npm beta",
+      "pt": "Latest npm beta",
+      "nl": "Latest npm beta",
+      "fr": "Latest npm beta",
+      "it": "Latest npm beta",
+      "es": "Latest npm beta",
+      "pl": "Latest npm beta",
+      "uk": "Latest npm beta",
+      "zh-cn": "Latest npm beta"
+    },
+    "ui.items.diagnosticstab.items.updatestate.label": {
+      "en": "Update available",
+      "de": "Update verfügbar",
+      "ru": "Update available",
+      "pt": "Update available",
+      "nl": "Update available",
+      "fr": "Update available",
+      "it": "Update available",
+      "es": "Update available",
+      "pl": "Update available",
+      "uk": "Update available",
+      "zh-cn": "Update available"
+    },
+    "ui.items.diagnosticstab.items.previewstate.label": {
+      "en": "Last sorting preview",
+      "de": "Letzte Sortiervorschau",
+      "ru": "Last sorting preview",
+      "pt": "Last sorting preview",
+      "nl": "Last sorting preview",
+      "fr": "Last sorting preview",
+      "it": "Last sorting preview",
+      "es": "Last sorting preview",
+      "pl": "Last sorting preview",
+      "uk": "Last sorting preview",
+      "zh-cn": "Last sorting preview"
+    },
+    "ui.items.diagnosticstab.items.refreshfeedback.label": {
+      "en": "Refresh feedback report",
+      "de": "Feedbackbericht aktualisieren",
+      "ru": "Refresh feedback report",
+      "pt": "Refresh feedback report",
+      "nl": "Refresh feedback report",
+      "fr": "Refresh feedback report",
+      "it": "Refresh feedback report",
+      "es": "Refresh feedback report",
+      "pl": "Refresh feedback report",
+      "uk": "Refresh feedback report",
+      "zh-cn": "Refresh feedback report"
+    },
+    "ui.items.diagnosticstab.items.feedbackstate.label": {
+      "en": "Privacy-safe feedback report",
+      "de": "Datenschutzfreundlicher Feedbackbericht",
+      "ru": "Privacy-safe feedback report",
+      "pt": "Privacy-safe feedback report",
+      "nl": "Privacy-safe feedback report",
+      "fr": "Privacy-safe feedback report",
+      "it": "Privacy-safe feedback report",
+      "es": "Privacy-safe feedback report",
+      "pl": "Privacy-safe feedback report",
+      "uk": "Privacy-safe feedback report",
+      "zh-cn": "Privacy-safe feedback report"
+    }
+  }
 }
