@@ -2,7 +2,7 @@
 
 ![ShoppingRoute](admin/shoppingroute.png)
 
-**Entwicklungsstand: 0.2.0-beta.5 – Beta**
+**Entwicklungsstand: 0.2.0-beta.6 – Beta**
 
 ShoppingRoute sortiert vorhandene Alexa-Einkaufslisteneinträge nach Markt, Produktgruppe und dem individuellen Laufweg durch den jeweiligen Markt. Dabei werden **keine Einträge angelegt, gelöscht oder automatisch abgehakt**. Der Adapter verteilt ausschließlich die sichtbaren Texte auf bereits vorhandene aktive Alexa-IDs. Die Alexa-App muss für verwaltete Listen auf **„Älteste bis neueste“** gestellt sein.
 
@@ -53,7 +53,6 @@ Bei der Marktzuordnung gilt:
 - `info.versionInstalled`, `info.versionBeta`, `info.updateAvailable` – Versionsstatus
 - `info.feedbackReport` – bereinigter Beta-Fehlerbericht ohne Einkaufsinhalte
 - `control.temporaryPriorityMarket` – temporärer Markt für den aktuellen Einkauf
-- `control.clearTemporaryPriorityMarket` – temporären Markt löschen
 - `control.importConfigJson` – Konfiguration importieren
 - `control.marketProfileImport` – Marktprofil importieren
 
@@ -67,11 +66,12 @@ Für diese Beta gilt die im Paket enthaltene **ShoppingRoute Closed Beta License
 
 ## Changelog
 
-### 0.2.0-beta.5 (2026-08-08)
+### 0.2.0-beta.6 (2026-08-08)
 
 - Alexa2-Instanz wird aus den installierten/aktiven Alexa2-Instanzen ausgewählt statt frei eingetippt.
 - Alexa-Listen werden dynamisch erkannt und als Pulldown angeboten.
-- Laufwege erhalten einen übersichtlichen Ein-Markt-Editor mit alphabetischem Markt-Pulldown; die Gesamttabelle bleibt nur noch eingeklappt als Expertenansicht verfügbar.
+- Laufwege verwenden wieder ausschließlich native ioBroker-JSON-Config-Komponenten: Der Markt wird über den Filter der Marktspalte per Pulldown ausgewählt; damit entfällt der fehlerhafte Custom-/Module-Federation-Editor.
+- „Markt für aktuellen Einkauf“ lässt sich direkt im Pulldown sichtbar auf „— Kein Markt —“ zurücksetzen; der separate Löschbutton entfällt.
 - Dauerhafter Standardmarkt und einmaliger Markt für den aktuellen Einkauf sind verständlicher benannt.
 - API-Schutz wurde direkt in „Allgemein“ integriert, damit die Einstellungen nicht übersehen werden.
 

@@ -2,7 +2,7 @@
 
 ![ShoppingRoute](admin/shoppingroute.png)
 
-**Development status: 0.2.0-beta.5 – beta**
+**Development status: 0.2.0-beta.6 – beta**
 
 ShoppingRoute sorts existing Alexa shopping-list entries by market, product group and each store's individual walking route. It **never creates, deletes or automatically completes Alexa list items**. It only redistributes visible texts across existing active Alexa IDs. Managed Alexa lists must be set to **Oldest to newest** in the Alexa app.
 
@@ -32,11 +32,12 @@ See `README_DE.md` for the detailed German documentation.
 
 ## Changelog
 
-### 0.2.0-beta.5 (2026-08-08)
+### 0.2.0-beta.6 (2026-08-08)
 
 - Alexa2 instance is now selected from installed/enabled Alexa2 instances instead of free text.
 - Alexa lists are offered as dynamically detected dropdown values.
-- Walking routes now use a focused single-market editor with an alphabetical market dropdown; the full table remains available only as a collapsed expert view.
+- Walking routes use native ioBroker JSON Config controls again: select the market through the Market column filter/dropdown; the faulty custom Module Federation editor has been removed.
+- The current-shopping market can be visibly reset to “— No market —” directly in its dropdown; the separate clear button has been removed.
 - Renamed the permanent and one-off market settings to make their purpose clearer.
 - API protection settings moved into General so they are not overlooked.
 

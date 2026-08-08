@@ -11,8 +11,8 @@
         "betaWarning": {
           "type": "staticText",
           "text": {
-            "en": "BETA 0.2.0-beta.5. Start with Dry-Run enabled. ShoppingRoute never creates, deletes or completes Alexa list items; it only redistributes visible value texts across existing active IDs.",
-            "de": "BETA 0.2.0-beta.5. Zuerst mit Dry-Run testen. ShoppingRoute legt niemals Alexa-Listeneinträge an, löscht keine und hakt keine ab; es verteilt ausschließlich sichtbare value-Texte auf vorhandene aktive IDs."
+            "en": "BETA 0.2.0-beta.6. Start with Dry-Run enabled. ShoppingRoute never creates, deletes or completes Alexa list items; it only redistributes visible value texts across existing active IDs.",
+            "de": "BETA 0.2.0-beta.6. Zuerst mit Dry-Run testen. ShoppingRoute legt niemals Alexa-Listeneinträge an, löscht keine und hakt keine ab; es verteilt ausschließlich sichtbare value-Texte auf vorhandene aktive IDs."
           },
           "xs": 12,
           "sm": 12,
@@ -139,8 +139,8 @@
           "type": "staticText",
           "newLine": true,
           "text": {
-            "en": "Market for current shopping temporarily overrides list and global default markets. Clear it after the one-off shopping trip to return to the normal defaults.",
-            "de": "Der Markt für den aktuellen Einkauf überschreibt vorübergehend Listen- und Standardmarkt. Nach diesem Einkauf wieder löschen, damit die normalen Vorgaben gelten."
+            "en": "The market for the current shopping trip temporarily overrides list and global default markets. Select “— No market —” in the dropdown to return to the normal defaults.",
+            "de": "Der Markt für den aktuellen Einkauf überschreibt vorübergehend Listen- und Standardmarkt. Zum Zurücksetzen im Pulldown „— Kein Markt —“ auswählen."
           },
           "xs": 12,
           "sm": 12,
@@ -158,22 +158,6 @@
             "de": "Markt für aktuellen Einkauf"
           },
           "newLine": true,
-          "xs": 12,
-          "sm": 12,
-          "md": 6,
-          "lg": 6,
-          "xl": 4
-        },
-        "clearTemporaryMarket": {
-          "type": "setState",
-          "id": "control.clearTemporaryPriorityMarket",
-          "val": true,
-          "ack": false,
-          "label": {
-            "en": "Clear market for current shopping",
-            "de": "Markt für aktuellen Einkauf löschen"
-          },
-          "variant": "outlined",
           "xs": 12,
           "sm": 12,
           "md": 6,
@@ -518,8 +502,8 @@
         "routesHelp": {
           "type": "staticText",
           "text": {
-            "en": "Choose one market from the dropdown. Only that market’s walking route is shown. Use the arrows to move product groups into the order in which you normally walk through the store. New markets and product groups are added automatically.",
-            "de": "Einen Markt im Pulldown auswählen. Es wird ausschließlich der Laufweg dieses Marktes angezeigt. Mit den Pfeilen die Produktgruppen in die Reihenfolge bringen, in der du normalerweise durch den Markt gehst. Neue Märkte und Produktgruppen werden automatisch ergänzt."
+            "de": "In der Spalte „Markt“ den Filter verwenden und dort den gewünschten Markt aus dem Pulldown auswählen. Dann werden nur die Produktgruppen dieses Marktes angezeigt. Die Zeilen mit ↑/↓ in die tatsächliche Laufreihenfolge bringen.",
+            "en": "Use the filter in the “Market” column and select the desired market from the dropdown. Only that market’s product groups are then shown. Move the rows with ↑/↓ into the actual walking order."
           },
           "xs": 12,
           "sm": 12,
@@ -527,77 +511,53 @@
           "lg": 12,
           "xl": 12
         },
-        "routeEditor": {
-          "type": "custom",
-          "url": "custom/routeEditor.js",
-          "name": "ShoppingRouteAdminSet/Components/RouteEditor",
-          "i18n": false,
-          "xs": 12,
-          "sm": 12,
-          "md": 12,
-          "lg": 12,
-          "xl": 12
-        },
-        "routesExpert": {
-          "type": "accordion",
+        "routes": {
+          "type": "table",
           "label": {
-            "en": "Expert view: all walking routes",
-            "de": "Expertenansicht: alle Laufwege"
+            "en": "Walking route – filter by market",
+            "de": "Laufweg – nach Markt filtern"
           },
-          "items": {
-            "routes": {
-              "type": "table",
-              "label": {
-                "en": "Market / product-group route",
-                "de": "Markt-/Produktgruppen-Laufweg"
+          "items": [
+            {
+              "type": "selectSendTo",
+              "attr": "market",
+              "command": "getMarkets",
+              "manual": false,
+              "noTranslation": true,
+              "title": {
+                "en": "Market",
+                "de": "Markt"
               },
-              "items": [
-                {
-                  "type": "selectSendTo",
-                  "attr": "market",
-                  "command": "getMarkets",
-                  "manual": false,
-                  "noTranslation": true,
-                  "title": {
-                    "en": "Market",
-                    "de": "Markt"
-                  },
-                  "width": "40%",
-                  "sort": true,
-                  "filter": true
-                },
-                {
-                  "type": "selectSendTo",
-                  "attr": "category",
-                  "command": "getProductGroups",
-                  "manual": false,
-                  "noTranslation": true,
-                  "default": "Sonstiges",
-                  "title": {
-                    "en": "Product group",
-                    "de": "Produktgruppe"
-                  },
-                  "width": "45%",
-                  "sort": true
-                },
-                {
-                  "type": "number",
-                  "attr": "order",
-                  "title": {
-                    "en": "Auto order",
-                    "de": "Auto-Reihenfolge"
-                  },
-                  "width": "15%"
-                }
-              ],
-              "allowAddByFilter": true
+              "width": "40%",
+              "sort": true,
+              "filter": true
+            },
+            {
+              "type": "selectSendTo",
+              "attr": "category",
+              "command": "getProductGroups",
+              "manual": false,
+              "noTranslation": true,
+              "default": "Sonstiges",
+              "title": {
+                "en": "Product group",
+                "de": "Produktgruppe"
+              },
+              "width": "45%",
+              "sort": false
+            },
+            {
+              "type": "number",
+              "attr": "order",
+              "title": {
+                "en": "Auto order",
+                "de": "Auto-Reihenfolge"
+              },
+              "width": "15%"
             }
-          },
-          "xs": 12,
-          "sm": 12,
-          "md": 12,
-          "lg": 12,
-          "xl": 12
+          ],
+          "allowAddByFilter": true,
+          "compact": true
         }
       }
     },

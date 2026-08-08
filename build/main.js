@@ -44,7 +44,7 @@ const sorter_1 = require("./lib/sorter");
 const parser_1 = require("./lib/parser");
 const config_tools_1 = require("./lib/config-tools");
 const statistics_1 = require("./lib/statistics");
-const VERSION = '0.2.0-beta.5';
+const VERSION = '0.2.0-beta.6';
 const DEFAULT_CATEGORIES = [
     'Obst/Gemüse',
     'Tee/Kaffee',
@@ -202,8 +202,9 @@ class ShoppingRoute extends utils.Adapter {
         if (!enabled)
             await this.setStateAsync('control.enabled', true, true);
         const temp = await this.getStateAsync('control.temporaryPriorityMarket');
-        this.temporaryPriorityMarket = String(temp?.val || this.cfg.temporaryPriorityMarket || '').trim();
-        await this.setStateAsync('control.temporaryPriorityMarket', this.temporaryPriorityMarket, true);
+        const tempRaw = String(temp?.val ?? this.cfg.temporaryPriorityMarket ?? '').trim();
+        this.temporaryPriorityMarket = tempRaw === '__none__' ? '' : tempRaw;
+        await this.setStateAsync('control.temporaryPriorityMarket', this.temporaryPriorityMarket || '__none__', true);
         this.subscribeStates('control.*');
         for (const list of this.listConfigs)
             this.subscribeForeignStates(this.listStateId(list.name));
@@ -328,13 +329,14 @@ class ShoppingRoute extends utils.Adapter {
         if (id === `${local}control.clearTemporaryPriorityMarket` && !state.ack && state.val === true) {
             await this.setStateAsync('control.clearTemporaryPriorityMarket', false, true);
             this.temporaryPriorityMarket = '';
-            await this.setStateAsync('control.temporaryPriorityMarket', '', true);
+            await this.setStateAsync('control.temporaryPriorityMarket', '__none__', true);
             this.scheduleAll(100);
             return;
         }
         if (id === `${local}control.temporaryPriorityMarket` && !state.ack) {
-            this.temporaryPriorityMarket = String(state.val || '').trim();
-            await this.setStateAsync('control.temporaryPriorityMarket', this.temporaryPriorityMarket, true);
+            const selectedMarket = String(state.val ?? '').trim();
+            this.temporaryPriorityMarket = selectedMarket === '__none__' ? '' : selectedMarket;
+            await this.setStateAsync('control.temporaryPriorityMarket', this.temporaryPriorityMarket || '__none__', true);
             this.scheduleAll(100);
             return;
         }
@@ -766,7 +768,7 @@ class ShoppingRoute extends utils.Adapter {
     }
     async updateTemporaryMarketStateOptions() {
         try {
-            const states = { '': '—' };
+            const states = { '__none__': '— Kein Markt —' };
             for (const market of [...this.markets].sort((a, b) => a.name.localeCompare(b.name, 'de', { sensitivity: 'base' }))) {
                 states[market.name] = market.name;
             }

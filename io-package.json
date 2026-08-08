@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "shoppingroute",
-    "version": "0.2.0-beta.5",
+    "version": "0.2.0-beta.6",
     "titleLang": {
       "en": "ShoppingRoute",
       "de": "ShoppingRoute",
@@ -61,6 +61,19 @@
     "icon": "shoppingroute.png",
     "tier": 3,
     "news": {
+      "0.2.0-beta.6": {
+        "en": "Fixed current-shopping market clearing and replaced the custom walking-route editor with the native ioBroker table/filter UI for Admin compatibility.",
+        "de": "Löschen des Markts für den aktuellen Einkauf korrigiert und den eigenen Laufweg-Editor durch die native ioBroker Tabellen-/Filter-Oberfläche ersetzt.",
+        "ru": "Fixed current-shopping market clearing and replaced the custom walking-route editor with the native ioBroker table/filter UI for Admin compatibility.",
+        "pt": "Fixed current-shopping market clearing and replaced the custom walking-route editor with the native ioBroker table/filter UI for Admin compatibility.",
+        "nl": "Fixed current-shopping market clearing and replaced the custom walking-route editor with the native ioBroker table/filter UI for Admin compatibility.",
+        "fr": "Fixed current-shopping market clearing and replaced the custom walking-route editor with the native ioBroker table/filter UI for Admin compatibility.",
+        "it": "Fixed current-shopping market clearing and replaced the custom walking-route editor with the native ioBroker table/filter UI for Admin compatibility.",
+        "es": "Fixed current-shopping market clearing and replaced the custom walking-route editor with the native ioBroker table/filter UI for Admin compatibility.",
+        "pl": "Fixed current-shopping market clearing and replaced the custom walking-route editor with the native ioBroker table/filter UI for Admin compatibility.",
+        "uk": "Fixed current-shopping market clearing and replaced the custom walking-route editor with the native ioBroker table/filter UI for Admin compatibility.",
+        "zh-cn": "Fixed current-shopping market clearing and replaced the custom walking-route editor with the native ioBroker table/filter UI for Admin compatibility."
+      },
       "0.2.0-beta.5": {
         "en": "Admin usability update: Alexa2 instance and Alexa lists are selectable from detected values, walking routes use a single-market editor, clearer market terminology, and API protection is integrated into General settings.",
         "de": "Admin-Komfortupdate: Alexa2-Instanz und Alexa-Listen werden aus gefundenen Werten gewählt, Laufwege erhalten einen Ein-Markt-Editor, Marktbegriffe sind eindeutiger und der API-Schutz ist in Allgemein integriert.",
