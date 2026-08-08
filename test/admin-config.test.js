@@ -8,7 +8,7 @@ const ioPackage=JSON.parse(fs.readFileSync(path.join(root,'io-package.json'),'ut
 const jsonConfig=JSON.parse(fs.readFileSync(path.join(root,'admin','jsonConfig.json'),'utf8'));
 
 test('beta version and branding are consistent',()=>{
-  assert.equal(ioPackage.common.version,'0.2.0-beta.7');
+  assert.equal(ioPackage.common.version,'0.2.0-beta.8');
   assert.equal(ioPackage.common.titleLang.de,'ShoppingRoute');
   assert.equal(ioPackage.common.icon,'shoppingroute.png');
   assert.ok(fs.existsSync(path.join(root,'admin',ioPackage.common.icon)));
