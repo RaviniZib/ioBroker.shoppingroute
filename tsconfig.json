@@ -1,6 +1,6 @@
 {
+  "extends": "@tsconfig/node22/tsconfig.json",
   "compilerOptions": {
-    "target": "ES2022",
     "module": "CommonJS",
     "moduleResolution": "Node",
     "rootDir": "src",

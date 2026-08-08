@@ -4,8 +4,10 @@ exports.exportConfig = exportConfig;
 exports.parseConfigImport = parseConfigImport;
 exports.buildMarketProfiles = buildMarketProfiles;
 exports.importMarketProfile = importMarketProfile;
+exports.groupRoutesByMarket = groupRoutesByMarket;
 exports.ensureMarketRoutes = ensureMarketRoutes;
 exports.reindexRoutes = reindexRoutes;
+exports.normalizeRoutesForAdmin = normalizeRoutesForAdmin;
 const EXPORT_KEYS = [
     'alexaInstance', 'listName', 'lists', 'dryRun', 'autoLearnProducts', 'learningMode',
     'autoAliasSuggestions', 'debounceMs', 'writePauseMs', 'apiSafeMode', 'maxWritesPerMinute',
@@ -70,6 +72,15 @@ function importMarketProfile(text, markets, routes) {
     }));
     return { markets: nextMarkets, routes: nextRoutes, market: name };
 }
+function groupRoutesByMarket(routes) {
+    return routes
+        .map((route, index) => ({ route: { ...route }, index }))
+        .sort((a, b) => {
+        const byMarket = String(a.route.market || '').localeCompare(String(b.route.market || ''), 'de', { sensitivity: 'base' });
+        return byMarket || a.index - b.index;
+    })
+        .map(entry => entry.route);
+}
 function ensureMarketRoutes(markets, productGroups, routes) {
     const result = routes.filter(Boolean).map(route => ({ ...route }));
     const existing = new Set(result.map(route => `${String(route.market || '').trim().toLocaleLowerCase('de')}\u0000${String(route.category || '').trim().toLocaleLowerCase('de')}`));
@@ -77,7 +88,7 @@ function ensureMarketRoutes(markets, productGroups, routes) {
     const activeMarkets = markets
         .filter(market => market && market.name && market.enabled !== false)
         .slice()
-        .sort((a, b) => (Number(a.order) || 9999) - (Number(b.order) || 9999));
+        .sort((a, b) => String(a.name).localeCompare(String(b.name), 'de', { sensitivity: 'base' }));
     const groups = productGroups
         .filter(group => group && group.name)
         .map(group => String(group.name).trim())
@@ -89,12 +100,15 @@ function ensureMarketRoutes(markets, productGroups, routes) {
             const key = `${marketKey}\u0000${category.toLocaleLowerCase('de')}`;
             if (existing.has(key))
                 continue;
+            // Missing groups are appended to this market's existing walking route.
+            // groupRoutesByMarket() moves them into the correct market block without
+            // changing the relative route order inside that market.
             result.push({ market: marketName, category, order: 0 });
             existing.add(key);
             added += 1;
         }
     }
-    return { routes: reindexRoutes(result), added };
+    return { routes: reindexRoutes(groupRoutesByMarket(result)), added };
 }
 function reindexRoutes(routes) {
     const counters = new Map();
@@ -104,5 +118,8 @@ function reindexRoutes(routes) {
         counters.set(key, next);
         return { ...route, order: next * 10 };
     });
+}
+function normalizeRoutesForAdmin(routes) {
+    return reindexRoutes(groupRoutesByMarket(routes.filter(Boolean)));
 }
 //# sourceMappingURL=config-tools.js.map

@@ -1,19 +1,38 @@
 {
   "common": {
     "name": "shoppingroute",
-    "version": "0.2.0-beta.2",
+    "version": "0.2.0-beta.4",
     "titleLang": {
       "en": "ShoppingRoute",
-      "de": "ShoppingRoute"
+      "de": "ShoppingRoute",
+      "ru": "ShoppingRoute",
+      "pt": "ShoppingRoute",
+      "nl": "ShoppingRoute",
+      "fr": "ShoppingRoute",
+      "it": "ShoppingRoute",
+      "es": "ShoppingRoute",
+      "pl": "ShoppingRoute",
+      "uk": "ShoppingRoute",
+      "zh-cn": "ShoppingRoute"
     },
     "desc": {
       "en": "Smart Alexa shopping-list routing by market, product group and individual store walking route. Includes learning, review queue, multi-list support and API protection.",
-      "de": "Intelligente Alexa-Einkaufslisten nach Markt, Produktgruppe und individuellem Laufweg sortieren – mit Lernfunktion, Prüfliste, mehreren Listen und API-Schutz."
+      "de": "Intelligente Alexa-Einkaufslisten nach Markt, Produktgruppe und individuellem Laufweg sortieren – mit Lernfunktion, Prüfliste, mehreren Listen und API-Schutz.",
+      "ru": "Интеллектуальная сортировка списков покупок Alexa по магазину, группе товаров и индивидуальному маршруту по магазину. Включает обучение, список проверки, несколько списков и защиту API.",
+      "pt": "Organização inteligente das listas de compras Alexa por mercado, grupo de produtos e percurso individual na loja. Inclui aprendizagem, fila de revisão, várias listas e proteção da API.",
+      "nl": "Slimme sortering van Alexa-boodschappenlijsten op winkel, productgroep en individuele winkelroute. Inclusief leren, controlelijst, meerdere lijsten en API-beveiliging.",
+      "fr": "Tri intelligent des listes de courses Alexa par magasin, groupe de produits et parcours individuel en magasin. Inclut apprentissage, file de vérification, listes multiples et protection API.",
+      "it": "Ordinamento intelligente delle liste della spesa Alexa per negozio, gruppo di prodotti e percorso individuale. Include apprendimento, coda di revisione, più liste e protezione API.",
+      "es": "Ordenación inteligente de listas de compra de Alexa por tienda, grupo de productos y recorrido individual. Incluye aprendizaje, cola de revisión, varias listas y protección de API.",
+      "pl": "Inteligentne sortowanie list zakupów Alexa według sklepu, grupy produktów i indywidualnej trasy w sklepie. Obejmuje uczenie, kolejkę weryfikacji, wiele list i ochronę API.",
+      "uk": "Інтелектуальне сортування списків покупок Alexa за магазином, групою товарів та індивідуальним маршрутом. Містить навчання, чергу перевірки, кілька списків і захист API.",
+      "zh-cn": "按商店、商品组和个性化店内路线智能整理 Alexa 购物清单。包含学习、审核队列、多清单支持和 API 保护。"
     },
     "authors": [
       "RaviniZib"
     ],
     "keywords": [
+      "ioBroker",
       "alexa",
       "shopping",
       "shopping-list",
@@ -25,7 +44,6 @@
       "license": "ShoppingRoute Closed Beta License 1.0"
     },
     "platform": "Javascript/Node.js",
-    "main": "build/main.js",
     "mode": "daemon",
     "enabled": true,
     "compact": true,
@@ -43,11 +61,28 @@
     "icon": "shoppingroute.png",
     "tier": 3,
     "news": {
-      "0.2.0-beta.2": {
-        "en": "Major beta expansion: review queue, improved parser, API safe mode, multiple lists, temporary market, product availability, statistics, config/profile transfer, version check and feedback report.",
-        "de": "Großes Beta-Update: Prüfliste, verbesserter Parser, API-Schonmodus, mehrere Listen, temporärer Markt, Artikel-Verfügbarkeit, Statistik, Konfig-/Profiltransfer, Versionsprüfung und Feedbackbericht."
+      "0.2.0-beta.4": {
+        "en": "Walking-route usability and ioBroker compliance update: market filter, alphabetically grouped market routes, responsive Admin UI, current metadata, standard testing workflow and timer cleanup.",
+        "de": "Laufweg- und ioBroker-Kompatibilitätsupdate: Marktfilter, alphabetisch gruppierte Laufwege, responsive Admin-Oberfläche, aktuelle Metadaten, Standard-Testworkflow und Timer-Bereinigung.",
+        "ru": "Улучшение маршрутов и совместимости ioBroker: фильтр магазинов, алфавитная группировка маршрутов, адаптивный интерфейс Admin, актуальные метаданные, стандартный тестовый workflow и корректные таймеры.",
+        "pt": "Melhorias de percurso e compatibilidade ioBroker: filtro de mercados, rotas agrupadas alfabeticamente, Admin responsivo, metadados atuais, workflow de testes padrão e temporizadores corrigidos.",
+        "nl": "Verbetering voor winkelroutes en ioBroker-compatibiliteit: winkelfilter, alfabetisch gegroepeerde routes, responsieve Admin-UI, actuele metadata, standaard testworkflow en correcte timers.",
+        "fr": "Amélioration des parcours et de la conformité ioBroker : filtre de magasins, parcours regroupés par ordre alphabétique, Admin responsive, métadonnées à jour, workflow de test standard et minuteries corrigées.",
+        "it": "Miglioramenti ai percorsi e alla conformità ioBroker: filtro negozio, percorsi raggruppati alfabeticamente, Admin responsive, metadati aggiornati, workflow di test standard e timer corretti.",
+        "es": "Mejoras de rutas y compatibilidad con ioBroker: filtro de tiendas, rutas agrupadas alfabéticamente, Admin adaptable, metadatos actuales, flujo de pruebas estándar y temporizadores corregidos.",
+        "pl": "Ulepszenia tras i zgodności z ioBroker: filtr sklepów, alfabetyczne grupowanie tras, responsywny panel Admin, aktualne metadane, standardowy workflow testów i poprawione timery.",
+        "uk": "Покращення маршрутів і сумісності з ioBroker: фільтр магазинів, алфавітне групування маршрутів, адаптивний Admin, актуальні метадані, стандартний workflow тестів і правильні таймери.",
+        "zh-cn": "路线易用性与 ioBroker 兼容性更新：商店筛选、按字母分组的商店路线、响应式管理界面、最新元数据、标准测试工作流和定时器修正。"
       }
-    }
+    },
+    "extIcon": "https://raw.githubusercontent.com/RaviniZib/ioBroker.shoppingroute/main/admin/shoppingroute.png",
+    "type": "logic",
+    "globalDependencies": [
+      {
+        "admin": ">=7.6.20"
+      }
+    ],
+    "readme": "https://github.com/RaviniZib/ioBroker.shoppingroute/blob/main/README.md"
   },
   "native": {
     "alexaInstance": "alexa2.0",
@@ -957,7 +992,7 @@
         "name": "Run Alexa write compatibility test",
         "type": "boolean",
         "role": "button",
-        "read": true,
+        "read": false,
         "write": true,
         "def": false
       },
@@ -1061,7 +1096,7 @@
         "name": "Sort now",
         "type": "boolean",
         "role": "button",
-        "read": true,
+        "read": false,
         "write": true,
         "def": false
       },

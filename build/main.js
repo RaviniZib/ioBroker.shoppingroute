@@ -44,7 +44,7 @@ const sorter_1 = require("./lib/sorter");
 const parser_1 = require("./lib/parser");
 const config_tools_1 = require("./lib/config-tools");
 const statistics_1 = require("./lib/statistics");
-const VERSION = '0.2.0-beta.2';
+const VERSION = '0.2.0-beta.4';
 const DEFAULT_CATEGORIES = [
     'Obst/Gemüse',
     'Tee/Kaffee',
@@ -170,7 +170,7 @@ class ShoppingRoute extends utils.Adapter {
             .map(product => ({ ...product }))
             .sort((a, b) => a.name.localeCompare(b.name, 'de', { sensitivity: 'base' }));
         this.runtimeReviews = (Array.isArray(this.cfg.reviewItems) ? this.cfg.reviewItems : []).map(item => ({ ...item }));
-        this.runtimeRoutes = (0, config_tools_1.reindexRoutes)(Array.isArray(this.cfg.routes) ? this.cfg.routes.filter(Boolean) : []);
+        this.runtimeRoutes = (0, config_tools_1.normalizeRoutesForAdmin)(Array.isArray(this.cfg.routes) ? this.cfg.routes.filter(Boolean) : []);
         this.routesDirty = JSON.stringify(this.runtimeRoutes) !== JSON.stringify(Array.isArray(this.cfg.routes) ? this.cfg.routes : []);
         await this.loadTrafficMetrics();
         await this.loadStatistics();
@@ -235,7 +235,7 @@ class ShoppingRoute extends utils.Adapter {
         await this.refreshExports();
         await this.checkNpmVersion();
         await this.updateFeedbackReport();
-        this.versionTimer = setInterval(() => void this.checkNpmVersion(), 6 * 60 * 60 * 1000);
+        this.versionTimer = this.setInterval(() => void this.checkNpmVersion(), 6 * 60 * 60 * 1000);
         this.log.warn(`ShoppingRoute ${VERSION} BETA: Dry-Run ist für Ersttests ausdrücklich empfohlen.`);
         this.log.info(`Listen: ${this.listConfigs.map(item => item.name).join(', ')}. Lernmodus: ${this.learningMode}.`);
         this.log.info('WICHTIG: Die Alexa-App muss für jede verwaltete Liste auf „Älteste bis neueste“ gestellt sein.');
@@ -357,9 +357,9 @@ class ShoppingRoute extends utils.Adapter {
     }
     onUnload(callback) {
         if (this.sortTimer)
-            clearTimeout(this.sortTimer);
+            this.clearTimeout(this.sortTimer);
         if (this.versionTimer)
-            clearInterval(this.versionTimer);
+            this.clearInterval(this.versionTimer);
         this.setState('info.connection', false, true);
         callback();
     }
@@ -374,8 +374,8 @@ class ShoppingRoute extends utils.Adapter {
     }
     armSortTimer(delay) {
         if (this.sortTimer)
-            clearTimeout(this.sortTimer);
-        this.sortTimer = setTimeout(() => {
+            this.clearTimeout(this.sortTimer);
+        this.sortTimer = this.setTimeout(() => {
             this.sortTimer = null;
             void this.processPendingSorts();
         }, delay);
@@ -903,7 +903,7 @@ class ShoppingRoute extends utils.Adapter {
     async setError(message) {
         await this.setStateAsync('info.lastError', message, true);
     }
-    wait(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+    wait(ms) { return new Promise(resolve => this.setTimeout(resolve, ms)); }
     static getDefaultCategories() { return [...DEFAULT_CATEGORIES]; }
 }
 exports.ShoppingRoute = ShoppingRoute;

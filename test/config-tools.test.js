@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const { exportConfig, parseConfigImport, buildMarketProfiles, importMarketProfile, reindexRoutes, ensureMarketRoutes } = require('../build/lib/config-tools');
 
 test('configuration can be exported and imported with format marker', () => {
-  const exported = exportConfig({ priorityMarket:'LIDL', products:[{name:'Milch',category:'Milchprodukte'}] }, '0.2.0-beta.2', new Date('2026-08-08T00:00:00Z'));
+  const exported = exportConfig({ priorityMarket:'LIDL', products:[{name:'Milch',category:'Milchprodukte'}] }, '0.2.0-beta.4', new Date('2026-08-08T00:00:00Z'));
   assert.equal(exported.format, 'shoppingroute-config-v1');
   const imported = parseConfigImport(JSON.stringify(exported));
   assert.equal(imported.priorityMarket, 'LIDL');
@@ -44,4 +44,22 @@ test('new active markets automatically receive walking-route rows for all produc
     ['Obst/Gemüse','Milchprodukte'],
   );
   assert.deepEqual(synced.routes.filter(r=>r.market==='EDEKA').map(r=>r.order),[10,20]);
+});
+
+test('walking routes are grouped alphabetically by market while preserving each market route order', () => {
+  const { normalizeRoutesForAdmin } = require('../build/lib/config-tools');
+  const routes = [
+    { market: 'REWE', category: 'Getränke', order: 10 },
+    { market: 'ALDI', category: 'Milchprodukte', order: 10 },
+    { market: 'REWE', category: 'Brot/Gebäck', order: 20 },
+    { market: 'ALDI', category: 'Obst/Gemüse', order: 20 },
+  ];
+  const result = normalizeRoutesForAdmin(routes);
+  assert.deepEqual(result.map(r => `${r.market}:${r.category}`), [
+    'ALDI:Milchprodukte',
+    'ALDI:Obst/Gemüse',
+    'REWE:Getränke',
+    'REWE:Brot/Gebäck',
+  ]);
+  assert.deepEqual(result.map(r => r.order), [10,20,10,20]);
 });

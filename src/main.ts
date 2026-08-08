@@ -30,10 +30,10 @@ import {
     sortSlotsOldestFirst,
 } from './lib/sorter';
 import { findProduct, parseItem, suggestAliases } from './lib/parser';
-import { buildMarketProfiles, ensureMarketRoutes, exportConfig, importMarketProfile, parseConfigImport, reindexRoutes } from './lib/config-tools';
+import { buildMarketProfiles, ensureMarketRoutes, exportConfig, importMarketProfile, normalizeRoutesForAdmin, parseConfigImport } from './lib/config-tools';
 import { emptyUsageStatistics, normalizeUsageStatistics, recordAddedItem, type UsageStatistics } from './lib/statistics';
 
-const VERSION = '0.2.0-beta.2';
+const VERSION = '0.2.0-beta.4';
 const DEFAULT_CATEGORIES = [
     'Obst/Gemüse',
     'Tee/Kaffee',
@@ -53,8 +53,8 @@ const DEFAULT_CATEGORIES = [
 ];
 
 export class ShoppingRoute extends utils.Adapter {
-    private sortTimer: ReturnType<typeof setTimeout> | null = null;
-    private versionTimer: ReturnType<typeof setInterval> | null = null;
+    private sortTimer: ioBroker.Timeout | null | undefined = null;
+    private versionTimer: ioBroker.Interval | null | undefined = null;
     private pendingLists = new Set<string>();
     private sortingListName = '';
     private listChangedDuringSort = false;
@@ -171,7 +171,7 @@ export class ShoppingRoute extends utils.Adapter {
             .map(product => ({ ...product }))
             .sort((a, b) => a.name.localeCompare(b.name, 'de', { sensitivity: 'base' }));
         this.runtimeReviews = (Array.isArray(this.cfg.reviewItems) ? this.cfg.reviewItems : []).map(item => ({ ...item }));
-        this.runtimeRoutes = reindexRoutes(Array.isArray(this.cfg.routes) ? this.cfg.routes.filter(Boolean) : []);
+        this.runtimeRoutes = normalizeRoutesForAdmin(Array.isArray(this.cfg.routes) ? this.cfg.routes.filter(Boolean) : []);
         this.routesDirty = JSON.stringify(this.runtimeRoutes) !== JSON.stringify(Array.isArray(this.cfg.routes) ? this.cfg.routes : []);
 
         await this.loadTrafficMetrics();
@@ -242,7 +242,7 @@ export class ShoppingRoute extends utils.Adapter {
         await this.refreshExports();
         await this.checkNpmVersion();
         await this.updateFeedbackReport();
-        this.versionTimer = setInterval(() => void this.checkNpmVersion(), 6 * 60 * 60 * 1000);
+        this.versionTimer = this.setInterval(() => void this.checkNpmVersion(), 6 * 60 * 60 * 1000);
 
         this.log.warn(`ShoppingRoute ${VERSION} BETA: Dry-Run ist für Ersttests ausdrücklich empfohlen.`);
         this.log.info(`Listen: ${this.listConfigs.map(item => item.name).join(', ')}. Lernmodus: ${this.learningMode}.`);
@@ -360,8 +360,8 @@ export class ShoppingRoute extends utils.Adapter {
     }
 
     private onUnload(callback: () => void): void {
-        if (this.sortTimer) clearTimeout(this.sortTimer);
-        if (this.versionTimer) clearInterval(this.versionTimer);
+        if (this.sortTimer) this.clearTimeout(this.sortTimer);
+        if (this.versionTimer) this.clearInterval(this.versionTimer);
         this.setState('info.connection', false, true);
         callback();
     }
@@ -377,8 +377,8 @@ export class ShoppingRoute extends utils.Adapter {
     }
 
     private armSortTimer(delay: number): void {
-        if (this.sortTimer) clearTimeout(this.sortTimer);
-        this.sortTimer = setTimeout(() => {
+        if (this.sortTimer) this.clearTimeout(this.sortTimer);
+        this.sortTimer = this.setTimeout(() => {
             this.sortTimer = null;
             void this.processPendingSorts();
         }, delay);
@@ -892,7 +892,7 @@ export class ShoppingRoute extends utils.Adapter {
         await this.setStateAsync('info.lastError', message, true);
     }
 
-    private wait(ms: number): Promise<void> { return new Promise(resolve => setTimeout(resolve, ms)); }
+    private wait(ms: number): Promise<void> { return new Promise(resolve => this.setTimeout(resolve, ms)); }
 
     public static getDefaultCategories(): string[] { return [...DEFAULT_CATEGORIES]; }
 }

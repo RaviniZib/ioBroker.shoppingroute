@@ -8,7 +8,7 @@ const ioPackage=JSON.parse(fs.readFileSync(path.join(root,'io-package.json'),'ut
 const jsonConfig=JSON.parse(fs.readFileSync(path.join(root,'admin','jsonConfig.json'),'utf8'));
 
 test('beta version and branding are consistent',()=>{
-  assert.equal(ioPackage.common.version,'0.2.0-beta.2');
+  assert.equal(ioPackage.common.version,'0.2.0-beta.4');
   assert.equal(ioPackage.common.titleLang.de,'ShoppingRoute');
   assert.equal(ioPackage.common.icon,'shoppingroute.png');
   assert.ok(fs.existsSync(path.join(root,'admin',ioPackage.common.icon)));
@@ -50,4 +50,37 @@ test('closed beta project remains private and package builder exists',()=>{
   assert.equal(pkg.private,true);
   assert.equal(pkg.license,'SEE LICENSE IN LICENSE');
   assert.ok(fs.existsSync(path.join(root,'scripts','make-closed-beta-package.js')));
+});
+
+test('walking-route table offers a market filter and only needs one market visible at a time',()=>{
+  const table=jsonConfig.items.routesTab.items.routes;
+  const market=table.items.find(x=>x.attr==='market');
+  assert.equal(market.filter,true);
+  assert.equal(table.allowAddByFilter,true);
+});
+
+test('ioBroker checker metadata is present',()=>{
+  const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
+  assert.ok(pkg.keywords.includes('ioBroker'));
+  assert.equal(pkg.devDependencies['@iobroker/testing'],'5.2.2');
+  assert.equal(ioPackage.common.type,'logic');
+  assert.equal(ioPackage.common.tier,3);
+  assert.ok(ioPackage.common.extIcon);
+  assert.ok(Array.isArray(ioPackage.common.globalDependencies));
+  assert.equal(jsonConfig.i18n,false);
+  assert.equal('main' in ioPackage.common,false);
+  for(const lang of ['en','de','ru','pt','nl','fr','it','es','pl','uk','zh-cn']) {
+    assert.ok(ioPackage.common.titleLang[lang],`titleLang ${lang}`);
+    assert.ok(ioPackage.common.desc[lang],`desc ${lang}`);
+  }
+});
+
+test('adapter source uses adapter-managed timers',()=>{
+  const source=fs.readFileSync(path.join(root,'src','main.ts'),'utf8');
+  assert.doesNotMatch(source,/(^|[^.A-Za-z])setTimeout\s*\(/m);
+  assert.doesNotMatch(source,/(^|[^.A-Za-z])setInterval\s*\(/m);
+  assert.match(source,/this\.setTimeout\(/);
+  assert.match(source,/this\.setInterval\(/);
+  assert.match(source,/private sortTimer: ioBroker\.Timeout \| null \| undefined/);
+  assert.match(source,/private versionTimer: ioBroker\.Interval \| null \| undefined/);
 });

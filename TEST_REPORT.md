@@ -1,10 +1,18 @@
-# Test report – 0.2.0-beta.2
+# ShoppingRoute test report
 
-Local checks before server validation:
+Version: **0.2.0-beta.4**
 
-- Source/unit tests that do not need the unavailable local ioBroker npm dependency: **27/27 passed**
-- Runtime and package-builder JavaScript syntax checks: passed
-- Safety rule: no Alexa `#New`, `#delete` or `.completed` write path detected
-- Daily API/traffic metric tests: passed
-- Closed-beta license/package metadata tests: passed
-- Full `npm test`, dependency installation and the final obfuscated tester-package build must still be validated on the ioBroker development server because this local build environment cannot fetch `@iobroker/adapter-core` from its internal npm mirror.
+Local source/unit verification in the build environment:
+
+- 31 tests executed
+- 31 passed
+- 0 failed
+- JSON files parse successfully
+- route synchronization adds missing rows for new markets/product groups
+- route administration groups markets alphabetically while preserving each market's walking-route order
+- walking-route table includes a native market filter
+- Alexa safety test still finds no `#New`, `#delete` or automatic `completed` write path
+- ioBroker checker metadata tests cover type/tier/extIcon/translations/testing dependency/i18n
+- adapter-managed timers are used instead of plain global timers
+
+The full `npm test` must additionally be executed on the ioBroker development host after `npm install`, because the OpenAI build environment does not provide `@iobroker/adapter-core` from its internal npm mirror.

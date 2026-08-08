@@ -2,7 +2,7 @@
 
 ![ShoppingRoute](admin/shoppingroute.png)
 
-**Development status: 0.2.0-beta.2 – beta**
+**Development status: 0.2.0-beta.4 – beta**
 
 ShoppingRoute sorts existing Alexa shopping-list entries by market, product group and each store's individual walking route. It **never creates, deletes or automatically completes Alexa list items**. It only redistributes visible texts across existing active Alexa IDs. Managed Alexa lists must be set to **Oldest to newest** in the Alexa app.
 
@@ -29,3 +29,28 @@ ShoppingRoute sorts existing Alexa shopping-list entries by market, product grou
 - Dry Run safety mode
 
 See `README_DE.md` for the detailed German documentation.
+
+## Changelog
+
+### 0.2.0-beta.4 (2026-08-08)
+
+- Added a market filter to the walking-route table so one market can be edited at a time.
+- Walking-route rows are grouped alphabetically by market while preserving the configured route order inside each market.
+- Added ioBroker repository-checker metadata, responsive JSON Config sizing and explicit JSON Config i18n mode.
+- Updated ioBroker adapter dependencies and development testing metadata.
+- Replaced plain Node.js timers with adapter-managed timers.
+- Added standard GitHub test workflow and Dependabot configuration.
+
+### 0.2.0-beta.2 (2026-08-08)
+
+- New active markets and new product groups automatically receive missing walking-route rows.
+
+### 0.2.0-beta.1 (2026-08-08)
+
+- Added review queue, improved parser and aliases, API safe mode, multi-list support, statistics, transfer tools and beta diagnostics.
+
+## License
+
+ShoppingRoute Closed Beta License 1.0. See [LICENSE](LICENSE) for the complete terms.
+
+Copyright (c) 2026 RaviniZib. All rights reserved.

@@ -75,6 +75,16 @@ export function importMarketProfile(
     return { markets: nextMarkets, routes: nextRoutes, market: name };
 }
 
+export function groupRoutesByMarket(routes: RouteConfig[]): RouteConfig[] {
+    return routes
+        .map((route, index) => ({ route: { ...route }, index }))
+        .sort((a, b) => {
+            const byMarket = String(a.route.market || '').localeCompare(String(b.route.market || ''), 'de', { sensitivity: 'base' });
+            return byMarket || a.index - b.index;
+        })
+        .map(entry => entry.route);
+}
+
 export function ensureMarketRoutes(
     markets: MarketConfig[],
     productGroups: ProductGroupConfig[],
@@ -89,7 +99,7 @@ export function ensureMarketRoutes(
     const activeMarkets = markets
         .filter(market => market && market.name && market.enabled !== false)
         .slice()
-        .sort((a, b) => (Number(a.order) || 9999) - (Number(b.order) || 9999));
+        .sort((a, b) => String(a.name).localeCompare(String(b.name), 'de', { sensitivity: 'base' }));
     const groups = productGroups
         .filter(group => group && group.name)
         .map(group => String(group.name).trim())
@@ -101,13 +111,16 @@ export function ensureMarketRoutes(
         for (const category of groups) {
             const key = `${marketKey}\u0000${category.toLocaleLowerCase('de')}`;
             if (existing.has(key)) continue;
+            // Missing groups are appended to this market's existing walking route.
+            // groupRoutesByMarket() moves them into the correct market block without
+            // changing the relative route order inside that market.
             result.push({ market: marketName, category, order: 0 });
             existing.add(key);
             added += 1;
         }
     }
 
-    return { routes: reindexRoutes(result), added };
+    return { routes: reindexRoutes(groupRoutesByMarket(result)), added };
 }
 
 export function reindexRoutes(routes: RouteConfig[]): RouteConfig[] {
@@ -118,4 +131,8 @@ export function reindexRoutes(routes: RouteConfig[]): RouteConfig[] {
         counters.set(key, next);
         return { ...route, order: next * 10 };
     });
+}
+
+export function normalizeRoutesForAdmin(routes: RouteConfig[]): RouteConfig[] {
+    return reindexRoutes(groupRoutesByMarket(routes.filter(Boolean)));
 }

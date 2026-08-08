@@ -2,7 +2,7 @@
 
 ![ShoppingRoute](admin/shoppingroute.png)
 
-**Entwicklungsstand: 0.2.0-beta.2 – Beta**
+**Entwicklungsstand: 0.2.0-beta.4 – Beta**
 
 ShoppingRoute sortiert vorhandene Alexa-Einkaufslisteneinträge nach Markt, Produktgruppe und dem individuellen Laufweg durch den jeweiligen Markt. Dabei werden **keine Einträge angelegt, gelöscht oder automatisch abgehakt**. Der Adapter verteilt ausschließlich die sichtbaren Texte auf bereits vorhandene aktive Alexa-IDs. Die Alexa-App muss für verwaltete Listen auf **„Älteste bis neueste“** gestellt sein.
 
@@ -64,3 +64,20 @@ Solange ShoppingRoute noch nicht im offiziellen ioBroker-Repository geführt wir
 ## Beta-Lizenz
 
 Für diese Beta gilt die im Paket enthaltene **ShoppingRoute Closed Beta License 1.0**. Frühere separat unter einer anderen Lizenz veröffentlichte Versionen bleiben unter der jeweils damals gültigen Lizenz.
+
+## Changelog
+
+### 0.2.0-beta.4 (2026-08-08)
+
+- Marktfilter in den Laufwegen: Es kann gezielt nur ein Markt angezeigt und bearbeitet werden.
+- Laufwege werden alphabetisch nach Markt gruppiert; die individuelle Reihenfolge innerhalb eines Marktes bleibt erhalten.
+- ioBroker-Repochecker-Metadaten, responsive JSON-Config-Größen und expliziter i18n-Modus ergänzt.
+- ioBroker-Abhängigkeiten und Entwicklungs-Testmetadaten aktualisiert.
+- Globale Timer durch adapterverwaltete Timer ersetzt.
+- Standard-GitHub-Testworkflow und Dependabot ergänzt.
+
+## Lizenz
+
+ShoppingRoute Closed Beta License 1.0. Die vollständigen Bedingungen stehen in [LICENSE](LICENSE).
+
+Copyright (c) 2026 RaviniZib. Alle Rechte vorbehalten.

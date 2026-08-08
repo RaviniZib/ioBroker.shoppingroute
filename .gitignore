@@ -1,7 +1,10 @@
 node_modules/
 .idea/
-.vscode/
 coverage/
 *.log
 .DS_Store
 npm-debug.log*
+.commitinfo
+.dev-server/
+beta-package/
+.beta-package-staging/

@@ -11,9 +11,14 @@
         "betaWarning": {
           "type": "staticText",
           "text": {
-            "en": "BETA 0.2.0-beta.2. Start with Dry-Run enabled. ShoppingRoute never creates, deletes or completes Alexa list items; it only redistributes visible value texts across existing active IDs.",
-            "de": "BETA 0.2.0-beta.2. Zuerst mit Dry-Run testen. ShoppingRoute legt niemals Alexa-Listeneinträge an, löscht keine und hakt keine ab; es verteilt ausschließlich sichtbare value-Texte auf vorhandene aktive IDs."
-          }
+            "en": "BETA 0.2.0-beta.4. Start with Dry-Run enabled. ShoppingRoute never creates, deletes or completes Alexa list items; it only redistributes visible value texts across existing active IDs.",
+            "de": "BETA 0.2.0-beta.4. Zuerst mit Dry-Run testen. ShoppingRoute legt niemals Alexa-Listeneinträge an, löscht keine und hakt keine ab; es verteilt ausschließlich sichtbare value-Texte auf vorhandene aktive IDs."
+          },
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "alexaInstance": {
           "type": "text",
@@ -21,7 +26,12 @@
             "en": "Alexa2 instance",
             "de": "Alexa2-Instanz"
           },
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
+          "xl": 3
         },
         "dryRun": {
           "type": "checkbox",
@@ -29,7 +39,12 @@
             "en": "Dry run (do not write to Alexa)",
             "de": "Dry-Run (nichts zu Alexa schreiben)"
           },
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
+          "xl": 3
         },
         "learningMode": {
           "type": "select",
@@ -60,14 +75,24 @@
               }
             }
           ],
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
+          "xl": 3
         },
         "autoAliasSuggestions": {
           "type": "checkbox",
           "label": {
             "en": "Suggest aliases automatically",
             "de": "Aliase automatisch vorschlagen"
-          }
+          },
+          "xs": 12,
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
+          "xl": 3
         },
         "fallbackMarket": {
           "type": "selectSendTo",
@@ -78,7 +103,12 @@
             "en": "Fallback market",
             "de": "Fallback-Markt"
           },
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
+          "xl": 3
         },
         "priorityMarket": {
           "type": "selectSendTo",
@@ -88,7 +118,12 @@
           "label": {
             "en": "Priority market",
             "de": "Prioritätsmarkt"
-          }
+          },
+          "xs": 12,
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
+          "xl": 3
         },
         "temporaryMarketHelp": {
           "type": "staticText",
@@ -96,7 +131,12 @@
           "text": {
             "en": "For a one-off shopping trip, write a market name to shoppingroute.0.control.temporaryPriorityMarket. It overrides list and global priority markets until control.clearTemporaryPriorityMarket is triggered.",
             "de": "Für einen einzelnen Einkauf kann unter shoppingroute.0.control.temporaryPriorityMarket vorübergehend ein Markt gesetzt werden. Er übersteuert Listen- und globalen Prioritätsmarkt, bis control.clearTemporaryPriorityMarket ausgelöst wird."
-          }
+          },
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "temporaryMarketState": {
           "type": "state",
@@ -107,7 +147,12 @@
             "en": "Temporary priority market",
             "de": "Temporärer Prioritätsmarkt"
           },
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 4
         },
         "clearTemporaryMarket": {
           "type": "setState",
@@ -118,7 +163,12 @@
             "en": "Clear temporary market",
             "de": "Temporären Markt löschen"
           },
-          "variant": "outlined"
+          "variant": "outlined",
+          "xs": 12,
+          "sm": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 4
         },
         "debounceMs": {
           "type": "number",
@@ -128,7 +178,12 @@
           },
           "min": 250,
           "max": 60000,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
+          "xl": 3
         },
         "writePauseMs": {
           "type": "number",
@@ -137,7 +192,12 @@
             "de": "Pause zwischen Alexa-value-Schreibzugriffen (ms)"
           },
           "min": 250,
-          "max": 10000
+          "max": 10000,
+          "xs": 12,
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
+          "xl": 3
         }
       }
     },
@@ -153,7 +213,12 @@
           "text": {
             "en": "ShoppingRoute can manage several Alexa lists. Each list may have its own priority market. The Alexa app must use 'Oldest to newest' for every managed list.",
             "de": "ShoppingRoute kann mehrere Alexa-Listen verwalten. Jede Liste kann einen eigenen Prioritätsmarkt erhalten. In der Alexa-App muss jede verwaltete Liste auf „Älteste bis neueste“ stehen."
-          }
+          },
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "lists": {
           "type": "table",
@@ -210,7 +275,12 @@
           "text": {
             "en": "Market order is the top sorting level. Aliases are comma-separated. Common variants for ALDI, LIDL, REWE and PENNY are additionally recognized automatically.",
             "de": "Die Marktreihenfolge ist die oberste Sortierebene. Aliase werden kommagetrennt angegeben. Häufige Varianten für ALDI, LIDL, REWE und PENNY werden zusätzlich automatisch erkannt."
-          }
+          },
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "markets": {
           "type": "table",
@@ -273,7 +343,12 @@
           "text": {
             "en": "Central list for all product-group drop-downs. Drop-down values are alphabetically sorted.",
             "de": "Zentrale Liste für alle Produktgruppen-Pulldowns. Die Pulldown-Werte werden alphabetisch sortiert."
-          }
+          },
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "productGroups": {
           "type": "table",
@@ -306,9 +381,14 @@
         "routesHelp": {
           "type": "staticText",
           "text": {
-            "en": "The row order within each market is the shopping route. Move rows with the table arrows (or drag them when supported by your Admin version). ShoppingRoute reindexes route numbers automatically after saving.",
-            "de": "Die Zeilenreihenfolge innerhalb eines Marktes ist der Laufweg. Zeilen mit den Tabellenpfeilen verschieben (oder per Drag & Drop, wenn die Admin-Version dies unterstützt). ShoppingRoute nummeriert die Reihenfolge nach dem Speichern automatisch neu."
-          }
+            "en": "Select a market with the Market filter above the table. Only this market's walking route is then shown. Route rows are grouped alphabetically by market; within a market, the row order is the walking route. Move rows with the table arrows (or drag them when supported).",
+            "de": "Oben in der Tabelle über den Filter „Markt“ einen Markt auswählen. Danach wird nur der Laufweg dieses Marktes angezeigt. Die Märkte werden alphabetisch gruppiert; innerhalb eines Marktes ist die Zeilenreihenfolge der Laufweg. Zeilen mit den Tabellenpfeilen verschieben (oder per Drag & Drop, wenn unterstützt)."
+          },
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "routes": {
           "type": "table",
@@ -328,7 +408,8 @@
                 "de": "Markt"
               },
               "width": "40%",
-              "sort": true
+              "sort": true,
+              "filter": true
             },
             {
               "type": "selectSendTo",
@@ -353,7 +434,8 @@
               },
               "width": "15%"
             }
-          ]
+          ],
+          "allowAddByFilter": true
         }
       }
     },
@@ -369,7 +451,12 @@
           "text": {
             "en": "Click Product, Product group or Default market headers to sort. The catalogue itself is stored alphabetically, so equal groups/markets stay alphabetic. Available markets are comma-separated; the default market is the preferred exception to global/list priorities.",
             "de": "Über die Spaltenköpfe Artikel, Produktgruppe oder Standardmarkt sortieren. Der Artikelstamm wird grundsätzlich alphabetisch gespeichert, dadurch bleiben gleiche Gruppen/Märkte innerhalb der Sortierung alphabetisch. Verfügbare Märkte werden kommagetrennt angegeben; der Standardmarkt ist die bevorzugte Ausnahme von globalen/Listen-Prioritäten."
-          }
+          },
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "products": {
           "type": "table",
@@ -449,7 +536,12 @@
           "text": {
             "en": "Unknown products appear here in review mode. Correct product, product group, default market or aliases, choose Accept or Ignore, then save. Accepted entries are moved into the product catalogue after restart.",
             "de": "Im Prüfmodus erscheinen unbekannte Artikel hier. Artikelname, Produktgruppe, Standardmarkt oder Aliase korrigieren, dann Übernehmen oder Ignorieren wählen und speichern. Übernommene Einträge wandern nach dem Neustart in den Artikelstamm."
-          }
+          },
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "reviewItems": {
           "type": "table",
@@ -560,7 +652,12 @@
           "text": {
             "en": "API Safe Mode limits Alexa write frequency, groups large sorts into batches and retries temporary write errors with exponential backoff. It protects against unnecessary bursts; it does not poll Amazon.",
             "de": "Der API-Schonmodus begrenzt Alexa-Schreibzugriffe, teilt große Sortierungen in Blöcke und wiederholt vorübergehende Schreibfehler mit wachsender Pause. Er schützt vor unnötigen Zugriffsspitzen; ShoppingRoute pollt Amazon nicht."
-          }
+          },
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "apiSafeMode": {
           "type": "checkbox",
@@ -568,7 +665,12 @@
             "en": "Enable API Safe Mode",
             "de": "API-Schonmodus aktivieren"
           },
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
+          "xl": 3
         },
         "maxWritesPerMinute": {
           "type": "number",
@@ -577,7 +679,12 @@
             "de": "Maximale Schreibzugriffe pro Minute"
           },
           "min": 1,
-          "max": 120
+          "max": 120,
+          "xs": 12,
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
+          "xl": 3
         },
         "batchSize": {
           "type": "number",
@@ -587,7 +694,12 @@
           },
           "min": 1,
           "max": 100,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
+          "xl": 3
         },
         "batchPauseMs": {
           "type": "number",
@@ -596,7 +708,12 @@
             "de": "Pause zwischen Blöcken (ms)"
           },
           "min": 0,
-          "max": 60000
+          "max": 60000,
+          "xs": 12,
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
+          "xl": 3
         },
         "maxWriteRetries": {
           "type": "number",
@@ -606,7 +723,12 @@
           },
           "min": 0,
           "max": 5,
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
+          "xl": 3
         },
         "retryBaseMs": {
           "type": "number",
@@ -615,7 +737,12 @@
             "de": "Grundpause für Wiederholungen (ms)"
           },
           "min": 250,
-          "max": 30000
+          "max": 30000,
+          "xs": 12,
+          "sm": 12,
+          "md": 6,
+          "lg": 4,
+          "xl": 3
         }
       }
     },
@@ -631,7 +758,12 @@
           "text": {
             "en": "Configuration export is available in info.configExport. Paste an export into control.importConfigJson to restore it. Market-only profiles are in info.marketProfiles and can be imported through control.marketProfileImport. This allows store routes to be shared without sharing the adapter source code.",
             "de": "Die komplette Konfigurationssicherung steht in info.configExport. Zum Wiederherstellen den Export in control.importConfigJson schreiben. Einzelne Marktprofile stehen in info.marketProfiles und werden über control.marketProfileImport importiert. So können Laufwege geteilt werden, ohne den Adapter-Quellcode zu teilen."
-          }
+          },
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "refreshExport": {
           "type": "setState",
@@ -643,7 +775,12 @@
             "de": "Konfigurations-Export aktualisieren"
           },
           "variant": "outlined",
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 4
         },
         "configExportState": {
           "type": "state",
@@ -654,7 +791,12 @@
             "en": "Configuration export JSON",
             "de": "Konfigurations-Export JSON"
           },
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 4
         },
         "configImportState": {
           "type": "state",
@@ -665,7 +807,12 @@
             "en": "Paste configuration JSON to import",
             "de": "Konfigurations-JSON zum Import einfügen"
           },
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 4
         },
         "marketProfilesState": {
           "type": "state",
@@ -676,7 +823,12 @@
             "en": "Market profiles JSON",
             "de": "Marktprofile JSON"
           },
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 4
         },
         "marketProfileImportState": {
           "type": "state",
@@ -687,7 +839,12 @@
             "en": "Paste one market profile JSON",
             "de": "Ein Marktprofil-JSON zum Import einfügen"
           },
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 4
         }
       }
     },
@@ -703,7 +860,12 @@
           "text": {
             "en": "Version information is exposed through info.versionInstalled, info.versionBeta, info.updateAvailable and info.versionCheck. Note: ioBroker Admin may show 'not maintained' as the available version while ShoppingRoute is not yet in the official ioBroker repository; ShoppingRoute cannot override that generic Admin card itself.",
             "de": "Versionsinformationen stehen unter info.versionInstalled, info.versionBeta, info.updateAvailable und info.versionCheck. Hinweis: Solange ShoppingRoute noch nicht im offiziellen ioBroker-Repository geführt wird, kann ioBroker Admin bei „Verfügbare Version“ generisch „nicht gewartet“ anzeigen; diese Kartenanzeige kann der Adapter selbst nicht überschreiben."
-          }
+          },
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "previewHelp": {
           "type": "staticText",
@@ -711,7 +873,12 @@
           "text": {
             "en": "Sort preview: info.preview and info.previewText show current and target order before writes. Statistics stay local in info.statistics. API counters are in info.traffic.",
             "de": "Sortiervorschau: info.preview und info.previewText zeigen aktuelle und geplante Reihenfolge vor Schreibzugriffen. Die Einkaufsstatistik bleibt lokal in info.statistics. API-Zähler stehen in info.traffic."
-          }
+          },
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "feedbackHelp": {
           "type": "staticText",
@@ -719,7 +886,12 @@
           "text": {
             "en": "For beta feedback trigger control.refreshFeedbackReport and copy info.feedbackReport. Product names, list texts, aliases and the full configuration are intentionally omitted.",
             "de": "Für Beta-Feedback control.refreshFeedbackReport auslösen und info.feedbackReport kopieren. Produktnamen, Listentexte, Aliase und die vollständige Konfiguration werden absichtlich nicht aufgenommen."
-          }
+          },
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "compatibilityHelp": {
           "type": "staticText",
@@ -727,7 +899,12 @@
           "text": {
             "en": "If info.writeCapability is unknown, run control.compatibilityTest once with at least one active item. source-ok or live-ok permits writes; known-bug/live-failed/unknown blocks them.",
             "de": "Wenn info.writeCapability auf unknown steht, control.compatibilityTest einmal mit mindestens einem aktiven Artikel ausführen. source-ok oder live-ok erlaubt Schreibzugriffe; known-bug/live-failed/unknown blockiert sie."
-          }
+          },
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "versionInstalledState": {
           "type": "state",
@@ -738,7 +915,12 @@
             "en": "Installed version",
             "de": "Installierte Version"
           },
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 4
         },
         "versionBetaState": {
           "type": "state",
@@ -748,7 +930,12 @@
           "label": {
             "en": "Latest npm beta",
             "de": "Neueste npm-Beta"
-          }
+          },
+          "xs": 12,
+          "sm": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 4
         },
         "updateState": {
           "type": "state",
@@ -758,7 +945,12 @@
           "label": {
             "en": "Update available",
             "de": "Update verfügbar"
-          }
+          },
+          "xs": 12,
+          "sm": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 4
         },
         "previewState": {
           "type": "state",
@@ -769,7 +961,12 @@
             "en": "Last sorting preview",
             "de": "Letzte Sortiervorschau"
           },
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 4
         },
         "refreshFeedback": {
           "type": "setState",
@@ -781,7 +978,12 @@
             "de": "Feedbackbericht aktualisieren"
           },
           "variant": "outlined",
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 4
         },
         "feedbackState": {
           "type": "state",
@@ -792,9 +994,15 @@
             "en": "Privacy-safe feedback report",
             "de": "Datenschutzfreundlicher Feedbackbericht"
           },
-          "newLine": true
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 4
         }
       }
     }
-  }
+  },
+  "i18n": false
 }
