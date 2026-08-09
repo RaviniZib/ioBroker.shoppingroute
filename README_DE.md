@@ -99,4 +99,4 @@ ShoppingRoute wird ab dieser Version unter der **MIT-Lizenz** veröffentlicht. F
 
 MIT-Lizenz. Die vollständigen Bedingungen stehen in LICENSE.
 
-Copyright (c) 2026 Frank Zibull
+Copyright (c) 2026 RaviniZib

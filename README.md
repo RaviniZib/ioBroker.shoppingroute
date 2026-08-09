@@ -79,4 +79,4 @@ See `README_DE.md` for the detailed German documentation.
 
 Licensed under the MIT License. See LICENSE for the complete terms.
 
-Copyright (c) 2026 Frank Zibull
+Copyright (c) 2026 RaviniZib
