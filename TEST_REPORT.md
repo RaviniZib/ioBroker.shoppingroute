@@ -1,11 +1,11 @@
 # ShoppingRoute test report
 
-Version: **0.2.0-beta.7**
+Version: **0.2.0-beta.11**
 
 Local source/unit verification in the build environment:
 
-- 37 tests defined for the beta.7 suite
-- 16 Admin/config tests passed in the local artifact check; the full 37-test suite must be confirmed on the ioBroker host
+- 38 source/unit tests passed
+- 46 official ioBroker package-file tests passed
 - 0 failed
 - JSON files parse successfully
 - Alexa2 selection is restricted to installed/enabled Alexa2 instances
@@ -17,4 +17,4 @@ Local source/unit verification in the build environment:
 - ioBroker checker metadata tests cover type/tier/extIcon/testing dependency and centralized reusable Admin i18n variables
 - adapter-managed timers are used instead of plain global timers
 
-The full `npm test` must additionally be executed on the ioBroker development host after `npm install`. No custom Admin bundle is built; the Admin UI uses native JSON Config controls only.
+The full `npm test` and `npm run test:package` checks were executed successfully on the ioBroker development host. No custom Admin bundle is built; the Admin UI uses native JSON Config controls only.

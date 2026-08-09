@@ -2,7 +2,7 @@
 
 ![ShoppingRoute](admin/shoppingroute.png)
 
-**Entwicklungsstand: 0.2.0-beta.7 – Beta**
+**Entwicklungsstand: 0.2.0-beta.11 – Beta**
 
 ShoppingRoute sortiert vorhandene Alexa-Einkaufslisteneinträge nach Markt, Produktgruppe und dem individuellen Laufweg durch den jeweiligen Markt. Dabei werden **keine Einträge angelegt, gelöscht oder automatisch abgehakt**. Der Adapter verteilt ausschließlich die sichtbaren Texte auf bereits vorhandene aktive Alexa-IDs. Die Alexa-App muss für verwaltete Listen auf **„Älteste bis neueste“** gestellt sein.
 
@@ -66,6 +66,26 @@ ShoppingRoute wird ab dieser Version unter der **MIT-Lizenz** veröffentlicht. F
 
 ## Changelog
 
+### 0.2.0-beta.11 (2026-08-09)
+
+- Offizielle ioBroker-Paket- und Integrationstests ergänzt sowie weitere Workflow- und JSON-Config-Kompatibilitätskorrekturen abgeschlossen.
+- ShoppingRoute auf die MIT-Lizenz umgestellt.
+- Public-Beta-Dokumentation, Versionshistorie und Versionsangaben aktualisiert.
+
+### 0.2.0-beta.10 (2026-08-09)
+
+- Admin-7.6-kompatible Oberfläche für Sicherung und Teilen von Konfigurationssicherungen und Marktprofilen ergänzt.
+- JSON-Prüfung für den Import von Konfigurationen und Marktprofilen ergänzt.
+- Konsistenzprüfung der Runtime-Version korrigiert und automatisierte Kompatibilitätstests erweitert.
+
+### 0.2.0-beta.9 (2026-08-09)
+
+- Bezeichnungen und Dokumentation von „Closed Beta“ auf „Public Beta“ umgestellt, einschließlich Paketbau und Workflow.
+
+### 0.2.0-beta.8 (2026-08-09)
+
+- Reine Versionsanhebung ohne funktionale Änderungen.
+
 ### 0.2.0-beta.7 (2026-08-08)
 
 - Echter Markt-Pulldown für den Laufweg-Editor; sichtbar ist nur der ausgewählte Markt, die vollständige Laufwegliste bleibt intern erhalten.
@@ -90,6 +110,14 @@ ShoppingRoute wird ab dieser Version unter der **MIT-Lizenz** veröffentlicht. F
 - ioBroker-Abhängigkeiten und Entwicklungs-Testmetadaten aktualisiert.
 - Globale Timer durch adapterverwaltete Timer ersetzt.
 - Standard-GitHub-Testworkflow und Dependabot ergänzt.
+
+### 0.2.0-beta.2 (2026-08-08)
+
+- Neue aktive Märkte und neue Produktgruppen erhalten automatisch fehlende Laufweg-Einträge.
+
+### 0.2.0-beta.1 (2026-08-08)
+
+- Review-Warteschlange, verbesserter Parser und Aliase, API-Schutzmodus, Unterstützung mehrerer Listen, Statistiken, Übertragungswerkzeuge und Beta-Diagnose ergänzt.
 
 ### 0.1.0-beta.3 (2026-08-08)
 
