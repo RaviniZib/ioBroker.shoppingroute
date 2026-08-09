@@ -6,11 +6,10 @@
 
 ShoppingRoute sortiert vorhandene Alexa-Einkaufslisteneinträge nach Markt, Produktgruppe und dem individuellen Laufweg durch den jeweiligen Markt. Dabei werden **keine Einträge angelegt, gelöscht oder automatisch abgehakt**. Der Adapter verteilt ausschließlich die sichtbaren Texte auf bereits vorhandene aktive Alexa-IDs. Die Alexa-App muss für verwaltete Listen auf **„Älteste bis neueste“** gestellt sein.
 
-## Bedienungsanleitung
+## Bedienungsanleitung / User guide
 
-Eine ausführliche Schritt-für-Schritt-Anleitung zur Einrichtung und Nutzung findest du hier:
-
-➡️ [**Bedienungsanleitung ShoppingRoute 0.2.0**](BEDIENUNGSANLEITUNG_DE.md)
+🇩🇪 [**Deutsche Bedienungsanleitung**](BEDIENUNGSANLEITUNG_DE.md)  
+🇬🇧 [**English user guide**](USER_GUIDE_EN.md)
 
 ## Funktionen
 

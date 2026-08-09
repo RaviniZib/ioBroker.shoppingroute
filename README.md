@@ -6,6 +6,11 @@
 
 ShoppingRoute sorts existing Alexa shopping-list entries by market, product group and each store's individual walking route. It **never creates, deletes or automatically completes Alexa list items**. It only redistributes visible texts across existing active Alexa IDs. Managed Alexa lists must be set to **Oldest to newest** in the Alexa app.
 
+## User guide / Bedienungsanleitung
+
+🇬🇧 [**English user guide**](USER_GUIDE_EN.md)  
+🇩🇪 [**Deutsche Bedienungsanleitung**](BEDIENUNGSANLEITUNG_DE.md)
+
 ## Highlights
 
 - multiple Alexa lists with per-list priority markets
