@@ -409,9 +409,8 @@
           "lg": 12,
           "xl": 12
         },
-        "routeEditorRows": {
+        "_routeEditorRows": {
           "type": "table",
-          "doNotSave": true,
           "label": "ui.items.routestab.items.routeeditorrows.label",
           "items": [
             {
@@ -430,7 +429,7 @@
               "attr": "order",
               "title": "ui.items.marketstab.items.markets.items.1.title",
               "width": "25%",
-              "disabled": true
+              "disabled": "true"
             }
           ],
           "uniqueColumns": [
@@ -453,7 +452,7 @@
         },
         "routes": {
           "type": "table",
-          "hidden": true,
+          "hidden": "true",
           "items": [
             {
               "type": "text",
@@ -481,9 +480,9 @@
           "xl": 12,
           "onChange": {
             "alsoDependsOn": [
-              "routeEditorRows"
+              "_routeEditorRows"
             ],
-            "calculateFunc": "(() => { const market = String(data.routeMarketFilter || ''); if (!market) return data.routes || []; const kept = (data.routes || []).filter(r => String(r.market || '') !== market); const edited = (data.routeEditorRows || []).map((r, i) => ({ market, category: r.category, order: (i + 1) * 10 })); return kept.concat(edited); })()",
+            "calculateFunc": "(() => { const market = String(data.routeMarketFilter || ''); if (!market) return data.routes || []; const kept = (data.routes || []).filter(r => String(r.market || '') !== market); const edited = (data._routeEditorRows || []).map((r, i) => ({ market, category: r.category, order: (i + 1) * 10 })); return kept.concat(edited); })()",
             "ignoreOwnChanges": true
           }
         }

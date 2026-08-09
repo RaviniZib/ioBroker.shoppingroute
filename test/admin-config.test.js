@@ -67,7 +67,7 @@ test('known instances, lists, markets and product groups use dropdown controls',
   assert.equal(route.routeMarketFilter.type,'selectSendTo');
   assert.equal(route.routeMarketFilter.command,'getActiveMarkets');
   assert.equal(route.routeMarketFilter.manual,false);
-  assert.equal(route.routeEditorRows.items.find(x=>x.attr==='category').command,'getProductGroups');
+  assert.equal(route._routeEditorRows.items.find(x=>x.attr==='category').command,'getProductGroups');
 });
 
 test('product list is sortable by product, group and market',()=>{
@@ -102,12 +102,12 @@ test('walking routes use a standalone market dropdown and a calculated one-marke
   assert.equal(route.routeMarketFilter.type,'selectSendTo');
   assert.equal(route.routeMarketFilter.command,'getActiveMarkets');
   assert.equal(route.routeMarketFilter.manual,false);
-  assert.equal(route.routeEditorRows.type,'table');
-  assert.equal(route.routeEditorRows.doNotSave,true);
-  assert.ok(route.routeEditorRows.onChange.alsoDependsOn.includes('routeMarketFilter'));
+  assert.equal(route._routeEditorRows.type,'table');
+  assert.equal(route._routeEditorRows.doNotSave,undefined);
+  assert.ok(route._routeEditorRows.onChange.alsoDependsOn.includes('routeMarketFilter'));
   assert.equal(route.routes.type,'table');
-  assert.equal(route.routes.hidden,true);
-  assert.ok(route.routes.onChange.alsoDependsOn.includes('routeEditorRows'));
+  assert.equal(route.routes.hidden,'true');
+  assert.ok(route.routes.onChange.alsoDependsOn.includes('_routeEditorRows'));
   const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
   assert.equal(pkg.scripts['build:admin'],undefined);
 });
@@ -119,11 +119,11 @@ test('walking-route calculate functions keep only the selected market visible an
     {market:'ALDI',category:'Milchprodukte',order:20},
     {market:'REWE',category:'Getränke',order:10},
   ];
-  const calcEditor=new Function('data',`return ${route.routeEditorRows.onChange.calculateFunc}`);
+  const calcEditor=new Function('data',`return ${route._routeEditorRows.onChange.calculateFunc}`);
   const editor=calcEditor({routes:source,routeMarketFilter:'ALDI'});
   assert.deepEqual(editor.map(x=>x.category),['Obst/Gemüse','Milchprodukte']);
   const calcRoutes=new Function('data',`return ${route.routes.onChange.calculateFunc}`);
-  const merged=calcRoutes({routes:source,routeMarketFilter:'ALDI',routeEditorRows:[editor[1],editor[0]]});
+  const merged=calcRoutes({routes:source,routeMarketFilter:'ALDI',_routeEditorRows:[editor[1],editor[0]]});
   assert.deepEqual(merged.filter(x=>x.market==='ALDI').map(x=>x.category),['Milchprodukte','Obst/Gemüse']);
   assert.deepEqual(merged.filter(x=>x.market==='ALDI').map(x=>x.order),[10,20]);
   assert.deepEqual(merged.filter(x=>x.market==='REWE').map(x=>x.category),['Getränke']);
