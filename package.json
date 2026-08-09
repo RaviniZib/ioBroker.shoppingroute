@@ -46,7 +46,9 @@
     "test:unit": "node --test test/*.test.js",
     "beta:package": "npm run build && node scripts/make-beta-package.js",
     "lint": "npm run check",
-    "prepublishOnly": "node scripts/block-root-publish.js"
+    "prepublishOnly": "node scripts/block-root-publish.js",
+    "test:integration": "mocha test/integration.js --exit",
+    "test:package": "mocha test/package.js --exit"
   },
   "dependencies": {
     "@iobroker/adapter-core": "^3.4.1"
