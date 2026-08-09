@@ -88,7 +88,7 @@ export class ShoppingRoute extends utils.Adapter {
     }
 
     private get cfg(): AdapterConfigShape {
-        return this.config as unknown as AdapterConfigShape;
+        return this.config;
     }
 
     private get alexaInstance(): string {
@@ -350,15 +350,15 @@ export class ShoppingRoute extends utils.Adapter {
             return;
         }
         if (id === `${local}control.temporaryPriorityMarket` && !state.ack) {
-            const selectedMarket = String(state.val ?? '').trim();
+            const selectedMarket = typeof state.val === 'string' ? state.val.trim() : '';
             this.temporaryPriorityMarket = selectedMarket === '__none__' ? '' : selectedMarket;
             await this.setStateAsync('control.temporaryPriorityMarket', this.temporaryPriorityMarket || '__none__', true);
             this.scheduleAll(100);
             return;
         }
-        if (id === `${local}control.importConfigJson` && !state.ack && String(state.val || '').trim()) {
+        if (id === `${local}control.importConfigJson` && !state.ack && typeof state.val === 'string' && state.val.trim()) {
             try {
-                const imported = parseConfigImport(String(state.val));
+                const imported = parseConfigImport(state.val);
                 await this.setStateAsync('control.importConfigJson', '', true);
                 await this.updateConfig(imported as Record<string, unknown>);
                 this.log.info('ShoppingRoute-Konfiguration importiert; Instanz wird durch ioBroker neu gestartet.');
@@ -368,9 +368,9 @@ export class ShoppingRoute extends utils.Adapter {
             }
             return;
         }
-        if (id === `${local}control.marketProfileImport` && !state.ack && String(state.val || '').trim()) {
+        if (id === `${local}control.marketProfileImport` && !state.ack && typeof state.val === 'string' && state.val.trim()) {
             try {
-                const imported = importMarketProfile(String(state.val), this.markets, this.routes);
+                const imported = importMarketProfile(state.val, this.markets, this.routes);
                 await this.setStateAsync('control.marketProfileImport', '', true);
                 await this.updateConfig({ markets: imported.markets, routes: imported.routes } as Record<string, unknown>);
                 this.log.info(`Marktprofil „${imported.market}“ importiert.`);
@@ -398,7 +398,7 @@ export class ShoppingRoute extends utils.Adapter {
     private onUnload(callback: () => void): void {
         if (this.sortTimer) this.clearTimeout(this.sortTimer);
         if (this.versionTimer) this.clearInterval(this.versionTimer);
-        this.setState('info.connection', false, true);
+        void this.setState('info.connection', false, true);
         callback();
     }
 
@@ -423,7 +423,7 @@ export class ShoppingRoute extends utils.Adapter {
     private async processPendingSorts(): Promise<void> {
         if (this.sortingListName) return;
         while (this.pendingLists.size > 0) {
-            const listName = this.pendingLists.values().next().value as string | undefined;
+            const listName = this.pendingLists.values().next().value;
             if (!listName) break;
             this.pendingLists.delete(listName);
             await this.sortList(listName);
@@ -665,7 +665,8 @@ export class ShoppingRoute extends utils.Adapter {
     private async runStartupCompatibilityCheck(): Promise<void> {
         try {
             const alexaObject = await this.getForeignObjectAsync(`system.adapter.${this.alexaInstance}`);
-            this.alexa2Version = String((alexaObject?.common as { version?: unknown } | undefined)?.version || 'unbekannt');
+            const alexaVersion = (alexaObject?.common as { version?: unknown } | undefined)?.version;
+            this.alexa2Version = typeof alexaVersion === 'string' ? alexaVersion : 'unbekannt';
         } catch { this.alexa2Version = 'unbekannt'; }
         try {
             const resolved = require.resolve('alexa-remote2');
@@ -769,7 +770,7 @@ export class ShoppingRoute extends utils.Adapter {
 
     private async updateTemporaryMarketStateOptions(): Promise<void> {
         try {
-            const states: Record<string, string> = { '__none__': '— Kein Markt —' };
+            const states: Record<string, string> = { __none__: '— Kein Markt —' };
             for (const market of [...this.markets].sort((a, b) => a.name.localeCompare(b.name, 'de', { sensitivity: 'base' }))) {
                 states[market.name] = market.name;
             }
@@ -869,7 +870,9 @@ export class ShoppingRoute extends utils.Adapter {
         try {
             const data = await this.httpJson('https://registry.npmjs.org/iobroker.shoppingroute');
             const tags = (data['dist-tags'] || {}) as Record<string, unknown>;
-            this.latestBetaVersion = String(tags.beta || tags.latest || '');
+            const betaTag = typeof tags.beta === 'string' ? tags.beta : '';
+            const latestTag = typeof tags.latest === 'string' ? tags.latest : '';
+            this.latestBetaVersion = betaTag || latestTag;
             this.lastVersionCheck = new Date().toISOString();
             await this.setStateAsync('info.versionBeta', this.latestBetaVersion || 'unbekannt', true);
             await this.setStateAsync('info.updateAvailable', Boolean(this.latestBetaVersion && this.latestBetaVersion !== VERSION), true);
@@ -894,7 +897,9 @@ export class ShoppingRoute extends utils.Adapter {
                 response.on('data', (chunk: string) => { data += chunk; });
                 response.on('end', () => {
                     try { resolve(JSON.parse(data) as Record<string, any>); }
-                    catch (error) { reject(error); }
+                    catch (error) {
+                        reject(error instanceof Error ? error : new Error('Ungültige JSON-Antwort'));
+                    }
                 });
             });
             request.setTimeout(8000, () => request.destroy(new Error('Timeout')));

@@ -43,7 +43,7 @@
     "test": "npm run build && node --test test/*.test.js",
     "test:unit": "node --test test/*.test.js",
     "beta:package": "npm run build && node scripts/make-beta-package.js",
-    "lint": "npm run check",
+    "lint": "eslint src test scripts && npm run check",
     "prepublishOnly": "node scripts/block-root-publish.js",
     "test:integration": "mocha test/integration.js --exit",
     "test:package": "mocha test/package.js --exit"
@@ -52,10 +52,11 @@
     "@iobroker/adapter-core": "^3.4.1"
   },
   "devDependencies": {
-    "@types/node": "^22.15.0",
-    "typescript": "^5.8.3",
-    "javascript-obfuscator": "^5.5.0",
+    "@iobroker/eslint-config": "^2.3.4",
     "@iobroker/testing": "^5.2.2",
-    "@tsconfig/node22": "^22.0.5"
+    "@tsconfig/node22": "^22.0.5",
+    "@types/node": "^22.15.0",
+    "javascript-obfuscator": "^5.5.0",
+    "typescript": "^5.8.3"
   }
 }

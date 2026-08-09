@@ -342,15 +342,15 @@ class ShoppingRoute extends utils.Adapter {
             return;
         }
         if (id === `${local}control.temporaryPriorityMarket` && !state.ack) {
-            const selectedMarket = String(state.val ?? '').trim();
+            const selectedMarket = typeof state.val === 'string' ? state.val.trim() : '';
             this.temporaryPriorityMarket = selectedMarket === '__none__' ? '' : selectedMarket;
             await this.setStateAsync('control.temporaryPriorityMarket', this.temporaryPriorityMarket || '__none__', true);
             this.scheduleAll(100);
             return;
         }
-        if (id === `${local}control.importConfigJson` && !state.ack && String(state.val || '').trim()) {
+        if (id === `${local}control.importConfigJson` && !state.ack && typeof state.val === 'string' && state.val.trim()) {
             try {
-                const imported = (0, config_tools_1.parseConfigImport)(String(state.val));
+                const imported = (0, config_tools_1.parseConfigImport)(state.val);
                 await this.setStateAsync('control.importConfigJson', '', true);
                 await this.updateConfig(imported);
                 this.log.info('ShoppingRoute-Konfiguration importiert; Instanz wird durch ioBroker neu gestartet.');
@@ -361,9 +361,9 @@ class ShoppingRoute extends utils.Adapter {
             }
             return;
         }
-        if (id === `${local}control.marketProfileImport` && !state.ack && String(state.val || '').trim()) {
+        if (id === `${local}control.marketProfileImport` && !state.ack && typeof state.val === 'string' && state.val.trim()) {
             try {
-                const imported = (0, config_tools_1.importMarketProfile)(String(state.val), this.markets, this.routes);
+                const imported = (0, config_tools_1.importMarketProfile)(state.val, this.markets, this.routes);
                 await this.setStateAsync('control.marketProfileImport', '', true);
                 await this.updateConfig({ markets: imported.markets, routes: imported.routes });
                 this.log.info(`Marktprofil „${imported.market}“ importiert.`);
@@ -395,7 +395,7 @@ class ShoppingRoute extends utils.Adapter {
             this.clearTimeout(this.sortTimer);
         if (this.versionTimer)
             this.clearInterval(this.versionTimer);
-        this.setState('info.connection', false, true);
+        void this.setState('info.connection', false, true);
         callback();
     }
     scheduleAll(delay) {
@@ -660,7 +660,8 @@ class ShoppingRoute extends utils.Adapter {
     async runStartupCompatibilityCheck() {
         try {
             const alexaObject = await this.getForeignObjectAsync(`system.adapter.${this.alexaInstance}`);
-            this.alexa2Version = String(alexaObject?.common?.version || 'unbekannt');
+            const alexaVersion = alexaObject?.common?.version;
+            this.alexa2Version = typeof alexaVersion === 'string' ? alexaVersion : 'unbekannt';
         }
         catch {
             this.alexa2Version = 'unbekannt';
@@ -776,7 +777,7 @@ class ShoppingRoute extends utils.Adapter {
     }
     async updateTemporaryMarketStateOptions() {
         try {
-            const states = { '__none__': '— Kein Markt —' };
+            const states = { __none__: '— Kein Markt —' };
             for (const market of [...this.markets].sort((a, b) => a.name.localeCompare(b.name, 'de', { sensitivity: 'base' }))) {
                 states[market.name] = market.name;
             }
@@ -878,7 +879,9 @@ class ShoppingRoute extends utils.Adapter {
         try {
             const data = await this.httpJson('https://registry.npmjs.org/iobroker.shoppingroute');
             const tags = (data['dist-tags'] || {});
-            this.latestBetaVersion = String(tags.beta || tags.latest || '');
+            const betaTag = typeof tags.beta === 'string' ? tags.beta : '';
+            const latestTag = typeof tags.latest === 'string' ? tags.latest : '';
+            this.latestBetaVersion = betaTag || latestTag;
             this.lastVersionCheck = new Date().toISOString();
             await this.setStateAsync('info.versionBeta', this.latestBetaVersion || 'unbekannt', true);
             await this.setStateAsync('info.updateAvailable', Boolean(this.latestBetaVersion && this.latestBetaVersion !== VERSION), true);
@@ -906,7 +909,7 @@ class ShoppingRoute extends utils.Adapter {
                         resolve(JSON.parse(data));
                     }
                     catch (error) {
-                        reject(error);
+                        reject(error instanceof Error ? error : new Error('Ungültige JSON-Antwort'));
                     }
                 });
             });
