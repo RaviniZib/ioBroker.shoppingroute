@@ -1,4 +1,4 @@
-# Beta-Test ioBroker.shoppingroute 0.2.0-beta.11
+# Beta-Test ioBroker.shoppingroute 0.2.0-beta.12
 
 Diese öffentliche Beta soll auf unterschiedlichen ioBroker-/Alexa2-Systemen prüfen, ob Einlesen, Erkennung, Sortierplanung und Alexa-`value`-Updates zuverlässig funktionieren.
 

@@ -1,6 +1,6 @@
 # ShoppingRoute test report
 
-Version: **0.2.0-beta.11**
+Version: **0.2.0-beta.12**
 
 Local source/unit verification in the build environment:
 

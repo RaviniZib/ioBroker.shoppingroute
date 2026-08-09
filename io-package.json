@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "shoppingroute",
-    "version": "0.2.0-beta.11",
+    "version": "0.2.0-beta.12",
     "titleLang": {
       "en": "ShoppingRoute",
       "de": "ShoppingRoute",

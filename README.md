@@ -2,7 +2,7 @@
 
 ![ShoppingRoute](admin/shoppingroute.png)
 
-**Development status: 0.2.0-beta.11 – beta**
+**Development status: 0.2.0-beta.12 – beta**
 
 ShoppingRoute sorts existing Alexa shopping-list entries by market, product group and each store's individual walking route. It **never creates, deletes or automatically completes Alexa list items**. It only redistributes visible texts across existing active Alexa IDs. Managed Alexa lists must be set to **Oldest to newest** in the Alexa app.
 
@@ -31,6 +31,12 @@ ShoppingRoute sorts existing Alexa shopping-list entries by market, product grou
 See `README_DE.md` for the detailed German documentation.
 
 ## Changelog
+
+### 0.2.0-beta.12 (2026-08-09)
+
+- Added an official stable-release deployment path while keeping public-beta packaging separate.
+- Added the shared ioBroker ESLint configuration and resolved type-safety/lint findings without functional changes.
+- Updated the resolved `@iobroker/testing` version to 5.3.0 and revalidated the test suite.
 
 ### 0.2.0-beta.11 (2026-08-09)
 
