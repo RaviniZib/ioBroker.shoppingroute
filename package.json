@@ -27,15 +27,11 @@
   "main": "build/main.js",
   "files": [
     "admin",
-    "build",
+    "build/**/*.js",
     "io-package.json",
     "LICENSE",
     "README.md",
-    "README_DE.md",
-    "BETA_TESTING.md",
-    "BETA_TESTING_DE.md",
-    "BETA_INSTALL_DE.md",
-    "BETA_TESTER_AUFRUF_DE.md"
+    "README_DE.md"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -46,7 +42,8 @@
     "lint": "eslint src test scripts && npm run check",
     "prepublishOnly": "node scripts/block-root-publish.js",
     "test:integration": "mocha test/integration.js --exit",
-    "test:package": "mocha test/package.js --exit"
+    "test:package": "mocha test/package.js --exit",
+    "stable:build": "npm run build && node scripts/prepare-stable-build.js"
   },
   "dependencies": {
     "@iobroker/adapter-core": "^3.4.1"
