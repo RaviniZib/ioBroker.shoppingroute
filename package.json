@@ -3,7 +3,7 @@
   "version": "0.2.0-beta.10",
   "description": "Smart Alexa shopping-list routing by market, product group and individual store walking route with learning, multi-list support and API protection.",
   "author": "RaviniZib",
-  "license": "SEE LICENSE IN LICENSE",
+  "license": "MIT",
   "homepage": "https://github.com/RaviniZib/ioBroker.shoppingroute",
   "repository": {
     "type": "git",
@@ -34,8 +34,6 @@
     "README_DE.md",
     "BETA_TESTING.md",
     "BETA_TESTING_DE.md",
-    "BETA_LICENSE.md",
-    "BETA_LICENSE_DE.md",
     "BETA_INSTALL_DE.md",
     "BETA_TESTER_AUFRUF_DE.md"
   ],

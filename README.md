@@ -32,6 +32,12 @@ See `README_DE.md` for the detailed German documentation.
 
 ## Changelog
 
+### 0.2.0-beta.10 (2026-08-09)
+
+- Added an Admin 7.6 compatible backup and sharing interface for configuration backups and market profiles.
+- Added JSON validation for configuration and market-profile imports.
+- Fixed the runtime version consistency check and improved automated compatibility tests.
+
 ### 0.2.0-beta.7 (2026-08-08)
 
 - Added a real standalone market dropdown for the walking-route editor; only the selected market route is shown while the complete route list remains stored internally.
@@ -71,6 +77,6 @@ See `README_DE.md` for the detailed German documentation.
 
 ## License
 
-ShoppingRoute Public Beta License 1.0. See [LICENSE](LICENSE) for the complete terms.
+Licensed under the MIT License. See LICENSE for the complete terms.
 
-Copyright (c) 2026 RaviniZib. All rights reserved.
+Copyright (c) 2026 Frank Zibull

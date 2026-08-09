@@ -60,9 +60,9 @@ Bei der Marktzuordnung gilt:
 
 Solange ShoppingRoute noch nicht im offiziellen ioBroker-Repository geführt wird, kann ioBroker Admin bei **„Verfügbare Version“** generisch **„nicht gewartet“** anzeigen. Das ist keine Aussage des laufenden Adapters. ShoppingRoute zeigt deshalb seinen eigenen npm-Versionsstatus über die `info.version*`-Datenpunkte an.
 
-## Beta-Lizenz
+## Lizenzierung der Beta-Versionen
 
-Für diese Beta gilt die im Paket enthaltene **ShoppingRoute Public Beta License 1.0**. Frühere separat unter einer anderen Lizenz veröffentlichte Versionen bleiben unter der jeweils damals gültigen Lizenz.
+ShoppingRoute wird ab dieser Version unter der **MIT-Lizenz** veröffentlicht. Frühere bereits veröffentlichte Versionen bleiben unter der jeweils damals gültigen Lizenz.
 
 ## Changelog
 
@@ -97,6 +97,6 @@ Für diese Beta gilt die im Paket enthaltene **ShoppingRoute Public Beta License
 
 ## Lizenz
 
-ShoppingRoute Public Beta License 1.0. Die vollständigen Bedingungen stehen in [LICENSE](LICENSE).
+MIT-Lizenz. Die vollständigen Bedingungen stehen in LICENSE.
 
-Copyright (c) 2026 RaviniZib. Alle Rechte vorbehalten.
+Copyright (c) 2026 Frank Zibull

@@ -40,7 +40,7 @@
     ],
     "licenseInformation": {
       "type": "free",
-      "license": "SEE LICENSE IN LICENSE"
+      "license": "MIT"
     },
     "platform": "Javascript/Node.js",
     "mode": "daemon",

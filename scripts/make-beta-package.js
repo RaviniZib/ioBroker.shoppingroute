@@ -46,8 +46,6 @@ for (const file of [
     'README_DE.md',
     'BETA_TESTING.md',
     'BETA_TESTING_DE.md',
-    'BETA_LICENSE.md',
-    'BETA_LICENSE_DE.md',
     'BETA_INSTALL_DE.md',
     'BETA_TESTER_AUFRUF_DE.md',
 ]) copyFile(file);
@@ -89,7 +87,7 @@ testerPackage.scripts = {};
 delete testerPackage.devDependencies;
 testerPackage.files = [
     'admin', 'build', 'io-package.json', 'LICENSE', 'README.md', 'README_DE.md',
-    'BETA_TESTING.md', 'BETA_TESTING_DE.md', 'BETA_LICENSE.md', 'BETA_LICENSE_DE.md',
+    'BETA_TESTING.md', 'BETA_TESTING_DE.md',
     'BETA_INSTALL_DE.md', 'BETA_TESTER_AUFRUF_DE.md',
 ];
 fs.writeFileSync(path.join(stage, 'package.json'), JSON.stringify(testerPackage, null, 2) + '\n');
