@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "shoppingroute",
-    "version": "0.2.0-beta.12",
+    "version": "0.2.0",
     "titleLang": {
       "en": "ShoppingRoute",
       "de": "ShoppingRoute",
@@ -60,6 +60,19 @@
     "icon": "shoppingroute.png",
     "tier": 3,
     "news": {
+      "0.2.0": {
+        "en": "First stable release of ShoppingRoute with complete Admin translations, improved walking-route help, protected npm publishing and verified Alexa2/alexa-remote2 compatibility.",
+        "de": "Erste stabile Veröffentlichung von ShoppingRoute mit vollständigen Admin-Übersetzungen, korrigiertem Laufwege-Hilfetext, geschützter npm-Veröffentlichung und geprüfter Alexa2/alexa-remote2-Kompatibilität.",
+        "ru": "Первый стабильный выпуск ShoppingRoute с полными переводами интерфейса администратора, улучшенной справкой по маршрутам, защищённой публикацией npm и проверенной совместимостью Alexa2/alexa-remote2.",
+        "pt": "Primeira versão estável do ShoppingRoute com traduções completas da interface de administração, ajuda aprimorada para percursos, publicação npm protegida e compatibilidade Alexa2/alexa-remote2 verificada.",
+        "nl": "Eerste stabiele release van ShoppingRoute met volledige Admin-vertalingen, verbeterde hulp voor looproutes, beveiligde npm-publicatie en gecontroleerde Alexa2/alexa-remote2-compatibiliteit.",
+        "fr": "Première version stable de ShoppingRoute avec traductions complètes de l’interface Admin, aide améliorée pour les parcours, publication npm sécurisée et compatibilité Alexa2/alexa-remote2 vérifiée.",
+        "it": "Prima versione stabile di ShoppingRoute con traduzioni complete dell'interfaccia Admin, guida migliorata per i percorsi, pubblicazione npm protetta e compatibilità Alexa2/alexa-remote2 verificata.",
+        "es": "Primera versión estable de ShoppingRoute con traducciones completas de la interfaz de administración, ayuda mejorada para los recorridos, publicación npm protegida y compatibilidad Alexa2/alexa-remote2 verificada.",
+        "pl": "Pierwsze stabilne wydanie ShoppingRoute z pełnymi tłumaczeniami panelu administracyjnego, ulepszoną pomocą dla tras, zabezpieczonym publikowaniem npm i zweryfikowaną zgodnością Alexa2/alexa-remote2.",
+        "uk": "Перший стабільний випуск ShoppingRoute з повними перекладами інтерфейсу Admin, покращеною довідкою для маршрутів, захищеною публікацією npm та перевіреною сумісністю Alexa2/alexa-remote2.",
+        "zh-cn": "ShoppingRoute 首个稳定版本，包含完整的 Admin 翻译、改进的行走路线帮助、安全的 npm 发布流程以及经过验证的 Alexa2/alexa-remote2 兼容性。"
+      },
       "0.1.0-beta.3": {
         "en": "First public beta npm package with safe value-only Alexa list sorting and fixed-slot ordering.",
         "de": "Erstes öffentliches npm-Betapaket mit sicherer Alexa-Listensortierung nur über value-Texte und feste Positions-IDs.",
@@ -694,7 +707,7 @@
       "_id": "info.feedbackReport",
       "type": "state",
       "common": {
-        "name": "Privacy-safe beta feedback report",
+        "name": "Privacy-safe diagnostic/feedback report",
         "type": "string",
         "role": "json",
         "read": true,

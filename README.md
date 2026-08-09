@@ -2,7 +2,7 @@
 
 ![ShoppingRoute](admin/shoppingroute.png)
 
-**Development status: 0.2.0-beta.12 – beta**
+**Current version: 0.2.0 – stable**
 
 ShoppingRoute sorts existing Alexa shopping-list entries by market, product group and each store's individual walking route. It **never creates, deletes or automatically completes Alexa list items**. It only redistributes visible texts across existing active Alexa IDs. Managed Alexa lists must be set to **Oldest to newest** in the Alexa app.
 
@@ -24,13 +24,20 @@ ShoppingRoute sorts existing Alexa shopping-list entries by market, product grou
 - configuration backup/restore
 - shareable market-route profiles
 - npm beta version check
-- privacy-safe beta feedback report
+- privacy-safe diagnostic/feedback report
 - Alexa2/alexa-remote2 write compatibility guard
 - Dry Run safety mode
 
 See `README_DE.md` for the detailed German documentation.
 
 ## Changelog
+
+### 0.2.0 (2026-08-09)
+
+- First stable release of ShoppingRoute.
+- Completed Admin translations for all supported ioBroker languages and fixed the walking-route market help text.
+- Added protected stable publishing through GitHub Actions, npm Trusted Publishing/OIDC and an obfuscated runtime build.
+- Verified `updateListItem` compatibility with Alexa2 3.28.3 and alexa-remote2 8.1.0 without local modifications to foreign modules.
 
 ### 0.2.0-beta.12 (2026-08-09)
 

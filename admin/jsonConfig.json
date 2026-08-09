@@ -710,17 +710,17 @@
       "zh-cn": "常规"
     },
     "ui.items.general.items.betawarning.text": {
-      "en": "BETA 0.2.0-beta.12. Start with Dry-Run enabled. ShoppingRoute never creates, deletes or completes Alexa list items; it only redistributes visible value texts across existing active IDs.",
-      "de": "BETA 0.2.0-beta.12. Zuerst mit Dry-Run testen. ShoppingRoute legt niemals Alexa-Listeneinträge an, löscht keine und hakt keine ab; es verteilt ausschließlich sichtbare value-Texte auf vorhandene aktive IDs.",
-      "ru": "BETA 0.2.0-beta.12. Сначала включите пробный режим. ShoppingRoute никогда не создаёт, не удаляет и не отмечает выполненными элементы списка Alexa; он только перераспределяет видимые тексты value между существующими активными ID.",
-      "pt": "BETA 0.2.0-beta.12. Comece com o modo de simulação ativado. O ShoppingRoute nunca cria, exclui ou marca como concluídos itens da lista Alexa; ele apenas redistribui os textos value visíveis entre IDs ativos existentes.",
-      "nl": "BETA 0.2.0-beta.12. Begin met de proefmodus ingeschakeld. ShoppingRoute maakt nooit Alexa-lijstitems aan, verwijdert of voltooit ze niet; het verdeelt alleen zichtbare value-teksten opnieuw over bestaande actieve ID's.",
-      "fr": "BETA 0.2.0-beta.12. Commencez avec le mode simulation activé. ShoppingRoute ne crée, ne supprime et ne valide jamais d’éléments de liste Alexa ; il redistribue uniquement les textes value visibles entre les ID actifs existants.",
-      "it": "BETA 0.2.0-beta.12. Inizia con la modalità simulazione attivata. ShoppingRoute non crea, elimina o completa mai elementi dell’elenco Alexa; ridistribuisce soltanto i testi value visibili tra gli ID attivi esistenti.",
-      "es": "BETA 0.2.0-beta.12. Empiece con el modo de prueba activado. ShoppingRoute nunca crea, elimina ni marca como completados elementos de la lista de Alexa; solo redistribuye los textos value visibles entre los ID activos existentes.",
-      "pl": "BETA 0.2.0-beta.12. Zacznij z włączonym trybem testowym. ShoppingRoute nigdy nie tworzy, nie usuwa ani nie oznacza jako wykonane pozycji listy Alexa; jedynie rozdziela widoczne teksty value między istniejące aktywne identyfikatory.",
-      "uk": "BETA 0.2.0-beta.12. Спочатку увімкніть тестовий режим. ShoppingRoute ніколи не створює, не видаляє й не позначає виконаними елементи списку Alexa; він лише перерозподіляє видимі тексти value між наявними активними ID.",
-      "zh-cn": "BETA 0.2.0-beta.12。请先启用试运行模式。ShoppingRoute 从不创建、删除或完成 Alexa 列表项目；它只会在现有活动 ID 之间重新分配可见的 value 文本。"
+      "en": "Safety notice: Start with Dry-Run enabled. ShoppingRoute never creates, deletes or completes Alexa list items; it only redistributes visible value texts across existing active IDs.",
+      "de": "Sicherheitshinweis: Zuerst mit Dry-Run testen. ShoppingRoute legt niemals Alexa-Listeneinträge an, löscht keine und hakt keine ab; es verteilt ausschließlich sichtbare value-Texte auf vorhandene aktive IDs.",
+      "ru": "Примечание по безопасности: сначала включите пробный режим. ShoppingRoute никогда не создаёт, не удаляет и не отмечает выполненными элементы списка Alexa; он только перераспределяет видимые тексты value между существующими активными ID.",
+      "pt": "Aviso de segurança: comece com o modo de simulação ativado. O ShoppingRoute nunca cria, exclui ou marca como concluídos itens da lista Alexa; ele apenas redistribui os textos value visíveis entre IDs ativos existentes.",
+      "nl": "Veiligheidsadvies: begin met de proefmodus ingeschakeld. ShoppingRoute maakt nooit Alexa-lijstitems aan, verwijdert of voltooit ze niet; het verdeelt alleen zichtbare value-teksten opnieuw over bestaande actieve ID's.",
+      "fr": "Consigne de sécurité : commencez avec le mode simulation activé. ShoppingRoute ne crée, ne supprime et ne valide jamais d’éléments de liste Alexa ; il redistribue uniquement les textes value visibles entre les ID actifs existants.",
+      "it": "Avviso di sicurezza: inizia con la modalità simulazione attivata. ShoppingRoute non crea, elimina o completa mai elementi dell’elenco Alexa; ridistribuisce soltanto i testi value visibili tra gli ID attivi esistenti.",
+      "es": "Aviso de seguridad: empiece con el modo de prueba activado. ShoppingRoute nunca crea, elimina ni marca como completados elementos de la lista de Alexa; solo redistribuye los textos value visibles entre los ID activos existentes.",
+      "pl": "Informacja dotycząca bezpieczeństwa: zacznij z włączonym trybem testowym. ShoppingRoute nigdy nie tworzy, nie usuwa ani nie oznacza jako wykonane pozycji listy Alexa; jedynie rozdziela widoczne teksty value między istniejące aktywne identyfikatory.",
+      "uk": "Примітка щодо безпеки: спочатку увімкніть тестовий режим. ShoppingRoute ніколи не створює, не видаляє й не позначає виконаними елементи списку Alexa; він лише перерозподіляє видимі тексти value між наявними активними ID.",
+      "zh-cn": "安全提示：请先启用试运行模式。ShoppingRoute 从不创建、删除或完成 Alexa 列表项目；它只会在现有活动 ID 之间重新分配可见的 value 文本。"
     },
     "ui.items.general.items.alexainstance.label": {
       "en": "Alexa2 instance",

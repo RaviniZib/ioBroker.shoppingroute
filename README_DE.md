@@ -2,7 +2,7 @@
 
 ![ShoppingRoute](admin/shoppingroute.png)
 
-**Entwicklungsstand: 0.2.0-beta.12 – Beta**
+**Aktuelle Version: 0.2.0 – Stable**
 
 ShoppingRoute sortiert vorhandene Alexa-Einkaufslisteneinträge nach Markt, Produktgruppe und dem individuellen Laufweg durch den jeweiligen Markt. Dabei werden **keine Einträge angelegt, gelöscht oder automatisch abgehakt**. Der Adapter verteilt ausschließlich die sichtbaren Texte auf bereits vorhandene aktive Alexa-IDs. Die Alexa-App muss für verwaltete Listen auf **„Älteste bis neueste“** gestellt sein.
 
@@ -51,7 +51,7 @@ Bei der Marktzuordnung gilt:
 - `info.configExport` – komplette Konfigurationssicherung
 - `info.marketProfiles` – teilbare Marktprofile
 - `info.versionInstalled`, `info.versionBeta`, `info.updateAvailable` – Versionsstatus
-- `info.feedbackReport` – bereinigter Beta-Fehlerbericht ohne Einkaufsinhalte
+- `info.feedbackReport` – bereinigter Diagnose-/Feedbackbericht ohne Einkaufsinhalte
 - `control.temporaryPriorityMarket` – temporärer Markt für den aktuellen Einkauf
 - `control.importConfigJson` – Konfiguration importieren
 - `control.marketProfileImport` – Marktprofil importieren
@@ -65,6 +65,13 @@ Solange ShoppingRoute noch nicht im offiziellen ioBroker-Repository geführt wir
 ShoppingRoute wird ab dieser Version unter der **MIT-Lizenz** veröffentlicht. Frühere bereits veröffentlichte Versionen bleiben unter der jeweils damals gültigen Lizenz.
 
 ## Changelog
+
+### 0.2.0 (2026-08-09)
+
+- Erste stabile Veröffentlichung von ShoppingRoute.
+- Vollständige Admin-Übersetzungen für alle unterstützten ioBroker-Sprachen abgeschlossen und den Hilfetext der Laufwege-Auswahl korrigiert.
+- Geschützten Stable-Publish über GitHub Actions, npm Trusted Publishing/OIDC und obfuskierten Runtime-Build eingerichtet.
+- Kompatibilität mit Alexa2 3.28.3 und alexa-remote2 8.1.0 für `updateListItem` ohne lokale Fremdmodul-Änderung verifiziert.
 
 ### 0.2.0-beta.12 (2026-08-09)
 
