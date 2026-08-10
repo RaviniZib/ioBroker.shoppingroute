@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "shoppingroute",
-    "version": "0.2.0",
+    "version": "0.3.0-beta.1",
     "titleLang": {
       "en": "ShoppingRoute",
       "de": "ShoppingRoute",
@@ -60,6 +60,19 @@
     "icon": "shoppingroute.png",
     "tier": 3,
     "news": {
+      "0.3.0-beta.1": {
+        "en": "Development preview for automatic market headings and minimum-items-per-market route consolidation. Explicit market requests always remain unchanged.",
+        "de": "Entwicklungsvorschau mit automatischen Marktüberschriften und marktübergreifender Zusammenlegung anhand einer Mindestartikelzahl. Explizite Marktangaben bleiben immer unverändert.",
+        "ru": "Предварительная версия с автоматическими заголовками магазинов и объединением маршрута по минимальному количеству товаров. Явно указанные магазины никогда не изменяются.",
+        "pt": "Prévia com cabeçalhos automáticos de mercados e consolidação de rota por quantidade mínima de itens. Mercados indicados explicitamente nunca são alterados.",
+        "nl": "Ontwikkelversie met automatische winkelkoppen en routeconsolidatie op basis van een minimumaantal artikelen. Expliciet opgegeven winkels blijven altijd ongewijzigd.",
+        "fr": "Aperçu de développement avec en-têtes automatiques de magasins et consolidation selon un nombre minimum d’articles. Les magasins explicitement indiqués ne sont jamais modifiés.",
+        "it": "Anteprima di sviluppo con intestazioni automatiche dei negozi e consolidamento in base a un numero minimo di articoli. I negozi indicati esplicitamente non vengono mai modificati.",
+        "es": "Vista previa con encabezados automáticos de tiendas y consolidación según un número mínimo de artículos. Las tiendas indicadas explícitamente nunca se modifican.",
+        "pl": "Wersja rozwojowa z automatycznymi nagłówkami sklepów i konsolidacją na podstawie minimalnej liczby artykułów. Jawnie wskazane sklepy nigdy nie są zmieniane.",
+        "uk": "Попередня версія з автоматичними заголовками магазинів і об’єднанням маршруту за мінімальною кількістю товарів. Явно вказані магазини ніколи не змінюються.",
+        "zh-cn": "开发预览版：自动商店标题，并按每个商店的最少商品数量合并路线。明确指定的商店永远不会被更改。"
+      },
       "0.2.0": {
         "en": "First stable release of ShoppingRoute with complete Admin translations, improved walking-route help, protected npm publishing and verified Alexa2/alexa-remote2 compatibility.",
         "de": "Erste stabile Veröffentlichung von ShoppingRoute mit vollständigen Admin-Übersetzungen, korrigiertem Laufwege-Hilfetext, geschützter npm-Veröffentlichung und geprüfter Alexa2/alexa-remote2-Kompatibilität.",
@@ -574,7 +587,9 @@
     "maxWriteRetries": 2,
     "retryBaseMs": 1500,
     "temporaryPriorityMarket": "",
-    "reviewItems": []
+    "reviewItems": [],
+    "marketHeaders": false,
+    "minItemsPerMarket": 1
   },
   "objects": [],
   "instanceObjects": [

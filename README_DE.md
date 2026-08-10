@@ -2,9 +2,9 @@
 
 ![ShoppingRoute](admin/shoppingroute.png)
 
-**Aktuelle Version: 0.2.0 – Stable**
+**Entwicklungsstand: 0.3.0-beta.1 – 0.2.0 bleibt die veröffentlichte Stable-Version**
 
-ShoppingRoute sortiert vorhandene Alexa-Einkaufslisteneinträge nach Markt, Produktgruppe und dem individuellen Laufweg durch den jeweiligen Markt. Dabei werden **keine Einträge angelegt, gelöscht oder automatisch abgehakt**. Der Adapter verteilt ausschließlich die sichtbaren Texte auf bereits vorhandene aktive Alexa-IDs. Die Alexa-App muss für verwaltete Listen auf **„Älteste bis neueste“** gestellt sein.
+ShoppingRoute sortiert Alexa-Einkaufslisteneinträge nach Markt, Produktgruppe und dem individuellen Laufweg durch den jeweiligen Markt. Normale Einkaufsartikel werden weiterhin ausschließlich über ihre vorhandenen Alexa-IDs und sichtbaren Texte sortiert. Optional kann ShoppingRoute über Alexa2 eigene Marktüberschriften wie `---- ALDI ----` anlegen. Sobald ein Markt nicht mehr benötigt wird, löscht ShoppingRoute ausschließlich diesen selbst verwalteten Überschriftseintrag wieder vollständig. Die Alexa-App muss für verwaltete Listen auf **„Älteste bis neueste“** gestellt sein.
 
 ## Bedienungsanleitung / User guide
 
@@ -16,6 +16,8 @@ ShoppingRoute sortiert vorhandene Alexa-Einkaufslisteneinträge nach Markt, Prod
 - mehrere Alexa-Einkaufslisten mit eigenem Prioritätsmarkt
 - globale, listenbezogene und temporäre Marktpriorität
 - Markt-Aliase und automatische Erkennung häufiger Marktvarianten
+- optionale, automatisch verwaltete Marktüberschriften wie `---- ALDI ----`
+- optionale marktübergreifende Zusammenlegung anhand einer Mindestanzahl von Artikeln pro zusätzlichem Markt; explizite Marktangaben bleiben unverändert
 - frei pflegbare Produktgruppen und marktbezogene Laufwege
 - Laufweg nach Tabellenreihenfolge; Reihenfolgen werden automatisch neu nummeriert
 - Artikelstamm mit Aliasen, Produktgruppe, bevorzugtem Markt und verfügbaren Märkten
@@ -47,6 +49,8 @@ Bei der Marktzuordnung gilt:
 6. erster erlaubter Markt aus „Verfügbare Märkte“
 7. Fallback-Markt
 
+Anschließend kann 0.3.0 flexible Artikel marktübergreifend zusammenlegen, wenn ein zusätzlicher Markt die konfigurierte Mindestanzahl nicht erreicht. Dafür werden ausschließlich im Artikelstamm hinterlegte alternative verfügbare Märkte verwendet. Explizite Angaben wie `Milch von LIDL` oder `Eier bei ALDI` werden niemals verschoben.
+
 ## Wichtige Datenpunkte
 
 - `info.previewText` – lesbare Sortiervorschau
@@ -70,6 +74,14 @@ Solange ShoppingRoute noch nicht im offiziellen ioBroker-Repository geführt wir
 ShoppingRoute wird ab dieser Version unter der **MIT-Lizenz** veröffentlicht. Frühere bereits veröffentlichte Versionen bleiben unter der jeweils damals gültigen Lizenz.
 
 ## Changelog
+
+### 0.3.0-beta.1 (2026-08-10)
+
+- Optionale Marktüberschriften im Format `---- MARKT ----` ergänzt.
+- Überschriften bleiben aktiv, solange mindestens ein echter Artikel des Marktes offen ist, und werden danach vollständig gelöscht statt unter erledigten Artikeln stehen zu bleiben.
+- Marktübergreifende Zusammenlegung anhand einer konfigurierbaren Mindestanzahl ergänzt.
+- Explizite Marktangaben bleiben von der Zusammenlegung ausnahmslos unberührt.
+- Header-Verwaltung nutzt ausschließlich Alexa2-Datenpunkte (`#New`, `#delete`) und erzeugt keine zweite Amazon-Sitzung; normale Einkaufsartikel werden niemals automatisch gelöscht oder erledigt.
 
 ### 0.2.0 (2026-08-09)
 

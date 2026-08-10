@@ -30,10 +30,17 @@ import {
     sortSlotsOldestFirst,
 } from './lib/sorter';
 import { findProduct, parseItem, suggestAliases } from './lib/parser';
+import {
+    isMarketHeader,
+    planMarketHeaderAction,
+    realActiveItems,
+    requiredMarkets,
+    type MarketHeaderAction,
+} from './lib/market-plan';
 import { buildMarketProfiles, ensureMarketRoutes, exportConfig, importMarketProfile, normalizeRoutesForAdmin, parseConfigImport } from './lib/config-tools';
 import { emptyUsageStatistics, normalizeUsageStatistics, recordAddedItem, type UsageStatistics } from './lib/statistics';
 
-const VERSION = '0.2.0';
+const VERSION = '0.3.0-beta.1';
 const DEFAULT_CATEGORIES = [
     'Obst/Gemüse',
     'Tee/Kaffee',
@@ -164,6 +171,8 @@ export class ShoppingRoute extends utils.Adapter {
     private get batchPauseMs(): number { return Math.max(0, Number(this.cfg.batchPauseMs) || 5000); }
     private get maxWriteRetries(): number { return Math.max(0, Math.min(5, Number(this.cfg.maxWriteRetries) || 2)); }
     private get retryBaseMs(): number { return Math.max(250, Number(this.cfg.retryBaseMs) || 1500); }
+    private get marketHeadersEnabled(): boolean { return this.cfg.marketHeaders === true; }
+    private get minimumItemsPerMarket(): number { return Math.max(1, Math.floor(Number(this.cfg.minItemsPerMarket) || 1)); }
 
     private async onReady(): Promise<void> {
         this.runtimeProducts = (Array.isArray(this.cfg.products) ? this.cfg.products : [])
@@ -224,9 +233,11 @@ export class ShoppingRoute extends utils.Adapter {
             connected = true;
             try {
                 const parsed = JSON.parse(listState.val) as AlexaListItem[];
-                const active = activeItems(Array.isArray(parsed) ? parsed : []);
+                const listItems = Array.isArray(parsed) ? parsed : [];
+                const active = activeItems(listItems);
+                const realActive = realActiveItems(listItems, this.markets);
                 this.knownActiveIds.set(list.name, new Set(active.map(item => String(item.id))));
-                this.activeCountByList.set(list.name, active.length);
+                this.activeCountByList.set(list.name, realActive.length);
             } catch {
                 this.knownActiveIds.set(list.name, new Set());
             }
@@ -460,7 +471,8 @@ export class ShoppingRoute extends utils.Adapter {
         try {
             const list = await this.readList(listName);
             const active = activeItems(list);
-            this.activeCountByList.set(listName, active.length);
+            const realActive = realActiveItems(list, this.markets);
+            this.activeCountByList.set(listName, realActive.length);
             await this.updateActiveItemCount();
             await this.recordNewItems(listName, list);
 
@@ -488,7 +500,66 @@ export class ShoppingRoute extends utils.Adapter {
             await this.setStateAsync('info.reviewQueue', JSON.stringify(this.runtimeReviews, null, 2), true);
             await this.updateAliasSuggestions(list);
 
-            const plan = createSortPlan(list, this.markets, this.routes, this.products, this.fallbackMarket, priority);
+            const required = requiredMarkets(
+                realActive,
+                this.markets,
+                this.products,
+                this.fallbackMarket,
+                priority,
+                this.minimumItemsPerMarket,
+            );
+            const headerAction = planMarketHeaderAction(
+                list,
+                required,
+                this.markets,
+                this.fallbackMarket,
+                this.marketHeadersEnabled,
+            );
+            if (headerAction) {
+                await this.setStateAsync(
+                    'info.lastPlan',
+                    JSON.stringify({ listName, requiredMarkets: required, headerAction }, null, 2),
+                    true,
+                );
+                if (this.dryRun) {
+                    await this.setStateAsync(
+                        'info.lastSort',
+                        `${new Date().toISOString()} – ${listName} Dry-Run: Marktüberschrift-Aktion ${headerAction.type} für ${headerAction.market} geplant`,
+                        true,
+                    );
+                    await this.setStateAsync('info.lastError', '', true);
+                    return;
+                }
+                if (!canWriteAlexa(this.writeCapability)) {
+                    const message = this.writeCapability === 'known-bug'
+                        ? 'Alexa-Schreibzugriffe blockiert: bekannte fehlerhafte alexa-remote2 version-Query erkannt.'
+                        : this.writeCapability === 'live-failed'
+                            ? 'Alexa-Schreibzugriffe blockiert: Kompatibilitätstest fehlgeschlagen.'
+                            : 'Alexa-Schreibzugriffe blockiert: Schreibkompatibilität noch nicht bestätigt; control.compatibilityTest ausführen.';
+                    await this.setStateAsync('info.lastError', message, true);
+                    this.log.error(message);
+                    return;
+                }
+                await this.applyMarketHeaderAction(listName, headerAction);
+                await this.setStateAsync(
+                    'info.lastSort',
+                    `${new Date().toISOString()} – ${listName}: Marktüberschrift ${headerAction.market} aktualisiert`,
+                    true,
+                );
+                await this.setStateAsync('info.lastError', '', true);
+                return;
+            }
+
+            const plan = createSortPlan(
+                list,
+                this.markets,
+                this.routes,
+                this.products,
+                this.fallbackMarket,
+                priority,
+                this.minimumItemsPerMarket,
+                this.marketHeadersEnabled,
+            );
             await this.setStateAsync('info.lastPlan', JSON.stringify({ listName, plan }, null, 2), true);
             await this.setStateAsync('info.preview', JSON.stringify({ listName, changes: plan.filter(entry => entry.changed), plan }, null, 2), true);
             await this.setStateAsync('info.previewText', makePreviewText(listName, plan), true);
@@ -549,7 +620,7 @@ export class ShoppingRoute extends utils.Adapter {
                 const valueStateId = `${this.alexaInstance}.Lists.${listName}.items.${entry.id}.value`;
                 const valueObject = await this.getForeignObjectAsync(valueStateId);
                 if (!valueObject) throw new Error(`Alexa-Wertedatenpunkt fehlt: ${valueStateId}`);
-                await this.writeAlexaValue(valueStateId, entry.to);
+                await this.writeAlexaState(valueStateId, entry.to);
                 written += 1;
                 if (this.apiSafeMode && written % this.batchSize === 0 && written < changes.length && this.batchPauseMs > 0) {
                     this.log.info(`API-Schonmodus: Batch-Pause nach ${written} Schreibzugriffen (${this.batchPauseMs} ms).`);
@@ -567,7 +638,16 @@ export class ShoppingRoute extends utils.Adapter {
                 this.pendingLists.add(listName);
                 return;
             }
-            const verifyPlan = createSortPlan(verifyList, this.markets, this.routes, this.products, this.fallbackMarket, priority);
+            const verifyPlan = createSortPlan(
+                verifyList,
+                this.markets,
+                this.routes,
+                this.products,
+                this.fallbackMarket,
+                priority,
+                this.minimumItemsPerMarket,
+                this.marketHeadersEnabled,
+            );
             const remaining = verifyPlan.filter(entry => entry.changed);
             if (remaining.length > 0) {
                 const message = `${listName}: Alexa hat ${remaining.length} geplante Textänderung(en) nicht bestätigt; kein automatischer Endlos-Retry.`;
@@ -590,7 +670,18 @@ export class ShoppingRoute extends utils.Adapter {
         }
     }
 
-    private async writeAlexaValue(stateId: string, value: string): Promise<void> {
+    private async applyMarketHeaderAction(listName: string, action: MarketHeaderAction): Promise<void> {
+        const stateId = action.type === 'create'
+            ? `${this.alexaInstance}.Lists.${listName}.#New`
+            : `${this.alexaInstance}.Lists.${listName}.items.${action.id}.#delete`;
+        const value = action.type === 'create' ? action.value : true;
+        const stateObject = await this.getForeignObjectAsync(stateId);
+        if (!stateObject) throw new Error(`Alexa-Datenpunkt für Marktüberschrift fehlt: ${stateId}`);
+        await this.writeAlexaState(stateId, value);
+        this.log.info(`${listName}: Marktüberschrift ${action.market} – ${action.type}.`);
+    }
+
+    private async writeAlexaState(stateId: string, value: string | boolean): Promise<void> {
         let lastError: unknown;
         for (let attempt = 0; attempt <= this.maxWriteRetries; attempt++) {
             try {
@@ -605,7 +696,7 @@ export class ShoppingRoute extends utils.Adapter {
                 lastError = error;
                 if (attempt >= this.maxWriteRetries) break;
                 const delay = this.retryBaseMs * Math.pow(2, attempt);
-                this.log.warn(`Alexa-value-Schreibzugriff fehlgeschlagen; Retry ${attempt + 1}/${this.maxWriteRetries} in ${delay} ms.`);
+                this.log.warn(`Alexa-Schreibzugriff fehlgeschlagen; Retry ${attempt + 1}/${this.maxWriteRetries} in ${delay} ms.`);
                 await this.wait(delay);
             }
         }
@@ -630,6 +721,7 @@ export class ShoppingRoute extends utils.Adapter {
         }
         const suggestions: Array<{ product: string; alias: string }> = [];
         for (const item of activeItems(list)) {
+            if (isMarketHeader(String(item.value), this.markets)) continue;
             const parsed = parseItem(String(item.value), this.markets, this.products, this.fallbackMarket, this.priorityMarket);
             const product = findProduct(parsed.productText, this.products);
             if (!product) continue;
@@ -649,6 +741,7 @@ export class ShoppingRoute extends utils.Adapter {
         }
         for (const item of active) {
             if (previous.has(String(item.id))) continue;
+            if (isMarketHeader(String(item.value), this.markets)) continue;
             const parsed = parseItem(String(item.value), this.markets, this.products, this.fallbackMarket, this.priorityMarketForList(listName));
             this.statistics = recordAddedItem(this.statistics, listName, parsed);
         }

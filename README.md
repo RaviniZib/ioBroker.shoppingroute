@@ -2,9 +2,9 @@
 
 ![ShoppingRoute](admin/shoppingroute.png)
 
-**Current version: 0.2.0 – stable**
+**Development version: 0.3.0-beta.1 – 0.2.0 remains the published stable release**
 
-ShoppingRoute sorts existing Alexa shopping-list entries by market, product group and each store's individual walking route. It **never creates, deletes or automatically completes Alexa list items**. It only redistributes visible texts across existing active Alexa IDs. Managed Alexa lists must be set to **Oldest to newest** in the Alexa app.
+ShoppingRoute sorts Alexa shopping-list entries by market, product group and each store's individual walking route. Normal shopping items are still sorted only by redistributing visible texts across existing Alexa IDs. Optionally, ShoppingRoute can use Alexa2 to create its own market headings such as `---- ALDI ----`. Once a market is no longer needed, ShoppingRoute completely deletes only that self-managed heading entry. Managed Alexa lists must be set to **Oldest to newest** in the Alexa app.
 
 ## User guide / Bedienungsanleitung
 
@@ -16,6 +16,8 @@ ShoppingRoute sorts existing Alexa shopping-list entries by market, product grou
 - multiple Alexa lists with per-list priority markets
 - global, per-list and temporary market priorities
 - market aliases and common market-name variants
+- optional automatically managed market headings such as `---- ALDI ----`
+- optional cross-market consolidation using a minimum-item threshold; explicit market requests are never moved
 - configurable product groups and store-specific routes
 - product catalogue with aliases, preferred and available markets
 - quantity parser for digits, number words, packs, half-kilo and `6x` forms
@@ -36,6 +38,14 @@ ShoppingRoute sorts existing Alexa shopping-list entries by market, product grou
 See `README_DE.md` for the detailed German documentation.
 
 ## Changelog
+
+### 0.3.0-beta.1 (2026-08-10)
+
+- Added optional `---- MARKET ----` headings.
+- A heading stays active until the last real item for that market is completed and is then deleted completely instead of remaining among completed items.
+- Added configurable minimum-items-per-market consolidation for flexible articles.
+- Explicit market phrases always remain assigned to the requested market.
+- Header management uses Alexa2 states (`#New`, `#delete`) and does not create a second Amazon session; normal shopping items are never automatically deleted or completed.
 
 ### 0.2.0 (2026-08-09)
 

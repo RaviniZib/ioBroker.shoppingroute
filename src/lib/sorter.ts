@@ -8,6 +8,7 @@ import type {
     SortableItem,
 } from './model';
 import { canonicalProductKey, findProduct, normalize, parseItem } from './parser';
+import { formatMarketHeader, isMarketHeader, optimizeMarketAssignments } from './market-plan';
 
 export function toTimestamp(value: number | string | undefined): number {
     if (typeof value === 'number' && Number.isFinite(value)) return value;
@@ -69,10 +70,10 @@ export function buildDesiredItems(
     products: ProductConfig[],
     fallbackMarket: string,
     priorityMarket = '',
+    minimumItemsPerMarket = 1,
 ): SortableItem[] {
-    return items
-        .map(source => {
-            const parsed = parseItem(String(source.value), markets, products, fallbackMarket, priorityMarket);
+    return optimizeMarketAssignments(items, markets, products, fallbackMarket, priorityMarket, minimumItemsPerMarket)
+        .map(({ source, parsed }) => {
             return {
                 source,
                 parsed,
@@ -96,24 +97,75 @@ export function createSortPlan(
     products: ProductConfig[],
     fallbackMarket: string,
     priorityMarket = '',
+    minimumItemsPerMarket = 1,
+    marketHeaders = false,
 ): SortPlanEntry[] {
     const active = activeItems(items);
+    const real = active.filter(item => !isMarketHeader(String(item.value), markets));
     const slots = sortSlotsOldestFirst(active);
-    const desired = buildDesiredItems(active, markets, routes, products, fallbackMarket, priorityMarket);
+    const desired = buildDesiredItems(
+        real,
+        markets,
+        routes,
+        products,
+        fallbackMarket,
+        priorityMarket,
+        minimumItemsPerMarket,
+    );
+
+    const targets: Array<{ text: string; market: string; category: string; product: string }> = [];
+    let lastMarket = '';
+    for (const target of desired) {
+        const market = target.parsed.market;
+        if (
+            marketHeaders &&
+            normalize(market) !== normalize(fallbackMarket) &&
+            normalize(market) !== normalize(lastMarket)
+        ) {
+            const header = formatMarketHeader(market);
+            targets.push({ text: header, market, category: '', product: header });
+        }
+        targets.push({
+            text: target.parsed.originalText,
+            market,
+            category: target.parsed.category,
+            product: target.parsed.productName,
+        });
+        lastMarket = market;
+    }
+
+    // Header creation/completion is reconciled before sorting. If the slot count is not yet
+    // synchronized, leave all texts untouched rather than risk losing or overwriting an item.
+    if (targets.length !== slots.length) {
+        return slots.map((slot, index) => {
+            const from = String(slot.value).trim();
+            return {
+                position: index + 1,
+                id: String(slot.id),
+                createdDateTime: toTimestamp(slot.createdDateTime),
+                from,
+                to: from,
+                market: fallbackMarket,
+                category: '',
+                product: from,
+                changed: false,
+            };
+        });
+    }
 
     return slots.map((slot, index) => {
-        const target = desired[index];
+        const target = targets[index];
         const from = String(slot.value).trim();
-        const to = target?.parsed.originalText || from;
+        const to = target?.text || from;
         return {
             position: index + 1,
             id: String(slot.id),
             createdDateTime: toTimestamp(slot.createdDateTime),
             from,
             to,
-            market: target?.parsed.market || fallbackMarket,
-            category: target?.parsed.category || 'Sonstiges',
-            product: target?.parsed.productName || to,
+            market: target?.market || fallbackMarket,
+            category: target?.category || '',
+            product: target?.product || to,
             changed: from !== to,
         };
     });
@@ -139,6 +191,7 @@ export function collectUnknownItems(
     const result: UnknownItem[] = [];
 
     for (const item of activeItems(items)) {
+        if (isMarketHeader(String(item.value), markets)) continue;
         const parsed = parseItem(String(item.value), markets, products, fallbackMarket, priorityMarket);
         if (parsed.knownProduct) continue;
         const key = canonicalProductKey(parsed.productName) || normalize(parsed.productName);

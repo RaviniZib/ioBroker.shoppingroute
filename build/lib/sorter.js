@@ -12,6 +12,7 @@ exports.mergeReviewQueue = mergeReviewQueue;
 exports.applyReviewActions = applyReviewActions;
 exports.makePreviewText = makePreviewText;
 const parser_1 = require("./parser");
+const market_plan_1 = require("./market-plan");
 function toTimestamp(value) {
     if (typeof value === 'number' && Number.isFinite(value))
         return value;
@@ -59,10 +60,9 @@ function sortSlotsOldestFirst(items) {
         return String(a.id).localeCompare(String(b.id));
     });
 }
-function buildDesiredItems(items, markets, routes, products, fallbackMarket, priorityMarket = '') {
-    return items
-        .map(source => {
-        const parsed = (0, parser_1.parseItem)(String(source.value), markets, products, fallbackMarket, priorityMarket);
+function buildDesiredItems(items, markets, routes, products, fallbackMarket, priorityMarket = '', minimumItemsPerMarket = 1) {
+    return (0, market_plan_1.optimizeMarketAssignments)(items, markets, products, fallbackMarket, priorityMarket, minimumItemsPerMarket)
+        .map(({ source, parsed }) => {
         return {
             source,
             parsed,
@@ -81,23 +81,60 @@ function buildDesiredItems(items, markets, routes, products, fallbackMarket, pri
         return a.parsed.productName.localeCompare(b.parsed.productName, 'de', { sensitivity: 'base' });
     });
 }
-function createSortPlan(items, markets, routes, products, fallbackMarket, priorityMarket = '') {
+function createSortPlan(items, markets, routes, products, fallbackMarket, priorityMarket = '', minimumItemsPerMarket = 1, marketHeaders = false) {
     const active = activeItems(items);
+    const real = active.filter(item => !(0, market_plan_1.isMarketHeader)(String(item.value), markets));
     const slots = sortSlotsOldestFirst(active);
-    const desired = buildDesiredItems(active, markets, routes, products, fallbackMarket, priorityMarket);
+    const desired = buildDesiredItems(real, markets, routes, products, fallbackMarket, priorityMarket, minimumItemsPerMarket);
+    const targets = [];
+    let lastMarket = '';
+    for (const target of desired) {
+        const market = target.parsed.market;
+        if (marketHeaders &&
+            (0, parser_1.normalize)(market) !== (0, parser_1.normalize)(fallbackMarket) &&
+            (0, parser_1.normalize)(market) !== (0, parser_1.normalize)(lastMarket)) {
+            const header = (0, market_plan_1.formatMarketHeader)(market);
+            targets.push({ text: header, market, category: '', product: header });
+        }
+        targets.push({
+            text: target.parsed.originalText,
+            market,
+            category: target.parsed.category,
+            product: target.parsed.productName,
+        });
+        lastMarket = market;
+    }
+    // Header creation/completion is reconciled before sorting. If the slot count is not yet
+    // synchronized, leave all texts untouched rather than risk losing or overwriting an item.
+    if (targets.length !== slots.length) {
+        return slots.map((slot, index) => {
+            const from = String(slot.value).trim();
+            return {
+                position: index + 1,
+                id: String(slot.id),
+                createdDateTime: toTimestamp(slot.createdDateTime),
+                from,
+                to: from,
+                market: fallbackMarket,
+                category: '',
+                product: from,
+                changed: false,
+            };
+        });
+    }
     return slots.map((slot, index) => {
-        const target = desired[index];
+        const target = targets[index];
         const from = String(slot.value).trim();
-        const to = target?.parsed.originalText || from;
+        const to = target?.text || from;
         return {
             position: index + 1,
             id: String(slot.id),
             createdDateTime: toTimestamp(slot.createdDateTime),
             from,
             to,
-            market: target?.parsed.market || fallbackMarket,
-            category: target?.parsed.category || 'Sonstiges',
-            product: target?.parsed.productName || to,
+            market: target?.market || fallbackMarket,
+            category: target?.category || '',
+            product: target?.product || to,
             changed: from !== to,
         };
     });
@@ -106,6 +143,8 @@ function collectUnknownItems(items, markets, products, fallbackMarket, priorityM
     const seen = new Set();
     const result = [];
     for (const item of activeItems(items)) {
+        if ((0, market_plan_1.isMarketHeader)(String(item.value), markets))
+            continue;
         const parsed = (0, parser_1.parseItem)(String(item.value), markets, products, fallbackMarket, priorityMarket);
         if (parsed.knownProduct)
             continue;

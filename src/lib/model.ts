@@ -71,6 +71,8 @@ export interface AdapterConfigShape {
     batchPauseMs?: number;
     maxWriteRetries?: number;
     retryBaseMs?: number;
+    marketHeaders?: boolean;
+    minItemsPerMarket?: number;
     fallbackMarket?: string;
     priorityMarket?: string;
     temporaryPriorityMarket?: string;
