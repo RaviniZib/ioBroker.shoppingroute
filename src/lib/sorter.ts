@@ -260,11 +260,11 @@ export function mergeReviewQueue(
     for (const entry of unknown) {
         const previous = byKey.get(entry.key);
         if (previous?.action === 'ignore') {
-            previous.lastSeen = now;
             byKey.set(entry.key, previous);
             continue;
         }
-        byKey.set(entry.key, {
+
+        const next: ReviewItemConfig = {
             key: entry.key,
             text: entry.text,
             product: previous?.product || entry.product,
@@ -276,7 +276,20 @@ export function mergeReviewQueue(
             action: previous?.action || 'pending',
             firstSeen: previous?.firstSeen || now,
             lastSeen: now,
-        });
+        };
+
+        const unchanged = Boolean(previous) &&
+            previous!.text === next.text &&
+            previous!.product === next.product &&
+            previous!.guessedCategory === next.guessedCategory &&
+            previous!.market === next.market &&
+            previous!.category === next.category &&
+            previous!.defaultMarket === next.defaultMarket &&
+            previous!.aliases === next.aliases &&
+            previous!.action === next.action &&
+            previous!.firstSeen === next.firstSeen;
+
+        byKey.set(entry.key, unchanged ? previous! : next);
     }
     return [...byKey.values()].sort((a, b) => a.product.localeCompare(b.product, 'de', { sensitivity: 'base' }));
 }

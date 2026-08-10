@@ -125,3 +125,46 @@ test('route row order determines product-group order', () => {
     ];
     assert.deepEqual(createSortPlan(list, markets, movedRoutes, products, 'Ohne Markt').map(x => x.to), ['Eier von Aldi','Bananen von Aldi']);
 });
+
+
+test('review queue is stable for repeated identical observations', () => {
+    const unknown = [{
+        key: 'toilettenpapier',
+        text: 'Toilettenpapier',
+        product: 'Toilettenpapier',
+        market: 'LIDL',
+        guessedCategory: 'Haushalt/Hygiene',
+    }];
+
+    const first = mergeReviewQueue([], unknown, '2026-08-10T18:00:00.000Z');
+    const second = mergeReviewQueue(first, unknown, '2026-08-10T18:05:00.000Z');
+
+    assert.deepEqual(second, first);
+    assert.equal(second[0].lastSeen, '2026-08-10T18:00:00.000Z');
+
+    const ignored = [{ ...first[0], action: 'ignore' }];
+    const ignoredAgain = mergeReviewQueue(ignored, unknown, '2026-08-10T18:10:00.000Z');
+    assert.deepEqual(ignoredAgain, ignored);
+});
+
+test('review queue updates lastSeen when the observed item really changes', () => {
+    const unknown = [{
+        key: 'toilettenpapier',
+        text: 'Toilettenpapier',
+        product: 'Toilettenpapier',
+        market: 'LIDL',
+        guessedCategory: 'Haushalt/Hygiene',
+    }];
+
+    const first = mergeReviewQueue([], unknown, '2026-08-10T18:00:00.000Z');
+    const changed = [{
+        ...unknown[0],
+        text: 'Toilettenpapier bei Aldi',
+        market: 'ALDI',
+    }];
+    const second = mergeReviewQueue(first, changed, '2026-08-10T18:05:00.000Z');
+
+    assert.equal(second[0].text, 'Toilettenpapier bei Aldi');
+    assert.equal(second[0].market, 'ALDI');
+    assert.equal(second[0].lastSeen, '2026-08-10T18:05:00.000Z');
+});
