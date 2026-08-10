@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "shoppingroute",
-    "version": "0.3.0",
+    "version": "0.3.1",
     "titleLang": {
       "en": "ShoppingRoute",
       "de": "ShoppingRoute",
@@ -98,6 +98,19 @@
         "pl": "Pierwszy publiczny pakiet beta npm z bezpiecznym sortowaniem listy Alexa wyłącznie przez wartości i stałe identyfikatory pozycji.",
         "uk": "Перший загальнодоступний бета-пакет npm із безпечним сортуванням списку Alexa лише через значення та фіксовані ID позицій.",
         "zh-cn": "首个公开测试版 npm 包，仅通过 value 文本安全排序 Alexa 列表，并使用固定位置 ID。"
+      },
+      "0.3.1": {
+        "en": "Fixed a restart loop in review learning mode.",
+        "de": "Neustartschleife im Lernmodus Prüfliste behoben.",
+        "ru": "Исправлен цикл перезапуска в режиме проверки обучения.",
+        "pt": "Corrigido um ciclo de reinicialização no modo de revisão.",
+        "nl": "Herstartlus in de controle-leermodus opgelost.",
+        "fr": "Correction d'une boucle de redémarrage en mode de vérification.",
+        "it": "Risolto un ciclo di riavvio nella modalità di revisione.",
+        "es": "Corregido un bucle de reinicio en el modo de revisión.",
+        "pl": "Naprawiono pętlę restartów w trybie weryfikacji.",
+        "uk": "Виправлено цикл перезапуску в режимі перевірки.",
+        "zh-cn": "修复审核学习模式中的重启循环。"
       }
     },
     "extIcon": "https://raw.githubusercontent.com/RaviniZib/ioBroker.shoppingroute/main/admin/shoppingroute.png",

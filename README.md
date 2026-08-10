@@ -2,7 +2,7 @@
 
 ![ShoppingRoute](admin/shoppingroute.png)
 
-**Current version: 0.3.0**
+**Current version: 0.3.1**
 
 ShoppingRoute sorts Alexa shopping-list entries by market, product group and each store's individual walking route. Normal shopping items are still sorted only by redistributing visible texts across existing Alexa IDs. Optionally, ShoppingRoute can use Alexa2 to create its own market headings such as `---- ALDI ----`. Once a market is no longer needed, ShoppingRoute completely deletes only that self-managed heading entry. Managed Alexa lists must be set to **Oldest to newest** in the Alexa app.
 

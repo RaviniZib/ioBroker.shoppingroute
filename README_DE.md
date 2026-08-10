@@ -2,7 +2,7 @@
 
 ![ShoppingRoute](admin/shoppingroute.png)
 
-**Aktuelle Version: 0.3.0**
+**Aktuelle Version: 0.3.1**
 
 ShoppingRoute sortiert Alexa-Einkaufslisteneinträge nach Markt, Produktgruppe und dem individuellen Laufweg durch den jeweiligen Markt. Normale Einkaufsartikel werden weiterhin ausschließlich über ihre vorhandenen Alexa-IDs und sichtbaren Texte sortiert. Optional kann ShoppingRoute über Alexa2 eigene Marktüberschriften wie `---- ALDI ----` anlegen. Sobald ein Markt nicht mehr benötigt wird, löscht ShoppingRoute ausschließlich diesen selbst verwalteten Überschriftseintrag wieder vollständig. Die Alexa-App muss für verwaltete Listen auf **„Älteste bis neueste“** gestellt sein.
 
