@@ -113,13 +113,18 @@ test('walking routes use a dedicated editor with routes as the only persisted so
   assert.equal(route.routeEditor.type,'custom');
   assert.equal(route.routeEditor.url,'custom/routeEditor.js');
   assert.equal(route.routeEditor.name,'ShoppingRouteAdminSet/Components/RouteEditor');
+  assert.equal(route.routeEditor.bundlerType,'module');
   assert.equal(route.routes.type,'table');
   assert.equal(route.routes.hidden,'true');
   assert.equal(route.routes.onChange,undefined);
   assert.ok(fs.existsSync(path.join(root,'src-admin','route-editor.js')));
+  assert.ok(fs.existsSync(path.join(root,'src-admin','route-editor-components.mjs')));
+  assert.ok(fs.existsSync(path.join(root,'vite.config.mjs')));
   assert.ok(fs.existsSync(path.join(root,'admin','custom','routeEditor.js')));
   const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
-  assert.match(pkg.scripts['build:admin'],/browserify src-admin\/route-editor\.js/);
+  assert.equal(pkg.scripts['build:admin'],'vite build');
+  assert.equal(pkg.devDependencies.browserify,undefined);
+  assert.equal(pkg.devDependencies['@module-federation/vite'],'1.4.1');
   assert.match(pkg.scripts.build,/build:admin/);
 });
 

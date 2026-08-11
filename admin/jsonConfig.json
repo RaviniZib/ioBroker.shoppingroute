@@ -433,6 +433,7 @@
           "type": "custom",
           "url": "custom/routeEditor.js",
           "name": "ShoppingRouteAdminSet/Components/RouteEditor",
+          "bundlerType": "module",
           "i18n": false,
           "xs": 12,
           "sm": 12,

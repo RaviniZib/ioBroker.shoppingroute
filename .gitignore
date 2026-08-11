@@ -8,3 +8,5 @@ npm-debug.log*
 .dev-server/
 beta-package/
 .beta-package-staging/
+.__mf__temp/
+admin/custom/.vite/
