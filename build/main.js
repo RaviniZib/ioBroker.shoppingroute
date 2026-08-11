@@ -191,7 +191,6 @@ class ShoppingRoute extends utils.Adapter {
             this.log.info(`Aus der Prüfliste übernommen: ${reviewResult.accepted.map(item => `„${item.name}“`).join(', ')}.`);
         }
         await this.ensureProductGroupsConfig();
-        this.ensureRoutesForMarketsAndGroups();
         await this.updateTemporaryMarketStateOptions();
         await this.persistRuntimeConfig();
         await this.setStateAsync('info.connection', false, true);
@@ -341,6 +340,18 @@ class ShoppingRoute extends utils.Adapter {
             const options = suppliedGroups
                 .map((group) => ({ value: group.name, label: group.name }))
                 .sort((a, b) => a.label.localeCompare(b.label, 'de', { sensitivity: 'base' }));
+            this.sendTo(obj.from, obj.command, options, obj.callback);
+            return;
+        }
+        if (obj.command === 'getRouteProductGroups') {
+            const suppliedGroups = Array.isArray(obj.message?.productGroups)
+                ? obj.message.productGroups
+                    .map((group) => ({ name: String(group?.name || '').trim() }))
+                    .filter((group) => Boolean(group.name))
+                : this.productGroups;
+            const routeRows = Array.isArray(obj.message?.routeRows) ? obj.message.routeRows : [];
+            const names = (0, config_tools_1.availableProductGroupsForRoute)(suppliedGroups, routeRows, String(obj.message?.value || ''));
+            const options = names.map(name => ({ value: name, label: name }));
             this.sendTo(obj.from, obj.command, options, obj.callback);
             return;
         }
@@ -1430,14 +1441,6 @@ class ShoppingRoute extends utils.Adapter {
         catch (error) {
             this.log.warn(`Temporäre Markt-Auswahlliste konnte nicht aktualisiert werden: ${error instanceof Error ? error.message : String(error)}`);
         }
-    }
-    ensureRoutesForMarketsAndGroups() {
-        const synchronized = (0, config_tools_1.ensureMarketRoutes)(this.markets, this.productGroups, this.runtimeRoutes);
-        if (synchronized.added <= 0)
-            return;
-        this.runtimeRoutes = synchronized.routes;
-        this.routesDirty = true;
-        this.log.info(`${synchronized.added} fehlende Laufweg-Zuordnung(en) für neue Märkte/Produktgruppen automatisch ergänzt.`);
     }
     async ensureProductGroupsConfig() {
         if (Array.isArray(this.cfg.productGroups) && this.cfg.productGroups.length > 0)

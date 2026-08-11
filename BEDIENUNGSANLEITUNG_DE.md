@@ -91,7 +91,7 @@ Im Reiter **Produktgruppen** definierst du die Bereiche, nach denen innerhalb ei
 - Nonfood
 - Sonstiges
 
-Neue Produktgruppen werden für aktive Märkte automatisch in die Laufwege aufgenommen und können anschließend passend einsortiert werden.
+`Produktgruppen` ist die zentrale Hauptliste aller bekannten Gruppen. Die Laufwege der einzelnen Märkte enthalten jeweils nur die dort tatsächlich verwendeten Gruppen. Über `+` kann eine im gewählten Markt noch fehlende Gruppe aus der Hauptliste ergänzt werden. Das Hinzufügen oder Löschen einer Laufwegzeile verändert weder die Hauptliste noch die Laufwege anderer Märkte.
 
 ## 7. Laufwege
 

@@ -230,6 +230,16 @@
         "order": 130
       },
       {
+        "market": "ALDI",
+        "category": "Schokolade/Naschen",
+        "order": 140
+      },
+      {
+        "market": "ALDI",
+        "category": "Tee/Kaffee",
+        "order": 150
+      },
+      {
         "market": "PENNY",
         "category": "Obst/Gemüse",
         "order": 10
@@ -295,6 +305,16 @@
         "order": 130
       },
       {
+        "market": "PENNY",
+        "category": "Schokolade/Naschen",
+        "order": 140
+      },
+      {
+        "market": "PENNY",
+        "category": "Tee/Kaffee",
+        "order": 150
+      },
+      {
         "market": "LIDL",
         "category": "Obst/Gemüse",
         "order": 10
@@ -360,6 +380,16 @@
         "order": 130
       },
       {
+        "market": "LIDL",
+        "category": "Schokolade/Naschen",
+        "order": 140
+      },
+      {
+        "market": "LIDL",
+        "category": "Tee/Kaffee",
+        "order": 150
+      },
+      {
         "market": "REWE",
         "category": "Obst/Gemüse",
         "order": 10
@@ -423,6 +453,16 @@
         "market": "REWE",
         "category": "Sonstiges",
         "order": 130
+      },
+      {
+        "market": "REWE",
+        "category": "Schokolade/Naschen",
+        "order": 140
+      },
+      {
+        "market": "REWE",
+        "category": "Tee/Kaffee",
+        "order": 150
       },
       {
         "market": "Ohne Markt",

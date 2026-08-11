@@ -1,7 +1,15 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { exportConfig, parseConfigImport, buildMarketProfiles, importMarketProfile, reindexRoutes, ensureMarketRoutes } = require('../build/lib/config-tools');
+const {
+  exportConfig,
+  parseConfigImport,
+  buildMarketProfiles,
+  importMarketProfile,
+  reindexRoutes,
+  normalizeRoutesForAdmin,
+  availableProductGroupsForRoute,
+} = require('../build/lib/config-tools');
 
 test('configuration can be exported and imported with format marker', () => {
   const exported = exportConfig({ priorityMarket:'LIDL', products:[{name:'Milch',category:'Milchprodukte'}] }, '0.2.0-beta.7', new Date('2026-08-08T00:00:00Z'));
@@ -27,27 +35,23 @@ test('walking routes reindex by table row order', () => {
 });
 
 
-test('new active markets automatically receive walking-route rows for all product groups', () => {
-  const markets=[
-    {name:'ALDI',order:10,enabled:true},
-    {name:'EDEKA',order:20,enabled:true},
-  ];
-  const groups=[{name:'Obst/Gemüse'},{name:'Milchprodukte'}];
+test('normal startup normalization preserves intentional market-specific omissions', () => {
+  const productGroups=[{name:'Milchprodukte'},{name:'Obst/Gemüse'},{name:'Werkzeug'}];
+  const originalGroups=structuredClone(productGroups);
   const routes=[
-    {market:'ALDI',category:'Obst/Gemüse',order:10},
-    {market:'ALDI',category:'Milchprodukte',order:20},
+    {market:'ALDI',category:'Milchprodukte',order:10},
+    {market:'ALDI',category:'Obst/Gemüse',order:20},
+    {market:'BAUMARKT',category:'Werkzeug',order:10},
   ];
-  const synced=ensureMarketRoutes(markets,groups,routes);
-  assert.equal(synced.added,2);
-  assert.deepEqual(
-    synced.routes.filter(r=>r.market==='EDEKA').map(r=>r.category),
-    ['Obst/Gemüse','Milchprodukte'],
-  );
-  assert.deepEqual(synced.routes.filter(r=>r.market==='EDEKA').map(r=>r.order),[10,20]);
+
+  const normalized=normalizeRoutesForAdmin(routes);
+
+  assert.equal(normalized.some(r=>r.market==='BAUMARKT'&&r.category==='Milchprodukte'),false);
+  assert.equal(normalized.some(r=>r.market==='ALDI'&&r.category==='Milchprodukte'),true);
+  assert.deepEqual(productGroups,originalGroups);
 });
 
 test('walking routes are grouped alphabetically by market while preserving each market route order', () => {
-  const { normalizeRoutesForAdmin } = require('../build/lib/config-tools');
   const routes = [
     { market: 'REWE', category: 'Getränke', order: 10 },
     { market: 'ALDI', category: 'Milchprodukte', order: 10 },
@@ -62,4 +66,39 @@ test('walking routes are grouped alphabetically by market while preserving each 
     'REWE:Brot/Gebäck',
   ]);
   assert.deepEqual(result.map(r => r.order), [10,20,10,20]);
+});
+
+test('route product-group choices contain only central groups missing from this market', () => {
+  const groups=[
+    {name:'Milchprodukte'},
+    {name:'Obst/Gemüse'},
+    {name:'Werkzeug'},
+    {name:'werkzeug'},
+  ];
+  const routeRows=[{category:'Werkzeug'},{category:'Obst/Gemüse'}];
+
+  assert.deepEqual(availableProductGroupsForRoute(groups,routeRows),['Milchprodukte']);
+  assert.deepEqual(
+    availableProductGroupsForRoute(groups,routeRows,'Werkzeug'),
+    ['Milchprodukte','Werkzeug'],
+  );
+  assert.deepEqual(
+    availableProductGroupsForRoute(groups,[{category:'Historische Gruppe'}],'Historische Gruppe'),
+    ['Historische Gruppe','Milchprodukte','Obst/Gemüse','Werkzeug'],
+  );
+});
+
+test('route normalization never removes existing routes during an update', () => {
+  const routes=[
+    {market:'REWE',category:'Getränke',order:90},
+    {market:'BAUMARKT',category:'Werkzeug',order:40},
+    {market:'ALDI',category:'Milchprodukte',order:70},
+    {market:'BAUMARKT',category:'Farben',order:10},
+  ];
+
+  const normalized=normalizeRoutesForAdmin(routes);
+  const routeKeys=value=>value.map(r=>`${r.market}\u0000${r.category}`).sort();
+
+  assert.equal(normalized.length,routes.length);
+  assert.deepEqual(routeKeys(normalized),routeKeys(routes));
 });

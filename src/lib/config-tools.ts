@@ -85,42 +85,34 @@ export function groupRoutesByMarket(routes: RouteConfig[]): RouteConfig[] {
         .map(entry => entry.route);
 }
 
-export function ensureMarketRoutes(
-    markets: MarketConfig[],
+export function availableProductGroupsForRoute(
     productGroups: ProductGroupConfig[],
-    routes: RouteConfig[],
-): { routes: RouteConfig[]; added: number } {
-    const result = routes.filter(Boolean).map(route => ({ ...route }));
-    const existing = new Set(
-        result.map(route => `${String(route.market || '').trim().toLocaleLowerCase('de')}\u0000${String(route.category || '').trim().toLocaleLowerCase('de')}`),
+    routeRows: Array<Pick<RouteConfig, 'category'>>,
+    currentValue = '',
+): string[] {
+    const current = String(currentValue || '').trim();
+    const currentKey = current.toLocaleLowerCase('de');
+    const used = new Set(
+        routeRows
+            .map(route => String(route?.category || '').trim().toLocaleLowerCase('de'))
+            .filter(Boolean),
     );
-    let added = 0;
+    const result: string[] = [];
+    const seen = new Set<string>();
 
-    const activeMarkets = markets
-        .filter(market => market && market.name && market.enabled !== false)
-        .slice()
-        .sort((a, b) => String(a.name).localeCompare(String(b.name), 'de', { sensitivity: 'base' }));
-    const groups = productGroups
-        .filter(group => group && group.name)
-        .map(group => String(group.name).trim())
-        .filter(Boolean);
-
-    for (const market of activeMarkets) {
-        const marketName = String(market.name).trim();
-        const marketKey = marketName.toLocaleLowerCase('de');
-        for (const category of groups) {
-            const key = `${marketKey}\u0000${category.toLocaleLowerCase('de')}`;
-            if (existing.has(key)) continue;
-            // Missing groups are appended to this market's existing walking route.
-            // groupRoutesByMarket() moves them into the correct market block without
-            // changing the relative route order inside that market.
-            result.push({ market: marketName, category, order: 0 });
-            existing.add(key);
-            added += 1;
-        }
+    for (const group of productGroups) {
+        const name = String(group?.name || '').trim();
+        const key = name.toLocaleLowerCase('de');
+        if (!name || seen.has(key) || (used.has(key) && key !== currentKey)) continue;
+        seen.add(key);
+        result.push(name);
     }
 
-    return { routes: reindexRoutes(groupRoutesByMarket(result)), added };
+    // Keep a legacy route category visible even if it is no longer in the central list.
+    // It remains editable/removable, but is never offered for a newly added route row.
+    if (current && !seen.has(currentKey)) result.push(current);
+
+    return result.sort((a, b) => a.localeCompare(b, 'de', { sensitivity: 'base' }));
 }
 
 export function reindexRoutes(routes: RouteConfig[]): RouteConfig[] {

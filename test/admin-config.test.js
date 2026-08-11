@@ -67,7 +67,7 @@ test('known instances, lists, markets and product groups use dropdown controls',
   assert.equal(route.routeMarketFilter.type,'selectSendTo');
   assert.equal(route.routeMarketFilter.command,'getActiveMarkets');
   assert.equal(route.routeMarketFilter.manual,false);
-  assert.equal(route._routeEditorRows.items.find(x=>x.attr==='category').command,'getProductGroups');
+  assert.equal(route._routeEditorRows.items.find(x=>x.attr==='category').command,'getRouteProductGroups');
 });
 
 test('product list is sortable by product, group and market',()=>{
@@ -80,6 +80,18 @@ test('multiple lists, review queue, API protection and diagnostics states exist'
   for(const id of ['info.reviewQueue','info.previewText','info.statistics','info.configExport','info.marketProfiles','info.versionInstalled','info.versionBeta','info.feedbackReport','control.temporaryPriorityMarket','control.importConfigJson','control.marketProfileImport']) assert.ok(ids.has(id),id);
   assert.ok(Array.isArray(ioPackage.native.lists));
   assert.equal(ioPackage.native.apiSafeMode,true);
+});
+
+test('new installations receive complete initial routes from io-package defaults',()=>{
+  const groups=ioPackage.native.productGroups.map(group=>group.name);
+  const activeMarkets=ioPackage.native.markets.filter(market=>market.enabled!==false).map(market=>market.name);
+  const configured=new Set(ioPackage.native.routes.map(route=>`${route.market.toLocaleLowerCase('de')}\u0000${route.category.toLocaleLowerCase('de')}`));
+
+  for(const market of activeMarkets) {
+    for(const group of groups) {
+      assert.ok(configured.has(`${market.toLocaleLowerCase('de')}\u0000${group.toLocaleLowerCase('de')}`),`${market}: ${group}`);
+    }
+  }
 });
 
 test('dynamic dropdown handlers sort alphabetically',()=>{
@@ -105,6 +117,12 @@ test('walking routes use a standalone market dropdown and a calculated one-marke
   assert.equal(route._routeEditorRows.type,'table');
   assert.equal(route._routeEditorRows.doNotSave,undefined);
   assert.ok(route._routeEditorRows.onChange.alsoDependsOn.includes('routeMarketFilter'));
+  const category=route._routeEditorRows.items.find(item=>item.attr==='category');
+  assert.equal(category.command,'getRouteProductGroups');
+  assert.equal(category.default,undefined);
+  assert.equal(category.showAllValues,true);
+  assert.match(category.jsonData,/globalData\._routeEditorRows/);
+  assert.match(category.jsonData,/data\.category/);
   assert.equal(route.routes.type,'table');
   assert.equal(route.routes.hidden,'true');
   assert.ok(route.routes.onChange.alsoDependsOn.includes('_routeEditorRows'));
@@ -174,32 +192,47 @@ test('unsaved markets and product groups are fed into the real product and revie
   assert.match(source,/normalizeMarketSelection/);
 });
 
-test('walking route editor keeps source market and appends new product groups',()=>{
+test('walking route editor deletes and re-adds a group only for the selected market',()=>{
   const route=jsonConfig.items.routesTab.items;
   assert.doesNotMatch(route._routeEditorRows.onChange.calculateFunc,/\breturn\b/);
   const calcEditor=new Function('data',`return ${route._routeEditorRows.onChange.calculateFunc}`);
+  const productGroups=[{name:'Milchprodukte'},{name:'Obst/Gemüse'},{name:'Werkzeug'}];
+  const originalGroups=structuredClone(productGroups);
+  const sourceRoutes=[
+    {market:'ALDI',category:'Milchprodukte',order:10},
+    {market:'ALDI',category:'Obst/Gemüse',order:20},
+    {market:'BAUMARKT',category:'Milchprodukte',order:10},
+    {market:'BAUMARKT',category:'Werkzeug',order:20},
+  ];
   const rows=calcEditor({
-    routes:[
-      {market:'ALDI',category:'Milchprodukte',order:10},
-      {market:'REWE',category:'Getränke',order:10},
-    ],
-    routeMarketFilter:'ALDI',
-    productGroups:[{name:'Milchprodukte'},{name:'Obst/Gemüse'}],
+    routes:sourceRoutes,
+    routeMarketFilter:'BAUMARKT',
+    productGroups,
   });
-  assert.deepEqual(rows.map(r=>r.category),['Milchprodukte','Obst/Gemüse']);
-  assert.ok(rows.every(r=>r._market==='ALDI'));
+  assert.deepEqual(rows.map(r=>r.category),['Milchprodukte','Werkzeug']);
+  assert.ok(rows.every(r=>r._market==='BAUMARKT'));
 
   const calcRoutes=new Function('data',`return ${route.routes.onChange.calculateFunc}`);
-  const merged=calcRoutes({
-    routes:[
-      {market:'ALDI',category:'Milchprodukte',order:10},
-      {market:'REWE',category:'Getränke',order:10},
-    ],
-    routeMarketFilter:'ALDI',
-    _routeEditorRows:[rows[1],rows[0]],
+  const afterDelete=calcRoutes({
+    routes:sourceRoutes,
+    routeMarketFilter:'BAUMARKT',
+    _routeEditorRows:rows.filter(row=>row.category!=='Milchprodukte'),
   });
-  assert.deepEqual(merged.filter(r=>r.market==='ALDI').map(r=>r.category),['Obst/Gemüse','Milchprodukte']);
-  assert.deepEqual(merged.filter(r=>r.market==='REWE').map(r=>r.category),['Getränke']);
+  assert.deepEqual(afterDelete.filter(r=>r.market==='BAUMARKT').map(r=>r.category),['Werkzeug']);
+  assert.deepEqual(afterDelete.filter(r=>r.market==='ALDI').map(r=>r.category),['Milchprodukte','Obst/Gemüse']);
+  assert.deepEqual(productGroups,originalGroups);
+
+  const afterAdd=calcRoutes({
+    routes:afterDelete,
+    routeMarketFilter:'BAUMARKT',
+    _routeEditorRows:[rows.find(row=>row.category==='Werkzeug'),{category:'Milchprodukte'}],
+  });
+  assert.deepEqual(afterAdd.filter(r=>r.market==='BAUMARKT').map(r=>r.category),['Werkzeug','Milchprodukte']);
+  assert.deepEqual(afterAdd.filter(r=>r.market==='ALDI').map(r=>r.category),['Milchprodukte','Obst/Gemüse']);
+  assert.deepEqual(productGroups,originalGroups);
+
+  const source=fs.readFileSync(path.join(root,'src','main.ts'),'utf8');
+  assert.doesNotMatch(source,/ensureMarketRoutes|ensureRoutesForMarketsAndGroups/);
 });
 
 test('API protection is integrated into General and no longer has its own tab',()=>{
