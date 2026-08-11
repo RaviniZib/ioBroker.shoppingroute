@@ -39,6 +39,24 @@ See `README_DE.md` for the detailed German documentation.
 
 ## Changelog
 
+### Unreleased
+
+- List stability guard: after every Alexa2 list change, ShoppingRoute waits for at least 30 seconds with no further list change before sorting writes start. If a new active ID appears during a buffered sort, the confirmed sort path is rolled back while the new ID itself remains untouched. The `updatedDateTime` visible-order finalizer also aborts immediately on new IDs and replans only after another quiet window.
+
+- Alexa visible order is now finalized from `updatedDateTime` after the buffered content permutation. Only the minimum necessary items are touched again with their unchanged text; normal shopping items are still neither deleted nor recreated. This keeps the anti-duplication buffer protection while restoring the ShoppingRoute order in Alexa App “oldest to newest” view.
+
+- Sorting target texts are now trimmed at their edges just like existing Alexa list values. This prevents invisible trailing whitespace (for example `Camembert `) from falsely failing the buffered permutation safety check.
+
+- Replaced direct sequential value redistribution with a buffered Euler-cycle transaction. A sort now uses one temporary buffer value per disconnected value circuit, so normal list items are not deleted/recreated and Amazon write traffic stays close to the number of actually changed slots.
+- Added a persistent local sort transaction journal (`info.sortTransaction`). Every confirmed step is recorded locally and interrupted transactions are reversed step-by-step after restart instead of treating an intermediate Alexa list as the new source of truth.
+- Added per-step Alexa2 confirmation and a safety stop for ambiguous remote write states. New items that arrive during a running transaction do not abort the current permutation; they are processed by the following run.
+- Fixed Admin configuration handling for independent market routes, newly added markets/product groups, alternative-market multi-selection in Products and Review, and the Review action “Accept all”.
+- Documented that ShoppingRoute can only process the list state currently supplied by Alexa2; a stale Alexa2 list synchronization can therefore delay newly added app items until Alexa2 has synchronized them.
+
+### 0.3.1 (2026-08-10)
+
+- Fixed a restart loop in Review learning: repeated identical observations no longer rewrite `reviewItems` solely to refresh `lastSeen`.
+
 ### 0.3.0 (2026-08-10)
 
 - Added optional `---- MARKET ----` headings.

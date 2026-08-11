@@ -129,6 +129,79 @@ test('walking-route calculate functions keep only the selected market visible an
   assert.deepEqual(merged.filter(x=>x.market==='REWE').map(x=>x.category),['Getränke']);
 });
 
+
+test('unsaved markets and product groups are fed into the real product and review tables',()=>{
+  const route=jsonConfig.items.routesTab.items;
+  assert.match(route.routeMarketFilter.jsonData,/data\.markets/);
+
+  const products=jsonConfig.items.productsTab.items;
+  assert.equal(products._productEditorRows,undefined);
+  assert.notEqual(products.products.hidden,'true');
+  const pFields=products.products.items;
+  const pCategory=pFields.find(x=>x.attr==='category');
+  const pDefault=pFields.find(x=>x.attr==='defaultMarket');
+  const alternatives=pFields.find(x=>x.attr==='availableMarkets');
+  assert.match(pCategory.jsonData,/globalData\.productGroups/);
+  assert.match(pDefault.jsonData,/globalData\.markets/);
+  assert.equal(alternatives.type,'selectSendTo');
+  assert.equal(alternatives.multiple,true);
+  assert.equal(alternatives.defaultSendTo,'normalizeMarketSelection');
+  assert.match(alternatives.jsonData,/globalData\.markets/);
+  assert.match(products.products.onChange.calculateFunc,/join\(','\)/);
+
+  const productCalc=new Function('data',`return ${products.products.onChange.calculateFunc}`);
+  const serializedProducts=productCalc({
+    products:[{name:'Milch',category:'Milchprodukte',availableMarkets:['ALDI','LIDL']}],
+  });
+  assert.equal(serializedProducts[0].availableMarkets,'ALDI,LIDL');
+
+  const review=jsonConfig.items.reviewTab.items;
+  assert.equal(review._reviewEditorRows,undefined);
+  assert.notEqual(review.reviewItems.hidden,'true');
+  const rAlternatives=review.reviewItems.items.find(x=>x.attr==='availableMarkets');
+  assert.equal(rAlternatives.multiple,true);
+  assert.equal(rAlternatives.defaultSendTo,'normalizeMarketSelection');
+  assert.match(rAlternatives.jsonData,/globalData\.markets/);
+
+  const reviewCalc=new Function('data',`return ${review.reviewItems.onChange.calculateFunc}`);
+  const serializedReviews=reviewCalc({
+    reviewItems:[{product:'Milch',availableMarkets:['REWE','LIDL']}],
+  });
+  assert.equal(serializedReviews[0].availableMarkets,'REWE,LIDL');
+
+  assert.match(review.reviewAcceptAll.jsonData,/JSON\.stringify\(data\)/);
+  const source=fs.readFileSync(path.join(root,'src','main.ts'),'utf8');
+  assert.match(source,/normalizeMarketSelection/);
+});
+
+test('walking route editor keeps source market and appends new product groups',()=>{
+  const route=jsonConfig.items.routesTab.items;
+  assert.doesNotMatch(route._routeEditorRows.onChange.calculateFunc,/\breturn\b/);
+  const calcEditor=new Function('data',`return ${route._routeEditorRows.onChange.calculateFunc}`);
+  const rows=calcEditor({
+    routes:[
+      {market:'ALDI',category:'Milchprodukte',order:10},
+      {market:'REWE',category:'Getränke',order:10},
+    ],
+    routeMarketFilter:'ALDI',
+    productGroups:[{name:'Milchprodukte'},{name:'Obst/Gemüse'}],
+  });
+  assert.deepEqual(rows.map(r=>r.category),['Milchprodukte','Obst/Gemüse']);
+  assert.ok(rows.every(r=>r._market==='ALDI'));
+
+  const calcRoutes=new Function('data',`return ${route.routes.onChange.calculateFunc}`);
+  const merged=calcRoutes({
+    routes:[
+      {market:'ALDI',category:'Milchprodukte',order:10},
+      {market:'REWE',category:'Getränke',order:10},
+    ],
+    routeMarketFilter:'ALDI',
+    _routeEditorRows:[rows[1],rows[0]],
+  });
+  assert.deepEqual(merged.filter(r=>r.market==='ALDI').map(r=>r.category),['Obst/Gemüse','Milchprodukte']);
+  assert.deepEqual(merged.filter(r=>r.market==='REWE').map(r=>r.category),['Getränke']);
+});
+
 test('API protection is integrated into General and no longer has its own tab',()=>{
   const general=jsonConfig.items.general.items;
   assert.equal(jsonConfig.items.apiTab,undefined);

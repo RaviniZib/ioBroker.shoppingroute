@@ -216,9 +216,11 @@ function guessCategorySmart(text, products) {
     return ranked[0]?.[0] || ruleGuess;
 }
 function parseMarketList(value, markets) {
-    const entries = String(value || '')
-        .split(/[;,]/)
-        .map(entry => resolveMarket(entry.trim(), markets))
+    const rawEntries = Array.isArray(value)
+        ? value.flatMap(entry => String(entry || '').split(/[;,]/))
+        : String(value || '').split(/[;,]/);
+    const entries = rawEntries
+        .map(entry => resolveMarket(String(entry || '').trim(), markets))
         .filter((entry) => Boolean(entry));
     return unique(entries);
 }

@@ -41,11 +41,13 @@ const https = __importStar(require("node:https"));
 const compatibility_1 = require("./lib/compatibility");
 const metrics_1 = require("./lib/metrics");
 const sorter_1 = require("./lib/sorter");
+const buffered_sort_1 = require("./lib/buffered-sort");
 const parser_1 = require("./lib/parser");
 const market_plan_1 = require("./lib/market-plan");
 const config_tools_1 = require("./lib/config-tools");
 const statistics_1 = require("./lib/statistics");
 const VERSION = '0.3.1';
+const LIST_STABILITY_MS = 30000;
 const DEFAULT_CATEGORIES = [
     'Obst/Gemüse',
     'Tee/Kaffee',
@@ -157,6 +159,7 @@ class ShoppingRoute extends utils.Adapter {
         return this.cfg.autoLearnProducts === false ? 'off' : 'automatic';
     }
     get debounceMs() { return Math.max(250, Number(this.cfg.debounceMs) || 5000); }
+    get sortStabilityDelayMs() { return Math.max(this.debounceMs, LIST_STABILITY_MS); }
     get writePauseMs() { return Math.max(250, Number(this.cfg.writePauseMs) || 1000); }
     get dryRun() { return this.cfg.dryRun !== false; }
     get apiSafeMode() { return this.cfg.apiSafeMode !== false; }
@@ -238,6 +241,7 @@ class ShoppingRoute extends utils.Adapter {
             return;
         }
         await this.runStartupCompatibilityCheck();
+        await this.recoverInterruptedSortTransaction();
         await this.refreshExports();
         await this.checkNpmVersion();
         await this.updateFeedbackReport();
@@ -245,7 +249,8 @@ class ShoppingRoute extends utils.Adapter {
         this.log.warn(`ShoppingRoute ${VERSION} BETA: Dry-Run ist für Ersttests ausdrücklich empfohlen.`);
         this.log.info(`Listen: ${this.listConfigs.map(item => item.name).join(', ')}. Lernmodus: ${this.learningMode}.`);
         this.log.info('WICHTIG: Die Alexa-App muss für jede verwaltete Liste auf „Älteste bis neueste“ gestellt sein.');
-        this.scheduleAll(700);
+        this.log.info('Synchronisationsschutz: Sortierschreibzugriffe starten erst nach mindestens 30 Sekunden ohne Listenänderung.');
+        this.scheduleAll(this.sortStabilityDelayMs);
     }
     async discoverAlexaLists(instanceName = this.alexaInstance) {
         const instance = String(instanceName || this.alexaInstance).trim() || this.alexaInstance;
@@ -274,6 +279,52 @@ class ShoppingRoute extends utils.Adapter {
     async onMessage(obj) {
         if (!obj || !obj.callback)
             return;
+        if (obj.command === 'markAllReviewItemsAccept') {
+            const supplied = obj.message?.native && typeof obj.message.native === 'object'
+                ? { ...obj.message.native }
+                : { ...this.cfg };
+            const rows = Array.isArray(supplied.reviewItems)
+                ? supplied.reviewItems
+                : this.runtimeReviews;
+            supplied.reviewItems = rows.map((item) => ({
+                ...item,
+                availableMarkets: Array.isArray(item?.availableMarkets)
+                    ? item.availableMarkets
+                        .map((value) => typeof value === 'string' ? value.trim() : '')
+                        .filter(Boolean)
+                        .join(',')
+                    : String(item?.availableMarkets || ''),
+                action: 'accept',
+            }));
+            this.sendTo(obj.from, obj.command, {
+                command: {
+                    command: 'refresh',
+                    data: supplied,
+                    fullRefresh: true,
+                },
+            }, obj.callback);
+            return;
+        }
+        if (obj.command === 'normalizeMarketSelection') {
+            const raw = obj.message?.value;
+            const values = Array.isArray(raw)
+                ? raw
+                : String(raw || '').split(/[;,]/);
+            const result = [];
+            const seen = new Set();
+            for (const value of values) {
+                if (typeof value !== 'string')
+                    continue;
+                const trimmed = value.trim();
+                const key = trimmed.toLocaleLowerCase('de');
+                if (!trimmed || seen.has(key))
+                    continue;
+                seen.add(key);
+                result.push(trimmed);
+            }
+            this.sendTo(obj.from, obj.command, result, obj.callback);
+            return;
+        }
         if (obj.command === 'getBackupUiUrl') {
             this.sendTo(obj.from, obj.command, {
                 openUrl: `./adapter/shoppingroute/backup-transfer.html?instance=${encodeURIComponent(this.namespace)}`,
@@ -282,14 +333,31 @@ class ShoppingRoute extends utils.Adapter {
             return;
         }
         if (obj.command === 'getProductGroups') {
-            const options = this.productGroups.map(group => ({ value: group.name, label: group.name }))
+            const suppliedGroups = Array.isArray(obj.message?.productGroups)
+                ? obj.message.productGroups
+                    .map((group) => ({ name: String(group?.name || '').trim() }))
+                    .filter((group) => Boolean(group.name))
+                : this.productGroups;
+            const options = suppliedGroups
+                .map((group) => ({ value: group.name, label: group.name }))
                 .sort((a, b) => a.label.localeCompare(b.label, 'de', { sensitivity: 'base' }));
             this.sendTo(obj.from, obj.command, options, obj.callback);
             return;
         }
         if (obj.command === 'getMarkets' || obj.command === 'getMarketsOptional' || obj.command === 'getActiveMarkets') {
-            const sourceMarkets = obj.command === 'getActiveMarkets' ? this.markets.filter(market => market.enabled !== false) : this.markets;
-            const options = sourceMarkets.map(market => ({ value: market.name, label: market.name }))
+            const suppliedMarkets = Array.isArray(obj.message?.markets)
+                ? obj.message.markets
+                    .map((market) => ({
+                    name: String(market?.name || '').trim(),
+                    enabled: market?.enabled !== false,
+                }))
+                    .filter((market) => Boolean(market.name))
+                : this.markets;
+            const sourceMarkets = obj.command === 'getActiveMarkets'
+                ? suppliedMarkets.filter((market) => market.enabled !== false)
+                : suppliedMarkets;
+            const options = sourceMarkets
+                .map((market) => ({ value: market.name, label: market.name }))
                 .sort((a, b) => a.label.localeCompare(b.label, 'de', { sensitivity: 'base' }));
             if (obj.command === 'getMarketsOptional')
                 options.unshift({ value: '', label: '—' });
@@ -309,7 +377,7 @@ class ShoppingRoute extends utils.Adapter {
         const local = `${this.namespace}.`;
         if (id === `${local}control.sortNow` && !state.ack && state.val === true) {
             await this.setStateAsync('control.sortNow', false, true);
-            this.scheduleAll(100);
+            this.scheduleAll(this.sortStabilityDelayMs);
             return;
         }
         if (id === `${local}control.compatibilityTest` && !state.ack && state.val === true) {
@@ -343,14 +411,14 @@ class ShoppingRoute extends utils.Adapter {
             await this.setStateAsync('control.clearTemporaryPriorityMarket', false, true);
             this.temporaryPriorityMarket = '';
             await this.setStateAsync('control.temporaryPriorityMarket', '__none__', true);
-            this.scheduleAll(100);
+            this.scheduleAll(this.sortStabilityDelayMs);
             return;
         }
         if (id === `${local}control.temporaryPriorityMarket` && !state.ack) {
             const selectedMarket = typeof state.val === 'string' ? state.val.trim() : '';
             this.temporaryPriorityMarket = selectedMarket === '__none__' ? '' : selectedMarket;
             await this.setStateAsync('control.temporaryPriorityMarket', this.temporaryPriorityMarket || '__none__', true);
-            this.scheduleAll(100);
+            this.scheduleAll(this.sortStabilityDelayMs);
             return;
         }
         if (id === `${local}control.importConfigJson` && !state.ack && typeof state.val === 'string' && state.val.trim()) {
@@ -382,7 +450,7 @@ class ShoppingRoute extends utils.Adapter {
         if (id === `${local}control.enabled` && !state.ack) {
             await this.setStateAsync('control.enabled', Boolean(state.val), true);
             if (state.val === true)
-                this.scheduleAll(250);
+                this.scheduleAll(this.sortStabilityDelayMs);
             return;
         }
         const list = this.listConfigs.find(entry => id === this.listStateId(entry.name));
@@ -392,7 +460,7 @@ class ShoppingRoute extends utils.Adapter {
                 return;
             if (this.sortingListName === list.name)
                 this.listChangedDuringSort = true;
-            this.scheduleSort(list.name, this.debounceMs);
+            this.scheduleSort(list.name, this.sortStabilityDelayMs);
         }
     }
     onUnload(callback) {
@@ -400,8 +468,9 @@ class ShoppingRoute extends utils.Adapter {
             this.clearTimeout(this.sortTimer);
         if (this.versionTimer)
             this.clearInterval(this.versionTimer);
-        void this.setState('info.connection', false, true);
-        callback();
+        void this.setStateAsync('info.connection', false, true)
+            .catch(() => undefined)
+            .finally(callback);
     }
     scheduleAll(delay) {
         for (const list of this.listConfigs)
@@ -522,7 +591,36 @@ class ShoppingRoute extends utils.Adapter {
                 await this.persistTrafficMetrics();
             }
             if (changes.length === 0) {
-                await this.setStateAsync('info.lastSort', `${now} – ${listName}: bereits sortiert (${active.length} aktiv)`, true);
+                const visibleOrderWrites = this.visibleOrderRefreshIds(list, plan);
+                if (visibleOrderWrites.length === 0) {
+                    await this.setStateAsync('info.lastSort', `${now} – ${listName}: bereits sortiert (${active.length} aktiv)`, true);
+                    await this.setStateAsync('info.lastError', '', true);
+                    return;
+                }
+                this.log.info(`${listName}: Inhalte sind sortiert, sichtbare Alexa-Reihenfolge benötigt ${visibleOrderWrites.length} Aktualisierung(en)${this.dryRun ? ' [DRY-RUN]' : ''}.`);
+                if (this.dryRun) {
+                    await this.setStateAsync('info.lastSort', `${now} – ${listName} Dry-Run: ${visibleOrderWrites.length} Aktualisierung(en) der sichtbaren Reihenfolge geplant`, true);
+                    await this.setStateAsync('info.lastError', '', true);
+                    return;
+                }
+                if (!(0, compatibility_1.canWriteAlexa)(this.writeCapability)) {
+                    const message = this.writeCapability === 'known-bug'
+                        ? 'Alexa-Schreibzugriffe blockiert: bekannte fehlerhafte alexa-remote2 version-Query erkannt.'
+                        : this.writeCapability === 'live-failed'
+                            ? 'Alexa-Schreibzugriffe blockiert: Kompatibilitätstest fehlgeschlagen.'
+                            : 'Alexa-Schreibzugriffe blockiert: Schreibkompatibilität noch nicht bestätigt; control.compatibilityTest ausführen.';
+                    await this.setStateAsync('info.lastSort', `${now} – BETA-Sicherheitsblock: keine Alexa-Schreibzugriffe`, true);
+                    await this.setStateAsync('info.lastError', message, true);
+                    this.log.error(message);
+                    return;
+                }
+                this.traffic.sortRuns += 1;
+                this.traffic.lastSortRun = new Date().toISOString();
+                await this.persistTrafficMetrics();
+                const visibleResult = await this.refreshVisibleAlexaOrder(listName, plan);
+                if (visibleResult.interrupted)
+                    return;
+                await this.setStateAsync('info.lastSort', `${new Date().toISOString()} – ${listName}: sichtbare Reihenfolge mit ${visibleResult.writes} inhaltsneutralen Schreibzugriff(en) korrigiert, ${active.length} aktiv`, true);
                 await this.setStateAsync('info.lastError', '', true);
                 return;
             }
@@ -546,55 +644,173 @@ class ShoppingRoute extends utils.Adapter {
             this.traffic.sortRuns += 1;
             this.traffic.lastSortRun = new Date().toISOString();
             await this.persistTrafficMetrics();
-            const originalSignature = (0, sorter_1.activeIdSignature)(list);
-            let written = 0;
-            for (const entry of changes) {
-                const fresh = await this.readList(listName);
-                if ((0, sorter_1.activeIdSignature)(fresh) !== originalSignature) {
-                    this.traffic.abortedRuns += 1;
-                    await this.persistTrafficMetrics();
-                    this.pendingLists.add(listName);
-                    this.log.warn(`${listName}: Liste wurde während der Sortierung ergänzt oder abgehakt. Neue Berechnung folgt.`);
-                    return;
+            const originalSnapshot = active.map(item => ({ ...item }));
+            const originalValues = Object.fromEntries(originalSnapshot.map(item => [String(item.id), String(item.value || '').trim()]));
+            const targetValues = Object.fromEntries(plan.map(entry => [String(entry.id), String(entry.to || '').trim()]));
+            const expectedValues = new Map(Object.entries(originalValues));
+            let program;
+            let marker = '';
+            for (let attempt = 0; attempt < 10; attempt++) {
+                marker = `__SHOPPINGROUTE_PUFFER_${Date.now().toString(36)}_${attempt}__`;
+                try {
+                    program = (0, buffered_sort_1.createBufferedSortProgram)(plan, marker);
+                    break;
                 }
-                const currentItem = (0, sorter_1.activeItems)(fresh).find(item => String(item.id) === entry.id);
-                if (!currentItem || String(currentItem.value).trim() !== entry.from) {
-                    this.traffic.abortedRuns += 1;
-                    await this.persistTrafficMetrics();
-                    this.pendingLists.add(listName);
-                    this.log.warn(`${listName}: Eintrag wurde während der Sortierung verändert. Neue Berechnung folgt.`);
-                    return;
-                }
-                const valueStateId = `${this.alexaInstance}.Lists.${listName}.items.${entry.id}.value`;
-                const valueObject = await this.getForeignObjectAsync(valueStateId);
-                if (!valueObject)
-                    throw new Error(`Alexa-Wertedatenpunkt fehlt: ${valueStateId}`);
-                await this.writeAlexaState(valueStateId, entry.to);
-                written += 1;
-                if (this.apiSafeMode && written % this.batchSize === 0 && written < changes.length && this.batchPauseMs > 0) {
-                    this.log.info(`API-Schonmodus: Batch-Pause nach ${written} Schreibzugriffen (${this.batchPauseMs} ms).`);
-                    await this.wait(this.batchPauseMs);
-                }
-                else {
-                    await this.wait(this.writePauseMs);
+                catch (error) {
+                    if (!String(error).includes('kollidiert') || attempt === 9)
+                        throw error;
                 }
             }
-            await this.wait(Math.max(1000, this.writePauseMs));
-            const verifyList = await this.readList(listName);
-            if ((0, sorter_1.activeIdSignature)(verifyList) !== originalSignature) {
+            if (!program)
+                throw new Error('Sortierpuffer konnte nicht erzeugt werden.');
+            const journal = {
+                version: 1,
+                transactionId: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`,
+                listName,
+                marker,
+                startedAt: new Date().toISOString(),
+                status: 'applying',
+                originalValues,
+                targetValues,
+                steps: program.steps,
+                confirmedSteps: 0,
+            };
+            await this.persistSortTransaction(journal);
+            let written = 0;
+            try {
+                for (let index = 0; index < program.steps.length; index++) {
+                    const step = program.steps[index];
+                    const fresh = await this.readList(listName);
+                    const beforeWrite = (0, sorter_1.compareActiveSnapshot)(originalSnapshot, fresh, expectedValues);
+                    if ((0, sorter_1.activeSnapshotHasConflict)(beforeWrite)) {
+                        const reason = beforeWrite.addedIds.length > 0
+                            ? `${listName}: Während der Sortierung ist ein neuer aktiver Alexa-Listeneintrag hinzugekommen.`
+                            : beforeWrite.missingIds.length > 0
+                                ? `${listName}: Ein ursprünglicher Listeneintrag wurde während der Sortierung entfernt oder abgehakt.`
+                                : `${listName}: Ein ursprünglicher Listeneintrag wurde während der Sortierung verändert.`;
+                        this.traffic.abortedRuns += 1;
+                        await this.persistTrafficMetrics();
+                        const restored = await this.rollbackBufferedTransaction(journal);
+                        if (!restored) {
+                            await this.activateSortSafetyStop(listName, reason, journal);
+                            return;
+                        }
+                        this.pendingLists.add(listName);
+                        this.log.warn(`${reason} Der bestätigte Sortierpfad wurde rückwärts zurückgesetzt; neue Berechnung folgt.`);
+                        return;
+                    }
+                    const currentItem = (0, sorter_1.activeItems)(fresh).find(item => String(item.id) === step.id);
+                    if (!currentItem || String(currentItem.value || '').trim() !== step.from) {
+                        this.traffic.abortedRuns += 1;
+                        await this.persistTrafficMetrics();
+                        const reason = `${listName}: Sortierpuffer erwartete bei ID ${step.id} „${step.from}“, gefunden wurde ein anderer Wert.`;
+                        const restored = await this.rollbackBufferedTransaction(journal);
+                        if (!restored) {
+                            await this.activateSortSafetyStop(listName, reason, journal);
+                            return;
+                        }
+                        this.pendingLists.add(listName);
+                        this.log.warn(`${reason} Der bestätigte Sortierpfad wurde rückwärts zurückgesetzt.`);
+                        return;
+                    }
+                    const valueStateId = `${this.alexaInstance}.Lists.${listName}.items.${step.id}.value`;
+                    const valueObject = await this.getForeignObjectAsync(valueStateId);
+                    if (!valueObject) {
+                        throw new Error(`Alexa-Wertedatenpunkt fehlt: ${valueStateId}`);
+                    }
+                    const beforeState = await this.getForeignStateAsync(valueStateId);
+                    const beforeTs = Number(beforeState?.ts || 0);
+                    await this.writeAlexaState(valueStateId, step.to);
+                    const confirmation = await this.waitForAlexaValueConfirmation(listName, step.id, step.from, step.to, beforeTs);
+                    if (confirmation === 'ambiguous') {
+                        this.traffic.abortedRuns += 1;
+                        await this.persistTrafficMetrics();
+                        await this.activateSortSafetyStop(listName, `${listName}: Alexa2 hat Sortierschritt ${index + 1}/${program.steps.length} nicht eindeutig bestätigt.`, journal);
+                        return;
+                    }
+                    if (confirmation === 'not-applied') {
+                        this.traffic.abortedRuns += 1;
+                        await this.persistTrafficMetrics();
+                        const restored = await this.rollbackBufferedTransaction(journal);
+                        if (!restored) {
+                            await this.activateSortSafetyStop(listName, `${listName}: Sortierschritt ${index + 1}/${program.steps.length} wurde von Alexa2 verworfen.`, journal);
+                            return;
+                        }
+                        this.pendingLists.add(listName);
+                        await this.setError(`${listName}: Alexa2 hat einen Sortierschritt verworfen; Ausgangszustand wurde wiederhergestellt.`);
+                        return;
+                    }
+                    expectedValues.set(step.id, step.to);
+                    journal.confirmedSteps = index + 1;
+                    await this.persistSortTransaction(journal);
+                    written += 1;
+                    const confirmedList = await this.readList(listName);
+                    const afterWrite = (0, sorter_1.compareActiveSnapshot)(originalSnapshot, confirmedList, expectedValues);
+                    if ((0, sorter_1.activeSnapshotHasConflict)(afterWrite)) {
+                        this.traffic.abortedRuns += 1;
+                        await this.persistTrafficMetrics();
+                        const reason = `${listName}: Die Liste wurde während der gepufferten Sortierung außerhalb des bestätigten Schritts verändert.`;
+                        const restored = await this.rollbackBufferedTransaction(journal);
+                        if (!restored) {
+                            await this.activateSortSafetyStop(listName, reason, journal);
+                            return;
+                        }
+                        this.pendingLists.add(listName);
+                        this.log.warn(`${reason} Der bestätigte Sortierpfad wurde rückwärts zurückgesetzt.`);
+                        return;
+                    }
+                    if (this.apiSafeMode &&
+                        written % this.batchSize === 0 &&
+                        written < program.steps.length &&
+                        this.batchPauseMs > 0) {
+                        this.log.info(`API-Schonmodus: Batch-Pause nach ${written} Schreibzugriffen (${this.batchPauseMs} ms).`);
+                        await this.wait(this.batchPauseMs);
+                    }
+                    else {
+                        await this.wait(this.writePauseMs);
+                    }
+                }
+                const verifyList = await this.readList(listName);
+                const targetMap = new Map(Object.entries(targetValues));
+                const verification = (0, sorter_1.compareActiveSnapshot)(originalSnapshot, verifyList, targetMap);
+                if ((0, sorter_1.activeSnapshotHasConflict)(verification)) {
+                    this.traffic.abortedRuns += 1;
+                    await this.persistTrafficMetrics();
+                    const reason = `${listName}: Abschlussprüfung der gepufferten Sortierung ist fehlgeschlagen.`;
+                    const restored = await this.rollbackBufferedTransaction(journal);
+                    if (!restored) {
+                        await this.activateSortSafetyStop(listName, reason, journal);
+                        return;
+                    }
+                    this.pendingLists.add(listName);
+                    this.log.warn(`${reason} Ausgangszustand wurde wiederhergestellt.`);
+                    return;
+                }
+            }
+            catch (error) {
+                const message = error instanceof Error ? error.message : String(error);
                 this.traffic.abortedRuns += 1;
                 await this.persistTrafficMetrics();
+                const pending = await this.reconcilePendingTransactionStep(journal);
+                if (pending === 'ambiguous') {
+                    await this.activateSortSafetyStop(listName, `${listName}: Sortierfehler mit unklarem Alexa2-Schreibstatus: ${message}`, journal);
+                    return;
+                }
+                const restored = await this.rollbackBufferedTransaction(journal);
+                if (!restored) {
+                    await this.activateSortSafetyStop(listName, `${listName}: Sortierfehler: ${message}`, journal);
+                    return;
+                }
                 this.pendingLists.add(listName);
+                await this.setError(`${listName}: Gepufferte Sortierung abgebrochen und rückwärts auf den Ausgangszustand gesetzt: ${message}`);
+                this.log.error(`${listName}: Gepufferte Sortierung abgebrochen und zurückgesetzt: ${message}`);
                 return;
             }
-            const verifyPlan = (0, sorter_1.createSortPlan)(verifyList, this.markets, this.routes, this.products, this.fallbackMarket, priority, this.minimumItemsPerMarket, this.marketHeadersEnabled);
-            const remaining = verifyPlan.filter(entry => entry.changed);
-            if (remaining.length > 0) {
-                const message = `${listName}: Alexa hat ${remaining.length} geplante Textänderung(en) nicht bestätigt; kein automatischer Endlos-Retry.`;
-                await this.setError(message);
+            await this.persistSortTransaction(null);
+            const visibleResult = await this.refreshVisibleAlexaOrder(listName, plan);
+            if (visibleResult.interrupted)
                 return;
-            }
-            await this.setStateAsync('info.lastSort', `${new Date().toISOString()} – ${listName}: ${changes.length} Änderung(en), ${active.length} aktiv`, true);
+            await this.setStateAsync('info.lastSort', `${new Date().toISOString()} – ${listName}: ${program.changedSlots} Änderung(en), ${program.amazonWrites} gepufferte Schreibzugriffe, ${visibleResult.writes} Reihenfolge-Schreibzugriff(e), ${active.length} Ausgangseinträge`, true);
             await this.setStateAsync('info.lastError', '', true);
         }
         catch (error) {
@@ -610,8 +826,391 @@ class ShoppingRoute extends utils.Adapter {
             if (this.listChangedDuringSort)
                 this.pendingLists.add(listName);
             if (this.pendingLists.size > 0)
-                this.armSortTimer(this.debounceMs);
+                this.armSortTimer(this.sortStabilityDelayMs);
         }
+    }
+    visibleOrderRefreshIds(list, plan) {
+        const orderedPlan = [...plan].sort((left, right) => Number(left.position) - Number(right.position));
+        const desiredIds = orderedPlan.map(entry => String(entry.id));
+        const desiredSet = new Set(desiredIds);
+        const relevant = (0, sorter_1.activeItems)(list).filter(item => desiredSet.has(String(item.id)));
+        if (relevant.length !== desiredIds.length) {
+            throw new Error('Sichtbare Reihenfolge kann nicht geprüft werden: Ein geplanter aktiver Alexa-Eintrag fehlt.');
+        }
+        const currentIds = (0, buffered_sort_1.sortIdsByAlexaUpdatedTime)(relevant);
+        return (0, buffered_sort_1.createVisibleOrderRefreshPlan)(currentIds, desiredIds);
+    }
+    async waitForVisibleOrderTouchConfirmation(listName, id, expectedValue, previousUpdatedDateTime, previousStateTs, timeoutMs = 15000) {
+        const valueStateId = `${this.alexaInstance}.Lists.${listName}.items.${id}.value`;
+        const previousUpdated = previousUpdatedDateTime === undefined ? '' : String(previousUpdatedDateTime);
+        const deadline = Date.now() + timeoutMs;
+        while (Date.now() < deadline) {
+            const [state, list] = await Promise.all([
+                this.getForeignStateAsync(valueStateId),
+                this.readList(listName),
+            ]);
+            const item = list.find(entry => String(entry?.id || '') === id);
+            const listValue = item ? String(item.value || '').trim() : undefined;
+            const stateValue = state ? String(state.val ?? '').trim() : undefined;
+            const stateTs = Number(state?.ts || 0);
+            const currentUpdated = item?.updatedDateTime === undefined ? '' : String(item.updatedDateTime);
+            if (listValue === expectedValue &&
+                stateValue === expectedValue &&
+                state?.ack === true &&
+                stateTs > previousStateTs &&
+                currentUpdated !== previousUpdated &&
+                currentUpdated !== '')
+                return true;
+            await this.wait(250);
+        }
+        return false;
+    }
+    async refreshVisibleAlexaOrder(listName, plan) {
+        const orderedPlan = [...plan].sort((left, right) => Number(left.position) - Number(right.position));
+        const desiredIds = orderedPlan.map(entry => String(entry.id));
+        const desiredSet = new Set(desiredIds);
+        const expectedValues = new Map(orderedPlan.map(entry => [String(entry.id), String(entry.to || '').trim()]));
+        const firstList = await this.readList(listName);
+        let additionalItems = (0, sorter_1.activeItems)(firstList).some(item => !desiredSet.has(String(item.id)));
+        if (additionalItems) {
+            this.pendingLists.add(listName);
+            this.log.warn(`${listName}: Neuer aktiver Alexa-Listeneintrag vor der Reihenfolge-Finalisierung erkannt; Finalisierung abgebrochen. Neue Berechnung folgt nach Synchronisationsruhe.`);
+            return { writes: 0, interrupted: true, additionalItems: true };
+        }
+        let touchIds;
+        try {
+            touchIds = this.visibleOrderRefreshIds(firstList, orderedPlan);
+        }
+        catch (error) {
+            this.pendingLists.add(listName);
+            this.log.warn(`${listName}: Sichtbare Reihenfolge wird neu berechnet: ${error instanceof Error ? error.message : String(error)}`);
+            return { writes: 0, interrupted: true, additionalItems };
+        }
+        if (touchIds.length === 0)
+            return { writes: 0, interrupted: false, additionalItems };
+        let writes = 0;
+        for (let index = 0; index < touchIds.length; index++) {
+            const id = touchIds[index];
+            const fresh = await this.readList(listName);
+            const active = (0, sorter_1.activeItems)(fresh);
+            if (active.some(item => !desiredSet.has(String(item.id)))) {
+                additionalItems = true;
+                this.pendingLists.add(listName);
+                this.log.warn(`${listName}: Neuer aktiver Alexa-Listeneintrag während der Reihenfolge-Finalisierung erkannt; weitere Same-Value-Writes werden abgebrochen.`);
+                return { writes, interrupted: true, additionalItems };
+            }
+            const byId = new Map(active.map(item => [String(item.id), item]));
+            let conflict = false;
+            for (const [expectedId, expectedValue] of expectedValues) {
+                const item = byId.get(expectedId);
+                if (!item || String(item.value || '').trim() !== expectedValue) {
+                    conflict = true;
+                    break;
+                }
+            }
+            if (conflict) {
+                this.pendingLists.add(listName);
+                this.log.warn(`${listName}: Liste wurde während der Reihenfolge-Finalisierung verändert; keine Textwerte wurden zurückgerollt, neue Berechnung folgt.`);
+                return { writes, interrupted: true, additionalItems };
+            }
+            const currentItem = byId.get(id);
+            const expectedValue = expectedValues.get(id);
+            if (!currentItem || expectedValue === undefined) {
+                this.pendingLists.add(listName);
+                return { writes, interrupted: true, additionalItems };
+            }
+            const valueStateId = `${this.alexaInstance}.Lists.${listName}.items.${id}.value`;
+            const valueObject = await this.getForeignObjectAsync(valueStateId);
+            if (!valueObject) {
+                await this.activateSortSafetyStop(listName, `${listName}: Alexa-Wertedatenpunkt für die sichtbare Reihenfolge fehlt: ${valueStateId}`);
+                return { writes, interrupted: true, additionalItems };
+            }
+            const beforeState = await this.getForeignStateAsync(valueStateId);
+            const beforeTs = Number(beforeState?.ts || 0);
+            const previousUpdatedDateTime = currentItem.updatedDateTime;
+            await this.writeAlexaState(valueStateId, expectedValue);
+            const confirmed = await this.waitForVisibleOrderTouchConfirmation(listName, id, expectedValue, previousUpdatedDateTime, beforeTs);
+            if (!confirmed) {
+                await this.activateSortSafetyStop(listName, `${listName}: Alexa2 hat die updatedDateTime-Aktualisierung für die sichtbare Reihenfolge nicht bestätigt.`);
+                return { writes, interrupted: true, additionalItems };
+            }
+            writes += 1;
+            if (this.apiSafeMode &&
+                writes % this.batchSize === 0 &&
+                writes < touchIds.length &&
+                this.batchPauseMs > 0) {
+                this.log.info(`API-Schonmodus: Batch-Pause nach ${writes} Reihenfolge-Schreibzugriffen (${this.batchPauseMs} ms).`);
+                await this.wait(this.batchPauseMs);
+            }
+            else {
+                await this.wait(this.writePauseMs);
+            }
+        }
+        const verifyList = await this.readList(listName);
+        if ((0, sorter_1.activeItems)(verifyList).some(item => !desiredSet.has(String(item.id)))) {
+            additionalItems = true;
+            this.pendingLists.add(listName);
+            this.log.warn(`${listName}: Neuer aktiver Alexa-Listeneintrag bei der Abschlussprüfung erkannt; neue Berechnung folgt nach Synchronisationsruhe.`);
+            return { writes, interrupted: true, additionalItems };
+        }
+        let remaining;
+        try {
+            remaining = this.visibleOrderRefreshIds(verifyList, orderedPlan);
+        }
+        catch (error) {
+            this.pendingLists.add(listName);
+            this.log.warn(`${listName}: Abschlussprüfung der sichtbaren Reihenfolge wird neu berechnet: ${error instanceof Error ? error.message : String(error)}`);
+            return { writes, interrupted: true, additionalItems };
+        }
+        if (remaining.length > 0) {
+            await this.activateSortSafetyStop(listName, `${listName}: Alexa2 hat die sichtbare Zielreihenfolge trotz bestätigter Same-Value-Writes nicht hergestellt.`);
+            return { writes, interrupted: true, additionalItems };
+        }
+        return { writes, interrupted: false, additionalItems };
+    }
+    async persistSortTransaction(journal) {
+        await this.setStateAsync('info.sortTransaction', journal ? JSON.stringify(journal, null, 2) : '{}', true);
+    }
+    async readSortTransaction() {
+        const state = await this.getStateAsync('info.sortTransaction');
+        const raw = String(state?.val || '').trim();
+        if (!raw || raw === '{}')
+            return null;
+        try {
+            const parsed = JSON.parse(raw);
+            if (parsed?.version !== 1 ||
+                !parsed.listName ||
+                !parsed.marker ||
+                !Array.isArray(parsed.steps) ||
+                !Number.isInteger(parsed.confirmedSteps) ||
+                parsed.confirmedSteps < 0 ||
+                parsed.confirmedSteps > parsed.steps.length ||
+                !parsed.originalValues ||
+                !parsed.targetValues ||
+                !['applying', 'rollback', 'failed-applying', 'failed-rollback'].includes(parsed.status)) {
+                throw new Error('ungültige Journal-Struktur');
+            }
+            return parsed;
+        }
+        catch (error) {
+            throw new Error(`Sortierjournal ist beschädigt: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    }
+    async waitForAlexaValueConfirmation(listName, id, from, to, previousTs = 0, timeoutMs = 15000) {
+        const valueStateId = `${this.alexaInstance}.Lists.${listName}.items.${id}.value`;
+        const deadline = Date.now() + timeoutMs;
+        while (Date.now() < deadline) {
+            const [state, list] = await Promise.all([
+                this.getForeignStateAsync(valueStateId),
+                this.readList(listName),
+            ]);
+            const item = list.find(entry => String(entry?.id || '') === id);
+            const listValue = item ? String(item.value || '').trim() : undefined;
+            const stateValue = state ? String(state.val ?? '').trim() : undefined;
+            const stateTs = Number(state?.ts || 0);
+            if (listValue === to &&
+                stateValue === to &&
+                state?.ack === true &&
+                stateTs >= previousTs)
+                return 'confirmed';
+            await this.wait(250);
+        }
+        const [state, list] = await Promise.all([
+            this.getForeignStateAsync(valueStateId),
+            this.readList(listName),
+        ]);
+        const item = list.find(entry => String(entry?.id || '') === id);
+        const listValue = item ? String(item.value || '').trim() : undefined;
+        const stateValue = state ? String(state.val ?? '').trim() : undefined;
+        if (listValue === to && stateValue === to && state?.ack === true)
+            return 'confirmed';
+        if (listValue === from && stateValue === from && state?.ack === true)
+            return 'not-applied';
+        return 'ambiguous';
+    }
+    async reconcilePendingTransactionStep(journal) {
+        if (journal.confirmedSteps >= journal.steps.length)
+            return 'confirmed';
+        const step = journal.steps[journal.confirmedSteps];
+        const valueStateId = `${this.alexaInstance}.Lists.${journal.listName}.items.${step.id}.value`;
+        const [state, list] = await Promise.all([
+            this.getForeignStateAsync(valueStateId),
+            this.readList(journal.listName),
+        ]);
+        const item = list.find(entry => String(entry?.id || '') === step.id);
+        const listValue = item ? String(item.value || '').trim() : undefined;
+        const stateValue = state ? String(state.val ?? '').trim() : undefined;
+        if (listValue === step.to && stateValue === step.to && state?.ack === true) {
+            journal.confirmedSteps += 1;
+            await this.persistSortTransaction(journal);
+            return 'confirmed';
+        }
+        if (listValue === step.from && stateValue === step.from && state?.ack === true)
+            return 'not-applied';
+        if (stateValue === step.to && state?.ack === false) {
+            const result = await this.waitForAlexaValueConfirmation(journal.listName, step.id, step.from, step.to, Number(state?.ts || 0), 30000);
+            if (result === 'confirmed') {
+                journal.confirmedSteps += 1;
+                await this.persistSortTransaction(journal);
+            }
+            return result;
+        }
+        return 'ambiguous';
+    }
+    async reconcilePendingRollbackStep(journal) {
+        if (journal.confirmedSteps <= 0)
+            return 'confirmed';
+        const step = journal.steps[journal.confirmedSteps - 1];
+        const valueStateId = `${this.alexaInstance}.Lists.${journal.listName}.items.${step.id}.value`;
+        const [state, list] = await Promise.all([
+            this.getForeignStateAsync(valueStateId),
+            this.readList(journal.listName),
+        ]);
+        const item = list.find(entry => String(entry?.id || '') === step.id);
+        const listValue = item ? String(item.value || '').trim() : undefined;
+        const stateValue = state ? String(state.val ?? '').trim() : undefined;
+        if (listValue === step.from && stateValue === step.from && state?.ack === true) {
+            journal.confirmedSteps -= 1;
+            await this.persistSortTransaction(journal);
+            return 'confirmed';
+        }
+        if (listValue === step.to && stateValue === step.to && state?.ack === true)
+            return 'not-applied';
+        if (stateValue === step.from && state?.ack === false) {
+            const result = await this.waitForAlexaValueConfirmation(journal.listName, step.id, step.to, step.from, Number(state?.ts || 0), 30000);
+            if (result === 'confirmed') {
+                journal.confirmedSteps -= 1;
+                await this.persistSortTransaction(journal);
+            }
+            return result;
+        }
+        return 'ambiguous';
+    }
+    async rollbackBufferedTransaction(journal) {
+        journal.status = 'rollback';
+        await this.persistSortTransaction(journal);
+        while (journal.confirmedSteps > 0) {
+            const index = journal.confirmedSteps - 1;
+            const step = journal.steps[index];
+            try {
+                const currentList = await this.readList(journal.listName);
+                const currentItem = currentList.find(item => String(item?.id || '') === step.id);
+                if (!currentItem) {
+                    this.log.warn(`${journal.listName}: Rollback überspringt extern entfernte ID ${step.id}.`);
+                    journal.confirmedSteps -= 1;
+                    await this.persistSortTransaction(journal);
+                    continue;
+                }
+                const currentValue = String(currentItem.value || '').trim();
+                if (currentValue === step.from) {
+                    journal.confirmedSteps -= 1;
+                    await this.persistSortTransaction(journal);
+                    continue;
+                }
+                if (currentValue !== step.to) {
+                    this.log.warn(`${journal.listName}: Rollback überschreibt extern geänderte ID ${step.id} nicht.`);
+                    journal.confirmedSteps -= 1;
+                    await this.persistSortTransaction(journal);
+                    continue;
+                }
+                const valueStateId = `${this.alexaInstance}.Lists.${journal.listName}.items.${step.id}.value`;
+                const valueObject = await this.getForeignObjectAsync(valueStateId);
+                if (!valueObject) {
+                    this.log.error(`${journal.listName}: Rollback-Datenpunkt fehlt: ${valueStateId}`);
+                    return false;
+                }
+                const beforeState = await this.getForeignStateAsync(valueStateId);
+                const beforeTs = Number(beforeState?.ts || 0);
+                await this.writeAlexaState(valueStateId, step.from);
+                const confirmation = await this.waitForAlexaValueConfirmation(journal.listName, step.id, step.to, step.from, beforeTs);
+                if (confirmation !== 'confirmed') {
+                    this.log.error(`${journal.listName}: Rollback-Schritt für ID ${step.id} wurde nicht eindeutig bestätigt.`);
+                    return false;
+                }
+                journal.confirmedSteps -= 1;
+                await this.persistSortTransaction(journal);
+                await this.wait(this.writePauseMs);
+            }
+            catch (error) {
+                this.log.error(`${journal.listName}: Rollback für ID ${step.id} fehlgeschlagen: ${error instanceof Error ? error.message : String(error)}`);
+                return false;
+            }
+        }
+        await this.persistSortTransaction(null);
+        return true;
+    }
+    async transactionMatchesTarget(journal) {
+        const list = await this.readList(journal.listName);
+        const values = new Map(list.map(item => [String(item?.id || ''), String(item?.value || '').trim()]));
+        for (const [id, expected] of Object.entries(journal.targetValues)) {
+            if (values.get(id) !== expected)
+                return false;
+        }
+        return true;
+    }
+    async recoverInterruptedSortTransaction() {
+        let journal;
+        try {
+            journal = await this.readSortTransaction();
+        }
+        catch (error) {
+            await this.activateSortSafetyStop('unbekannt', error instanceof Error ? error.message : String(error));
+            return;
+        }
+        if (!journal)
+            return;
+        this.log.warn(`${journal.listName}: Unterbrochene Sortiertransaktion ${journal.transactionId} gefunden; Wiederherstellung startet.`);
+        if (!(0, compatibility_1.canWriteAlexa)(this.writeCapability)) {
+            await this.activateSortSafetyStop(journal.listName, `${journal.listName}: Unterbrochene Sortierung kann wegen fehlender Alexa-Schreibfreigabe nicht wiederhergestellt werden.`, journal);
+            return;
+        }
+        // Alexa2 bekommt nach einem Prozessneustart kurz Zeit, einen bereits ausgelösten
+        // letzten Schreibzugriff zu bestätigen, bevor der Journalzustand bewertet wird.
+        await this.wait(3000);
+        try {
+            if (await this.transactionMatchesTarget(journal)) {
+                await this.persistSortTransaction(null);
+                this.log.info(`${journal.listName}: Unterbrochene Transaktion war bereits vollständig abgeschlossen; Journal bereinigt.`);
+                return;
+            }
+            if (journal.status === 'rollback' || journal.status === 'failed-rollback') {
+                const pendingRollback = await this.reconcilePendingRollbackStep(journal);
+                if (pendingRollback === 'ambiguous') {
+                    await this.activateSortSafetyStop(journal.listName, `${journal.listName}: Letzter Rollback-Schritt der unterbrochenen Transaktion ist nicht eindeutig auflösbar.`, journal);
+                    return;
+                }
+            }
+            else if (journal.confirmedSteps < journal.steps.length) {
+                const pending = await this.reconcilePendingTransactionStep(journal);
+                if (pending === 'ambiguous') {
+                    await this.activateSortSafetyStop(journal.listName, `${journal.listName}: Letzter Sortierschritt der unterbrochenen Transaktion ist nicht eindeutig auflösbar.`, journal);
+                    return;
+                }
+            }
+            const restored = await this.rollbackBufferedTransaction(journal);
+            if (!restored) {
+                await this.activateSortSafetyStop(journal.listName, `${journal.listName}: Unterbrochene Sortierung konnte nicht vollständig zurückgesetzt werden.`, journal);
+                return;
+            }
+            this.log.warn(`${journal.listName}: Unterbrochene Sortierung wurde anhand des lokalen Journals vollständig rückwärts aufgelöst.`);
+        }
+        catch (error) {
+            await this.activateSortSafetyStop(journal.listName, `${journal.listName}: Wiederherstellung der unterbrochenen Sortierung fehlgeschlagen: ${error instanceof Error ? error.message : String(error)}`, journal);
+        }
+    }
+    async activateSortSafetyStop(listName, reason, journal) {
+        this.pendingLists.clear();
+        if (journal) {
+            journal.status = journal.status === 'rollback' || journal.status === 'failed-rollback'
+                ? 'failed-rollback'
+                : 'failed-applying';
+            await this.persistSortTransaction(journal);
+        }
+        await this.setStateAsync('control.enabled', false, true);
+        const prefix = listName !== 'unbekannt' && !reason.startsWith(`${listName}:`) ? `${listName}: ` : '';
+        const message = `${prefix}${reason} SICHERHEITSSTOPP: ShoppingRoute wurde deaktiviert; weitere automatische Sortierung bleibt gesperrt.`;
+        await this.setError(message);
+        this.log.error(message);
     }
     async applyMarketHeaderAction(listName, action) {
         const stateId = action.type === 'create'

@@ -1,7 +1,14 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { createSortPlan, mergeUnknownProducts, mergeReviewQueue, applyReviewActions } = require('../build/lib/sorter');
+const {
+    createSortPlan,
+    mergeUnknownProducts,
+    mergeReviewQueue,
+    applyReviewActions,
+    compareActiveSnapshot,
+    activeSnapshotHasConflict,
+} = require('../build/lib/sorter');
 const { parseItem, stripQuantityDetailed, canonicalProductKey } = require('../build/lib/parser');
 
 const markets = [
@@ -167,4 +174,42 @@ test('review queue updates lastSeen when the observed item really changes', () =
     assert.equal(second[0].text, 'Toilettenpapier bei Aldi');
     assert.equal(second[0].market, 'ALDI');
     assert.equal(second[0].lastSeen, '2026-08-10T18:05:00.000Z');
+});
+
+
+test('transaction snapshot treats newly added items as a conflict', () => {
+    const original = [
+        { id: 'a', value: 'Möhren', completed: false, createdDateTime: 1 },
+        { id: 'b', value: 'Gurke', completed: false, createdDateTime: 2 },
+    ];
+    const fresh = [
+        ...original,
+        { id: 'c', value: 'Milch', completed: false, createdDateTime: 3 },
+    ];
+    const expected = new Map([['a', 'Möhren'], ['b', 'Gurke']]);
+    const comparison = compareActiveSnapshot(original, fresh, expected);
+
+    assert.deepEqual(comparison.addedIds, ['c']);
+    assert.deepEqual(comparison.missingIds, []);
+    assert.deepEqual(comparison.changedIds, []);
+    assert.equal(activeSnapshotHasConflict(comparison), true);
+});
+
+test('transaction snapshot detects changed or completed original items', () => {
+    const original = [
+        { id: 'a', value: 'Möhren', completed: false, createdDateTime: 1 },
+        { id: 'b', value: 'Gurke', completed: false, createdDateTime: 2 },
+    ];
+    const fresh = [
+        { id: 'a', value: 'Möhren geändert', completed: false, createdDateTime: 1 },
+        { id: 'b', value: 'Gurke', completed: true, createdDateTime: 2 },
+        { id: 'c', value: 'Milch', completed: false, createdDateTime: 3 },
+    ];
+    const expected = new Map([['a', 'Möhren'], ['b', 'Gurke']]);
+    const comparison = compareActiveSnapshot(original, fresh, expected);
+
+    assert.deepEqual(comparison.addedIds, ['c']);
+    assert.deepEqual(comparison.missingIds, ['b']);
+    assert.deepEqual(comparison.changedIds, ['a']);
+    assert.equal(activeSnapshotHasConflict(comparison), true);
 });

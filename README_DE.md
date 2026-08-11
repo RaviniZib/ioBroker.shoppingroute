@@ -57,6 +57,7 @@ Anschließend kann 0.3.0 flexible Artikel marktübergreifend zusammenlegen, wenn
 - `info.reviewQueue` – unbekannte Artikel
 - `info.statistics` – lokale Einkaufsstatistik
 - `info.traffic` – API-/Schreibzähler
+- `info.sortTransaction` – lokales Wiederherstellungsjournal einer laufenden Sortierung; im Normalzustand `{}`
 - `info.configExport` – komplette Konfigurationssicherung
 - `info.marketProfiles` – teilbare Marktprofile
 - `info.versionInstalled`, `info.versionBeta`, `info.updateAvailable` – Versionsstatus
@@ -74,6 +75,24 @@ Solange ShoppingRoute noch nicht im offiziellen ioBroker-Repository geführt wir
 ShoppingRoute wird ab dieser Version unter der **MIT-Lizenz** veröffentlicht. Frühere bereits veröffentlichte Versionen bleiben unter der jeweils damals gültigen Lizenz.
 
 ## Changelog
+
+### Unveröffentlicht
+
+- List-Stability-Guard: Nach jeder Alexa2-Listenänderung wartet ShoppingRoute mindestens 30 Sekunden ohne weitere Listenänderung, bevor Sortierschreibzugriffe beginnen. Taucht während einer gepufferten Sortierung eine neue aktive ID auf, wird der bestätigte Sortierpfad rückwärts zurückgesetzt; die neue ID selbst bleibt unangetastet. Auch die `updatedDateTime`-Finalisierung bricht bei neuen IDs sofort ab und plant erst nach erneuter Synchronisationsruhe neu.
+
+- Die sichtbare Alexa-Reihenfolge wird nach der gepufferten Inhalts-Permutation jetzt anhand von `updatedDateTime` finalisiert. Dafür werden nur die minimal notwendigen Einträge mit ihrem unveränderten Text erneut bestätigt; normale Einkaufsartikel werden weiterhin weder gelöscht noch neu angelegt. Dadurch bleibt der Puffer-Schutz gegen Artikelvervielfältigung erhalten, während „Älteste bis neueste“ in der Alexa-App wieder dem ShoppingRoute-Sortierplan entspricht.
+
+- Zieltexte der Sortierplanung werden jetzt genauso wie die vorhandenen Alexa-Listentexte an den Rändern bereinigt. Dadurch kann ein unsichtbares nachgestelltes Leerzeichen (z. B. `Camembert `) die gepufferte Permutationsprüfung nicht mehr fälschlich blockieren.
+
+- Die direkte, schrittweise Textumverteilung wurde durch eine gepufferte Euler-Kreis-Transaktion ersetzt. Pro getrenntem Wertekreis wird genau ein temporärer Pufferwert verwendet; normale Einkaufsartikel werden weder gelöscht noch neu angelegt und der Amazon-Schreibverkehr bleibt nahe an der Zahl der tatsächlich geänderten Listenplätze.
+- Ein dauerhaftes lokales Sortierjournal (`info.sortTransaction`) wurde ergänzt. Jeder bestätigte Schritt wird lokal festgehalten; nach einem Neustart wird eine unterbrochene Transaktion Schritt für Schritt rückwärts aufgelöst, statt einen Zwischenstand der Alexa-Liste als neue Wahrheit zu übernehmen.
+- Jeder Sortierschritt wird von Alexa2 bestätigt. Bei einem nicht eindeutig auflösbaren Schreibstatus greift ein Sicherheitsstopp. Neue Artikel, die während einer laufenden Transaktion hinzukommen, brechen die aktuelle Permutation nicht ab und werden im folgenden Lauf einsortiert.
+- Admin-Korrekturen für voneinander unabhängige Marktlaufwege, neu angelegte Märkte/Produktgruppen, die Mehrfachauswahl alternativer Märkte in Artikel- und Prüfliste sowie „Alle übernehmen“ dokumentiert und abgesichert.
+- Dokumentiert, dass ShoppingRoute ausschließlich den von Alexa2 aktuell gelieferten Listenstand verarbeiten kann. Bei einer festhängenden Alexa2-Listensynchronisierung erscheinen neue App-Einträge deshalb erst nach der erneuten Alexa2-Synchronisierung in ShoppingRoute.
+
+### 0.3.1 (2026-08-10)
+
+- Neustartschleife im Prüflisten-Lernmodus korrigiert: identische Wiederholungsbeobachtungen schreiben `reviewItems` nicht mehr allein wegen eines neuen `lastSeen`-Zeitpunkts zurück.
 
 ### 0.3.0 (2026-08-10)
 

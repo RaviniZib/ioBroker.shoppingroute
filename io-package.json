@@ -888,6 +888,19 @@
       "native": {}
     },
     {
+      "_id": "info.sortTransaction",
+      "type": "state",
+      "common": {
+        "name": "Buffered sort transaction journal",
+        "type": "string",
+        "role": "json",
+        "read": true,
+        "write": false,
+        "def": "{}"
+      },
+      "native": {}
+    },
+    {
       "_id": "info.sortRunsToday",
       "type": "state",
       "common": {

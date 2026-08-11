@@ -54,6 +54,49 @@ export function activeIdSignature(list: AlexaListItem[]): string {
         .join('|');
 }
 
+export interface ActiveSnapshotComparison {
+    addedIds: string[];
+    missingIds: string[];
+    changedIds: string[];
+}
+
+export function compareActiveSnapshot(
+    originalItems: AlexaListItem[],
+    freshItems: AlexaListItem[],
+    expectedValues: Map<string, string>,
+): ActiveSnapshotComparison {
+    const original = activeItems(originalItems);
+    const fresh = activeItems(freshItems);
+    const originalIds = new Set(original.map(item => String(item.id)));
+    const freshById = new Map(fresh.map(item => [String(item.id), item]));
+
+    const addedIds = fresh
+        .map(item => String(item.id))
+        .filter(id => !originalIds.has(id));
+
+    const missingIds: string[] = [];
+    const changedIds: string[] = [];
+
+    for (const item of original) {
+        const id = String(item.id);
+        const current = freshById.get(id);
+        if (!current) {
+            missingIds.push(id);
+            continue;
+        }
+        const expected = expectedValues.get(id);
+        if (expected !== undefined && String(current.value || '').trim() !== expected) {
+            changedIds.push(id);
+        }
+    }
+
+    return { addedIds, missingIds, changedIds };
+}
+
+export function activeSnapshotHasConflict(comparison: ActiveSnapshotComparison): boolean {
+    return comparison.addedIds.length > 0 || comparison.missingIds.length > 0 || comparison.changedIds.length > 0;
+}
+
 export function sortSlotsOldestFirst(items: AlexaListItem[]): AlexaListItem[] {
     return [...items].sort((a, b) => {
         const timeA = toTimestamp(a.createdDateTime);
@@ -126,7 +169,7 @@ export function createSortPlan(
             targets.push({ text: header, market, category: '', product: header });
         }
         targets.push({
-            text: target.parsed.originalText,
+            text: String(target.parsed.originalText).trim(),
             market,
             category: target.parsed.category,
             product: target.parsed.productName,
@@ -272,6 +315,7 @@ export function mergeReviewQueue(
             market: entry.market,
             category: previous?.category || entry.guessedCategory,
             defaultMarket: previous?.defaultMarket || '',
+            availableMarkets: previous?.availableMarkets ?? '',
             aliases: previous?.aliases || '',
             action: previous?.action || 'pending',
             firstSeen: previous?.firstSeen || now,
@@ -285,6 +329,7 @@ export function mergeReviewQueue(
             previous!.market === next.market &&
             previous!.category === next.category &&
             previous!.defaultMarket === next.defaultMarket &&
+            JSON.stringify(previous!.availableMarkets ?? '') === JSON.stringify(next.availableMarkets ?? '') &&
             previous!.aliases === next.aliases &&
             previous!.action === next.action &&
             previous!.firstSeen === next.firstSeen;
@@ -314,6 +359,11 @@ export function applyReviewActions(
         if (existing) {
             if (review.category) existing.category = review.category;
             if (review.defaultMarket !== undefined) existing.defaultMarket = review.defaultMarket;
+            if (review.availableMarkets !== undefined) {
+                existing.availableMarkets = Array.isArray(review.availableMarkets)
+                    ? [...review.availableMarkets]
+                    : String(review.availableMarkets || '');
+            }
             if (review.aliases) {
                 const aliases = new Set(String(existing.aliases || '').split(/[;,]/).map(value => value.trim()).filter(Boolean));
                 for (const alias of review.aliases.split(/[;,]/).map(value => value.trim()).filter(Boolean)) aliases.add(alias);
@@ -328,7 +378,9 @@ export function applyReviewActions(
             aliases: String(review.aliases || ''),
             category: String(review.category || review.guessedCategory || 'Sonstiges'),
             defaultMarket: String(review.defaultMarket || ''),
-            availableMarkets: '',
+            availableMarkets: Array.isArray(review.availableMarkets)
+                ? [...review.availableMarkets]
+                : String(review.availableMarkets || ''),
         };
         merged.push(product);
         accepted.push(product);

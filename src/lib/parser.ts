@@ -223,10 +223,12 @@ export function guessCategorySmart(text: string, products: ProductConfig[]): str
     return ranked[0]?.[0] || ruleGuess;
 }
 
-export function parseMarketList(value: string | undefined, markets: MarketConfig[]): string[] {
-    const entries = String(value || '')
-        .split(/[;,]/)
-        .map(entry => resolveMarket(entry.trim(), markets))
+export function parseMarketList(value: string | string[] | undefined, markets: MarketConfig[]): string[] {
+    const rawEntries = Array.isArray(value)
+        ? value.flatMap(entry => String(entry || '').split(/[;,]/))
+        : String(value || '').split(/[;,]/);
+    const entries = rawEntries
+        .map(entry => resolveMarket(String(entry || '').trim(), markets))
         .filter((entry): entry is string => Boolean(entry));
     return unique(entries);
 }

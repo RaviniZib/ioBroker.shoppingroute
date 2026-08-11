@@ -39,6 +39,7 @@ export interface ReviewItemConfig {
     market: string;
     category?: string;
     defaultMarket?: string;
+    availableMarkets?: string | string[];
     aliases?: string;
     action?: ReviewAction;
     firstSeen?: string;
@@ -50,7 +51,7 @@ export interface ProductConfig {
     aliases?: string;
     category: string;
     defaultMarket?: string;
-    availableMarkets?: string;
+    availableMarkets?: string | string[];
 }
 
 export type LearningMode = 'automatic' | 'review' | 'off';
