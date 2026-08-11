@@ -76,7 +76,7 @@ ShoppingRoute wird ab dieser Version unter der **MIT-Lizenz** veröffentlicht. F
 
 ## Changelog
 
-### Unveröffentlicht
+### 0.3.2 (2026-08-11)
 
 - List-Stability-Guard: Nach jeder Alexa2-Listenänderung wartet ShoppingRoute mindestens 30 Sekunden ohne weitere Listenänderung, bevor Sortierschreibzugriffe beginnen. Taucht während einer gepufferten Sortierung eine neue aktive ID auf, wird der bestätigte Sortierpfad rückwärts zurückgesetzt; die neue ID selbst bleibt unangetastet. Auch die `updatedDateTime`-Finalisierung bricht bei neuen IDs sofort ab und plant erst nach erneuter Synchronisationsruhe neu.
 

@@ -39,7 +39,7 @@ See `README_DE.md` for the detailed German documentation.
 
 ## Changelog
 
-### Unreleased
+### 0.3.2 (2026-08-11)
 
 - List stability guard: after every Alexa2 list change, ShoppingRoute waits for at least 30 seconds with no further list change before sorting writes start. If a new active ID appears during a buffered sort, the confirmed sort path is rolled back while the new ID itself remains untouched. The `updatedDateTime` visible-order finalizer also aborts immediately on new IDs and replans only after another quiet window.
 

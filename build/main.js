@@ -46,7 +46,7 @@ const parser_1 = require("./lib/parser");
 const market_plan_1 = require("./lib/market-plan");
 const config_tools_1 = require("./lib/config-tools");
 const statistics_1 = require("./lib/statistics");
-const VERSION = '0.3.1';
+const VERSION = '0.3.2';
 const LIST_STABILITY_MS = 30000;
 const DEFAULT_CATEGORIES = [
     'Obst/Gemüse',

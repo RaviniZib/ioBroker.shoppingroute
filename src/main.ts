@@ -47,7 +47,7 @@ import {
 import { buildMarketProfiles, ensureMarketRoutes, exportConfig, importMarketProfile, normalizeRoutesForAdmin, parseConfigImport } from './lib/config-tools';
 import { emptyUsageStatistics, normalizeUsageStatistics, recordAddedItem, type UsageStatistics } from './lib/statistics';
 
-const VERSION = '0.3.1';
+const VERSION = '0.3.2';
 const LIST_STABILITY_MS = 30000;
 const DEFAULT_CATEGORIES = [
     'Obst/Gemüse',
