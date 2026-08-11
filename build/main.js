@@ -343,18 +343,6 @@ class ShoppingRoute extends utils.Adapter {
             this.sendTo(obj.from, obj.command, options, obj.callback);
             return;
         }
-        if (obj.command === 'getRouteProductGroups') {
-            const suppliedGroups = Array.isArray(obj.message?.productGroups)
-                ? obj.message.productGroups
-                    .map((group) => ({ name: String(group?.name || '').trim() }))
-                    .filter((group) => Boolean(group.name))
-                : this.productGroups;
-            const routeRows = Array.isArray(obj.message?.routeRows) ? obj.message.routeRows : [];
-            const names = (0, config_tools_1.availableProductGroupsForRoute)(suppliedGroups, routeRows, String(obj.message?.value || ''));
-            const options = names.map(name => ({ value: name, label: name }));
-            this.sendTo(obj.from, obj.command, options, obj.callback);
-            return;
-        }
         if (obj.command === 'getMarkets' || obj.command === 'getMarketsOptional' || obj.command === 'getActiveMarkets') {
             const suppliedMarkets = Array.isArray(obj.message?.markets)
                 ? obj.message.markets

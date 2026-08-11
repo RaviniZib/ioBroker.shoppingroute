@@ -1,4 +1,4 @@
-import type { AdapterConfigShape, ConfigExport, MarketConfig, MarketProfile, ProductGroupConfig, RouteConfig } from './model';
+import type { AdapterConfigShape, ConfigExport, MarketConfig, MarketProfile, RouteConfig } from './model';
 
 const EXPORT_KEYS: Array<keyof AdapterConfigShape> = [
     'alexaInstance', 'listName', 'lists', 'dryRun', 'autoLearnProducts', 'learningMode',
@@ -83,36 +83,6 @@ export function groupRoutesByMarket(routes: RouteConfig[]): RouteConfig[] {
             return byMarket || a.index - b.index;
         })
         .map(entry => entry.route);
-}
-
-export function availableProductGroupsForRoute(
-    productGroups: ProductGroupConfig[],
-    routeRows: Array<Pick<RouteConfig, 'category'>>,
-    currentValue = '',
-): string[] {
-    const current = String(currentValue || '').trim();
-    const currentKey = current.toLocaleLowerCase('de');
-    const used = new Set(
-        routeRows
-            .map(route => String(route?.category || '').trim().toLocaleLowerCase('de'))
-            .filter(Boolean),
-    );
-    const result: string[] = [];
-    const seen = new Set<string>();
-
-    for (const group of productGroups) {
-        const name = String(group?.name || '').trim();
-        const key = name.toLocaleLowerCase('de');
-        if (!name || seen.has(key) || (used.has(key) && key !== currentKey)) continue;
-        seen.add(key);
-        result.push(name);
-    }
-
-    // Keep a legacy route category visible even if it is no longer in the central list.
-    // It remains editable/removable, but is never offered for a newly added route row.
-    if (current && !seen.has(currentKey)) result.push(current);
-
-    return result.sort((a, b) => a.localeCompare(b, 'de', { sensitivity: 'base' }));
 }
 
 export function reindexRoutes(routes: RouteConfig[]): RouteConfig[] {

@@ -467,17 +467,17 @@
             {
               "type": "selectSendTo",
               "attr": "category",
-              "command": "getRouteProductGroups",
+              "command": "getProductGroups",
               "manual": false,
               "noTranslation": true,
-              "showAllValues": true,
+              "default": "Sonstiges",
               "title": "ui.items.productgroupstab.items.productgroups.items.0.title",
               "width": "75%",
               "sort": false,
               "alsoDependsOn": [
                 "_groupRevision"
               ],
-              "jsonData": "{\"productGroups\":${JSON.stringify(globalData.productGroups || [])},\"routeRows\":${JSON.stringify(globalData._routeEditorRows || [])},\"value\":${JSON.stringify(data.category == null ? '' : data.category)}}"
+              "jsonData": "{\"productGroups\":${JSON.stringify(globalData.productGroups || [])}}"
             },
             {
               "type": "number",
@@ -502,7 +502,7 @@
               "routeMarketFilter",
               "productGroups"
             ],
-            "calculateFunc": "String(data.routeMarketFilter || '') ? (data.routes || []).filter(r => String(r.market || '') === String(data.routeMarketFilter || '') && String(r.category || '').trim()).sort((a,b)=>(Number(a.order)||9999)-(Number(b.order)||9999)).map((r,i) => ({_market:String(data.routeMarketFilter || ''),_groupRevision:JSON.stringify((data.productGroups || []).map(g => String((g && g.name) || '').trim()).filter(Boolean)),category:String(r.category || '').trim(),order:(i+1)*10})) : []",
+            "calculateFunc": "String(data.routeMarketFilter || '') ? [...(data.routes || []).filter(r => String(r.market || '') === String(data.routeMarketFilter || '')).sort((a,b)=>(Number(a.order)||9999)-(Number(b.order)||9999)).map(r => String(r.category || '').trim()),...(data.productGroups || []).map(g => String((g && g.name) || '').trim())].filter((category,index,all) => category && all.findIndex(x => String(x).toLocaleLowerCase('de') === String(category).toLocaleLowerCase('de')) === index).map((category,i) => ({_market: String(data.routeMarketFilter || ''),_groupRevision: JSON.stringify((data.productGroups || []).map(g => String((g && g.name) || '').trim()).filter(Boolean)),category,order:(i+1)*10})) : []",
             "ignoreOwnChanges": true
           }
         },
@@ -538,7 +538,7 @@
             "alsoDependsOn": [
               "_routeEditorRows"
             ],
-            "calculateFunc": "(String(data.routeMarketFilter || '') && (data._routeEditorRows || []).every(r => !String((r && r._market) || '') || String(r._market) === String(data.routeMarketFilter || ''))) ? (data.routes || []).filter(r => String(r.market || '') !== String(data.routeMarketFilter || '')).concat((data._routeEditorRows || []).filter(r => String((r && r.category) || '').trim()).map((r,i) => ({market:String(data.routeMarketFilter || ''),category:String(r.category).trim(),order:(i+1)*10}))) : (data.routes || [])",
+            "calculateFunc": "(String(data.routeMarketFilter || '') && (data._routeEditorRows || []).every(r => String((r && r._market) || '') === String(data.routeMarketFilter || ''))) ? (data.routes || []).filter(r => String(r.market || '') !== String(data.routeMarketFilter || '')).concat((data._routeEditorRows || []).filter(r => String((r && r.category) || '').trim()).map((r,i) => ({market:String(data.routeMarketFilter || ''),category:String(r.category).trim(),order:(i+1)*10}))) : (data.routes || [])",
             "ignoreOwnChanges": true
           }
         }

@@ -5,7 +5,6 @@ exports.parseConfigImport = parseConfigImport;
 exports.buildMarketProfiles = buildMarketProfiles;
 exports.importMarketProfile = importMarketProfile;
 exports.groupRoutesByMarket = groupRoutesByMarket;
-exports.availableProductGroupsForRoute = availableProductGroupsForRoute;
 exports.reindexRoutes = reindexRoutes;
 exports.normalizeRoutesForAdmin = normalizeRoutesForAdmin;
 const EXPORT_KEYS = [
@@ -80,28 +79,6 @@ function groupRoutesByMarket(routes) {
         return byMarket || a.index - b.index;
     })
         .map(entry => entry.route);
-}
-function availableProductGroupsForRoute(productGroups, routeRows, currentValue = '') {
-    const current = String(currentValue || '').trim();
-    const currentKey = current.toLocaleLowerCase('de');
-    const used = new Set(routeRows
-        .map(route => String(route?.category || '').trim().toLocaleLowerCase('de'))
-        .filter(Boolean));
-    const result = [];
-    const seen = new Set();
-    for (const group of productGroups) {
-        const name = String(group?.name || '').trim();
-        const key = name.toLocaleLowerCase('de');
-        if (!name || seen.has(key) || (used.has(key) && key !== currentKey))
-            continue;
-        seen.add(key);
-        result.push(name);
-    }
-    // Keep a legacy route category visible even if it is no longer in the central list.
-    // It remains editable/removable, but is never offered for a newly added route row.
-    if (current && !seen.has(currentKey))
-        result.push(current);
-    return result.sort((a, b) => a.localeCompare(b, 'de', { sensitivity: 'base' }));
 }
 function reindexRoutes(routes) {
     const counters = new Map();

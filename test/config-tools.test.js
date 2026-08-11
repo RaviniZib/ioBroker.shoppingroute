@@ -8,7 +8,6 @@ const {
   importMarketProfile,
   reindexRoutes,
   normalizeRoutesForAdmin,
-  availableProductGroupsForRoute,
 } = require('../build/lib/config-tools');
 
 test('configuration can be exported and imported with format marker', () => {
@@ -66,26 +65,6 @@ test('walking routes are grouped alphabetically by market while preserving each 
     'REWE:Brot/Gebäck',
   ]);
   assert.deepEqual(result.map(r => r.order), [10,20,10,20]);
-});
-
-test('route product-group choices contain only central groups missing from this market', () => {
-  const groups=[
-    {name:'Milchprodukte'},
-    {name:'Obst/Gemüse'},
-    {name:'Werkzeug'},
-    {name:'werkzeug'},
-  ];
-  const routeRows=[{category:'Werkzeug'},{category:'Obst/Gemüse'}];
-
-  assert.deepEqual(availableProductGroupsForRoute(groups,routeRows),['Milchprodukte']);
-  assert.deepEqual(
-    availableProductGroupsForRoute(groups,routeRows,'Werkzeug'),
-    ['Milchprodukte','Werkzeug'],
-  );
-  assert.deepEqual(
-    availableProductGroupsForRoute(groups,[{category:'Historische Gruppe'}],'Historische Gruppe'),
-    ['Historische Gruppe','Milchprodukte','Obst/Gemüse','Werkzeug'],
-  );
 });
 
 test('route normalization never removes existing routes during an update', () => {

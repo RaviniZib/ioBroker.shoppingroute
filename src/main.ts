@@ -44,7 +44,7 @@ import {
     requiredMarkets,
     type MarketHeaderAction,
 } from './lib/market-plan';
-import { availableProductGroupsForRoute, buildMarketProfiles, exportConfig, importMarketProfile, normalizeRoutesForAdmin, parseConfigImport } from './lib/config-tools';
+import { buildMarketProfiles, exportConfig, importMarketProfile, normalizeRoutesForAdmin, parseConfigImport } from './lib/config-tools';
 import { emptyUsageStatistics, normalizeUsageStatistics, recordAddedItem, type UsageStatistics } from './lib/statistics';
 
 const VERSION = '0.3.2';
@@ -378,22 +378,6 @@ export class ShoppingRoute extends utils.Adapter {
             const options = suppliedGroups
                 .map((group: { name: string }) => ({ value: group.name, label: group.name }))
                 .sort((a: { label: string }, b: { label: string }) => a.label.localeCompare(b.label, 'de', { sensitivity: 'base' }));
-            this.sendTo(obj.from, obj.command, options, obj.callback);
-            return;
-        }
-        if (obj.command === 'getRouteProductGroups') {
-            const suppliedGroups = Array.isArray(obj.message?.productGroups)
-                ? obj.message.productGroups
-                    .map((group: any) => ({ name: String(group?.name || '').trim() }))
-                    .filter((group: { name: string }) => Boolean(group.name))
-                : this.productGroups;
-            const routeRows = Array.isArray(obj.message?.routeRows) ? obj.message.routeRows : [];
-            const names = availableProductGroupsForRoute(
-                suppliedGroups,
-                routeRows,
-                String(obj.message?.value || ''),
-            );
-            const options = names.map(name => ({ value: name, label: name }));
             this.sendTo(obj.from, obj.command, options, obj.callback);
             return;
         }

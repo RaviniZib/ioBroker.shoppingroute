@@ -93,7 +93,7 @@ On the **Product groups** tab, define the sections used to sort items within a m
 - Non-food
 - Other
 
-`Product groups` is the central master list of all known groups. Each market route contains only the groups actually used there. Use `+` to add a master-list group that is still missing from the selected market. Adding or deleting a route row changes neither the master list nor any other market route.
+`Product groups` is the central master list of all known groups. Each market route is stored independently. The `+` menu continues to offer all groups from the master list; the editor prevents duplicate rows. Adding or deleting a route row changes neither the master list nor any other market route.
 
 ## 7. Walking routes
 
