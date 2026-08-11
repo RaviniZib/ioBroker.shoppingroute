@@ -420,37 +420,6 @@
       "type": "panel",
       "label": "ui.items.routestab.label",
       "items": {
-        "routeMarketFilter": {
-          "type": "selectSendTo",
-          "command": "getActiveMarkets",
-          "manual": false,
-          "noTranslation": true,
-          "doNotSave": true,
-          "label": "ui.items.routestab.items.routemarketfilter.label",
-          "help": {
-            "en": "Select one active market. Only this market’s walking route is shown below.",
-            "de": "Einen aktiven Markt auswählen. Darunter wird ausschließlich der Laufweg dieses Marktes angezeigt.",
-            "ru": "Выберите один активный магазин. Ниже будет показан только маршрут по этому магазину.",
-            "pt": "Selecione um mercado ativo. Abaixo será mostrado apenas o percurso desse mercado.",
-            "nl": "Selecteer één actieve winkel. Hieronder wordt alleen de looproute van deze winkel weergegeven.",
-            "fr": "Sélectionnez un magasin actif. Seul le parcours de ce magasin est affiché ci-dessous.",
-            "it": "Seleziona un negozio attivo. Sotto viene mostrato solo il percorso di questo negozio.",
-            "es": "Seleccione una tienda activa. Debajo se mostrará únicamente el recorrido de esa tienda.",
-            "pl": "Wybierz jeden aktywny sklep. Poniżej zostanie wyświetlona tylko trasa dla tego sklepu.",
-            "uk": "Виберіть один активний магазин. Нижче буде показано лише маршрут по цьому магазину.",
-            "zh-cn": "选择一个已启用的商店。下方只显示该商店的店内路线。"
-          },
-          "newLine": true,
-          "xs": 12,
-          "sm": 12,
-          "md": 6,
-          "lg": 4,
-          "xl": 3,
-          "alsoDependsOn": [
-            "markets"
-          ],
-          "jsonData": "{\"markets\":${JSON.stringify(data.markets || [])}}"
-        },
         "routesHelp": {
           "type": "staticText",
           "text": "ui.items.routestab.items.routeshelp.text",
@@ -460,51 +429,16 @@
           "lg": 12,
           "xl": 12
         },
-        "_routeEditorRows": {
-          "type": "table",
-          "label": "ui.items.routestab.items.routeeditorrows.label",
-          "items": [
-            {
-              "type": "selectSendTo",
-              "attr": "category",
-              "command": "getProductGroups",
-              "manual": false,
-              "noTranslation": true,
-              "default": "Sonstiges",
-              "title": "ui.items.productgroupstab.items.productgroups.items.0.title",
-              "width": "75%",
-              "sort": false,
-              "alsoDependsOn": [
-                "_groupRevision"
-              ],
-              "jsonData": "{\"productGroups\":${JSON.stringify(globalData.productGroups || [])}}"
-            },
-            {
-              "type": "number",
-              "attr": "order",
-              "title": "ui.items.marketstab.items.markets.items.1.title",
-              "width": "25%",
-              "disabled": "true"
-            }
-          ],
-          "uniqueColumns": [
-            "category"
-          ],
-          "compact": true,
+        "routeEditor": {
+          "type": "custom",
+          "url": "custom/routeEditor.js",
+          "name": "ShoppingRouteAdminSet/Components/RouteEditor",
+          "i18n": false,
           "xs": 12,
           "sm": 12,
           "md": 12,
           "lg": 12,
-          "xl": 12,
-          "onChange": {
-            "alsoDependsOn": [
-              "routes",
-              "routeMarketFilter",
-              "productGroups"
-            ],
-            "calculateFunc": "String(data.routeMarketFilter || '') ? [...(data.routes || []).filter(r => String(r.market || '') === String(data.routeMarketFilter || '')).sort((a,b)=>(Number(a.order)||9999)-(Number(b.order)||9999)).map(r => String(r.category || '').trim()),...(data.productGroups || []).map(g => String((g && g.name) || '').trim())].filter((category,index,all) => category && all.findIndex(x => String(x).toLocaleLowerCase('de') === String(category).toLocaleLowerCase('de')) === index).map((category,i) => ({_market: String(data.routeMarketFilter || ''),_groupRevision: JSON.stringify((data.productGroups || []).map(g => String((g && g.name) || '').trim()).filter(Boolean)),category,order:(i+1)*10})) : []",
-            "ignoreOwnChanges": true
-          }
+          "xl": 12
         },
         "routes": {
           "type": "table",
@@ -533,14 +467,7 @@
           "sm": 12,
           "md": 12,
           "lg": 12,
-          "xl": 12,
-          "onChange": {
-            "alsoDependsOn": [
-              "_routeEditorRows"
-            ],
-            "calculateFunc": "(String(data.routeMarketFilter || '') && (data._routeEditorRows || []).every(r => String((r && r._market) || '') === String(data.routeMarketFilter || ''))) ? (data.routes || []).filter(r => String(r.market || '') !== String(data.routeMarketFilter || '')).concat((data._routeEditorRows || []).filter(r => String((r && r.category) || '').trim()).map((r,i) => ({market:String(data.routeMarketFilter || ''),category:String(r.category).trim(),order:(i+1)*10}))) : (data.routes || [])",
-            "ignoreOwnChanges": true
-          }
+          "xl": 12
         }
       }
     },
