@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createBufferedSortProgram = createBufferedSortProgram;
+exports.classifyVisibleOrderFinalConfirmation = classifyVisibleOrderFinalConfirmation;
 exports.sortIdsByAlexaUpdatedTime = sortIdsByAlexaUpdatedTime;
 exports.createVisibleOrderRefreshPlan = createVisibleOrderRefreshPlan;
 exports.createVisibleOrderTouchProgram = createVisibleOrderTouchProgram;
@@ -136,6 +137,17 @@ function createBufferedSortProgram(plan, marker) {
         amazonWrites: steps.length,
         steps,
     };
+}
+function classifyVisibleOrderFinalConfirmation(expectedValue, marker, previousUpdatedDateTime, listValue, currentUpdatedDateTime, stateValue, stateAcknowledged) {
+    const previousUpdated = previousUpdatedDateTime === undefined ? '' : String(previousUpdatedDateTime);
+    const currentUpdated = currentUpdatedDateTime === undefined ? '' : String(currentUpdatedDateTime);
+    if (listValue === expectedValue &&
+        currentUpdated !== '' &&
+        currentUpdated !== previousUpdated)
+        return 'confirmed';
+    if (listValue === marker && stateValue === marker && stateAcknowledged)
+        return 'not-applied';
+    return 'ambiguous';
 }
 function visibleOrderTimestamp(value) {
     if (typeof value === 'number' && Number.isFinite(value))

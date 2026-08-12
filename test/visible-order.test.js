@@ -4,11 +4,39 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 
 const {
+    classifyVisibleOrderFinalConfirmation,
     createVisibleOrderMarker,
     createVisibleOrderRefreshPlan,
     createVisibleOrderTouchProgram,
     sortIdsByAlexaUpdatedTime,
 } = require("../build/lib/buffered-sort");
+
+test("visible-order final confirmation trusts the updated Alexa list JSON", () => {
+    assert.equal(
+        classifyVisibleOrderFinalConfirmation(
+            "Lachsaufschnitt",
+            "ShoppingRoute Reihenfolge msq9n6tkww5waqth 0",
+            1786540000000,
+            "Lachsaufschnitt",
+            1786540005000,
+            "Lachsaufschnitt",
+            false,
+        ),
+        "confirmed",
+    );
+});
+
+test("a genuine version mismatch without confirmed final JSON remains unconfirmed", () => {
+    const marker = "ShoppingRoute Reihenfolge msq9n6tkww5waqth 0";
+    assert.equal(
+        classifyVisibleOrderFinalConfirmation("Lachsaufschnitt", marker, 1, marker, 2, marker, true),
+        "not-applied",
+    );
+    assert.equal(
+        classifyVisibleOrderFinalConfirmation("Lachsaufschnitt", marker, 1, "Extern geändert", 2, marker, false),
+        "ambiguous",
+    );
+});
 
 function applyTouches(current, touches) {
     const touched = new Set(touches);

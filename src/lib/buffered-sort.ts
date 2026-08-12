@@ -183,6 +183,30 @@ export interface AlexaVisibleOrderItem {
     createdDateTime?: number | string;
 }
 
+export type VisibleOrderFinalConfirmation = 'confirmed' | 'not-applied' | 'ambiguous';
+
+export function classifyVisibleOrderFinalConfirmation(
+    expectedValue: string,
+    marker: string,
+    previousUpdatedDateTime: number | string | undefined,
+    listValue: string | undefined,
+    currentUpdatedDateTime: number | string | undefined,
+    stateValue: string | undefined,
+    stateAcknowledged: boolean,
+): VisibleOrderFinalConfirmation {
+    const previousUpdated = previousUpdatedDateTime === undefined ? '' : String(previousUpdatedDateTime);
+    const currentUpdated = currentUpdatedDateTime === undefined ? '' : String(currentUpdatedDateTime);
+
+    if (
+        listValue === expectedValue &&
+        currentUpdated !== '' &&
+        currentUpdated !== previousUpdated
+    ) return 'confirmed';
+
+    if (listValue === marker && stateValue === marker && stateAcknowledged) return 'not-applied';
+    return 'ambiguous';
+}
+
 function visibleOrderTimestamp(value: number | string | undefined): number {
     if (typeof value === 'number' && Number.isFinite(value)) return value;
     if (typeof value === 'string' && value.trim()) {

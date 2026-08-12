@@ -837,9 +837,8 @@ class ShoppingRoute extends utils.Adapter {
         const currentIds = (0, buffered_sort_1.sortIdsByAlexaUpdatedTime)(relevant);
         return (0, buffered_sort_1.createVisibleOrderRefreshPlan)(currentIds, desiredIds);
     }
-    async waitForVisibleOrderTouchConfirmation(listName, id, expectedValue, previousUpdatedDateTime, previousStateTs, timeoutMs = 15000) {
+    async waitForVisibleOrderTouchConfirmation(listName, id, expectedValue, previousUpdatedDateTime, previousStateTs, marker, timeoutMs = 15000) {
         const valueStateId = `${this.alexaInstance}.Lists.${listName}.items.${id}.value`;
-        const previousUpdated = previousUpdatedDateTime === undefined ? '' : String(previousUpdatedDateTime);
         const deadline = Date.now() + timeoutMs;
         while (Date.now() < deadline) {
             const [state, list] = await Promise.all([
@@ -849,18 +848,17 @@ class ShoppingRoute extends utils.Adapter {
             const item = list.find(entry => String(entry?.id || '') === id);
             const listValue = item ? String(item.value || '').trim() : undefined;
             const stateValue = state ? String(state.val ?? '').trim() : undefined;
-            const stateTs = Number(state?.ts || 0);
-            const currentUpdated = item?.updatedDateTime === undefined ? '' : String(item.updatedDateTime);
-            if (listValue === expectedValue &&
-                stateValue === expectedValue &&
-                state?.ack === true &&
-                stateTs > previousStateTs &&
-                currentUpdated !== previousUpdated &&
-                currentUpdated !== '')
-                return true;
+            const confirmation = (0, buffered_sort_1.classifyVisibleOrderFinalConfirmation)(expectedValue, marker, previousUpdatedDateTime, listValue, item?.updatedDateTime, stateValue, state?.ack === true);
+            if (confirmation === 'confirmed')
+                return confirmation;
             await this.wait(250);
         }
-        return false;
+        const [state, list] = await Promise.all([
+            this.getForeignStateAsync(valueStateId),
+            this.readList(listName),
+        ]);
+        const item = list.find(entry => String(entry?.id || '') === id);
+        return (0, buffered_sort_1.classifyVisibleOrderFinalConfirmation)(expectedValue, marker, previousUpdatedDateTime, item ? String(item.value || '').trim() : undefined, item?.updatedDateTime, state ? String(state.val ?? '').trim() : undefined, state?.ack === true && Number(state?.ts || 0) >= previousStateTs);
     }
     async refreshVisibleAlexaOrder(listName, plan) {
         const orderedPlan = [...plan].sort((left, right) => Number(left.position) - Number(right.position));
@@ -952,15 +950,11 @@ class ShoppingRoute extends utils.Adapter {
             const restoreState = await this.getForeignStateAsync(valueStateId);
             const restoreTs = Number(restoreState?.ts || 0);
             await this.writeAlexaState(valueStateId, expectedValue);
-            const restored = await this.waitForVisibleOrderTouchConfirmation(listName, id, expectedValue, previousUpdatedDateTime, restoreTs);
-            if (!restored) {
-                const rollbackSucceeded = await this.rollbackBufferedTransaction(journal);
-                if (!rollbackSucceeded) {
-                    await this.activateSortSafetyStop(listName, `${listName}: Reihenfolge-Aktualisierung für ID ${id} konnte nicht sicher auf den Originaltext zurückgesetzt werden.`, journal);
-                    return { writes, interrupted: true, additionalItems };
-                }
-                this.pendingLists.add(listName);
-                this.log.warn(`${listName}: Reihenfolge-Aktualisierung für ID ${id} wurde nicht bestätigt; Originaltext ist wiederhergestellt und eine neue Berechnung folgt.`);
+            const restored = await this.waitForVisibleOrderTouchConfirmation(listName, id, expectedValue, previousUpdatedDateTime, restoreTs, marker);
+            if (restored !== 'confirmed') {
+                await this.activateSortSafetyStop(listName, restored === 'not-applied'
+                    ? `${listName}: Rückschreibung des Originaltexts für ID ${id} wurde nicht bestätigt.`
+                    : `${listName}: Rückschreibung des Originaltexts für ID ${id} ist nicht eindeutig auflösbar.`, journal);
                 return { writes, interrupted: true, additionalItems };
             }
             journal.confirmedSteps = 2;

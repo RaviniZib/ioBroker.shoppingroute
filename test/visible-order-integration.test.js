@@ -16,8 +16,21 @@ test("runtime finalizes Alexa visible order with journaled marker writes", () =>
     assert.doesNotMatch(main, /__SHOPPINGROUTE_REIHENFOLGE_/);
     assert.match(main, /await this\.persistSortTransaction\(journal\);[\s\S]*await this\.writeAlexaState\(valueStateId, marker\);/);
     assert.match(main, /await this\.writeAlexaState\(valueStateId, expectedValue\);/);
-    assert.match(main, /currentUpdated !== previousUpdated/);
+    assert.match(main, /classifyVisibleOrderFinalConfirmation/);
     assert.match(main, /if \(changes\.length === 0\)[\s\S]*visibleOrderRefreshIds\(list, plan\)/);
-    assert.match(main, /journal\.confirmedSteps = 2;[\s\S]*await this\.persistSortTransaction\(null\);/);
+    const refreshStart = main.indexOf("private async refreshVisibleAlexaOrder");
+    const refreshEnd = main.indexOf("private async persistSortTransaction", refreshStart);
+    const refresh = main.slice(refreshStart, refreshEnd);
+    assert.equal(
+        [...refresh.matchAll(/await this\.writeAlexaState\(valueStateId, expectedValue\);/g)].length,
+        1,
+        "the final value must be written exactly once",
+    );
+    assert.doesNotMatch(refresh, /rollbackBufferedTransaction\(journal\)/);
+    assert.match(refresh, /restored !== 'confirmed'[\s\S]*activateSortSafetyStop/);
+    assert.match(
+        refresh,
+        /journal\.confirmedSteps = 2;[\s\S]*persistSortTransaction\(journal\);[\s\S]*persistSortTransaction\(null\);/,
+    );
     assert.doesNotMatch(main, /Same-Value-Writes/);
 });
