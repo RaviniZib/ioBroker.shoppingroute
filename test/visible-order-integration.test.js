@@ -25,6 +25,18 @@ test("runtime finalizes Alexa visible order with journaled marker writes", () =>
     const refreshStart = main.indexOf("private async refreshVisibleAlexaOrder");
     const refreshEnd = main.indexOf("private async persistSortTransaction", refreshStart);
     const refresh = main.slice(refreshStart, refreshEnd);
+    const markerReady = refresh.indexOf('waitForAlexaWriteReadiness(listName, id, expectedValue)');
+    const markerWrite = refresh.indexOf('writeAlexaState(valueStateId, marker)');
+    const restoreReady = refresh.indexOf('waitForAlexaWriteReadiness(listName, id, marker)');
+    const restoreWrite = refresh.indexOf('writeAlexaState(valueStateId, expectedValue)');
+    assert.ok(markerReady >= 0 && markerReady < markerWrite, 'marker write must wait for the original value readiness');
+    assert.ok(restoreReady > markerWrite && restoreReady < restoreWrite, 'restore write must wait for marker readiness');
+    assert.match(
+        refresh.slice(restoreReady, restoreWrite),
+        /if \(!restoreReady\)[\s\S]*activateSortSafetyStop[\s\S]*return \{ writes, interrupted: true, additionalItems \};/,
+        'marker readiness timeout must stop before the restore write',
+    );
+    assert.doesNotMatch(refresh, /await this\.wait\(this\.writePauseMs\)/);
     assert.equal(
         [...refresh.matchAll(/await this\.writeAlexaState\(valueStateId, expectedValue\);/g)].length,
         1,
@@ -33,7 +45,7 @@ test("runtime finalizes Alexa visible order with journaled marker writes", () =>
     assert.ok(
         refresh.indexOf("if (markerConfirmation !== 'confirmed')") <
         refresh.indexOf("await this.writeAlexaState(valueStateId, expectedValue);"),
-        "the exact original text is restored immediately after marker confirmation",
+        "the exact original text is restored only after marker confirmation and readiness",
     );
     assert.doesNotMatch(refresh, /rollbackBufferedTransaction\(journal\)/);
     assert.match(refresh, /restored !== 'confirmed'[\s\S]*activateSortSafetyStop/);

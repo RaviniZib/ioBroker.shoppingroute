@@ -84,6 +84,31 @@ test('real restore from marker version 17 to original text version 18 is confirm
     ), 'confirmed');
 });
 
+test('real Camembert restore from marker version 17 to version 18 is confirmed', () => {
+    const marker = 'ShoppingRoute Reihenfolge msqmwp8tjmfoz8rs 0';
+    const markerJson = { value: marker, version: 17, updatedDateTime: 1786572113531, acknowledged: true };
+    const markerItem = {
+        ...markerJson,
+        versionAcknowledged: true,
+        updatedDateTimeAcknowledged: true,
+    };
+    const restoredJson = { value: 'Camembert', version: 18, updatedDateTime: 1786572114131, acknowledged: true };
+    const restoredItem = {
+        ...restoredJson,
+        versionAcknowledged: true,
+        updatedDateTimeAcknowledged: true,
+    };
+
+    assert.equal(classifyAlexaWriteConfirmation(
+        marker,
+        'Camembert',
+        markerJson,
+        markerItem,
+        restoredJson,
+        restoredItem,
+    ), 'confirmed');
+});
+
 test('newer restored item confirms while list JSON still has the older marker', () => {
     const marker = 'ShoppingRoute Reihenfolge XYZ';
     assert.equal(classifyAlexaWriteConfirmation(

@@ -1006,6 +1006,11 @@ class ShoppingRoute extends utils.Adapter {
                 confirmedSteps: 0,
             };
             await this.persistSortTransaction(journal);
+            const markerReady = await this.waitForAlexaWriteReadiness(listName, id, expectedValue);
+            if (!markerReady) {
+                await this.activateSortSafetyStop(listName, `${listName}: Alexa2 war vor dem Reihenfolge-Marker für ID ${id} nicht schreibbereit.`, journal);
+                return { writes, interrupted: true, additionalItems };
+            }
             const markerBaseline = await this.readAlexaWriteSnapshot(listName, id);
             await this.writeAlexaState(valueStateId, marker);
             const markerConfirmation = await this.waitForAlexaValueConfirmation(listName, id, expectedValue, marker, 0, markerBaseline);
@@ -1015,6 +1020,11 @@ class ShoppingRoute extends utils.Adapter {
             }
             journal.confirmedSteps = 1;
             await this.persistSortTransaction(journal);
+            const restoreReady = await this.waitForAlexaWriteReadiness(listName, id, marker);
+            if (!restoreReady) {
+                await this.activateSortSafetyStop(listName, `${listName}: Alexa2 war vor der Rückschreibung des Originaltexts für ID ${id} nicht schreibbereit.`, journal);
+                return { writes, interrupted: true, additionalItems };
+            }
             const restoreBaseline = await this.readAlexaWriteSnapshot(listName, id);
             await this.writeAlexaState(valueStateId, expectedValue);
             const restored = await this.waitForAlexaValueConfirmation(listName, id, marker, expectedValue, 0, restoreBaseline);
@@ -1034,9 +1044,6 @@ class ShoppingRoute extends utils.Adapter {
                     this.batchPauseMs > 0) {
                     this.log.info(`API-Schonmodus: Batch-Pause nach ${index + 1} Reihenfolge-Aktualisierung(en) (${this.batchPauseMs} ms).`);
                     await this.wait(this.batchPauseMs);
-                }
-                else if (this.writePauseMs > 0) {
-                    await this.wait(this.writePauseMs);
                 }
             }
         }
@@ -1218,6 +1225,11 @@ class ShoppingRoute extends utils.Adapter {
                     this.log.error(`${journal.listName}: Rollback-Datenpunkt fehlt: ${valueStateId}`);
                     return false;
                 }
+                const writeReady = await this.waitForAlexaWriteReadiness(journal.listName, step.id, step.to);
+                if (!writeReady) {
+                    this.log.error(`${journal.listName}: Alexa2 war vor dem Rollback für ID ${step.id} nicht schreibbereit.`);
+                    return false;
+                }
                 const beforeState = await this.getForeignStateAsync(valueStateId);
                 const beforeTs = Number(beforeState?.ts || 0);
                 await this.writeAlexaState(valueStateId, step.from);
@@ -1228,9 +1240,6 @@ class ShoppingRoute extends utils.Adapter {
                 }
                 journal.confirmedSteps -= 1;
                 await this.persistSortTransaction(journal);
-                if (journal.confirmedSteps > 0 && this.writePauseMs > 0) {
-                    await this.wait(this.writePauseMs);
-                }
             }
             catch (error) {
                 this.log.error(`${journal.listName}: Rollback für ID ${step.id} fehlgeschlagen: ${error instanceof Error ? error.message : String(error)}`);

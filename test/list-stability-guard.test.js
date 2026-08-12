@@ -28,9 +28,28 @@ test("normal sort writes use adaptive Alexa2 readiness instead of a fixed pause"
     assert.doesNotMatch(normalLoop, /await this\.wait\(this\.writePauseMs\)/);
 });
 
-test("configured write pauses remain between visible-order and rollback writes", () => {
-    assert.match(main, /if \(index \+ 1 < touchIds\.length\)/);
-    assert.match(main, /if \(journal\.confirmedSteps > 0 && this\.writePauseMs > 0\)/);
+test("all transactional item-write paths use readiness without fixed write pauses", () => {
+    const visibleStart = main.indexOf('private async refreshVisibleAlexaOrder');
+    const visibleEnd = main.indexOf('private async persistSortTransaction', visibleStart);
+    const visible = main.slice(visibleStart, visibleEnd);
+    assert.match(visible, /waitForAlexaWriteReadiness\(listName, id, expectedValue\)/);
+    assert.match(visible, /waitForAlexaWriteReadiness\(listName, id, marker\)/);
+    assert.doesNotMatch(visible, /await this\.wait\(this\.writePauseMs\)/);
+
+    const rollbackStart = main.indexOf('private async rollbackBufferedTransaction');
+    const rollbackEnd = main.indexOf('private async transactionMatchesTarget', rollbackStart);
+    const rollback = main.slice(rollbackStart, rollbackEnd);
+    assert.match(rollback, /waitForAlexaWriteReadiness\([\s\S]*journal\.listName,[\s\S]*step\.id,[\s\S]*step\.to/);
+    assert.ok(rollback.indexOf('waitForAlexaWriteReadiness') < rollback.indexOf('writeAlexaState(valueStateId, step.from)'));
+    assert.doesNotMatch(rollback, /await this\.wait\(this\.writePauseMs\)/);
+});
+
+test("recovery cannot bypass the guarded rollback item writes", () => {
+    const recoveryStart = main.indexOf('private async recoverInterruptedSortTransaction');
+    const recoveryEnd = main.indexOf('private async activateSortSafetyStop', recoveryStart);
+    const recovery = main.slice(recoveryStart, recoveryEnd);
+    assert.match(recovery, /rollbackBufferedTransaction\(journal\)/);
+    assert.doesNotMatch(recovery, /writeAlexaState\(/);
 });
 
 test("all normal sort triggers wait for the stability window", () => {

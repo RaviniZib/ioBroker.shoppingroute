@@ -117,6 +117,88 @@ test('readiness polling continues immediately after the first synchronized sampl
     assert.equal(samples.length, 0);
 });
 
+test('visible-order restore waits for the synchronized marker revision', () => {
+    const marker = 'ShoppingRoute Reihenfolge msqmwp8tjmfoz8rs 0';
+    const markerPending = snapshot({
+        json: {
+            value: marker,
+            version: 17,
+            updatedDateTime: 1786572113531,
+        },
+        item: {
+            value: marker,
+            version: 16,
+            updatedDateTime: 1786572110000,
+            acknowledged: false,
+        },
+    });
+    assert.equal(isAlexaWriteReady(marker, markerPending), false);
+});
+
+test('visible-order restore is released by a fully synchronized marker revision', () => {
+    const marker = 'ShoppingRoute Reihenfolge msqmwp8tjmfoz8rs 0';
+    const markerReady = snapshot({
+        json: {
+            value: marker,
+            version: 17,
+            updatedDateTime: 1786572113531,
+        },
+        item: {
+            value: marker,
+            version: 17,
+            updatedDateTime: 1786572113531,
+        },
+    });
+    assert.equal(isAlexaWriteReady(marker, markerReady), true);
+});
+
+test('marker readiness after 600 ms releases restore without a fixed 1000 ms sleep', async () => {
+    const marker = 'ShoppingRoute Reihenfolge msqmwp8tjmfoz8rs 0';
+    const staleMarker = snapshot({
+        json: { value: marker, version: 17, updatedDateTime: 1786572113531 },
+        item: { value: marker, version: 16, updatedDateTime: 1786572110000 },
+    });
+    const readyMarker = snapshot({
+        json: { value: marker, version: 17, updatedDateTime: 1786572113531 },
+        item: { value: marker, version: 17, updatedDateTime: 1786572113531 },
+    });
+    const samples = Array.from({ length: 6 }, () => staleMarker).concat(readyMarker);
+    const pauses = [];
+    const result = await waitForConfirmation({
+        timeoutMs: 10000,
+        pollIntervalMs: 100,
+        pause: async delay => pauses.push(delay),
+        probe: async () => isAlexaWriteReady(marker, samples.shift()) ? 'confirmed' : 'ambiguous',
+    });
+
+    assert.equal(result, 'confirmed');
+    assert.deepEqual(pauses, [100, 100, 100, 100, 100, 100]);
+});
+
+test('missing marker readiness for ten seconds never releases the restore write', async () => {
+    const marker = 'ShoppingRoute Reihenfolge msqmwp8tjmfoz8rs 0';
+    const staleMarker = snapshot({
+        json: { value: marker, version: 17, updatedDateTime: 1786572113531 },
+        item: { value: marker, version: 16, updatedDateTime: 1786572110000 },
+    });
+    const pauses = [];
+    let probes = 0;
+    const result = await waitForConfirmation({
+        timeoutMs: 10000,
+        pollIntervalMs: 100,
+        pause: async delay => pauses.push(delay),
+        probe: async () => {
+            probes += 1;
+            return isAlexaWriteReady(marker, staleMarker) ? 'confirmed' : 'ambiguous';
+        },
+    });
+
+    assert.equal(result, 'ambiguous');
+    assert.equal(probes, 101);
+    assert.equal(pauses.length, 100);
+    assert.equal(pauses.reduce((total, delay) => total + delay, 0), 10000);
+});
+
 test('numeric strings and numbers identify the same Alexa metadata revision', () => {
     assert.equal(isAlexaWriteReady('Lachsaufschnitt', snapshot({
         item: {
