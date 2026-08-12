@@ -5,6 +5,7 @@ const assert = require("node:assert/strict");
 
 const {
     createVisibleOrderRefreshPlan,
+    createVisibleOrderTouchProgram,
     sortIdsByAlexaUpdatedTime,
 } = require("../build/lib/buffered-sort");
 
@@ -33,6 +34,21 @@ test("live five-item case is reconstructed from updatedDateTime and needs only t
 test("already correct visible order needs no additional write", () => {
     const ids = ["header", "ei", "gef", "cam", "him"];
     assert.deepEqual(createVisibleOrderRefreshPlan(ids, ids), []);
+});
+
+test("visible-order touch uses a real marker change and restores the exact original text", () => {
+    const program = createVisibleOrderTouchProgram("aldi-header", "---- ALDI ----", "__ORDER_MARKER__");
+    assert.equal(program.amazonWrites, 2);
+    assert.deepEqual(program.steps, [
+        { id: "aldi-header", from: "---- ALDI ----", to: "__ORDER_MARKER__", kind: "buffer", circuit: 1 },
+        { id: "aldi-header", from: "__ORDER_MARKER__", to: "---- ALDI ----", kind: "final", circuit: 1 },
+    ]);
+});
+
+test("visible-order touch rejects empty values and marker collisions", () => {
+    assert.throws(() => createVisibleOrderTouchProgram("", "ALDI", "marker"), /Eintrags-ID/);
+    assert.throws(() => createVisibleOrderTouchProgram("id", "", "marker"), /sichtbaren Text/);
+    assert.throws(() => createVisibleOrderTouchProgram("id", "ALDI", "ALDI"), /kollidiert/);
 });
 
 test("visible-order refresh plan is minimal for random permutations", () => {

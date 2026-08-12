@@ -24,11 +24,11 @@ test("buffered transaction rolls back when a new active id appears", () => {
     assert.doesNotMatch(main, /if \(beforeWrite\.addedIds\.length > 0\) sawAdditionalItems = true/);
 });
 
-test("visible-order finalization aborts on a new id before another same-value write", () => {
+test("visible-order finalization aborts on a new id before another marker write", () => {
     const loopGuard = main.indexOf("Neuer aktiver Alexa-Listeneintrag während der Reihenfolge-Finalisierung erkannt");
-    const sameValueWrite = main.indexOf("await this.writeAlexaState(valueStateId, expectedValue);", loopGuard);
+    const markerWrite = main.indexOf("await this.writeAlexaState(valueStateId, marker);", loopGuard);
     assert.ok(loopGuard >= 0);
-    assert.ok(sameValueWrite > loopGuard);
-    const guardWindow = main.slice(loopGuard, sameValueWrite);
+    assert.ok(markerWrite > loopGuard);
+    const guardWindow = main.slice(loopGuard, markerWrite);
     assert.match(guardWindow, /return \{ writes, interrupted: true, additionalItems \};/);
 });

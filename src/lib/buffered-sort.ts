@@ -245,3 +245,23 @@ export function createVisibleOrderRefreshPlan(
     return desired.slice(keepPrefix);
 }
 
+export function createVisibleOrderTouchProgram(id: string, value: string, marker: string): BufferedSortProgram {
+    const itemId = String(id || '').trim();
+    const itemValue = String(value || '').trim();
+    const bufferMarker = String(marker || '').trim();
+    if (!itemId) throw new Error('Reihenfolge-Aktualisierung benötigt eine Eintrags-ID.');
+    if (!itemValue) throw new Error('Reihenfolge-Aktualisierung benötigt einen sichtbaren Text.');
+    if (!bufferMarker) throw new Error('Reihenfolge-Aktualisierung benötigt einen Puffermarker.');
+    if (itemValue === bufferMarker) throw new Error('Reihenfolge-Puffermarker kollidiert mit dem sichtbaren Text.');
+
+    return {
+        marker: bufferMarker,
+        changedSlots: 1,
+        circuits: 1,
+        amazonWrites: 2,
+        steps: [
+            { id: itemId, from: itemValue, to: bufferMarker, kind: 'buffer', circuit: 1 },
+            { id: itemId, from: bufferMarker, to: itemValue, kind: 'final', circuit: 1 },
+        ],
+    };
+}

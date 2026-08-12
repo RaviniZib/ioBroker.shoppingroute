@@ -893,7 +893,7 @@ class ShoppingRoute extends utils.Adapter {
             if (active.some(item => !desiredSet.has(String(item.id)))) {
                 additionalItems = true;
                 this.pendingLists.add(listName);
-                this.log.warn(`${listName}: Neuer aktiver Alexa-Listeneintrag während der Reihenfolge-Finalisierung erkannt; weitere Same-Value-Writes werden abgebrochen.`);
+                this.log.warn(`${listName}: Neuer aktiver Alexa-Listeneintrag während der Reihenfolge-Finalisierung erkannt; weitere Reihenfolge-Aktualisierungen werden abgebrochen.`);
                 return { writes, interrupted: true, additionalItems };
             }
             const byId = new Map(active.map(item => [String(item.id), item]));
@@ -922,21 +922,55 @@ class ShoppingRoute extends utils.Adapter {
                 await this.activateSortSafetyStop(listName, `${listName}: Alexa-Wertedatenpunkt für die sichtbare Reihenfolge fehlt: ${valueStateId}`);
                 return { writes, interrupted: true, additionalItems };
             }
-            const beforeState = await this.getForeignStateAsync(valueStateId);
-            const beforeTs = Number(beforeState?.ts || 0);
             const previousUpdatedDateTime = currentItem.updatedDateTime;
-            await this.writeAlexaState(valueStateId, expectedValue);
-            const confirmed = await this.waitForVisibleOrderTouchConfirmation(listName, id, expectedValue, previousUpdatedDateTime, beforeTs);
-            if (!confirmed) {
-                await this.activateSortSafetyStop(listName, `${listName}: Alexa2 hat die updatedDateTime-Aktualisierung für die sichtbare Reihenfolge nicht bestätigt.`);
+            const marker = `__SHOPPINGROUTE_REIHENFOLGE_${Date.now().toString(36)}_${index}__`;
+            const touchProgram = (0, buffered_sort_1.createVisibleOrderTouchProgram)(id, expectedValue, marker);
+            const journal = {
+                version: 1,
+                transactionId: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`,
+                listName,
+                marker,
+                startedAt: new Date().toISOString(),
+                status: 'applying',
+                originalValues: { [id]: expectedValue },
+                targetValues: { [id]: expectedValue },
+                steps: touchProgram.steps,
+                confirmedSteps: 0,
+            };
+            await this.persistSortTransaction(journal);
+            const markerState = await this.getForeignStateAsync(valueStateId);
+            const markerTs = Number(markerState?.ts || 0);
+            await this.writeAlexaState(valueStateId, marker);
+            const markerConfirmation = await this.waitForAlexaValueConfirmation(listName, id, expectedValue, marker, markerTs);
+            if (markerConfirmation !== 'confirmed') {
+                await this.activateSortSafetyStop(listName, `${listName}: Temporärer Reihenfolge-Marker für ID ${id} wurde nicht eindeutig bestätigt.`, journal);
                 return { writes, interrupted: true, additionalItems };
             }
-            writes += 1;
+            journal.confirmedSteps = 1;
+            await this.persistSortTransaction(journal);
+            const restoreState = await this.getForeignStateAsync(valueStateId);
+            const restoreTs = Number(restoreState?.ts || 0);
+            await this.writeAlexaState(valueStateId, expectedValue);
+            const restored = await this.waitForVisibleOrderTouchConfirmation(listName, id, expectedValue, previousUpdatedDateTime, restoreTs);
+            if (!restored) {
+                const rollbackSucceeded = await this.rollbackBufferedTransaction(journal);
+                if (!rollbackSucceeded) {
+                    await this.activateSortSafetyStop(listName, `${listName}: Reihenfolge-Aktualisierung für ID ${id} konnte nicht sicher auf den Originaltext zurückgesetzt werden.`, journal);
+                    return { writes, interrupted: true, additionalItems };
+                }
+                this.pendingLists.add(listName);
+                this.log.warn(`${listName}: Reihenfolge-Aktualisierung für ID ${id} wurde nicht bestätigt; Originaltext ist wiederhergestellt und eine neue Berechnung folgt.`);
+                return { writes, interrupted: true, additionalItems };
+            }
+            journal.confirmedSteps = 2;
+            await this.persistSortTransaction(journal);
+            await this.persistSortTransaction(null);
+            writes += touchProgram.amazonWrites;
             if (this.apiSafeMode &&
-                writes % this.batchSize === 0 &&
-                writes < touchIds.length &&
+                (index + 1) % this.batchSize === 0 &&
+                index + 1 < touchIds.length &&
                 this.batchPauseMs > 0) {
-                this.log.info(`API-Schonmodus: Batch-Pause nach ${writes} Reihenfolge-Schreibzugriffen (${this.batchPauseMs} ms).`);
+                this.log.info(`API-Schonmodus: Batch-Pause nach ${index + 1} Reihenfolge-Aktualisierung(en) (${this.batchPauseMs} ms).`);
                 await this.wait(this.batchPauseMs);
             }
             else {
@@ -960,7 +994,7 @@ class ShoppingRoute extends utils.Adapter {
             return { writes, interrupted: true, additionalItems };
         }
         if (remaining.length > 0) {
-            await this.activateSortSafetyStop(listName, `${listName}: Alexa2 hat die sichtbare Zielreihenfolge trotz bestätigter Same-Value-Writes nicht hergestellt.`);
+            await this.activateSortSafetyStop(listName, `${listName}: Alexa2 hat die sichtbare Zielreihenfolge trotz bestätigter Marker-Aktualisierungen nicht hergestellt.`);
             return { writes, interrupted: true, additionalItems };
         }
         return { writes, interrupted: false, additionalItems };
