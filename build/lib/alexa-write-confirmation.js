@@ -26,6 +26,22 @@ function itemAdvanced(previous, current) {
         increased(previous.version, current.version)) || (current.updatedDateTimeAcknowledged === true &&
         increased(previous.updatedDateTime, current.updatedDateTime));
 }
+function olderThan(left, right) {
+    let comparable = false;
+    let older = false;
+    for (const key of ['version', 'updatedDateTime']) {
+        const leftValue = numericValue(left[key]);
+        const rightValue = numericValue(right[key]);
+        if (leftValue === undefined || rightValue === undefined)
+            continue;
+        comparable = true;
+        if (leftValue > rightValue)
+            return false;
+        if (leftValue < rightValue)
+            older = true;
+    }
+    return comparable && older;
+}
 function classifyAlexaWriteConfirmation(from, to, previousJson, previousItem, currentJson, currentItem) {
     const currentJsonAdvanced = jsonAdvanced(previousJson, currentJson);
     const currentItemAdvanced = itemAdvanced(previousItem, currentItem);
@@ -35,17 +51,21 @@ function classifyAlexaWriteConfirmation(from, to, previousJson, previousItem, cu
     const itemForeign = currentItem.value !== undefined &&
         currentItem.value !== from &&
         currentItem.value !== to;
-    if (jsonForeign || itemForeign)
-        return 'ambiguous';
-    if (currentJsonAdvanced && currentJson.value !== to)
-        return 'ambiguous';
-    if (currentItemAdvanced && currentItem.value !== to)
-        return 'ambiguous';
     const jsonConfirmed = currentJsonAdvanced &&
         currentJson.value === to &&
         currentJson.acknowledged === true;
     const itemConfirmed = currentItemAdvanced &&
         currentItem.value === to;
+    if (jsonForeign || itemForeign)
+        return 'ambiguous';
+    if (currentJsonAdvanced &&
+        currentJson.value !== to &&
+        !(currentJson.value === from && itemConfirmed && olderThan(currentJson, currentItem)))
+        return 'ambiguous';
+    if (currentItemAdvanced &&
+        currentItem.value !== to &&
+        !(currentItem.value === from && jsonConfirmed && olderThan(currentItem, currentJson)))
+        return 'ambiguous';
     if (jsonConfirmed || itemConfirmed) {
         return 'confirmed';
     }

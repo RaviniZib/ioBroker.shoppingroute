@@ -59,6 +59,109 @@ test('both independently advanced sources confirm the target value', () => {
     ), 'confirmed');
 });
 
+test('real restore from marker version 17 to original text version 18 is confirmed', () => {
+    const marker = 'ShoppingRoute Reihenfolge XYZ';
+    const markerJson = { value: marker, version: 17, updatedDateTime: 1000, acknowledged: true };
+    const markerItem = {
+        ...markerJson,
+        versionAcknowledged: true,
+        updatedDateTimeAcknowledged: true,
+    };
+    const restoredJson = { value: 'Kuchen', version: 18, updatedDateTime: 2000, acknowledged: true };
+    const restoredItem = {
+        ...restoredJson,
+        versionAcknowledged: true,
+        updatedDateTimeAcknowledged: true,
+    };
+
+    assert.equal(classifyAlexaWriteConfirmation(
+        marker,
+        'Kuchen',
+        markerJson,
+        markerItem,
+        restoredJson,
+        restoredItem,
+    ), 'confirmed');
+});
+
+test('newer restored item confirms while list JSON still has the older marker', () => {
+    const marker = 'ShoppingRoute Reihenfolge XYZ';
+    assert.equal(classifyAlexaWriteConfirmation(
+        marker,
+        'Kuchen',
+        { value: 'Kuchen', version: 16, updatedDateTime: 500, acknowledged: true },
+        {
+            value: marker,
+            version: 17,
+            updatedDateTime: 1000,
+            acknowledged: true,
+            versionAcknowledged: true,
+            updatedDateTimeAcknowledged: true,
+        },
+        { value: marker, version: 17, updatedDateTime: 1000, acknowledged: true },
+        {
+            value: 'Kuchen',
+            version: 18,
+            updatedDateTime: 2000,
+            acknowledged: true,
+            versionAcknowledged: true,
+            updatedDateTimeAcknowledged: true,
+        },
+    ), 'confirmed');
+});
+
+test('newer restored JSON confirms while item states still have the older marker', () => {
+    const marker = 'ShoppingRoute Reihenfolge XYZ';
+    assert.equal(classifyAlexaWriteConfirmation(
+        marker,
+        'Kuchen',
+        { value: marker, version: 17, updatedDateTime: 1000, acknowledged: true },
+        {
+            value: 'Kuchen',
+            version: 16,
+            updatedDateTime: 500,
+            acknowledged: true,
+            versionAcknowledged: true,
+            updatedDateTimeAcknowledged: true,
+        },
+        { value: 'Kuchen', version: 18, updatedDateTime: 2000, acknowledged: true },
+        {
+            value: marker,
+            version: 17,
+            updatedDateTime: 1000,
+            acknowledged: true,
+            versionAcknowledged: true,
+            updatedDateTimeAcknowledged: true,
+        },
+    ), 'confirmed');
+});
+
+test('same-revision marker contradicts a restored target and remains ambiguous', () => {
+    const marker = 'ShoppingRoute Reihenfolge XYZ';
+    assert.equal(classifyAlexaWriteConfirmation(
+        marker,
+        'Kuchen',
+        { value: 'Kuchen', version: 16, updatedDateTime: 500, acknowledged: true },
+        {
+            value: marker,
+            version: 17,
+            updatedDateTime: 1000,
+            acknowledged: true,
+            versionAcknowledged: true,
+            updatedDateTimeAcknowledged: true,
+        },
+        { value: marker, version: 18, updatedDateTime: 2000, acknowledged: true },
+        {
+            value: 'Kuchen',
+            version: 18,
+            updatedDateTime: 2000,
+            acknowledged: true,
+            versionAcknowledged: true,
+            updatedDateTimeAcknowledged: true,
+        },
+    ), 'ambiguous');
+});
+
 test('a target value without a newer version or timestamp is not automatically confirmed', () => {
     assert.equal(classifyAlexaWriteConfirmation(
         from,

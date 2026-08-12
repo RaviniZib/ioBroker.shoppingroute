@@ -46,6 +46,22 @@ function itemAdvanced(previous: AlexaWriteEvidence, current: AlexaWriteEvidence)
     );
 }
 
+function olderThan(left: AlexaWriteEvidence, right: AlexaWriteEvidence): boolean {
+    let comparable = false;
+    let older = false;
+
+    for (const key of ['version', 'updatedDateTime'] as const) {
+        const leftValue = numericValue(left[key]);
+        const rightValue = numericValue(right[key]);
+        if (leftValue === undefined || rightValue === undefined) continue;
+        comparable = true;
+        if (leftValue > rightValue) return false;
+        if (leftValue < rightValue) older = true;
+    }
+
+    return comparable && older;
+}
+
 export function classifyAlexaWriteConfirmation(
     from: string,
     to: string,
@@ -63,15 +79,24 @@ export function classifyAlexaWriteConfirmation(
         currentItem.value !== from &&
         currentItem.value !== to;
 
-    if (jsonForeign || itemForeign) return 'ambiguous';
-    if (currentJsonAdvanced && currentJson.value !== to) return 'ambiguous';
-    if (currentItemAdvanced && currentItem.value !== to) return 'ambiguous';
-
     const jsonConfirmed = currentJsonAdvanced &&
         currentJson.value === to &&
         currentJson.acknowledged === true;
     const itemConfirmed = currentItemAdvanced &&
         currentItem.value === to;
+
+    if (jsonForeign || itemForeign) return 'ambiguous';
+    if (
+        currentJsonAdvanced &&
+        currentJson.value !== to &&
+        !(currentJson.value === from && itemConfirmed && olderThan(currentJson, currentItem))
+    ) return 'ambiguous';
+    if (
+        currentItemAdvanced &&
+        currentItem.value !== to &&
+        !(currentItem.value === from && jsonConfirmed && olderThan(currentItem, currentJson))
+    ) return 'ambiguous';
+
     if (jsonConfirmed || itemConfirmed) {
         return 'confirmed';
     }
