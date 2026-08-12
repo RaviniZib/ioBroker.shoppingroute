@@ -1,6 +1,7 @@
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
+const crypto=require('node:crypto');
 const fs=require('node:fs');
 const path=require('node:path');
 const root=path.join(__dirname,'..');
@@ -25,7 +26,7 @@ test('user-facing admin areas are present and diagnostics tab is hidden',()=>{
 });
 test('backup and sharing use an Admin 7.6 compatible launcher without raw JSON controls',()=>{
   const transfer=jsonConfig.items.transferTab.items;
-  assert.deepEqual(Object.keys(transfer),['backupHelp','backupTransfer']);
+  assert.deepEqual(Object.keys(transfer),['transferSectionTitle','backupHelp','backupTransfer']);
 
   const launcher=transfer.backupTransfer;
   assert.equal(launcher.type,'sendTo');
@@ -51,6 +52,68 @@ test('backup and sharing use an Admin 7.6 compatible launcher without raw JSON c
   const adminDependency=ioPackage.common.globalDependencies.find(entry=>entry.admin);
   assert.ok(adminDependency);
   assert.equal(adminDependency.admin,'>=7.6.20');
+});
+
+test('native Admin tabs share the phase-one visual hierarchy',()=>{
+  const sections={
+    listsTab:['listsSectionTitle','listsHelp'],
+    marketsTab:['marketsSectionTitle','marketsHelp'],
+    productGroupsTab:['productGroupsSectionTitle','productGroupsHelp'],
+    productsTab:['productsSectionTitle','productsHelp'],
+    reviewTab:['reviewSectionTitle','reviewHelp'],
+    transferTab:['transferSectionTitle','backupHelp'],
+  };
+
+  for(const [tab,[headerKey,helpKey]] of Object.entries(sections)) {
+    const items=jsonConfig.items[tab].items;
+    assert.equal(items[headerKey].type,'header',`${tab} header`);
+    assert.equal(items[headerKey].size,3,`${tab} header size`);
+    assert.equal(items[headerKey].xs,12,`${tab} mobile header width`);
+    assert.equal(items[helpKey].type,'staticText',`${tab} help`);
+    assert.equal(items[helpKey].style.fontSize,'0.9rem',`${tab} help size`);
+    assert.equal(items[helpKey].style.opacity,0.78,`${tab} theme-neutral help color`);
+  }
+
+  const general=jsonConfig.items.general.items;
+  assert.equal(general.betaWarning.type,'infoBox');
+  assert.equal(general.betaWarning.boxType,'warning');
+  assert.equal(general.betaWarning.closeable,false);
+  for(const key of ['basicSectionTitle','marketSectionTitle','timingSectionTitle','apiSectionTitle']) {
+    assert.equal(general[key].type,'header',key);
+    assert.equal(general[key].size,3,key);
+  }
+  for(const key of ['marketSectionDivider','timingSectionDivider','apiDivider']) assert.equal(general[key].type,'divider',key);
+  assert.equal(jsonConfig.items.reviewTab.items.reviewAcceptAll.variant,'outlined');
+  assert.equal(jsonConfig.items.transferTab.items.backupTransfer.variant,'contained');
+  assert.equal(jsonConfig.items.transferTab.items.backupTransfer.md,6);
+});
+
+test('phase-one styling preserves the complete functional JSON config projection',()=>{
+  const visualProperties=new Set([
+    'label','text','title','width','style','darkStyle','innerStyle','controlStyle',
+    'xs','sm','md','lg','xl','newLine','variant','icon','iconPosition','boxType',
+    'closeable','size','help','tooltip','placeholder',
+  ]);
+  const presentationTypes=new Set(['header','staticText','infoBox','divider']);
+  const stripVisualProperties=value=>{
+    if(Array.isArray(value)) return value.map(stripVisualProperties);
+    if(!value||typeof value!=='object') return value;
+    return Object.fromEntries(Object.entries(value)
+      .filter(([key])=>!visualProperties.has(key))
+      .map(([key,item])=>[key,stripVisualProperties(item)]));
+  };
+  const panels=['general','listsTab','marketsTab','productGroupsTab','routesTab','productsTab','reviewTab','transferTab'];
+  const projection=Object.fromEntries(panels.map(panel=>[
+    panel,
+    Object.fromEntries(Object.entries(jsonConfig.items[panel].items)
+      .filter(([,item])=>!presentationTypes.has(item.type))
+      .map(([key,item])=>[key,stripVisualProperties(item)])),
+  ]));
+  const hash=crypto.createHash('sha256').update(JSON.stringify(projection)).digest('hex');
+
+  assert.equal(hash,'57db6133b8b90a7497f11dfd015ebae90a5e1a462159f456f358970b4952935d');
+  const routeHash=crypto.createHash('sha256').update(JSON.stringify(jsonConfig.items.routesTab)).digest('hex');
+  assert.equal(routeHash,'23228bada006eac4b1d8193a56d4978e64371e4886d8ad6bfe851ddc93fd58be');
 });
 
 test('known instances, lists, markets and product groups use dropdown controls',()=>{
