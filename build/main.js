@@ -46,8 +46,11 @@ const parser_1 = require("./lib/parser");
 const market_plan_1 = require("./lib/market-plan");
 const config_tools_1 = require("./lib/config-tools");
 const statistics_1 = require("./lib/statistics");
+const confirmation_wait_1 = require("./lib/confirmation-wait");
 const VERSION = '0.3.2';
-const LIST_STABILITY_MS = 30000;
+const LIST_STABILITY_MS = 5000;
+const ALEXA_CONFIRMATION_TIMEOUT_MS = 10000;
+const ALEXA_CONFIRMATION_POLL_MS = 100;
 const DEFAULT_CATEGORIES = [
     'Obst/Gemüse',
     'Tee/Kaffee',
@@ -248,7 +251,7 @@ class ShoppingRoute extends utils.Adapter {
         this.log.warn(`ShoppingRoute ${VERSION} BETA: Dry-Run ist für Ersttests ausdrücklich empfohlen.`);
         this.log.info(`Listen: ${this.listConfigs.map(item => item.name).join(', ')}. Lernmodus: ${this.learningMode}.`);
         this.log.info('WICHTIG: Die Alexa-App muss für jede verwaltete Liste auf „Älteste bis neueste“ gestellt sein.');
-        this.log.info('Synchronisationsschutz: Sortierschreibzugriffe starten erst nach mindestens 30 Sekunden ohne Listenänderung.');
+        this.log.info(`Synchronisationsschutz: Sortierschreibzugriffe starten erst nach mindestens ${this.sortStabilityDelayMs} ms ohne Listenänderung.`);
         this.scheduleAll(this.sortStabilityDelayMs);
     }
     async discoverAlexaLists(instanceName = this.alexaInstance) {
@@ -756,15 +759,16 @@ class ShoppingRoute extends utils.Adapter {
                         this.log.warn(`${reason} Der bestätigte Sortierpfad wurde rückwärts zurückgesetzt.`);
                         return;
                     }
-                    if (this.apiSafeMode &&
-                        written % this.batchSize === 0 &&
-                        written < program.steps.length &&
-                        this.batchPauseMs > 0) {
-                        this.log.info(`API-Schonmodus: Batch-Pause nach ${written} Schreibzugriffen (${this.batchPauseMs} ms).`);
-                        await this.wait(this.batchPauseMs);
-                    }
-                    else {
-                        await this.wait(this.writePauseMs);
+                    if (written < program.steps.length) {
+                        if (this.apiSafeMode &&
+                            written % this.batchSize === 0 &&
+                            this.batchPauseMs > 0) {
+                            this.log.info(`API-Schonmodus: Batch-Pause nach ${written} Schreibzugriffen (${this.batchPauseMs} ms).`);
+                            await this.wait(this.batchPauseMs);
+                        }
+                        else if (this.writePauseMs > 0) {
+                            await this.wait(this.writePauseMs);
+                        }
                     }
                 }
                 const verifyList = await this.readList(listName);
@@ -837,28 +841,21 @@ class ShoppingRoute extends utils.Adapter {
         const currentIds = (0, buffered_sort_1.sortIdsByAlexaUpdatedTime)(relevant);
         return (0, buffered_sort_1.createVisibleOrderRefreshPlan)(currentIds, desiredIds);
     }
-    async waitForVisibleOrderTouchConfirmation(listName, id, expectedValue, previousUpdatedDateTime, previousStateTs, marker, timeoutMs = 15000) {
+    async waitForVisibleOrderTouchConfirmation(listName, id, expectedValue, previousUpdatedDateTime, previousStateTs, marker, timeoutMs = ALEXA_CONFIRMATION_TIMEOUT_MS) {
         const valueStateId = `${this.alexaInstance}.Lists.${listName}.items.${id}.value`;
-        const deadline = Date.now() + timeoutMs;
-        while (Date.now() < deadline) {
-            const [state, list] = await Promise.all([
-                this.getForeignStateAsync(valueStateId),
-                this.readList(listName),
-            ]);
-            const item = list.find(entry => String(entry?.id || '') === id);
-            const listValue = item ? String(item.value || '').trim() : undefined;
-            const stateValue = state ? String(state.val ?? '').trim() : undefined;
-            const confirmation = (0, buffered_sort_1.classifyVisibleOrderFinalConfirmation)(expectedValue, marker, previousUpdatedDateTime, listValue, item?.updatedDateTime, stateValue, state?.ack === true);
-            if (confirmation === 'confirmed')
-                return confirmation;
-            await this.wait(250);
-        }
-        const [state, list] = await Promise.all([
-            this.getForeignStateAsync(valueStateId),
-            this.readList(listName),
-        ]);
-        const item = list.find(entry => String(entry?.id || '') === id);
-        return (0, buffered_sort_1.classifyVisibleOrderFinalConfirmation)(expectedValue, marker, previousUpdatedDateTime, item ? String(item.value || '').trim() : undefined, item?.updatedDateTime, state ? String(state.val ?? '').trim() : undefined, state?.ack === true && Number(state?.ts || 0) >= previousStateTs);
+        return (0, confirmation_wait_1.waitForConfirmation)({
+            timeoutMs,
+            pollIntervalMs: ALEXA_CONFIRMATION_POLL_MS,
+            pause: ms => this.wait(ms),
+            probe: async () => {
+                const [state, list] = await Promise.all([
+                    this.getForeignStateAsync(valueStateId),
+                    this.readList(listName),
+                ]);
+                const item = list.find(entry => String(entry?.id || '') === id);
+                return (0, buffered_sort_1.classifyVisibleOrderFinalConfirmation)(expectedValue, marker, previousUpdatedDateTime, item ? String(item.value || '').trim() : undefined, item?.updatedDateTime, state ? String(state.val ?? '').trim() : undefined, state?.ack === true && Number(state?.ts || 0) >= previousStateTs);
+            },
+        });
     }
     async refreshVisibleAlexaOrder(listName, plan) {
         const orderedPlan = [...plan].sort((left, right) => Number(left.position) - Number(right.position));
@@ -961,15 +958,16 @@ class ShoppingRoute extends utils.Adapter {
             await this.persistSortTransaction(journal);
             await this.persistSortTransaction(null);
             writes += touchProgram.amazonWrites;
-            if (this.apiSafeMode &&
-                (index + 1) % this.batchSize === 0 &&
-                index + 1 < touchIds.length &&
-                this.batchPauseMs > 0) {
-                this.log.info(`API-Schonmodus: Batch-Pause nach ${index + 1} Reihenfolge-Aktualisierung(en) (${this.batchPauseMs} ms).`);
-                await this.wait(this.batchPauseMs);
-            }
-            else {
-                await this.wait(this.writePauseMs);
+            if (index + 1 < touchIds.length) {
+                if (this.apiSafeMode &&
+                    (index + 1) % this.batchSize === 0 &&
+                    this.batchPauseMs > 0) {
+                    this.log.info(`API-Schonmodus: Batch-Pause nach ${index + 1} Reihenfolge-Aktualisierung(en) (${this.batchPauseMs} ms).`);
+                    await this.wait(this.batchPauseMs);
+                }
+                else if (this.writePauseMs > 0) {
+                    await this.wait(this.writePauseMs);
+                }
             }
         }
         const verifyList = await this.readList(listName);
@@ -1022,37 +1020,29 @@ class ShoppingRoute extends utils.Adapter {
             throw new Error(`Sortierjournal ist beschädigt: ${error instanceof Error ? error.message : String(error)}`);
         }
     }
-    async waitForAlexaValueConfirmation(listName, id, from, to, previousTs = 0, timeoutMs = 15000) {
+    async waitForAlexaValueConfirmation(listName, id, from, to, previousTs = 0, timeoutMs = ALEXA_CONFIRMATION_TIMEOUT_MS) {
         const valueStateId = `${this.alexaInstance}.Lists.${listName}.items.${id}.value`;
-        const deadline = Date.now() + timeoutMs;
-        while (Date.now() < deadline) {
-            const [state, list] = await Promise.all([
-                this.getForeignStateAsync(valueStateId),
-                this.readList(listName),
-            ]);
-            const item = list.find(entry => String(entry?.id || '') === id);
-            const listValue = item ? String(item.value || '').trim() : undefined;
-            const stateValue = state ? String(state.val ?? '').trim() : undefined;
-            const stateTs = Number(state?.ts || 0);
-            if (listValue === to &&
-                stateValue === to &&
-                state?.ack === true &&
-                stateTs >= previousTs)
-                return 'confirmed';
-            await this.wait(250);
-        }
-        const [state, list] = await Promise.all([
-            this.getForeignStateAsync(valueStateId),
-            this.readList(listName),
-        ]);
-        const item = list.find(entry => String(entry?.id || '') === id);
-        const listValue = item ? String(item.value || '').trim() : undefined;
-        const stateValue = state ? String(state.val ?? '').trim() : undefined;
-        if (listValue === to && stateValue === to && state?.ack === true)
-            return 'confirmed';
-        if (listValue === from && stateValue === from && state?.ack === true)
-            return 'not-applied';
-        return 'ambiguous';
+        return (0, confirmation_wait_1.waitForConfirmation)({
+            timeoutMs,
+            pollIntervalMs: ALEXA_CONFIRMATION_POLL_MS,
+            pause: ms => this.wait(ms),
+            probe: async () => {
+                const [state, list] = await Promise.all([
+                    this.getForeignStateAsync(valueStateId),
+                    this.readList(listName),
+                ]);
+                const item = list.find(entry => String(entry?.id || '') === id);
+                const listValue = item ? String(item.value || '').trim() : undefined;
+                const stateValue = state ? String(state.val ?? '').trim() : undefined;
+                const stateTs = Number(state?.ts || 0);
+                if (listValue === to && stateValue === to && state?.ack === true && stateTs >= previousTs) {
+                    return 'confirmed';
+                }
+                if (listValue === from && stateValue === from && state?.ack === true)
+                    return 'not-applied';
+                return 'ambiguous';
+            },
+        });
     }
     async reconcilePendingTransactionStep(journal) {
         if (journal.confirmedSteps >= journal.steps.length)
@@ -1074,7 +1064,7 @@ class ShoppingRoute extends utils.Adapter {
         if (listValue === step.from && stateValue === step.from && state?.ack === true)
             return 'not-applied';
         if (stateValue === step.to && state?.ack === false) {
-            const result = await this.waitForAlexaValueConfirmation(journal.listName, step.id, step.from, step.to, Number(state?.ts || 0), 30000);
+            const result = await this.waitForAlexaValueConfirmation(journal.listName, step.id, step.from, step.to, Number(state?.ts || 0));
             if (result === 'confirmed') {
                 journal.confirmedSteps += 1;
                 await this.persistSortTransaction(journal);
@@ -1103,7 +1093,7 @@ class ShoppingRoute extends utils.Adapter {
         if (listValue === step.to && stateValue === step.to && state?.ack === true)
             return 'not-applied';
         if (stateValue === step.from && state?.ack === false) {
-            const result = await this.waitForAlexaValueConfirmation(journal.listName, step.id, step.to, step.from, Number(state?.ts || 0), 30000);
+            const result = await this.waitForAlexaValueConfirmation(journal.listName, step.id, step.to, step.from, Number(state?.ts || 0));
             if (result === 'confirmed') {
                 journal.confirmedSteps -= 1;
                 await this.persistSortTransaction(journal);
@@ -1155,7 +1145,9 @@ class ShoppingRoute extends utils.Adapter {
                 }
                 journal.confirmedSteps -= 1;
                 await this.persistSortTransaction(journal);
-                await this.wait(this.writePauseMs);
+                if (journal.confirmedSteps > 0 && this.writePauseMs > 0) {
+                    await this.wait(this.writePauseMs);
+                }
             }
             catch (error) {
                 this.log.error(`${journal.listName}: Rollback für ID ${step.id} fehlgeschlagen: ${error instanceof Error ? error.message : String(error)}`);
@@ -1190,9 +1182,6 @@ class ShoppingRoute extends utils.Adapter {
             await this.activateSortSafetyStop(journal.listName, `${journal.listName}: Unterbrochene Sortierung kann wegen fehlender Alexa-Schreibfreigabe nicht wiederhergestellt werden.`, journal);
             return;
         }
-        // Alexa2 bekommt nach einem Prozessneustart kurz Zeit, einen bereits ausgelösten
-        // letzten Schreibzugriff zu bestätigen, bevor der Journalzustand bewertet wird.
-        await this.wait(3000);
         try {
             if (await this.transactionMatchesTarget(journal)) {
                 await this.persistSortTransaction(null);
@@ -1391,17 +1380,21 @@ class ShoppingRoute extends utils.Adapter {
             this.traffic.compatibilityWrites += 1;
             this.traffic.lastAlexaWrite = new Date().toISOString();
             await this.persistTrafficMetrics();
-            const timeoutAt = Date.now() + 10000;
-            let confirmed = false;
-            while (Date.now() < timeoutAt) {
-                await this.wait(250);
-                const current = await this.getForeignStateAsync(valueStateId);
-                if (current && current.ack === true && String(current.val ?? '').trim() === originalValue && Number(current.ts || 0) > beforeTs) {
-                    confirmed = true;
-                    break;
-                }
-            }
-            if (confirmed) {
+            const confirmation = await (0, confirmation_wait_1.waitForConfirmation)({
+                timeoutMs: ALEXA_CONFIRMATION_TIMEOUT_MS,
+                pollIntervalMs: ALEXA_CONFIRMATION_POLL_MS,
+                pause: ms => this.wait(ms),
+                probe: async () => {
+                    const current = await this.getForeignStateAsync(valueStateId);
+                    return current &&
+                        current.ack === true &&
+                        String(current.val ?? '').trim() === originalValue &&
+                        Number(current.ts || 0) > beforeTs
+                        ? 'confirmed'
+                        : 'ambiguous';
+                },
+            });
+            if (confirmation === 'confirmed') {
                 this.writeCapability = 'live-ok';
                 this.compatibilityDetail = 'Live-Test erfolgreich: Alexa2 hat einen unveränderten value-Schreibzugriff bestätigt.';
                 this.lastCompatibilityTest = `${new Date().toISOString()} – ERFOLG mit „${originalValue}“`;

@@ -7,9 +7,22 @@ const path = require("node:path");
 
 const main = fs.readFileSync(path.join(__dirname, "..", "src", "main.ts"), "utf8");
 
-test("list stability guard uses a fixed 30-second minimum quiet window", () => {
-    assert.match(main, /const LIST_STABILITY_MS = 30000;/);
+test("list stability guard uses the configured debounce with a five-second safe minimum", () => {
+    assert.match(main, /const LIST_STABILITY_MS = 5000;/);
     assert.match(main, /sortStabilityDelayMs\(\): number \{ return Math\.max\(this\.debounceMs, LIST_STABILITY_MS\); \}/);
+});
+
+test("sort confirmation waits are adaptive and recovery has no fixed startup sleep", () => {
+    assert.match(main, /const ALEXA_CONFIRMATION_TIMEOUT_MS = 10000;/);
+    assert.match(main, /const ALEXA_CONFIRMATION_POLL_MS = 100;/);
+    assert.match(main, /waitForConfirmation/);
+    assert.doesNotMatch(main, /await this\.wait\(3000\);/);
+});
+
+test("configured write pauses apply only between writes, never after the final confirmation", () => {
+    assert.match(main, /if \(written < program\.steps\.length\)/);
+    assert.match(main, /if \(index \+ 1 < touchIds\.length\)/);
+    assert.match(main, /if \(journal\.confirmedSteps > 0 && this\.writePauseMs > 0\)/);
 });
 
 test("all normal sort triggers wait for the stability window", () => {
