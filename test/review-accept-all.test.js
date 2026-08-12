@@ -10,10 +10,12 @@ const config = JSON.parse(fs.readFileSync(path.join(root, 'admin/jsonConfig.json
 const main = fs.readFileSync(path.join(root, 'src/main.ts'), 'utf8');
 
 test('Review accept-all sends complete unsaved admin data and requests an official refresh', () => {
-    const button = config.items.reviewTab.items.reviewAcceptAll;
-    assert.equal(button.command, 'markAllReviewItemsAccept');
-    assert.match(button.jsonData, /JSON\.stringify\(data\)/);
-    assert.notEqual(button.useNative, true);
+    const reviewEditor = config.items.reviewTab.items.reviewEditor;
+    assert.equal(reviewEditor.type, 'custom');
+    assert.equal(reviewEditor.url, 'custom/settings/settingsEditors.js');
+    const editorSource = fs.readFileSync(path.join(root, 'src-admin', 'review-editor.js'), 'utf8');
+    assert.match(editorSource, /markAllReviewItemsAccept/);
+    assert.match(editorSource, /native:\s*this\.props\.data/);
     assert.match(main, /command:\s*'refresh'/);
     assert.match(main, /fullRefresh:\s*true/);
     assert.match(main, /data:\s*supplied/);

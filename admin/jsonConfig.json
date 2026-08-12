@@ -5,335 +5,17 @@
       "type": "panel",
       "label": "ui.items.general.label",
       "items": {
-        "betaWarning": {
-          "type": "infoBox",
-          "text": "ui.items.general.items.betawarning.text",
-          "boxType": "warning",
-          "closeable": false,
-          "iconPosition": "middle",
+        "generalEditor": {
+          "type": "custom",
+          "url": "custom/settings/settingsEditors.js",
+          "name": "ShoppingRouteSettingsSet/Components/GeneralEditor",
+          "bundlerType": "module",
+          "i18n": false,
           "xs": 12,
           "sm": 12,
           "md": 12,
           "lg": 12,
           "xl": 12
-        },
-        "basicSectionTitle": {
-          "type": "header",
-          "text": "ui.items.general.items.basicsectiontitle.text",
-          "size": 3,
-          "newLine": true,
-          "xs": 12,
-          "sm": 12,
-          "md": 12,
-          "lg": 12,
-          "xl": 12
-        },
-        "alexaInstance": {
-          "type": "instance",
-          "adapter": "alexa2",
-          "onlyEnabled": true,
-          "label": "ui.items.general.items.alexainstance.label",
-          "help": "ui.items.general.items.alexainstance.help",
-          "newLine": true,
-          "xs": 12,
-          "sm": 12,
-          "md": 6,
-          "lg": 6,
-          "xl": 6
-        },
-        "dryRun": {
-          "type": "checkbox",
-          "label": "ui.items.general.items.dryrun.label",
-          "xs": 12,
-          "sm": 12,
-          "md": 6,
-          "lg": 6,
-          "xl": 6
-        },
-        "learningMode": {
-          "type": "select",
-          "label": "ui.items.general.items.learningmode.label",
-          "options": [
-            {
-              "value": "review",
-              "label": "ui.items.general.items.learningmode.options.0.label"
-            },
-            {
-              "value": "automatic",
-              "label": "ui.items.general.items.learningmode.options.1.label"
-            },
-            {
-              "value": "off",
-              "label": "ui.items.general.items.learningmode.options.2.label"
-            }
-          ],
-          "newLine": true,
-          "xs": 12,
-          "sm": 12,
-          "md": 6,
-          "lg": 6,
-          "xl": 6
-        },
-        "autoAliasSuggestions": {
-          "type": "checkbox",
-          "label": "ui.items.general.items.autoaliassuggestions.label",
-          "xs": 12,
-          "sm": 12,
-          "md": 6,
-          "lg": 6,
-          "xl": 6
-        },
-        "marketSectionDivider": {
-          "type": "divider",
-          "newLine": true,
-          "xs": 12,
-          "sm": 12,
-          "md": 12,
-          "lg": 12,
-          "xl": 12
-        },
-        "marketSectionTitle": {
-          "type": "header",
-          "text": "ui.items.general.items.marketsectiontitle.text",
-          "size": 3,
-          "newLine": true,
-          "xs": 12,
-          "sm": 12,
-          "md": 12,
-          "lg": 12,
-          "xl": 12
-        },
-        "marketHeaders": {
-          "type": "checkbox",
-          "label": "ui.items.general.items.marketheaders.label",
-          "help": "ui.items.general.items.marketheaders.help",
-          "newLine": true,
-          "xs": 12,
-          "sm": 12,
-          "md": 6,
-          "lg": 6,
-          "xl": 6
-        },
-        "minItemsPerMarket": {
-          "type": "number",
-          "label": "ui.items.general.items.minitemspermarket.label",
-          "help": "ui.items.general.items.minitemspermarket.help",
-          "min": 1,
-          "max": 99,
-          "xs": 12,
-          "sm": 12,
-          "md": 6,
-          "lg": 6,
-          "xl": 6
-        },
-        "fallbackMarket": {
-          "type": "selectSendTo",
-          "command": "getMarkets",
-          "manual": false,
-          "noTranslation": true,
-          "label": "ui.items.general.items.fallbackmarket.label",
-          "newLine": true,
-          "xs": 12,
-          "sm": 12,
-          "md": 6,
-          "lg": 6,
-          "xl": 6,
-          "alsoDependsOn": [
-            "markets"
-          ],
-          "jsonData": "{\"markets\":${JSON.stringify(data.markets || [])}}"
-        },
-        "priorityMarket": {
-          "type": "selectSendTo",
-          "command": "getMarketsOptional",
-          "manual": false,
-          "noTranslation": true,
-          "label": "ui.items.general.items.prioritymarket.label",
-          "xs": 12,
-          "sm": 12,
-          "md": 6,
-          "lg": 6,
-          "xl": 6,
-          "help": "ui.items.general.items.prioritymarket.help",
-          "alsoDependsOn": [
-            "markets"
-          ],
-          "jsonData": "{\"markets\":${JSON.stringify(data.markets || [])}}"
-        },
-        "temporaryMarketHelp": {
-          "type": "staticText",
-          "newLine": true,
-          "text": "ui.items.general.items.temporarymarkethelp.text",
-          "xs": 12,
-          "sm": 12,
-          "md": 12,
-          "lg": 12,
-          "xl": 12,
-          "style": {
-            "fontSize": "0.9rem",
-            "lineHeight": "1.45",
-            "opacity": 0.78,
-            "marginBottom": "4px"
-          }
-        },
-        "temporaryMarketState": {
-          "type": "state",
-          "oid": "control.temporaryPriorityMarket",
-          "control": "select",
-          "controlled": true,
-          "label": "ui.items.general.items.temporarymarketstate.label",
-          "newLine": true,
-          "xs": 12,
-          "sm": 12,
-          "md": 6,
-          "lg": 6,
-          "xl": 6
-        },
-        "timingSectionDivider": {
-          "type": "divider",
-          "newLine": true,
-          "xs": 12,
-          "sm": 12,
-          "md": 12,
-          "lg": 12,
-          "xl": 12
-        },
-        "timingSectionTitle": {
-          "type": "header",
-          "text": "ui.items.general.items.timingsectiontitle.text",
-          "size": 3,
-          "newLine": true,
-          "xs": 12,
-          "sm": 12,
-          "md": 12,
-          "lg": 12,
-          "xl": 12
-        },
-        "debounceMs": {
-          "type": "number",
-          "label": "ui.items.general.items.debouncems.label",
-          "min": 250,
-          "max": 60000,
-          "newLine": true,
-          "xs": 12,
-          "sm": 12,
-          "md": 6,
-          "lg": 6,
-          "xl": 6
-        },
-        "writePauseMs": {
-          "type": "number",
-          "label": "ui.items.general.items.writepausems.label",
-          "min": 250,
-          "max": 10000,
-          "xs": 12,
-          "sm": 12,
-          "md": 6,
-          "lg": 6,
-          "xl": 6
-        },
-        "apiDivider": {
-          "type": "divider",
-          "newLine": true,
-          "xs": 12,
-          "sm": 12,
-          "md": 12,
-          "lg": 12,
-          "xl": 12
-        },
-        "apiSectionTitle": {
-          "type": "header",
-          "text": "ui.items.general.items.apisectiontitle.text",
-          "size": 3,
-          "newLine": true,
-          "xs": 12,
-          "sm": 12,
-          "md": 12,
-          "lg": 12,
-          "xl": 12
-        },
-        "apiHelp": {
-          "type": "staticText",
-          "text": "ui.items.general.items.apihelp.text",
-          "xs": 12,
-          "sm": 12,
-          "md": 12,
-          "lg": 12,
-          "xl": 12,
-          "newLine": true,
-          "style": {
-            "fontSize": "0.9rem",
-            "lineHeight": "1.45",
-            "opacity": 0.78,
-            "marginBottom": "4px"
-          }
-        },
-        "apiSafeMode": {
-          "type": "checkbox",
-          "label": "ui.items.general.items.apisafemode.label",
-          "newLine": true,
-          "xs": 12,
-          "sm": 12,
-          "md": 6,
-          "lg": 6,
-          "xl": 6
-        },
-        "maxWritesPerMinute": {
-          "type": "number",
-          "label": "ui.items.general.items.maxwritesperminute.label",
-          "min": 1,
-          "max": 120,
-          "xs": 12,
-          "sm": 12,
-          "md": 6,
-          "lg": 6,
-          "xl": 6
-        },
-        "batchSize": {
-          "type": "number",
-          "label": "ui.items.general.items.batchsize.label",
-          "min": 1,
-          "max": 100,
-          "newLine": true,
-          "xs": 12,
-          "sm": 12,
-          "md": 6,
-          "lg": 6,
-          "xl": 6
-        },
-        "batchPauseMs": {
-          "type": "number",
-          "label": "ui.items.general.items.batchpausems.label",
-          "min": 0,
-          "max": 60000,
-          "xs": 12,
-          "sm": 12,
-          "md": 6,
-          "lg": 6,
-          "xl": 6
-        },
-        "maxWriteRetries": {
-          "type": "number",
-          "label": "ui.items.general.items.maxwriteretries.label",
-          "min": 0,
-          "max": 5,
-          "newLine": true,
-          "xs": 12,
-          "sm": 12,
-          "md": 6,
-          "lg": 6,
-          "xl": 6
-        },
-        "retryBaseMs": {
-          "type": "number",
-          "label": "ui.items.general.items.retrybasems.label",
-          "min": 250,
-          "max": 30000,
-          "xs": 12,
-          "sm": 12,
-          "md": 6,
-          "lg": 6,
-          "xl": 6
         }
       }
     },
@@ -341,33 +23,21 @@
       "type": "panel",
       "label": "ui.items.liststab.label",
       "items": {
-        "listsSectionTitle": {
-          "type": "header",
-          "text": "ui.items.liststab.items.lists.label",
-          "size": 3,
+        "listsEditor": {
+          "type": "custom",
+          "url": "custom/settings/settingsEditors.js",
+          "name": "ShoppingRouteSettingsSet/Components/ListsEditor",
+          "bundlerType": "module",
+          "i18n": false,
           "xs": 12,
           "sm": 12,
           "md": 12,
           "lg": 12,
           "xl": 12
         },
-        "listsHelp": {
-          "type": "staticText",
-          "text": "ui.items.liststab.items.listshelp.text",
-          "xs": 12,
-          "sm": 12,
-          "md": 12,
-          "lg": 12,
-          "xl": 12,
-          "style": {
-            "fontSize": "0.9rem",
-            "lineHeight": "1.45",
-            "opacity": 0.78,
-            "marginBottom": "4px"
-          }
-        },
         "lists": {
           "type": "table",
+          "hidden": "true",
           "items": [
             {
               "type": "checkbox",
@@ -559,33 +229,21 @@
       "type": "panel",
       "label": "ui.items.productstab.label",
       "items": {
-        "productsSectionTitle": {
-          "type": "header",
-          "text": "ui.items.productstab.items.products.label",
-          "size": 3,
+        "productsEditor": {
+          "type": "custom",
+          "url": "custom/settings/settingsEditors.js",
+          "name": "ShoppingRouteSettingsSet/Components/ProductsEditor",
+          "bundlerType": "module",
+          "i18n": false,
           "xs": 12,
           "sm": 12,
           "md": 12,
           "lg": 12,
           "xl": 12
         },
-        "productsHelp": {
-          "type": "staticText",
-          "text": "ui.items.productstab.items.productshelp.text",
-          "xs": 12,
-          "sm": 12,
-          "md": 12,
-          "lg": 12,
-          "xl": 12,
-          "style": {
-            "fontSize": "0.9rem",
-            "lineHeight": "1.45",
-            "opacity": 0.78,
-            "marginBottom": "4px"
-          }
-        },
         "products": {
           "type": "table",
+          "hidden": "true",
           "items": [
             {
               "type": "text",
@@ -652,50 +310,21 @@
       "type": "panel",
       "label": "ui.items.reviewtab.label",
       "items": {
-        "reviewSectionTitle": {
-          "type": "header",
-          "text": "ui.items.reviewtab.items.reviewitems.label",
-          "size": 3,
+        "reviewEditor": {
+          "type": "custom",
+          "url": "custom/settings/settingsEditors.js",
+          "name": "ShoppingRouteSettingsSet/Components/ReviewEditor",
+          "bundlerType": "module",
+          "i18n": false,
           "xs": 12,
           "sm": 12,
           "md": 12,
           "lg": 12,
           "xl": 12
         },
-        "reviewHelp": {
-          "type": "staticText",
-          "text": "ui.items.reviewtab.items.reviewhelp.text",
-          "xs": 12,
-          "sm": 12,
-          "md": 12,
-          "lg": 12,
-          "xl": 12,
-          "style": {
-            "fontSize": "0.9rem",
-            "lineHeight": "1.45",
-            "opacity": 0.78,
-            "marginBottom": "4px"
-          }
-        },
-        "reviewAcceptAll": {
-          "type": "sendTo",
-          "command": "markAllReviewItemsAccept",
-          "label": {
-            "en": "Set all to accept",
-            "de": "Alle auf Übernehmen stellen"
-          },
-          "variant": "outlined",
-          "showProcess": true,
-          "newLine": true,
-          "xs": 12,
-          "sm": 12,
-          "md": 6,
-          "lg": 4,
-          "xl": 3,
-          "jsonData": "{\"native\":${JSON.stringify(data)}}"
-        },
         "reviewItems": {
           "type": "table",
+          "hidden": "true",
           "items": [
             {
               "type": "text",
@@ -787,58 +416,17 @@
       "type": "panel",
       "label": "ui.items.transfertab.label",
       "items": {
-        "transferSectionTitle": {
-          "type": "header",
-          "text": "ui.items.transfertab.label",
-          "size": 3,
+        "transferEditor": {
+          "type": "custom",
+          "url": "custom/settings/settingsEditors.js",
+          "name": "ShoppingRouteSettingsSet/Components/TransferEditor",
+          "bundlerType": "module",
+          "i18n": false,
           "xs": 12,
           "sm": 12,
           "md": 12,
           "lg": 12,
           "xl": 12
-        },
-        "backupHelp": {
-          "type": "staticText",
-          "text": "ui.items.transfertab.items.backuphelp.text",
-          "xs": 12,
-          "sm": 12,
-          "md": 12,
-          "lg": 12,
-          "xl": 12,
-          "style": {
-            "fontSize": "0.9rem",
-            "lineHeight": "1.45",
-            "opacity": 0.78,
-            "marginBottom": "4px"
-          }
-        },
-        "backupTransfer": {
-          "type": "sendTo",
-          "command": "getBackupUiUrl",
-          "label": {
-            "en": "Open backup / sharing",
-            "de": "Sicherung / Teilen öffnen",
-            "ru": "Открыть резервное копирование / обмен",
-            "pt": "Abrir backup / compartilhamento",
-            "nl": "Back-up / delen openen",
-            "fr": "Ouvrir sauvegarde / partage",
-            "it": "Apri backup / condivisione",
-            "es": "Abrir copia de seguridad / compartir",
-            "pl": "Otwórz kopię zapasową / udostępnianie",
-            "uk": "Відкрити резервне копіювання / обмін",
-            "zh-cn": "打开备份 / 分享"
-          },
-          "openUrl": true,
-          "window": "shoppingrouteBackup",
-          "variant": "contained",
-          "icon": "upload",
-          "showProcess": true,
-          "newLine": true,
-          "xs": 12,
-          "sm": 12,
-          "md": 6,
-          "lg": 4,
-          "xl": 3
         }
       }
     }

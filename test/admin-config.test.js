@@ -26,13 +26,11 @@ test('user-facing admin areas are present and diagnostics tab is hidden',()=>{
 });
 test('backup and sharing use an Admin 7.6 compatible launcher without raw JSON controls',()=>{
   const transfer=jsonConfig.items.transferTab.items;
-  assert.deepEqual(Object.keys(transfer),['transferSectionTitle','backupHelp','backupTransfer']);
-
-  const launcher=transfer.backupTransfer;
-  assert.equal(launcher.type,'sendTo');
-  assert.equal(launcher.command,'getBackupUiUrl');
-  assert.equal(launcher.openUrl,true);
-  assert.equal(launcher.window,'shoppingrouteBackup');
+  assert.deepEqual(Object.keys(transfer),['transferEditor']);
+  assert.equal(transfer.transferEditor.type,'custom');
+  assert.equal(transfer.transferEditor.url,'custom/settings/settingsEditors.js');
+  assert.equal(transfer.transferEditor.name,'ShoppingRouteSettingsSet/Components/TransferEditor');
+  assert.equal(transfer.transferEditor.bundlerType,'module');
 
   assert.ok(fs.existsSync(path.join(root,'admin','backup-transfer.html')));
 
@@ -54,73 +52,28 @@ test('backup and sharing use an Admin 7.6 compatible launcher without raw JSON c
   assert.equal(adminDependency.admin,'>=7.6.20');
 });
 
-test('native Admin tabs share the phase-one visual hierarchy',()=>{
-  const sections={
-    listsTab:['listsSectionTitle','listsHelp'],
-    productsTab:['productsSectionTitle','productsHelp'],
-    reviewTab:['reviewSectionTitle','reviewHelp'],
-    transferTab:['transferSectionTitle','backupHelp'],
+test('shared custom settings bundle is wired into general, lists, products, review and transfer tabs',()=>{
+  const sharedTabs={
+    general:['generalEditor','GeneralEditor'],
+    listsTab:['listsEditor','ListsEditor'],
+    productsTab:['productsEditor','ProductsEditor'],
+    reviewTab:['reviewEditor','ReviewEditor'],
+    transferTab:['transferEditor','TransferEditor'],
   };
 
-  for(const [tab,[headerKey,helpKey]] of Object.entries(sections)) {
-    const items=jsonConfig.items[tab].items;
-    assert.equal(items[headerKey].type,'header',`${tab} header`);
-    assert.equal(items[headerKey].size,3,`${tab} header size`);
-    assert.equal(items[headerKey].xs,12,`${tab} mobile header width`);
-    assert.equal(items[helpKey].type,'staticText',`${tab} help`);
-    assert.equal(items[helpKey].style.fontSize,'0.9rem',`${tab} help size`);
-    assert.equal(items[helpKey].style.opacity,0.78,`${tab} theme-neutral help color`);
+  for(const [tab,[key,component]] of Object.entries(sharedTabs)) {
+    const item=jsonConfig.items[tab].items[key];
+    assert.equal(item.type,'custom',`${tab} custom type`);
+    assert.equal(item.url,'custom/settings/settingsEditors.js',`${tab} bundle`);
+    assert.equal(item.name,`ShoppingRouteSettingsSet/Components/${component}`,`${tab} component`);
+    assert.equal(item.bundlerType,'module',`${tab} bundler`);
   }
 
-  const general=jsonConfig.items.general.items;
-  assert.equal(general.betaWarning.type,'infoBox');
-  assert.equal(general.betaWarning.boxType,'warning');
-  assert.equal(general.betaWarning.closeable,false);
-  for(const key of ['basicSectionTitle','marketSectionTitle','timingSectionTitle','apiSectionTitle']) {
-    assert.equal(general[key].type,'header',key);
-    assert.equal(general[key].size,3,key);
-  }
-  for(const key of ['marketSectionDivider','timingSectionDivider','apiDivider']) assert.equal(general[key].type,'divider',key);
-  assert.equal(jsonConfig.items.reviewTab.items.reviewAcceptAll.variant,'outlined');
-  assert.equal(jsonConfig.items.transferTab.items.backupTransfer.variant,'contained');
-  assert.equal(jsonConfig.items.transferTab.items.backupTransfer.md,6);
-});
-
-test('phase-one styling preserves the functional JSON config outside the migrated product groups tab',()=>{
-  const visualProperties=new Set([
-    'label','text','title','width','style','darkStyle','innerStyle','controlStyle',
-    'xs','sm','md','lg','xl','newLine','variant','icon','iconPosition','boxType',
-    'closeable','size','help','tooltip','placeholder',
-  ]);
-  const presentationTypes=new Set(['header','staticText','infoBox','divider']);
-  const stripVisualProperties=value=>{
-    if(Array.isArray(value)) return value.map(stripVisualProperties);
-    if(!value||typeof value!=='object') return value;
-    return Object.fromEntries(Object.entries(value)
-      .filter(([key])=>!visualProperties.has(key))
-      .map(([key,item])=>[key,stripVisualProperties(item)]));
-  };
-  const panels=['general','listsTab','routesTab','productsTab','reviewTab','transferTab'];
-  const projection=Object.fromEntries(panels.map(panel=>[
-    panel,
-    Object.fromEntries(Object.entries(jsonConfig.items[panel].items)
-      .filter(([,item])=>!presentationTypes.has(item.type))
-      .map(([key,item])=>[key,stripVisualProperties(item)])),
-  ]));
-  const hash=crypto.createHash('sha256').update(JSON.stringify(projection)).digest('hex');
-
-  assert.equal(hash,'faf4170e032ef1b41c071f185868394d074b5758239b107870bfd1c98b1434c3');
   const routeHash=crypto.createHash('sha256').update(JSON.stringify(jsonConfig.items.routesTab)).digest('hex');
   assert.equal(routeHash,'23228bada006eac4b1d8193a56d4978e64371e4886d8ad6bfe851ddc93fd58be');
 });
 
 test('known instances, lists, markets and product groups use dropdown controls',()=>{
-  const general=jsonConfig.items.general.items;
-  assert.equal(general.alexaInstance.type,'instance');
-  assert.equal(general.alexaInstance.adapter,'alexa2');
-  assert.equal(general.alexaInstance.onlyEnabled,true);
-  assert.equal(general.fallbackMarket.type,'selectSendTo');
-  assert.equal(general.priorityMarket.type,'selectSendTo');
   const listFields=jsonConfig.items.listsTab.items.lists.items;
   assert.equal(listFields.find(x=>x.attr==='name').type,'selectSendTo');
   assert.equal(listFields.find(x=>x.attr==='name').command,'getAlexaLists');
@@ -245,7 +198,7 @@ test('walking routes use a dedicated editor with routes as the only persisted so
   const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
   assert.equal(
     pkg.scripts['build:admin'],
-    'vite build && vite build --config vite.product-groups.config.mjs && vite build --config vite.markets.config.mjs',
+    'vite build && vite build --config vite.product-groups.config.mjs && vite build --config vite.markets.config.mjs && vite build --config vite.settings.config.mjs',
   );
   assert.equal(pkg.devDependencies.browserify,undefined);
   assert.equal(pkg.devDependencies['@module-federation/vite'],'1.4.1');
@@ -253,10 +206,13 @@ test('walking routes use a dedicated editor with routes as the only persisted so
 });
 
 
-test('unsaved markets and product groups are fed into the real product and review tables',()=>{
+test('hidden native tables preserve product, review and list data structures behind the custom editors',()=>{
+  const lists=jsonConfig.items.listsTab.items;
+  assert.equal(lists.lists.hidden,'true');
+
   const products=jsonConfig.items.productsTab.items;
   assert.equal(products._productEditorRows,undefined);
-  assert.notEqual(products.products.hidden,'true');
+  assert.equal(products.products.hidden,'true');
   const pFields=products.products.items;
   const pCategory=pFields.find(x=>x.attr==='category');
   const pDefault=pFields.find(x=>x.attr==='defaultMarket');
@@ -277,7 +233,7 @@ test('unsaved markets and product groups are fed into the real product and revie
 
   const review=jsonConfig.items.reviewTab.items;
   assert.equal(review._reviewEditorRows,undefined);
-  assert.notEqual(review.reviewItems.hidden,'true');
+  assert.equal(review.reviewItems.hidden,'true');
   const rAlternatives=review.reviewItems.items.find(x=>x.attr==='availableMarkets');
   assert.equal(rAlternatives.multiple,true);
   assert.equal(rAlternatives.defaultSendTo,'normalizeMarketSelection');
@@ -289,21 +245,18 @@ test('unsaved markets and product groups are fed into the real product and revie
   });
   assert.equal(serializedReviews[0].availableMarkets,'REWE,LIDL');
 
-  assert.match(review.reviewAcceptAll.jsonData,/JSON\.stringify\(data\)/);
   const source=fs.readFileSync(path.join(root,'src','main.ts'),'utf8');
   assert.match(source,/normalizeMarketSelection/);
 });
 
 test('API protection is integrated into General and no longer has its own tab',()=>{
-  const general=jsonConfig.items.general.items;
   assert.equal(jsonConfig.items.apiTab,undefined);
-  for(const key of ['apiSafeMode','maxWritesPerMinute','batchSize','batchPauseMs','maxWriteRetries','retryBaseMs']) assert.ok(general[key],key);
+  assert.deepEqual(Object.keys(jsonConfig.items.general.items),['generalEditor']);
 });
 
 test('market terminology distinguishes normal default from current-shopping override',()=>{
-  const general=jsonConfig.items.general.items;
-  assert.equal(jsonConfig.i18n[general.priorityMarket.label].de,'Standardmarkt für Einkäufe');
-  assert.equal(jsonConfig.i18n[general.temporaryMarketState.label].de,'Markt für aktuellen Einkauf');
+  assert.equal(jsonConfig.i18n['ui.items.general.items.prioritymarket.label'].de,'Standardmarkt für Einkäufe');
+  assert.equal(jsonConfig.i18n['ui.items.general.items.temporarymarketstate.label'].de,'Markt für aktuellen Einkauf');
 });
 
 
@@ -311,8 +264,7 @@ test('current-shopping market has a visible no-market reset option',()=>{
   const source=fs.readFileSync(path.join(root,'src','main.ts'),'utf8');
   assert.match(source,/__none__/);
   assert.match(source,/Kein Markt/);
-  const general=jsonConfig.items.general.items;
-  assert.equal(general.clearTemporaryMarket,undefined);
+  assert.equal(jsonConfig.items.general.items.clearTemporaryMarket,undefined);
 });
 
 test('Alexa list discovery scans actual list objects instead of configured names only',()=>{
