@@ -54,6 +54,10 @@ import {
     classifyAlexaWriteConfirmation,
     type AlexaWriteSnapshot,
 } from './lib/alexa-write-confirmation';
+import {
+    isAlexaWriteReady,
+    type AlexaWriteReadinessSnapshot,
+} from './lib/alexa-write-readiness';
 
 const VERSION = '0.3.2';
 const LIST_STABILITY_MS = 5000;
@@ -822,6 +826,18 @@ export class ShoppingRoute extends utils.Adapter {
                     const beforeState = await this.getForeignStateAsync(valueStateId);
                     const beforeTs = Number((beforeState as { ts?: number } | null)?.ts || 0);
 
+                    const writeReady = await this.waitForAlexaWriteReadiness(listName, step.id, step.from);
+                    if (!writeReady) {
+                        this.traffic.abortedRuns += 1;
+                        await this.persistTrafficMetrics();
+                        await this.activateSortSafetyStop(
+                            listName,
+                            `${listName}: Alexa2-Metadaten für ID ${step.id} waren vor Sortierschritt ${index + 1}/${program.steps.length} nicht synchron.`,
+                            journal,
+                        );
+                        return;
+                    }
+
                     await this.writeAlexaState(valueStateId, step.to);
                     const confirmation = await this.waitForAlexaValueConfirmation(
                         listName,
@@ -886,8 +902,6 @@ export class ShoppingRoute extends utils.Adapter {
                         ) {
                             this.log.info(`API-Schonmodus: Batch-Pause nach ${written} Schreibzugriffen (${this.batchPauseMs} ms).`);
                             await this.wait(this.batchPauseMs);
-                        } else if (this.writePauseMs > 0) {
-                            await this.wait(this.writePauseMs);
                         }
                     }
                 }
@@ -999,6 +1013,58 @@ export class ShoppingRoute extends utils.Adapter {
                 acknowledged: state?.ack === true,
                 versionAcknowledged: versionState?.ack === true,
                 updatedDateTimeAcknowledged: updatedState?.ack === true,
+            },
+        };
+    }
+
+    private async readAlexaWriteReadinessSnapshot(
+        listName: string,
+        id: string,
+    ): Promise<AlexaWriteReadinessSnapshot> {
+        const listStateId = this.listStateId(listName);
+        const firstListState = await this.getForeignStateAsync(listStateId);
+        if (!firstListState || typeof firstListState.val !== 'string' || !firstListState.val.trim()) {
+            throw new Error(`Datenpunkt ${listStateId} enthält keine lesbare Liste.`);
+        }
+        const parsed: unknown = JSON.parse(firstListState.val);
+        if (!Array.isArray(parsed)) throw new Error(`${listStateId} enthält kein JSON-Array.`);
+        const list: Array<AlexaListItem & { version?: number | string }> = parsed;
+        const item = list.find(entry => String(entry?.id || '') === id);
+        const queueBarrierId = String(list.at(-1)?.id || '');
+        const itemStatePrefix = `${this.alexaInstance}.Lists.${listName}.items.${id}`;
+        const [state, versionState, updatedState, queueBarrierState, finalListState] = await Promise.all([
+            this.getForeignStateAsync(`${itemStatePrefix}.value`),
+            this.getForeignStateAsync(`${itemStatePrefix}.version`),
+            this.getForeignStateAsync(`${itemStatePrefix}.updatedDateTime`),
+            queueBarrierId
+                ? this.getForeignStateAsync(`${this.alexaInstance}.Lists.${listName}.items.${queueBarrierId}.listName`)
+                : Promise.resolve(null),
+            this.getForeignStateAsync(listStateId),
+        ]);
+        const firstObservedAt = Number((firstListState as { ts?: number }).ts || 0);
+        const finalObservedAt = Number((finalListState as { ts?: number } | null)?.ts || 0);
+
+        return {
+            jsonStable: finalObservedAt === firstObservedAt && finalListState?.val === firstListState.val,
+            queueBarrierAcknowledged: queueBarrierState?.ack === true,
+            queueBarrierObservedAt: Number((queueBarrierState as { ts?: number } | null)?.ts || 0),
+            json: {
+                value: item ? String(item.value || '').trim() : undefined,
+                version: item?.version,
+                updatedDateTime: item?.updatedDateTime,
+                acknowledged: firstListState.ack === true,
+                observedAt: firstObservedAt,
+            },
+            item: {
+                value: state ? String(state.val ?? '').trim() : undefined,
+                version: versionState?.val as number | string | undefined,
+                updatedDateTime: updatedState?.val as number | string | undefined,
+                acknowledged: state?.ack === true,
+                versionAcknowledged: versionState?.ack === true,
+                updatedDateTimeAcknowledged: updatedState?.ack === true,
+                valueObservedAt: Number((state as { ts?: number } | null)?.ts || 0),
+                versionObservedAt: Number((versionState as { ts?: number } | null)?.ts || 0),
+                updatedDateTimeObservedAt: Number((updatedState as { ts?: number } | null)?.ts || 0),
             },
         };
     }
@@ -1250,6 +1316,24 @@ export class ShoppingRoute extends utils.Adapter {
                 return 'ambiguous';
             },
         });
+    }
+
+    private async waitForAlexaWriteReadiness(
+        listName: string,
+        id: string,
+        expectedValue: string,
+        timeoutMs = ALEXA_CONFIRMATION_TIMEOUT_MS,
+    ): Promise<boolean> {
+        const readiness = await waitForConfirmation({
+            timeoutMs,
+            pollIntervalMs: ALEXA_CONFIRMATION_POLL_MS,
+            pause: ms => this.wait(ms),
+            probe: async () => isAlexaWriteReady(
+                expectedValue,
+                await this.readAlexaWriteReadinessSnapshot(listName, id),
+            ) ? 'confirmed' : 'ambiguous',
+        });
+        return readiness === 'confirmed';
     }
 
     private async reconcilePendingTransactionStep(

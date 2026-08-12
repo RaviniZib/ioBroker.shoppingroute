@@ -19,8 +19,16 @@ test("sort confirmation waits are adaptive and recovery has no fixed startup sle
     assert.doesNotMatch(main, /await this\.wait\(3000\);/);
 });
 
-test("configured write pauses apply only between writes, never after the final confirmation", () => {
-    assert.match(main, /if \(written < program\.steps\.length\)/);
+test("normal sort writes use adaptive Alexa2 readiness instead of a fixed pause", () => {
+    const normalLoopStart = main.indexOf('for (let index = 0; index < program.steps.length; index++)');
+    const normalLoopEnd = main.indexOf('const verifyList = await this.readList(listName);', normalLoopStart);
+    const normalLoop = main.slice(normalLoopStart, normalLoopEnd);
+    assert.match(normalLoop, /waitForAlexaWriteReadiness\(listName, step\.id, step\.from\)/);
+    assert.ok(normalLoop.indexOf('waitForAlexaWriteReadiness') < normalLoop.indexOf('writeAlexaState(valueStateId, step.to)'));
+    assert.doesNotMatch(normalLoop, /await this\.wait\(this\.writePauseMs\)/);
+});
+
+test("configured write pauses remain between visible-order and rollback writes", () => {
     assert.match(main, /if \(index \+ 1 < touchIds\.length\)/);
     assert.match(main, /if \(journal\.confirmedSteps > 0 && this\.writePauseMs > 0\)/);
 });

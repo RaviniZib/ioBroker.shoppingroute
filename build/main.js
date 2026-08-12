@@ -48,6 +48,7 @@ const config_tools_1 = require("./lib/config-tools");
 const statistics_1 = require("./lib/statistics");
 const confirmation_wait_1 = require("./lib/confirmation-wait");
 const alexa_write_confirmation_1 = require("./lib/alexa-write-confirmation");
+const alexa_write_readiness_1 = require("./lib/alexa-write-readiness");
 const VERSION = '0.3.2';
 const LIST_STABILITY_MS = 5000;
 const ALEXA_CONFIRMATION_TIMEOUT_MS = 10000;
@@ -723,6 +724,13 @@ class ShoppingRoute extends utils.Adapter {
                     }
                     const beforeState = await this.getForeignStateAsync(valueStateId);
                     const beforeTs = Number(beforeState?.ts || 0);
+                    const writeReady = await this.waitForAlexaWriteReadiness(listName, step.id, step.from);
+                    if (!writeReady) {
+                        this.traffic.abortedRuns += 1;
+                        await this.persistTrafficMetrics();
+                        await this.activateSortSafetyStop(listName, `${listName}: Alexa2-Metadaten für ID ${step.id} waren vor Sortierschritt ${index + 1}/${program.steps.length} nicht synchron.`, journal);
+                        return;
+                    }
                     await this.writeAlexaState(valueStateId, step.to);
                     const confirmation = await this.waitForAlexaValueConfirmation(listName, step.id, step.from, step.to, beforeTs);
                     if (confirmation === 'ambiguous') {
@@ -768,9 +776,6 @@ class ShoppingRoute extends utils.Adapter {
                             this.batchPauseMs > 0) {
                             this.log.info(`API-Schonmodus: Batch-Pause nach ${written} Schreibzugriffen (${this.batchPauseMs} ms).`);
                             await this.wait(this.batchPauseMs);
-                        }
-                        else if (this.writePauseMs > 0) {
-                            await this.wait(this.writePauseMs);
                         }
                     }
                 }
@@ -874,6 +879,54 @@ class ShoppingRoute extends utils.Adapter {
                 acknowledged: state?.ack === true,
                 versionAcknowledged: versionState?.ack === true,
                 updatedDateTimeAcknowledged: updatedState?.ack === true,
+            },
+        };
+    }
+    async readAlexaWriteReadinessSnapshot(listName, id) {
+        const listStateId = this.listStateId(listName);
+        const firstListState = await this.getForeignStateAsync(listStateId);
+        if (!firstListState || typeof firstListState.val !== 'string' || !firstListState.val.trim()) {
+            throw new Error(`Datenpunkt ${listStateId} enthält keine lesbare Liste.`);
+        }
+        const parsed = JSON.parse(firstListState.val);
+        if (!Array.isArray(parsed))
+            throw new Error(`${listStateId} enthält kein JSON-Array.`);
+        const list = parsed;
+        const item = list.find(entry => String(entry?.id || '') === id);
+        const queueBarrierId = String(list.at(-1)?.id || '');
+        const itemStatePrefix = `${this.alexaInstance}.Lists.${listName}.items.${id}`;
+        const [state, versionState, updatedState, queueBarrierState, finalListState] = await Promise.all([
+            this.getForeignStateAsync(`${itemStatePrefix}.value`),
+            this.getForeignStateAsync(`${itemStatePrefix}.version`),
+            this.getForeignStateAsync(`${itemStatePrefix}.updatedDateTime`),
+            queueBarrierId
+                ? this.getForeignStateAsync(`${this.alexaInstance}.Lists.${listName}.items.${queueBarrierId}.listName`)
+                : Promise.resolve(null),
+            this.getForeignStateAsync(listStateId),
+        ]);
+        const firstObservedAt = Number(firstListState.ts || 0);
+        const finalObservedAt = Number(finalListState?.ts || 0);
+        return {
+            jsonStable: finalObservedAt === firstObservedAt && finalListState?.val === firstListState.val,
+            queueBarrierAcknowledged: queueBarrierState?.ack === true,
+            queueBarrierObservedAt: Number(queueBarrierState?.ts || 0),
+            json: {
+                value: item ? String(item.value || '').trim() : undefined,
+                version: item?.version,
+                updatedDateTime: item?.updatedDateTime,
+                acknowledged: firstListState.ack === true,
+                observedAt: firstObservedAt,
+            },
+            item: {
+                value: state ? String(state.val ?? '').trim() : undefined,
+                version: versionState?.val,
+                updatedDateTime: updatedState?.val,
+                acknowledged: state?.ack === true,
+                versionAcknowledged: versionState?.ack === true,
+                updatedDateTimeAcknowledged: updatedState?.ack === true,
+                valueObservedAt: Number(state?.ts || 0),
+                versionObservedAt: Number(versionState?.ts || 0),
+                updatedDateTimeObservedAt: Number(updatedState?.ts || 0),
             },
         };
     }
@@ -1064,6 +1117,15 @@ class ShoppingRoute extends utils.Adapter {
                 return 'ambiguous';
             },
         });
+    }
+    async waitForAlexaWriteReadiness(listName, id, expectedValue, timeoutMs = ALEXA_CONFIRMATION_TIMEOUT_MS) {
+        const readiness = await (0, confirmation_wait_1.waitForConfirmation)({
+            timeoutMs,
+            pollIntervalMs: ALEXA_CONFIRMATION_POLL_MS,
+            pause: ms => this.wait(ms),
+            probe: async () => (0, alexa_write_readiness_1.isAlexaWriteReady)(expectedValue, await this.readAlexaWriteReadinessSnapshot(listName, id)) ? 'confirmed' : 'ambiguous',
+        });
+        return readiness === 'confirmed';
     }
     async reconcilePendingTransactionStep(journal) {
         if (journal.confirmedSteps >= journal.steps.length)
