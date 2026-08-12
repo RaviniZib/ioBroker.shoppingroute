@@ -95,11 +95,35 @@ interface SortTransactionJournal {
     confirmedSteps: number;
 }
 
+type SortRuntimePhase = 'planning' | 'content' | 'visible-order';
+type AlexaWaitRuntimePhase = 'content' | 'marker' | 'restore' | 'rollback';
+
+interface AlexaWaitRuntimeTiming {
+    id: string;
+    phase: AlexaWaitRuntimePhase;
+    durationMs: number;
+}
+
+interface SortRuntimeTiming {
+    requestedAt: number;
+    startedAt: number;
+    phase: SortRuntimePhase;
+    phaseStartedAt: number;
+    planningMs: number;
+    contentMs: number;
+    visibleOrderMs: number;
+    visibleTouches: number;
+    readiness: AlexaWaitRuntimeTiming[];
+    confirmation: AlexaWaitRuntimeTiming[];
+}
+
 export class ShoppingRoute extends utils.Adapter {
     private sortTimer: ioBroker.Timeout | null | undefined = null;
     private versionTimer: ioBroker.Interval | null | undefined = null;
     private pendingLists = new Set<string>();
+    private pendingSortRequestedAt = new Map<string, number>();
     private sortingListName = '';
+    private activeSortRuntime: SortRuntimeTiming | null = null;
     private listChangedDuringSort = false;
     private runtimeProducts: ProductConfig[] = [];
     private runtimeReviews: ReviewItemConfig[] = [];
@@ -424,8 +448,9 @@ export class ShoppingRoute extends utils.Adapter {
         if (!state) return;
         const local = `${this.namespace}.`;
         if (id === `${local}control.sortNow` && !state.ack && state.val === true) {
+            const requestedAt = Date.now();
             await this.setStateAsync('control.sortNow', false, true);
-            this.scheduleAll(this.sortStabilityDelayMs);
+            this.scheduleAll(0, requestedAt);
             return;
         }
         if (id === `${local}control.compatibilityTest` && !state.ack && state.val === true) {
@@ -516,13 +541,17 @@ export class ShoppingRoute extends utils.Adapter {
             .finally(callback);
     }
 
-    private scheduleAll(delay: number): void {
-        for (const list of this.listConfigs) this.pendingLists.add(list.name);
+    private scheduleAll(delay: number, requestedAt = Date.now()): void {
+        for (const list of this.listConfigs) {
+            this.pendingLists.add(list.name);
+            this.pendingSortRequestedAt.set(list.name, requestedAt);
+        }
         this.armSortTimer(delay);
     }
 
-    private scheduleSort(listName: string, delay: number): void {
+    private scheduleSort(listName: string, delay: number, requestedAt = Date.now()): void {
         this.pendingLists.add(listName);
+        this.pendingSortRequestedAt.set(listName, requestedAt);
         this.armSortTimer(delay);
     }
 
@@ -540,7 +569,9 @@ export class ShoppingRoute extends utils.Adapter {
             const listName = this.pendingLists.values().next().value;
             if (!listName) break;
             this.pendingLists.delete(listName);
-            await this.sortList(listName);
+            const requestedAt = this.pendingSortRequestedAt.get(listName) ?? Date.now();
+            this.pendingSortRequestedAt.delete(listName);
+            await this.sortList(listName, requestedAt);
         }
     }
 
@@ -558,12 +589,26 @@ export class ShoppingRoute extends utils.Adapter {
         return parsed as AlexaListItem[];
     }
 
-    private async sortList(listName: string): Promise<void> {
+    private async sortList(listName: string, requestedAt = Date.now()): Promise<void> {
         if (this.sortingListName) {
             this.pendingLists.add(listName);
             return;
         }
+        const startedAt = Date.now();
         if (!(await this.isEnabled())) return;
+        const runtime: SortRuntimeTiming = {
+            requestedAt,
+            startedAt,
+            phase: 'planning',
+            phaseStartedAt: startedAt,
+            planningMs: 0,
+            contentMs: 0,
+            visibleOrderMs: 0,
+            visibleTouches: 0,
+            readiness: [],
+            confirmation: [],
+        };
+        this.activeSortRuntime = runtime;
         this.sortingListName = listName;
         this.listChangedDuringSort = false;
 
@@ -706,6 +751,7 @@ export class ShoppingRoute extends utils.Adapter {
                 this.traffic.sortRuns += 1;
                 this.traffic.lastSortRun = new Date().toISOString();
                 await this.persistTrafficMetrics();
+                this.transitionSortRuntimePhase(runtime, 'visible-order');
                 const visibleResult = await this.refreshVisibleAlexaOrder(listName, plan);
                 if (visibleResult.interrupted) return;
                 await this.setStateAsync(
@@ -777,6 +823,7 @@ export class ShoppingRoute extends utils.Adapter {
             };
             await this.persistSortTransaction(journal);
 
+            this.transitionSortRuntimePhase(runtime, 'content');
             let written = 0;
 
             try {
@@ -826,7 +873,12 @@ export class ShoppingRoute extends utils.Adapter {
                     const beforeState = await this.getForeignStateAsync(valueStateId);
                     const beforeTs = Number((beforeState as { ts?: number } | null)?.ts || 0);
 
-                    const writeReady = await this.waitForAlexaWriteReadiness(listName, step.id, step.from);
+                    const writeReady = await this.waitForAlexaWriteReadiness(
+                        listName,
+                        step.id,
+                        step.from,
+                        'content',
+                    );
                     if (!writeReady) {
                         this.traffic.abortedRuns += 1;
                         await this.persistTrafficMetrics();
@@ -845,6 +897,8 @@ export class ShoppingRoute extends utils.Adapter {
                         step.from,
                         step.to,
                         beforeTs,
+                        undefined,
+                        'content',
                     );
                     if (confirmation === 'ambiguous') {
                         this.traffic.abortedRuns += 1;
@@ -945,6 +999,7 @@ export class ShoppingRoute extends utils.Adapter {
 
             await this.persistSortTransaction(null);
 
+            this.transitionSortRuntimePhase(runtime, 'visible-order');
             const visibleResult = await this.refreshVisibleAlexaOrder(listName, plan);
             if (visibleResult.interrupted) return;
 
@@ -959,12 +1014,23 @@ export class ShoppingRoute extends utils.Adapter {
             await this.setError(message);
             this.log.error(message);
         } finally {
+            this.finishSortRuntimePhase(runtime);
             this.sortingListName = '';
-            await this.persistRuntimeConfig();
-            await this.refreshExports();
-            await this.updateFeedbackReport();
-            if (this.listChangedDuringSort) this.pendingLists.add(listName);
-            if (this.pendingLists.size > 0) this.armSortTimer(this.sortStabilityDelayMs);
+            try {
+                await this.persistRuntimeConfig();
+                await this.refreshExports();
+                await this.updateFeedbackReport();
+                if (this.listChangedDuringSort) {
+                    this.pendingLists.add(listName);
+                    if (!this.pendingSortRequestedAt.has(listName)) {
+                        this.pendingSortRequestedAt.set(listName, Date.now());
+                    }
+                }
+                if (this.pendingLists.size > 0) this.armSortTimer(this.sortStabilityDelayMs);
+            } finally {
+                this.logSortRuntime(listName, runtime);
+                if (this.activeSortRuntime === runtime) this.activeSortRuntime = null;
+            }
         }
     }
 
@@ -1069,6 +1135,54 @@ export class ShoppingRoute extends utils.Adapter {
         };
     }
 
+    private transitionSortRuntimePhase(runtime: SortRuntimeTiming, nextPhase: SortRuntimePhase): void {
+        this.finishSortRuntimePhase(runtime);
+        runtime.phase = nextPhase;
+        runtime.phaseStartedAt = Date.now();
+    }
+
+    private finishSortRuntimePhase(runtime: SortRuntimeTiming): void {
+        const now = Date.now();
+        const elapsedMs = Math.max(0, now - runtime.phaseStartedAt);
+        if (runtime.phase === 'planning') runtime.planningMs += elapsedMs;
+        else if (runtime.phase === 'content') runtime.contentMs += elapsedMs;
+        else runtime.visibleOrderMs += elapsedMs;
+        runtime.phaseStartedAt = now;
+    }
+
+    private recordAlexaWaitRuntime(
+        type: 'readiness' | 'confirmation',
+        id: string,
+        phase: AlexaWaitRuntimePhase | undefined,
+        startedAt: number,
+    ): void {
+        if (!phase || !this.activeSortRuntime) return;
+        this.activeSortRuntime[type].push({
+            id,
+            phase,
+            durationMs: Math.max(0, Date.now() - startedAt),
+        });
+    }
+
+    private logSortRuntime(listName: string, runtime: SortRuntimeTiming): void {
+        const sum = (entries: AlexaWaitRuntimeTiming[], phase?: AlexaWaitRuntimePhase): number => entries
+            .filter(entry => !phase || entry.phase === phase)
+            .reduce((total, entry) => total + entry.durationMs, 0);
+        const totalMs = Math.max(0, Date.now() - runtime.startedAt);
+        const startWaitMs = Math.max(0, runtime.startedAt - runtime.requestedAt);
+        const readinessMs = sum(runtime.readiness);
+        const confirmationMs = sum(runtime.confirmation);
+        this.log.info(
+            `${listName} Laufzeit: gesamt ${totalMs} ms | Startwartezeit ${startWaitMs} ms | ` +
+            `Planung ${runtime.planningMs} ms | Inhalt ${runtime.contentMs} ms | ` +
+            `Reihenfolge ${runtime.visibleOrderMs} ms | ${runtime.visibleTouches} Touches | ` +
+            `Readiness ${readinessMs} ms (Inhalt ${sum(runtime.readiness, 'content')}, Marker ${sum(runtime.readiness, 'marker')}, ` +
+            `Restore ${sum(runtime.readiness, 'restore')}, Rollback ${sum(runtime.readiness, 'rollback')}) | ` +
+            `Confirmation ${confirmationMs} ms (Inhalt ${sum(runtime.confirmation, 'content')}, Marker ${sum(runtime.confirmation, 'marker')}, ` +
+            `Restore ${sum(runtime.confirmation, 'restore')}, Rollback ${sum(runtime.confirmation, 'rollback')})`,
+        );
+    }
+
     private async refreshVisibleAlexaOrder(
         listName: string,
         plan: Array<{ id: string; to: string; position: number }>,
@@ -1095,6 +1209,7 @@ export class ShoppingRoute extends utils.Adapter {
             this.log.warn(`${listName}: Sichtbare Reihenfolge wird neu berechnet: ${error instanceof Error ? error.message : String(error)}`);
             return { writes: 0, interrupted: true, additionalItems };
         }
+        if (this.activeSortRuntime) this.activeSortRuntime.visibleTouches = touchIds.length;
         if (touchIds.length === 0) return { writes: 0, interrupted: false, additionalItems };
 
         let writes = 0;
@@ -1157,7 +1272,12 @@ export class ShoppingRoute extends utils.Adapter {
             };
             await this.persistSortTransaction(journal);
 
-            const markerReady = await this.waitForAlexaWriteReadiness(listName, id, expectedValue);
+            const markerReady = await this.waitForAlexaWriteReadiness(
+                listName,
+                id,
+                expectedValue,
+                'marker',
+            );
             if (!markerReady) {
                 await this.activateSortSafetyStop(
                     listName,
@@ -1175,6 +1295,7 @@ export class ShoppingRoute extends utils.Adapter {
                 marker,
                 0,
                 markerBaseline,
+                'marker',
             );
             if (markerConfirmation !== 'confirmed') {
                 await this.activateSortSafetyStop(
@@ -1187,7 +1308,12 @@ export class ShoppingRoute extends utils.Adapter {
             journal.confirmedSteps = 1;
             await this.persistSortTransaction(journal);
 
-            const restoreReady = await this.waitForAlexaWriteReadiness(listName, id, marker);
+            const restoreReady = await this.waitForAlexaWriteReadiness(
+                listName,
+                id,
+                marker,
+                'restore',
+            );
             if (!restoreReady) {
                 await this.activateSortSafetyStop(
                     listName,
@@ -1205,6 +1331,7 @@ export class ShoppingRoute extends utils.Adapter {
                 expectedValue,
                 0,
                 restoreBaseline,
+                'restore',
             );
             if (restored !== 'confirmed') {
                 await this.activateSortSafetyStop(
@@ -1296,60 +1423,72 @@ export class ShoppingRoute extends utils.Adapter {
         to: string,
         previousTs = 0,
         previousEvidence?: AlexaWriteSnapshot,
+        runtimePhase?: AlexaWaitRuntimePhase,
         timeoutMs = ALEXA_CONFIRMATION_TIMEOUT_MS,
     ): Promise<ConfirmationResult> {
         const valueStateId = `${this.alexaInstance}.Lists.${listName}.items.${id}.value`;
-        return waitForConfirmation({
-            timeoutMs,
-            pollIntervalMs: ALEXA_CONFIRMATION_POLL_MS,
-            pause: ms => this.wait(ms),
-            probe: async () => {
-                if (previousEvidence) {
-                    const currentEvidence = await this.readAlexaWriteSnapshot(listName, id);
-                    return classifyAlexaWriteConfirmation(
-                        from,
-                        to,
-                        previousEvidence.json,
-                        previousEvidence.item,
-                        currentEvidence.json,
-                        currentEvidence.item,
-                    );
-                }
+        const startedAt = Date.now();
+        try {
+            return await waitForConfirmation({
+                timeoutMs,
+                pollIntervalMs: ALEXA_CONFIRMATION_POLL_MS,
+                pause: ms => this.wait(ms),
+                probe: async () => {
+                    if (previousEvidence) {
+                        const currentEvidence = await this.readAlexaWriteSnapshot(listName, id);
+                        return classifyAlexaWriteConfirmation(
+                            from,
+                            to,
+                            previousEvidence.json,
+                            previousEvidence.item,
+                            currentEvidence.json,
+                            currentEvidence.item,
+                        );
+                    }
 
-                const [state, list] = await Promise.all([
-                    this.getForeignStateAsync(valueStateId),
-                    this.readList(listName),
-                ]);
-                const item = list.find(entry => String(entry?.id || '') === id);
-                const listValue = item ? String(item.value || '').trim() : undefined;
-                const stateValue = state ? String(state.val ?? '').trim() : undefined;
-                const stateTs = Number((state as { ts?: number } | null)?.ts || 0);
+                    const [state, list] = await Promise.all([
+                        this.getForeignStateAsync(valueStateId),
+                        this.readList(listName),
+                    ]);
+                    const item = list.find(entry => String(entry?.id || '') === id);
+                    const listValue = item ? String(item.value || '').trim() : undefined;
+                    const stateValue = state ? String(state.val ?? '').trim() : undefined;
+                    const stateTs = Number((state as { ts?: number } | null)?.ts || 0);
 
-                if (listValue === to && stateValue === to && state?.ack === true && stateTs >= previousTs) {
-                    return 'confirmed';
-                }
-                if (listValue === from && stateValue === from && state?.ack === true) return 'not-applied';
-                return 'ambiguous';
-            },
-        });
+                    if (listValue === to && stateValue === to && state?.ack === true && stateTs >= previousTs) {
+                        return 'confirmed';
+                    }
+                    if (listValue === from && stateValue === from && state?.ack === true) return 'not-applied';
+                    return 'ambiguous';
+                },
+            });
+        } finally {
+            this.recordAlexaWaitRuntime('confirmation', id, runtimePhase, startedAt);
+        }
     }
 
     private async waitForAlexaWriteReadiness(
         listName: string,
         id: string,
         expectedValue: string,
+        runtimePhase?: AlexaWaitRuntimePhase,
         timeoutMs = ALEXA_CONFIRMATION_TIMEOUT_MS,
     ): Promise<boolean> {
-        const readiness = await waitForConfirmation({
-            timeoutMs,
-            pollIntervalMs: ALEXA_CONFIRMATION_POLL_MS,
-            pause: ms => this.wait(ms),
-            probe: async () => isAlexaWriteReady(
-                expectedValue,
-                await this.readAlexaWriteReadinessSnapshot(listName, id),
-            ) ? 'confirmed' : 'ambiguous',
-        });
-        return readiness === 'confirmed';
+        const startedAt = Date.now();
+        try {
+            const readiness = await waitForConfirmation({
+                timeoutMs,
+                pollIntervalMs: ALEXA_CONFIRMATION_POLL_MS,
+                pause: ms => this.wait(ms),
+                probe: async () => isAlexaWriteReady(
+                    expectedValue,
+                    await this.readAlexaWriteReadinessSnapshot(listName, id),
+                ) ? 'confirmed' : 'ambiguous',
+            });
+            return readiness === 'confirmed';
+        } finally {
+            this.recordAlexaWaitRuntime('readiness', id, runtimePhase, startedAt);
+        }
     }
 
     private async reconcilePendingTransactionStep(
@@ -1380,6 +1519,8 @@ export class ShoppingRoute extends utils.Adapter {
                 step.from,
                 step.to,
                 Number((state as { ts?: number } | null)?.ts || 0),
+                undefined,
+                'content',
             );
             if (result === 'confirmed') {
                 journal.confirmedSteps += 1;
@@ -1419,6 +1560,8 @@ export class ShoppingRoute extends utils.Adapter {
                 step.to,
                 step.from,
                 Number((state as { ts?: number } | null)?.ts || 0),
+                undefined,
+                'rollback',
             );
             if (result === 'confirmed') {
                 journal.confirmedSteps -= 1;
@@ -1471,6 +1614,7 @@ export class ShoppingRoute extends utils.Adapter {
                     journal.listName,
                     step.id,
                     step.to,
+                    'rollback',
                 );
                 if (!writeReady) {
                     this.log.error(`${journal.listName}: Alexa2 war vor dem Rollback für ID ${step.id} nicht schreibbereit.`);
@@ -1485,6 +1629,8 @@ export class ShoppingRoute extends utils.Adapter {
                     step.to,
                     step.from,
                     beforeTs,
+                    undefined,
+                    'rollback',
                 );
                 if (confirmation !== 'confirmed') {
                     this.log.error(`${journal.listName}: Rollback-Schritt für ID ${step.id} wurde nicht eindeutig bestätigt.`);

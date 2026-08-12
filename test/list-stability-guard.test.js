@@ -23,7 +23,7 @@ test("normal sort writes use adaptive Alexa2 readiness instead of a fixed pause"
     const normalLoopStart = main.indexOf('for (let index = 0; index < program.steps.length; index++)');
     const normalLoopEnd = main.indexOf('const verifyList = await this.readList(listName);', normalLoopStart);
     const normalLoop = main.slice(normalLoopStart, normalLoopEnd);
-    assert.match(normalLoop, /waitForAlexaWriteReadiness\(listName, step\.id, step\.from\)/);
+    assert.match(normalLoop, /waitForAlexaWriteReadiness\([\s\S]*listName,[\s\S]*step\.id,[\s\S]*step\.from,[\s\S]*'content'/);
     assert.ok(normalLoop.indexOf('waitForAlexaWriteReadiness') < normalLoop.indexOf('writeAlexaState(valueStateId, step.to)'));
     assert.doesNotMatch(normalLoop, /await this\.wait\(this\.writePauseMs\)/);
 });
@@ -32,8 +32,8 @@ test("all transactional item-write paths use readiness without fixed write pause
     const visibleStart = main.indexOf('private async refreshVisibleAlexaOrder');
     const visibleEnd = main.indexOf('private async persistSortTransaction', visibleStart);
     const visible = main.slice(visibleStart, visibleEnd);
-    assert.match(visible, /waitForAlexaWriteReadiness\(listName, id, expectedValue\)/);
-    assert.match(visible, /waitForAlexaWriteReadiness\(listName, id, marker\)/);
+    assert.match(visible, /waitForAlexaWriteReadiness\([\s\S]*expectedValue,[\s\S]*'marker'/);
+    assert.match(visible, /waitForAlexaWriteReadiness\([\s\S]*marker,[\s\S]*'restore'/);
     assert.doesNotMatch(visible, /await this\.wait\(this\.writePauseMs\)/);
 
     const rollbackStart = main.indexOf('private async rollbackBufferedTransaction');
@@ -52,11 +52,40 @@ test("recovery cannot bypass the guarded rollback item writes", () => {
     assert.doesNotMatch(recovery, /writeAlexaState\(/);
 });
 
-test("all normal sort triggers wait for the stability window", () => {
+test("manual sortNow is scheduled immediately without the stability delay", () => {
+    const sortNowStart = main.indexOf('if (id === `${local}control.sortNow`');
+    const sortNowEnd = main.indexOf("if (id === `${local}control.compatibilityTest`", sortNowStart);
+    const sortNow = main.slice(sortNowStart, sortNowEnd);
+    assert.match(sortNow, /const requestedAt = Date\.now\(\);/);
+    assert.match(sortNow, /this\.scheduleAll\(0, requestedAt\);/);
+    assert.doesNotMatch(sortNow, /sortStabilityDelayMs/);
+});
+
+test("all automatic sort triggers retain the stability window", () => {
     assert.match(main, /this\.scheduleSort\(list\.name, this\.sortStabilityDelayMs\);/);
     assert.match(main, /if \(state\.val === true\) this\.scheduleAll\(this\.sortStabilityDelayMs\);/);
     assert.match(main, /if \(this\.pendingLists\.size > 0\) this\.armSortTimer\(this\.sortStabilityDelayMs\);/);
-    assert.equal((main.match(/this\.scheduleAll\(this\.sortStabilityDelayMs\);/g) || []).length, 5);
+    assert.equal((main.match(/this\.scheduleAll\(this\.sortStabilityDelayMs\);/g) || []).length, 4);
+});
+
+test("runtime measurement observes existing waits without changing polling or timeout", () => {
+    const confirmationStart = main.indexOf('private async waitForAlexaValueConfirmation');
+    const readinessStart = main.indexOf('private async waitForAlexaWriteReadiness', confirmationStart);
+    const reconciliationStart = main.indexOf('private async reconcilePendingTransactionStep', readinessStart);
+    const confirmation = main.slice(confirmationStart, readinessStart);
+    const readiness = main.slice(readinessStart, reconciliationStart);
+    for (const waitPath of [confirmation, readiness]) {
+        assert.match(waitPath, /timeoutMs,/);
+        assert.match(waitPath, /pollIntervalMs: ALEXA_CONFIRMATION_POLL_MS/);
+        assert.match(waitPath, /pause: ms => this\.wait\(ms\)/);
+        assert.match(waitPath, /finally \{[\s\S]*recordAlexaWaitRuntime/);
+    }
+
+    const measurementStart = main.indexOf('private recordAlexaWaitRuntime');
+    const visibleStart = main.indexOf('private async refreshVisibleAlexaOrder', measurementStart);
+    const measurement = main.slice(measurementStart, visibleStart);
+    assert.doesNotMatch(measurement, /await |\.wait\(|setTimeout|setInterval/);
+    assert.equal((main.match(/this\.logSortRuntime\(listName, runtime\);/g) || []).length, 1);
 });
 
 test("buffered transaction rolls back when a new active id appears", () => {

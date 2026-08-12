@@ -25,12 +25,14 @@ test("runtime finalizes Alexa visible order with journaled marker writes", () =>
     const refreshStart = main.indexOf("private async refreshVisibleAlexaOrder");
     const refreshEnd = main.indexOf("private async persistSortTransaction", refreshStart);
     const refresh = main.slice(refreshStart, refreshEnd);
-    const markerReady = refresh.indexOf('waitForAlexaWriteReadiness(listName, id, expectedValue)');
+    const markerReady = refresh.indexOf('const markerReady = await this.waitForAlexaWriteReadiness');
     const markerWrite = refresh.indexOf('writeAlexaState(valueStateId, marker)');
-    const restoreReady = refresh.indexOf('waitForAlexaWriteReadiness(listName, id, marker)');
+    const restoreReady = refresh.indexOf('const restoreReady = await this.waitForAlexaWriteReadiness');
     const restoreWrite = refresh.indexOf('writeAlexaState(valueStateId, expectedValue)');
     assert.ok(markerReady >= 0 && markerReady < markerWrite, 'marker write must wait for the original value readiness');
     assert.ok(restoreReady > markerWrite && restoreReady < restoreWrite, 'restore write must wait for marker readiness');
+    assert.match(refresh.slice(markerReady, markerWrite), /expectedValue,[\s\S]*'marker'/);
+    assert.match(refresh.slice(restoreReady, restoreWrite), /marker,[\s\S]*'restore'/);
     assert.match(
         refresh.slice(restoreReady, restoreWrite),
         /if \(!restoreReady\)[\s\S]*activateSortSafetyStop[\s\S]*return \{ writes, interrupted: true, additionalItems \};/,
