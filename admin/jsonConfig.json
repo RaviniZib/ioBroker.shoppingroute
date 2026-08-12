@@ -412,33 +412,21 @@
       "type": "panel",
       "label": "ui.items.marketstab.label",
       "items": {
-        "marketsSectionTitle": {
-          "type": "header",
-          "text": "ui.items.marketstab.items.markets.label",
-          "size": 3,
+        "marketsEditor": {
+          "type": "custom",
+          "url": "custom/markets/marketsEditor.js",
+          "name": "ShoppingRouteMarketsSet/Components/MarketsEditor",
+          "bundlerType": "module",
+          "i18n": false,
           "xs": 12,
           "sm": 12,
           "md": 12,
           "lg": 12,
           "xl": 12
         },
-        "marketsHelp": {
-          "type": "staticText",
-          "text": "ui.items.marketstab.items.marketshelp.text",
-          "xs": 12,
-          "sm": 12,
-          "md": 12,
-          "lg": 12,
-          "xl": 12,
-          "style": {
-            "fontSize": "0.9rem",
-            "lineHeight": "1.45",
-            "opacity": 0.78,
-            "marginBottom": "4px"
-          }
-        },
         "markets": {
           "type": "table",
+          "hidden": "true",
           "items": [
             {
               "type": "checkbox",

@@ -57,7 +57,6 @@ test('backup and sharing use an Admin 7.6 compatible launcher without raw JSON c
 test('native Admin tabs share the phase-one visual hierarchy',()=>{
   const sections={
     listsTab:['listsSectionTitle','listsHelp'],
-    marketsTab:['marketsSectionTitle','marketsHelp'],
     productsTab:['productsSectionTitle','productsHelp'],
     reviewTab:['reviewSectionTitle','reviewHelp'],
     transferTab:['transferSectionTitle','backupHelp'],
@@ -101,7 +100,7 @@ test('phase-one styling preserves the functional JSON config outside the migrate
       .filter(([key])=>!visualProperties.has(key))
       .map(([key,item])=>[key,stripVisualProperties(item)]));
   };
-  const panels=['general','listsTab','marketsTab','routesTab','productsTab','reviewTab','transferTab'];
+  const panels=['general','listsTab','routesTab','productsTab','reviewTab','transferTab'];
   const projection=Object.fromEntries(panels.map(panel=>[
     panel,
     Object.fromEntries(Object.entries(jsonConfig.items[panel].items)
@@ -110,7 +109,7 @@ test('phase-one styling preserves the functional JSON config outside the migrate
   ]));
   const hash=crypto.createHash('sha256').update(JSON.stringify(projection)).digest('hex');
 
-  assert.equal(hash,'3f89cbfa734e6b85092c45db9945df753c4f202099370c8368654ba66714f913');
+  assert.equal(hash,'faf4170e032ef1b41c071f185868394d074b5758239b107870bfd1c98b1434c3');
   const routeHash=crypto.createHash('sha256').update(JSON.stringify(jsonConfig.items.routesTab)).digest('hex');
   assert.equal(routeHash,'23228bada006eac4b1d8193a56d4978e64371e4886d8ad6bfe851ddc93fd58be');
 });
@@ -148,6 +147,45 @@ test('product groups use a dedicated draft editor with the original native struc
     width:'100%',
     sort:true,
   }]);
+});
+
+test('markets use a dedicated draft editor with the original native structure',()=>{
+  const markets=jsonConfig.items.marketsTab.items;
+  assert.deepEqual(Object.keys(markets),['marketsEditor','markets']);
+  assert.equal(markets.marketsEditor.type,'custom');
+  assert.equal(markets.marketsEditor.url,'custom/markets/marketsEditor.js');
+  assert.equal(markets.marketsEditor.name,'ShoppingRouteMarketsSet/Components/MarketsEditor');
+  assert.equal(markets.marketsEditor.bundlerType,'module');
+  assert.equal(markets.markets.type,'table');
+  assert.equal(markets.markets.hidden,'true');
+  assert.deepEqual(markets.markets.items,[
+    {
+      type:'checkbox',
+      attr:'enabled',
+      title:'ui.items.liststab.items.lists.items.0.title',
+      width:'10%',
+    },
+    {
+      type:'number',
+      attr:'order',
+      title:'ui.items.marketstab.items.markets.items.1.title',
+      width:'12%',
+      sort:true,
+    },
+    {
+      type:'text',
+      attr:'name',
+      title:'ui.items.marketstab.items.markets.items.2.title',
+      width:'28%',
+      sort:true,
+    },
+    {
+      type:'text',
+      attr:'aliases',
+      title:'ui.items.marketstab.items.markets.items.3.title',
+      width:'50%',
+    },
+  ]);
 });
 
 test('product list is sortable by product, group and market',()=>{
@@ -207,7 +245,7 @@ test('walking routes use a dedicated editor with routes as the only persisted so
   const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
   assert.equal(
     pkg.scripts['build:admin'],
-    'vite build && vite build --config vite.product-groups.config.mjs',
+    'vite build && vite build --config vite.product-groups.config.mjs && vite build --config vite.markets.config.mjs',
   );
   assert.equal(pkg.devDependencies.browserify,undefined);
   assert.equal(pkg.devDependencies['@module-federation/vite'],'1.4.1');
