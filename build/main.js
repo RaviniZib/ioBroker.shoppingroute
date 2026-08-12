@@ -47,6 +47,7 @@ const market_plan_1 = require("./lib/market-plan");
 const config_tools_1 = require("./lib/config-tools");
 const statistics_1 = require("./lib/statistics");
 const confirmation_wait_1 = require("./lib/confirmation-wait");
+const alexa_write_confirmation_1 = require("./lib/alexa-write-confirmation");
 const VERSION = '0.3.2';
 const LIST_STABILITY_MS = 5000;
 const ALEXA_CONFIRMATION_TIMEOUT_MS = 10000;
@@ -843,21 +844,38 @@ class ShoppingRoute extends utils.Adapter {
         const currentIds = (0, buffered_sort_1.sortIdsByAlexaUpdatedTime)(relevant);
         return (0, buffered_sort_1.createVisibleOrderRefreshPlan)(currentIds, desiredIds);
     }
-    async waitForVisibleOrderTouchConfirmation(listName, id, expectedValue, previousUpdatedDateTime, previousStateTs, marker, timeoutMs = ALEXA_CONFIRMATION_TIMEOUT_MS) {
+    async readAlexaWriteSnapshot(listName, id) {
         const valueStateId = `${this.alexaInstance}.Lists.${listName}.items.${id}.value`;
-        return (0, confirmation_wait_1.waitForConfirmation)({
-            timeoutMs,
-            pollIntervalMs: ALEXA_CONFIRMATION_POLL_MS,
-            pause: ms => this.wait(ms),
-            probe: async () => {
-                const [state, list] = await Promise.all([
-                    this.getForeignStateAsync(valueStateId),
-                    this.readList(listName),
-                ]);
-                const item = list.find(entry => String(entry?.id || '') === id);
-                return (0, buffered_sort_1.classifyVisibleOrderFinalConfirmation)(expectedValue, marker, previousUpdatedDateTime, item ? String(item.value || '').trim() : undefined, item?.updatedDateTime, state ? String(state.val ?? '').trim() : undefined, state?.ack === true && Number(state?.ts || 0) >= previousStateTs);
+        const [state, versionState, updatedState, listState] = await Promise.all([
+            this.getForeignStateAsync(valueStateId),
+            this.getForeignStateAsync(`${this.alexaInstance}.Lists.${listName}.items.${id}.version`),
+            this.getForeignStateAsync(`${this.alexaInstance}.Lists.${listName}.items.${id}.updatedDateTime`),
+            this.getForeignStateAsync(this.listStateId(listName)),
+        ]);
+        if (!listState || typeof listState.val !== 'string' || !listState.val.trim()) {
+            throw new Error(`Datenpunkt ${this.listStateId(listName)} enthält keine lesbare Liste.`);
+        }
+        const parsed = JSON.parse(listState.val);
+        if (!Array.isArray(parsed))
+            throw new Error(`${this.listStateId(listName)} enthält kein JSON-Array.`);
+        const list = parsed;
+        const item = list.find(entry => String(entry?.id || '') === id);
+        return {
+            json: {
+                value: item ? String(item.value || '').trim() : undefined,
+                version: item?.version,
+                updatedDateTime: item?.updatedDateTime,
+                acknowledged: listState.ack === true,
             },
-        });
+            item: {
+                value: state ? String(state.val ?? '').trim() : undefined,
+                version: versionState?.val,
+                updatedDateTime: updatedState?.val,
+                acknowledged: state?.ack === true,
+                versionAcknowledged: versionState?.ack === true,
+                updatedDateTimeAcknowledged: updatedState?.ack === true,
+            },
+        };
     }
     async refreshVisibleAlexaOrder(listName, plan) {
         const orderedPlan = [...plan].sort((left, right) => Number(left.position) - Number(right.position));
@@ -919,7 +937,6 @@ class ShoppingRoute extends utils.Adapter {
                 await this.activateSortSafetyStop(listName, `${listName}: Alexa-Wertedatenpunkt für die sichtbare Reihenfolge fehlt: ${valueStateId}`);
                 return { writes, interrupted: true, additionalItems };
             }
-            const previousUpdatedDateTime = currentItem.updatedDateTime;
             const transactionId = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
             const marker = (0, buffered_sort_1.createVisibleOrderMarker)(transactionId, index, expectedValues.values());
             const touchProgram = (0, buffered_sort_1.createVisibleOrderTouchProgram)(id, expectedValue, marker);
@@ -936,20 +953,18 @@ class ShoppingRoute extends utils.Adapter {
                 confirmedSteps: 0,
             };
             await this.persistSortTransaction(journal);
-            const markerState = await this.getForeignStateAsync(valueStateId);
-            const markerTs = Number(markerState?.ts || 0);
+            const markerBaseline = await this.readAlexaWriteSnapshot(listName, id);
             await this.writeAlexaState(valueStateId, marker);
-            const markerConfirmation = await this.waitForAlexaValueConfirmation(listName, id, expectedValue, marker, markerTs);
+            const markerConfirmation = await this.waitForAlexaValueConfirmation(listName, id, expectedValue, marker, 0, markerBaseline);
             if (markerConfirmation !== 'confirmed') {
                 await this.activateSortSafetyStop(listName, `${listName}: Temporärer Reihenfolge-Marker für ID ${id} wurde nicht eindeutig bestätigt.`, journal);
                 return { writes, interrupted: true, additionalItems };
             }
             journal.confirmedSteps = 1;
             await this.persistSortTransaction(journal);
-            const restoreState = await this.getForeignStateAsync(valueStateId);
-            const restoreTs = Number(restoreState?.ts || 0);
+            const restoreBaseline = await this.readAlexaWriteSnapshot(listName, id);
             await this.writeAlexaState(valueStateId, expectedValue);
-            const restored = await this.waitForVisibleOrderTouchConfirmation(listName, id, expectedValue, previousUpdatedDateTime, restoreTs, marker);
+            const restored = await this.waitForAlexaValueConfirmation(listName, id, marker, expectedValue, 0, restoreBaseline);
             if (restored !== 'confirmed') {
                 await this.activateSortSafetyStop(listName, restored === 'not-applied'
                     ? `${listName}: Rückschreibung des Originaltexts für ID ${id} wurde nicht bestätigt.`
@@ -1022,13 +1037,17 @@ class ShoppingRoute extends utils.Adapter {
             throw new Error(`Sortierjournal ist beschädigt: ${error instanceof Error ? error.message : String(error)}`);
         }
     }
-    async waitForAlexaValueConfirmation(listName, id, from, to, previousTs = 0, timeoutMs = ALEXA_CONFIRMATION_TIMEOUT_MS) {
+    async waitForAlexaValueConfirmation(listName, id, from, to, previousTs = 0, previousEvidence, timeoutMs = ALEXA_CONFIRMATION_TIMEOUT_MS) {
         const valueStateId = `${this.alexaInstance}.Lists.${listName}.items.${id}.value`;
         return (0, confirmation_wait_1.waitForConfirmation)({
             timeoutMs,
             pollIntervalMs: ALEXA_CONFIRMATION_POLL_MS,
             pause: ms => this.wait(ms),
             probe: async () => {
+                if (previousEvidence) {
+                    const currentEvidence = await this.readAlexaWriteSnapshot(listName, id);
+                    return (0, alexa_write_confirmation_1.classifyAlexaWriteConfirmation)(from, to, previousEvidence.json, previousEvidence.item, currentEvidence.json, currentEvidence.item);
+                }
                 const [state, list] = await Promise.all([
                     this.getForeignStateAsync(valueStateId),
                     this.readList(listName),
