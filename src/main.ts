@@ -58,6 +58,7 @@ import {
     isAlexaWriteReady,
     type AlexaWriteReadinessSnapshot,
 } from './lib/alexa-write-readiness';
+import { inspectAlexaWriteSettlement } from './lib/alexa-write-settlement';
 
 const VERSION = '0.3.2';
 const LIST_STABILITY_MS = 5000;
@@ -891,15 +892,25 @@ export class ShoppingRoute extends utils.Adapter {
                     }
 
                     await this.writeAlexaState(valueStateId, step.to);
-                    const confirmation = await this.waitForAlexaValueConfirmation(
-                        listName,
-                        step.id,
-                        step.from,
-                        step.to,
-                        beforeTs,
-                        undefined,
-                        'content',
-                    );
+                    const confirmation = index + 1 < program.steps.length
+                        ? await this.waitForAlexaWriteSettlement(
+                            listName,
+                            step.id,
+                            step.from,
+                            step.to,
+                            beforeTs,
+                            undefined,
+                            'content',
+                        )
+                        : await this.waitForAlexaValueConfirmation(
+                            listName,
+                            step.id,
+                            step.from,
+                            step.to,
+                            beforeTs,
+                            undefined,
+                            'content',
+                        );
                     if (confirmation === 'ambiguous') {
                         this.traffic.abortedRuns += 1;
                         await this.persistTrafficMetrics();
@@ -1156,11 +1167,20 @@ export class ShoppingRoute extends utils.Adapter {
         phase: AlexaWaitRuntimePhase | undefined,
         startedAt: number,
     ): void {
+        this.recordAlexaWaitDuration(type, id, phase, Math.max(0, Date.now() - startedAt));
+    }
+
+    private recordAlexaWaitDuration(
+        type: 'readiness' | 'confirmation',
+        id: string,
+        phase: AlexaWaitRuntimePhase | undefined,
+        durationMs: number,
+    ): void {
         if (!phase || !this.activeSortRuntime) return;
         this.activeSortRuntime[type].push({
             id,
             phase,
-            durationMs: Math.max(0, Date.now() - startedAt),
+            durationMs: Math.max(0, durationMs),
         });
     }
 
@@ -1288,7 +1308,7 @@ export class ShoppingRoute extends utils.Adapter {
             }
             const markerBaseline = await this.readAlexaWriteSnapshot(listName, id);
             await this.writeAlexaState(valueStateId, marker);
-            const markerConfirmation = await this.waitForAlexaValueConfirmation(
+            const markerConfirmation = await this.waitForAlexaWriteSettlement(
                 listName,
                 id,
                 expectedValue,
@@ -1296,6 +1316,7 @@ export class ShoppingRoute extends utils.Adapter {
                 0,
                 markerBaseline,
                 'marker',
+                'restore',
             );
             if (markerConfirmation !== 'confirmed') {
                 await this.activateSortSafetyStop(
@@ -1308,20 +1329,6 @@ export class ShoppingRoute extends utils.Adapter {
             journal.confirmedSteps = 1;
             await this.persistSortTransaction(journal);
 
-            const restoreReady = await this.waitForAlexaWriteReadiness(
-                listName,
-                id,
-                marker,
-                'restore',
-            );
-            if (!restoreReady) {
-                await this.activateSortSafetyStop(
-                    listName,
-                    `${listName}: Alexa2 war vor der Rückschreibung des Originaltexts für ID ${id} nicht schreibbereit.`,
-                    journal,
-                );
-                return { writes, interrupted: true, additionalItems };
-            }
             const restoreBaseline = await this.readAlexaWriteSnapshot(listName, id);
             await this.writeAlexaState(valueStateId, expectedValue);
             const restored = await this.waitForAlexaValueConfirmation(
@@ -1467,6 +1474,55 @@ export class ShoppingRoute extends utils.Adapter {
         }
     }
 
+    private async waitForAlexaWriteSettlement(
+        listName: string,
+        id: string,
+        from: string,
+        to: string,
+        previousTs = 0,
+        previousEvidence?: AlexaWriteSnapshot,
+        confirmationRuntimePhase?: AlexaWaitRuntimePhase,
+        readinessRuntimePhase = confirmationRuntimePhase,
+        timeoutMs = ALEXA_CONFIRMATION_TIMEOUT_MS,
+    ): Promise<ConfirmationResult> {
+        const startedAt = Date.now();
+        let confirmationDurationMs: number | undefined;
+        try {
+            return await waitForConfirmation({
+                timeoutMs,
+                pollIntervalMs: ALEXA_CONFIRMATION_POLL_MS,
+                pause: ms => this.wait(ms),
+                probe: async () => {
+                    const state = inspectAlexaWriteSettlement(
+                        from,
+                        to,
+                        previousEvidence
+                        ? { json: previousEvidence.json, item: previousEvidence.item }
+                        : { previousTs },
+                        await this.readAlexaWriteReadinessSnapshot(listName, id),
+                    );
+                    if (state.confirmation === 'confirmed' && confirmationDurationMs === undefined) {
+                        confirmationDurationMs = Math.max(0, Date.now() - startedAt);
+                    }
+                    if (state.confirmation !== 'confirmed') return state.confirmation;
+                    return state.ready ? 'confirmed' : 'ambiguous';
+                },
+            });
+        } finally {
+            const totalDurationMs = Math.max(0, Date.now() - startedAt);
+            const confirmedAfterMs = Math.min(totalDurationMs, confirmationDurationMs ?? totalDurationMs);
+            this.recordAlexaWaitDuration('confirmation', id, confirmationRuntimePhase, confirmedAfterMs);
+            if (confirmationDurationMs !== undefined) {
+                this.recordAlexaWaitDuration(
+                    'readiness',
+                    id,
+                    readinessRuntimePhase,
+                    totalDurationMs - confirmedAfterMs,
+                );
+            }
+        }
+    }
+
     private async waitForAlexaWriteReadiness(
         listName: string,
         id: string,
@@ -1506,6 +1562,13 @@ export class ShoppingRoute extends utils.Adapter {
         const stateValue = state ? String(state.val ?? '').trim() : undefined;
 
         if (listValue === step.to && stateValue === step.to && state?.ack === true) {
+            const writeReady = await this.waitForAlexaWriteReadiness(
+                journal.listName,
+                step.id,
+                step.to,
+                'rollback',
+            );
+            if (!writeReady) return 'ambiguous';
             journal.confirmedSteps += 1;
             await this.persistSortTransaction(journal);
             return 'confirmed';
@@ -1513,7 +1576,7 @@ export class ShoppingRoute extends utils.Adapter {
         if (listValue === step.from && stateValue === step.from && state?.ack === true) return 'not-applied';
 
         if (stateValue === step.to && state?.ack === false) {
-            const result = await this.waitForAlexaValueConfirmation(
+            const result = await this.waitForAlexaWriteSettlement(
                 journal.listName,
                 step.id,
                 step.from,
@@ -1521,6 +1584,7 @@ export class ShoppingRoute extends utils.Adapter {
                 Number((state as { ts?: number } | null)?.ts || 0),
                 undefined,
                 'content',
+                'rollback',
             );
             if (result === 'confirmed') {
                 journal.confirmedSteps += 1;
@@ -1547,6 +1611,15 @@ export class ShoppingRoute extends utils.Adapter {
         const stateValue = state ? String(state.val ?? '').trim() : undefined;
 
         if (listValue === step.from && stateValue === step.from && state?.ack === true) {
+            if (journal.confirmedSteps > 1) {
+                const writeReady = await this.waitForAlexaWriteReadiness(
+                    journal.listName,
+                    step.id,
+                    step.from,
+                    'rollback',
+                );
+                if (!writeReady) return 'ambiguous';
+            }
             journal.confirmedSteps -= 1;
             await this.persistSortTransaction(journal);
             return 'confirmed';
@@ -1554,15 +1627,25 @@ export class ShoppingRoute extends utils.Adapter {
         if (listValue === step.to && stateValue === step.to && state?.ack === true) return 'not-applied';
 
         if (stateValue === step.from && state?.ack === false) {
-            const result = await this.waitForAlexaValueConfirmation(
-                journal.listName,
-                step.id,
-                step.to,
-                step.from,
-                Number((state as { ts?: number } | null)?.ts || 0),
-                undefined,
-                'rollback',
-            );
+            const result = journal.confirmedSteps > 1
+                ? await this.waitForAlexaWriteSettlement(
+                    journal.listName,
+                    step.id,
+                    step.to,
+                    step.from,
+                    Number((state as { ts?: number } | null)?.ts || 0),
+                    undefined,
+                    'rollback',
+                )
+                : await this.waitForAlexaValueConfirmation(
+                    journal.listName,
+                    step.id,
+                    step.to,
+                    step.from,
+                    Number((state as { ts?: number } | null)?.ts || 0),
+                    undefined,
+                    'rollback',
+                );
             if (result === 'confirmed') {
                 journal.confirmedSteps -= 1;
                 await this.persistSortTransaction(journal);
@@ -1623,15 +1706,25 @@ export class ShoppingRoute extends utils.Adapter {
                 const beforeState = await this.getForeignStateAsync(valueStateId);
                 const beforeTs = Number((beforeState as { ts?: number } | null)?.ts || 0);
                 await this.writeAlexaState(valueStateId, step.from);
-                const confirmation = await this.waitForAlexaValueConfirmation(
-                    journal.listName,
-                    step.id,
-                    step.to,
-                    step.from,
-                    beforeTs,
-                    undefined,
-                    'rollback',
-                );
+                const confirmation = journal.confirmedSteps > 1
+                    ? await this.waitForAlexaWriteSettlement(
+                        journal.listName,
+                        step.id,
+                        step.to,
+                        step.from,
+                        beforeTs,
+                        undefined,
+                        'rollback',
+                    )
+                    : await this.waitForAlexaValueConfirmation(
+                        journal.listName,
+                        step.id,
+                        step.to,
+                        step.from,
+                        beforeTs,
+                        undefined,
+                        'rollback',
+                    );
                 if (confirmation !== 'confirmed') {
                     this.log.error(`${journal.listName}: Rollback-Schritt für ID ${step.id} wurde nicht eindeutig bestätigt.`);
                     return false;

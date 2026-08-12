@@ -27,17 +27,17 @@ test("runtime finalizes Alexa visible order with journaled marker writes", () =>
     const refresh = main.slice(refreshStart, refreshEnd);
     const markerReady = refresh.indexOf('const markerReady = await this.waitForAlexaWriteReadiness');
     const markerWrite = refresh.indexOf('writeAlexaState(valueStateId, marker)');
-    const restoreReady = refresh.indexOf('const restoreReady = await this.waitForAlexaWriteReadiness');
+    const markerSettlement = refresh.indexOf('const markerConfirmation = await this.waitForAlexaWriteSettlement');
     const restoreWrite = refresh.indexOf('writeAlexaState(valueStateId, expectedValue)');
     assert.ok(markerReady >= 0 && markerReady < markerWrite, 'marker write must wait for the original value readiness');
-    assert.ok(restoreReady > markerWrite && restoreReady < restoreWrite, 'restore write must wait for marker readiness');
+    assert.ok(markerSettlement > markerWrite && markerSettlement < restoreWrite, 'marker confirmation and readiness must settle before restore');
     assert.match(refresh.slice(markerReady, markerWrite), /expectedValue,[\s\S]*'marker'/);
-    assert.match(refresh.slice(restoreReady, restoreWrite), /marker,[\s\S]*'restore'/);
     assert.match(
-        refresh.slice(restoreReady, restoreWrite),
-        /if \(!restoreReady\)[\s\S]*activateSortSafetyStop[\s\S]*return \{ writes, interrupted: true, additionalItems \};/,
-        'marker readiness timeout must stop before the restore write',
+        refresh.slice(markerSettlement, restoreWrite),
+        /markerBaseline,[\s\S]*'marker',[\s\S]*'restore'[\s\S]*if \(markerConfirmation !== 'confirmed'\)[\s\S]*activateSortSafetyStop/,
+        'marker settlement timeout must stop before the restore write',
     );
+    assert.doesNotMatch(refresh, /const restoreReady = await this\.waitForAlexaWriteReadiness/);
     assert.doesNotMatch(refresh, /await this\.wait\(this\.writePauseMs\)/);
     assert.equal(
         [...refresh.matchAll(/await this\.writeAlexaState\(valueStateId, expectedValue\);/g)].length,
@@ -47,7 +47,12 @@ test("runtime finalizes Alexa visible order with journaled marker writes", () =>
     assert.ok(
         refresh.indexOf("if (markerConfirmation !== 'confirmed')") <
         refresh.indexOf("await this.writeAlexaState(valueStateId, expectedValue);"),
-        "the exact original text is restored only after marker confirmation and readiness",
+        "the exact original text is restored only after marker confirmation and readiness settle together",
+    );
+    assert.match(
+        refresh,
+        /const restored = await this\.waitForAlexaValueConfirmation\([\s\S]*restoreBaseline,[\s\S]*'restore'/,
+        'the final restore requires confirmation without an unnecessary final readiness wait',
     );
     assert.doesNotMatch(refresh, /rollbackBufferedTransaction\(journal\)/);
     assert.match(refresh, /restored !== 'confirmed'[\s\S]*activateSortSafetyStop/);

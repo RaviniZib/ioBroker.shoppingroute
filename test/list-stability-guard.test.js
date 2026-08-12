@@ -25,6 +25,8 @@ test("normal sort writes use adaptive Alexa2 readiness instead of a fixed pause"
     const normalLoop = main.slice(normalLoopStart, normalLoopEnd);
     assert.match(normalLoop, /waitForAlexaWriteReadiness\([\s\S]*listName,[\s\S]*step\.id,[\s\S]*step\.from,[\s\S]*'content'/);
     assert.ok(normalLoop.indexOf('waitForAlexaWriteReadiness') < normalLoop.indexOf('writeAlexaState(valueStateId, step.to)'));
+    assert.match(normalLoop, /index \+ 1 < program\.steps\.length[\s\S]*waitForAlexaWriteSettlement/);
+    assert.match(normalLoop, /: await this\.waitForAlexaValueConfirmation/);
     assert.doesNotMatch(normalLoop, /await this\.wait\(this\.writePauseMs\)/);
 });
 
@@ -33,7 +35,8 @@ test("all transactional item-write paths use readiness without fixed write pause
     const visibleEnd = main.indexOf('private async persistSortTransaction', visibleStart);
     const visible = main.slice(visibleStart, visibleEnd);
     assert.match(visible, /waitForAlexaWriteReadiness\([\s\S]*expectedValue,[\s\S]*'marker'/);
-    assert.match(visible, /waitForAlexaWriteReadiness\([\s\S]*marker,[\s\S]*'restore'/);
+    assert.match(visible, /waitForAlexaWriteSettlement\([\s\S]*markerBaseline,[\s\S]*'marker',[\s\S]*'restore'/);
+    assert.doesNotMatch(visible, /const restoreReady = await this\.waitForAlexaWriteReadiness/);
     assert.doesNotMatch(visible, /await this\.wait\(this\.writePauseMs\)/);
 
     const rollbackStart = main.indexOf('private async rollbackBufferedTransaction');
@@ -41,6 +44,8 @@ test("all transactional item-write paths use readiness without fixed write pause
     const rollback = main.slice(rollbackStart, rollbackEnd);
     assert.match(rollback, /waitForAlexaWriteReadiness\([\s\S]*journal\.listName,[\s\S]*step\.id,[\s\S]*step\.to/);
     assert.ok(rollback.indexOf('waitForAlexaWriteReadiness') < rollback.indexOf('writeAlexaState(valueStateId, step.from)'));
+    assert.match(rollback, /journal\.confirmedSteps > 1[\s\S]*waitForAlexaWriteSettlement/);
+    assert.match(rollback, /: await this\.waitForAlexaValueConfirmation/);
     assert.doesNotMatch(rollback, /await this\.wait\(this\.writePauseMs\)/);
 });
 
@@ -50,6 +55,18 @@ test("recovery cannot bypass the guarded rollback item writes", () => {
     const recovery = main.slice(recoveryStart, recoveryEnd);
     assert.match(recovery, /rollbackBufferedTransaction\(journal\)/);
     assert.doesNotMatch(recovery, /writeAlexaState\(/);
+});
+
+test("recovery reconciliation settles intermediate writes but does not require readiness after the final rollback", () => {
+    const transactionStart = main.indexOf('private async reconcilePendingTransactionStep');
+    const rollbackStart = main.indexOf('private async reconcilePendingRollbackStep', transactionStart);
+    const bufferedRollbackStart = main.indexOf('private async rollbackBufferedTransaction', rollbackStart);
+    const transaction = main.slice(transactionStart, rollbackStart);
+    const rollback = main.slice(rollbackStart, bufferedRollbackStart);
+
+    assert.match(transaction, /waitForAlexaWriteSettlement\([\s\S]*'content',[\s\S]*'rollback'/);
+    assert.match(rollback, /journal\.confirmedSteps > 1[\s\S]*waitForAlexaWriteSettlement/);
+    assert.match(rollback, /: await this\.waitForAlexaValueConfirmation/);
 });
 
 test("manual sortNow is scheduled immediately without the stability delay", () => {
@@ -70,15 +87,17 @@ test("all automatic sort triggers retain the stability window", () => {
 
 test("runtime measurement observes existing waits without changing polling or timeout", () => {
     const confirmationStart = main.indexOf('private async waitForAlexaValueConfirmation');
-    const readinessStart = main.indexOf('private async waitForAlexaWriteReadiness', confirmationStart);
+    const settlementStart = main.indexOf('private async waitForAlexaWriteSettlement', confirmationStart);
+    const readinessStart = main.indexOf('private async waitForAlexaWriteReadiness', settlementStart);
     const reconciliationStart = main.indexOf('private async reconcilePendingTransactionStep', readinessStart);
-    const confirmation = main.slice(confirmationStart, readinessStart);
+    const confirmation = main.slice(confirmationStart, settlementStart);
+    const settlement = main.slice(settlementStart, readinessStart);
     const readiness = main.slice(readinessStart, reconciliationStart);
-    for (const waitPath of [confirmation, readiness]) {
+    for (const waitPath of [confirmation, settlement, readiness]) {
         assert.match(waitPath, /timeoutMs,/);
         assert.match(waitPath, /pollIntervalMs: ALEXA_CONFIRMATION_POLL_MS/);
         assert.match(waitPath, /pause: ms => this\.wait\(ms\)/);
-        assert.match(waitPath, /finally \{[\s\S]*recordAlexaWaitRuntime/);
+        assert.match(waitPath, /finally \{[\s\S]*recordAlexaWait(?:Runtime|Duration)/);
     }
 
     const measurementStart = main.indexOf('private recordAlexaWaitRuntime');
