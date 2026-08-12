@@ -6,6 +6,7 @@ exports.sortIdsByAlexaUpdatedTime = sortIdsByAlexaUpdatedTime;
 exports.createVisibleOrderRefreshPlan = createVisibleOrderRefreshPlan;
 exports.createVisibleOrderTouchProgram = createVisibleOrderTouchProgram;
 exports.createVisibleOrderMarker = createVisibleOrderMarker;
+exports.createBufferedSortMarker = createBufferedSortMarker;
 function countValues(values) {
     const counts = new Map();
     for (const value of values)
@@ -237,6 +238,21 @@ function createVisibleOrderMarker(transactionId, step, existingValues) {
     const stepNumber = Math.max(0, Math.floor(Number(step) || 0));
     const existing = new Set([...existingValues].map(value => String(value || '').trim()));
     const base = `ShoppingRoute Reihenfolge ${token} ${stepNumber}`;
+    let marker = base;
+    let collision = 0;
+    while (existing.has(marker)) {
+        collision += 1;
+        marker = `${base} ${collision}`;
+    }
+    return marker;
+}
+function createBufferedSortMarker(transactionId, step, existingValues) {
+    const token = String(transactionId || '').replace(/[^A-Za-z0-9]/g, '');
+    if (!token)
+        throw new Error('Sortierpuffer-Marker benötigt eine alphanumerische Transaktionskennung.');
+    const stepNumber = Math.max(0, Math.floor(Number(step) || 0));
+    const existing = new Set([...existingValues].map(value => String(value || '').trim()));
+    const base = `ShoppingRoute Puffer ${token} ${stepNumber}`;
     let marker = base;
     let collision = 0;
     while (existing.has(marker)) {

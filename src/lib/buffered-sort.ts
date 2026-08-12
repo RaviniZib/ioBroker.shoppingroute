@@ -309,3 +309,23 @@ export function createVisibleOrderMarker(
     }
     return marker;
 }
+
+export function createBufferedSortMarker(
+    transactionId: string,
+    step: number,
+    existingValues: Iterable<string>,
+): string {
+    const token = String(transactionId || '').replace(/[^A-Za-z0-9]/g, '');
+    if (!token) throw new Error('Sortierpuffer-Marker benötigt eine alphanumerische Transaktionskennung.');
+
+    const stepNumber = Math.max(0, Math.floor(Number(step) || 0));
+    const existing = new Set([...existingValues].map(value => String(value || '').trim()));
+    const base = `ShoppingRoute Puffer ${token} ${stepNumber}`;
+    let marker = base;
+    let collision = 0;
+    while (existing.has(marker)) {
+        collision += 1;
+        marker = `${base} ${collision}`;
+    }
+    return marker;
+}

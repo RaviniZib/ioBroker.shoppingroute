@@ -31,6 +31,7 @@ import {
     sortSlotsOldestFirst,
 } from './lib/sorter';
 import {
+    createBufferedSortMarker,
     createBufferedSortProgram,
     classifyVisibleOrderFinalConfirmation,
     createVisibleOrderMarker,
@@ -740,10 +741,12 @@ export class ShoppingRoute extends utils.Adapter {
             );
             const expectedValues = new Map<string, string>(Object.entries(originalValues));
 
+            const transactionId = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
+            const existingValues = [...Object.values(originalValues), ...Object.values(targetValues)];
             let program;
             let marker = '';
             for (let attempt = 0; attempt < 10; attempt++) {
-                marker = `__SHOPPINGROUTE_PUFFER_${Date.now().toString(36)}_${attempt}__`;
+                marker = createBufferedSortMarker(transactionId, attempt, existingValues);
                 try {
                     program = createBufferedSortProgram(plan, marker);
                     break;
@@ -755,7 +758,7 @@ export class ShoppingRoute extends utils.Adapter {
 
             const journal: SortTransactionJournal = {
                 version: 1,
-                transactionId: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`,
+                transactionId,
                 listName,
                 marker,
                 startedAt: new Date().toISOString(),

@@ -2,7 +2,39 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { createBufferedSortProgram } = require('../build/lib/buffered-sort');
+const { createBufferedSortMarker, createBufferedSortProgram } = require('../build/lib/buffered-sort');
+
+test('normal buffer marker contains only Alexa-compatible letters, digits and spaces', () => {
+    const marker = createBufferedSortMarker('msqakdsi-unsafe_suffix', 0, []);
+    assert.equal(marker, 'ShoppingRoute Puffer msqakdsiunsafesuffix 0');
+    assert.match(marker, /^[A-Za-z0-9ÄÖÜäöüß ]+$/);
+    assert.doesNotMatch(marker, /_/);
+    assert.equal(marker, marker.trim());
+});
+
+test('normal buffer marker is unique per transaction and step and collision-safe', () => {
+    const first = createBufferedSortMarker('msqakdsi', 0, []);
+    assert.notEqual(first, createBufferedSortMarker('msqakdsi', 1, []));
+    assert.notEqual(first, createBufferedSortMarker('msqakdsj', 0, []));
+    assert.equal(createBufferedSortMarker('msqakdsi', 0, [first, `${first} 1`]), `${first} 2`);
+});
+
+test('buffer, final and reversed rollback steps reuse only the Alexa-compatible marker', () => {
+    const marker = createBufferedSortMarker('msqakdsi', 0, ['Lachsaufschnitt', '---- ALDI ----']);
+    const program = createBufferedSortProgram([
+        { id: 'one', from: 'Lachsaufschnitt', to: '---- ALDI ----' },
+        { id: 'two', from: '---- ALDI ----', to: 'Lachsaufschnitt' },
+    ], marker);
+    const rollback = [...program.steps].reverse().map(step => ({ from: step.to, to: step.from }));
+
+    assert.equal(program.steps[0].kind, 'buffer');
+    assert.equal(program.steps[0].to, marker);
+    assert.equal(program.steps.at(-1).kind, 'final');
+    assert.equal(program.steps.at(-1).from, marker);
+    assert.equal(rollback[0].to, marker);
+    assert.equal(rollback.at(-1).from, marker);
+    assert.match(marker, /^[A-Za-z0-9ÄÖÜäöüß ]+$/);
+});
 
 function plan(source, target) {
     return source.map((from, index) => ({ id: `id${index}`, position: index + 1, from, to: target[index] }));

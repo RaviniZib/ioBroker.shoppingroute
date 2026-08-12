@@ -648,10 +648,12 @@ class ShoppingRoute extends utils.Adapter {
             const originalValues = Object.fromEntries(originalSnapshot.map(item => [String(item.id), String(item.value || '').trim()]));
             const targetValues = Object.fromEntries(plan.map(entry => [String(entry.id), String(entry.to || '').trim()]));
             const expectedValues = new Map(Object.entries(originalValues));
+            const transactionId = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
+            const existingValues = [...Object.values(originalValues), ...Object.values(targetValues)];
             let program;
             let marker = '';
             for (let attempt = 0; attempt < 10; attempt++) {
-                marker = `__SHOPPINGROUTE_PUFFER_${Date.now().toString(36)}_${attempt}__`;
+                marker = (0, buffered_sort_1.createBufferedSortMarker)(transactionId, attempt, existingValues);
                 try {
                     program = (0, buffered_sort_1.createBufferedSortProgram)(plan, marker);
                     break;
@@ -665,7 +667,7 @@ class ShoppingRoute extends utils.Adapter {
                 throw new Error('Sortierpuffer konnte nicht erzeugt werden.');
             const journal = {
                 version: 1,
-                transactionId: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`,
+                transactionId,
                 listName,
                 marker,
                 startedAt: new Date().toISOString(),
