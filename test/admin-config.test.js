@@ -58,7 +58,6 @@ test('native Admin tabs share the phase-one visual hierarchy',()=>{
   const sections={
     listsTab:['listsSectionTitle','listsHelp'],
     marketsTab:['marketsSectionTitle','marketsHelp'],
-    productGroupsTab:['productGroupsSectionTitle','productGroupsHelp'],
     productsTab:['productsSectionTitle','productsHelp'],
     reviewTab:['reviewSectionTitle','reviewHelp'],
     transferTab:['transferSectionTitle','backupHelp'],
@@ -88,7 +87,7 @@ test('native Admin tabs share the phase-one visual hierarchy',()=>{
   assert.equal(jsonConfig.items.transferTab.items.backupTransfer.md,6);
 });
 
-test('phase-one styling preserves the complete functional JSON config projection',()=>{
+test('phase-one styling preserves the functional JSON config outside the migrated product groups tab',()=>{
   const visualProperties=new Set([
     'label','text','title','width','style','darkStyle','innerStyle','controlStyle',
     'xs','sm','md','lg','xl','newLine','variant','icon','iconPosition','boxType',
@@ -102,7 +101,7 @@ test('phase-one styling preserves the complete functional JSON config projection
       .filter(([key])=>!visualProperties.has(key))
       .map(([key,item])=>[key,stripVisualProperties(item)]));
   };
-  const panels=['general','listsTab','marketsTab','productGroupsTab','routesTab','productsTab','reviewTab','transferTab'];
+  const panels=['general','listsTab','marketsTab','routesTab','productsTab','reviewTab','transferTab'];
   const projection=Object.fromEntries(panels.map(panel=>[
     panel,
     Object.fromEntries(Object.entries(jsonConfig.items[panel].items)
@@ -111,7 +110,7 @@ test('phase-one styling preserves the complete functional JSON config projection
   ]));
   const hash=crypto.createHash('sha256').update(JSON.stringify(projection)).digest('hex');
 
-  assert.equal(hash,'57db6133b8b90a7497f11dfd015ebae90a5e1a462159f456f358970b4952935d');
+  assert.equal(hash,'3f89cbfa734e6b85092c45db9945df753c4f202099370c8368654ba66714f913');
   const routeHash=crypto.createHash('sha256').update(JSON.stringify(jsonConfig.items.routesTab)).digest('hex');
   assert.equal(routeHash,'23228bada006eac4b1d8193a56d4978e64371e4886d8ad6bfe851ddc93fd58be');
 });
@@ -128,6 +127,27 @@ test('known instances, lists, markets and product groups use dropdown controls',
   assert.equal(listFields.find(x=>x.attr==='name').command,'getAlexaLists');
   const route=jsonConfig.items.routesTab.items;
   assert.equal(route.routeEditor.type,'custom');
+});
+
+test('product groups use a dedicated draft editor with the original native structure',()=>{
+  const productGroups=jsonConfig.items.productGroupsTab.items;
+  assert.deepEqual(Object.keys(productGroups),['productGroupsEditor','productGroups']);
+  assert.equal(productGroups.productGroupsEditor.type,'custom');
+  assert.equal(productGroups.productGroupsEditor.url,'custom/productGroups/productGroupsEditor.js');
+  assert.equal(
+    productGroups.productGroupsEditor.name,
+    'ShoppingRouteProductGroupsSet/Components/ProductGroupsEditor',
+  );
+  assert.equal(productGroups.productGroupsEditor.bundlerType,'module');
+  assert.equal(productGroups.productGroups.type,'table');
+  assert.equal(productGroups.productGroups.hidden,'true');
+  assert.deepEqual(productGroups.productGroups.items,[{
+    type:'text',
+    attr:'name',
+    title:'ui.items.productgroupstab.items.productgroups.items.0.title',
+    width:'100%',
+    sort:true,
+  }]);
 });
 
 test('product list is sortable by product, group and market',()=>{
@@ -185,7 +205,10 @@ test('walking routes use a dedicated editor with routes as the only persisted so
   assert.ok(fs.existsSync(path.join(root,'vite.config.mjs')));
   assert.ok(fs.existsSync(path.join(root,'admin','custom','routeEditor.js')));
   const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
-  assert.equal(pkg.scripts['build:admin'],'vite build');
+  assert.equal(
+    pkg.scripts['build:admin'],
+    'vite build && vite build --config vite.product-groups.config.mjs',
+  );
   assert.equal(pkg.devDependencies.browserify,undefined);
   assert.equal(pkg.devDependencies['@module-federation/vite'],'1.4.1');
   assert.match(pkg.scripts.build,/build:admin/);

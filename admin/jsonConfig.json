@@ -479,33 +479,21 @@
       "type": "panel",
       "label": "ui.items.productgroupstab.label",
       "items": {
-        "productGroupsSectionTitle": {
-          "type": "header",
-          "text": "ui.items.productgroupstab.label",
-          "size": 3,
+        "productGroupsEditor": {
+          "type": "custom",
+          "url": "custom/productGroups/productGroupsEditor.js",
+          "name": "ShoppingRouteProductGroupsSet/Components/ProductGroupsEditor",
+          "bundlerType": "module",
+          "i18n": false,
           "xs": 12,
           "sm": 12,
           "md": 12,
           "lg": 12,
           "xl": 12
         },
-        "productGroupsHelp": {
-          "type": "staticText",
-          "text": "ui.items.productgroupstab.items.productgroupshelp.text",
-          "xs": 12,
-          "sm": 12,
-          "md": 12,
-          "lg": 12,
-          "xl": 12,
-          "style": {
-            "fontSize": "0.9rem",
-            "lineHeight": "1.45",
-            "opacity": 0.78,
-            "marginBottom": "4px"
-          }
-        },
         "productGroups": {
           "type": "table",
+          "hidden": "true",
           "items": [
             {
               "type": "text",
