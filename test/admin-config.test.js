@@ -109,7 +109,7 @@ test('phase-one styling preserves the functional JSON config outside the migrate
   ]));
   const hash=crypto.createHash('sha256').update(JSON.stringify(projection)).digest('hex');
 
-  assert.equal(hash,'faf4170e032ef1b41c071f185868394d074b5758239b107870bfd1c98b1434c3');
+  assert.equal(hash,'67b566d6d90e5605680cdfed51c073872a0b1cb479e7f00f801bd0e5e88bb89e');
   const routeHash=crypto.createHash('sha256').update(JSON.stringify(jsonConfig.items.routesTab)).digest('hex');
   assert.equal(routeHash,'23228bada006eac4b1d8193a56d4978e64371e4886d8ad6bfe851ddc93fd58be');
 });

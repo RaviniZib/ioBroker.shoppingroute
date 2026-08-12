@@ -686,6 +686,7 @@
           },
           "variant": "outlined",
           "showProcess": true,
+          "useNative": true,
           "newLine": true,
           "xs": 12,
           "sm": 12,

@@ -315,7 +315,7 @@ export class ShoppingRoute extends utils.Adapter {
             const rows = Array.isArray((supplied as any).reviewItems)
                 ? (supplied as any).reviewItems
                 : this.runtimeReviews;
-            (supplied as any).reviewItems = rows.map((item: any) => ({
+            const updatedReviewItems = rows.map((item: any) => ({
                 ...item,
                 availableMarkets: Array.isArray(item?.availableMarkets)
                     ? item.availableMarkets
@@ -329,10 +329,8 @@ export class ShoppingRoute extends utils.Adapter {
                 obj.from,
                 obj.command,
                 {
-                    command: {
-                        command: 'refresh',
-                        data: supplied,
-                        fullRefresh: true,
+                    native: {
+                        reviewItems: updatedReviewItems,
                     },
                 },
                 obj.callback,

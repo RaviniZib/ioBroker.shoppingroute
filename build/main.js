@@ -285,7 +285,7 @@ class ShoppingRoute extends utils.Adapter {
             const rows = Array.isArray(supplied.reviewItems)
                 ? supplied.reviewItems
                 : this.runtimeReviews;
-            supplied.reviewItems = rows.map((item) => ({
+            const updatedReviewItems = rows.map((item) => ({
                 ...item,
                 availableMarkets: Array.isArray(item?.availableMarkets)
                     ? item.availableMarkets
@@ -296,10 +296,8 @@ class ShoppingRoute extends utils.Adapter {
                 action: 'accept',
             }));
             this.sendTo(obj.from, obj.command, {
-                command: {
-                    command: 'refresh',
-                    data: supplied,
-                    fullRefresh: true,
+                native: {
+                    reviewItems: updatedReviewItems,
                 },
             }, obj.callback);
             return;
