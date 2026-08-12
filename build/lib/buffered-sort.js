@@ -4,6 +4,7 @@ exports.createBufferedSortProgram = createBufferedSortProgram;
 exports.sortIdsByAlexaUpdatedTime = sortIdsByAlexaUpdatedTime;
 exports.createVisibleOrderRefreshPlan = createVisibleOrderRefreshPlan;
 exports.createVisibleOrderTouchProgram = createVisibleOrderTouchProgram;
+exports.createVisibleOrderMarker = createVisibleOrderMarker;
 function countValues(values) {
     const counts = new Map();
     for (const value of values)
@@ -216,5 +217,20 @@ function createVisibleOrderTouchProgram(id, value, marker) {
             { id: itemId, from: bufferMarker, to: itemValue, kind: 'final', circuit: 1 },
         ],
     };
+}
+function createVisibleOrderMarker(transactionId, step, existingValues) {
+    const token = String(transactionId || '').replace(/[^A-Za-z0-9]/g, '');
+    if (!token)
+        throw new Error('Reihenfolge-Marker benötigt eine alphanumerische Transaktionskennung.');
+    const stepNumber = Math.max(0, Math.floor(Number(step) || 0));
+    const existing = new Set([...existingValues].map(value => String(value || '').trim()));
+    const base = `ShoppingRoute Reihenfolge ${token} ${stepNumber}`;
+    let marker = base;
+    let collision = 0;
+    while (existing.has(marker)) {
+        collision += 1;
+        marker = `${base} ${collision}`;
+    }
+    return marker;
 }
 //# sourceMappingURL=buffered-sort.js.map

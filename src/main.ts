@@ -32,6 +32,7 @@ import {
 } from './lib/sorter';
 import {
     createBufferedSortProgram,
+    createVisibleOrderMarker,
     createVisibleOrderRefreshPlan,
     createVisibleOrderTouchProgram,
     sortIdsByAlexaUpdatedTime,
@@ -1066,11 +1067,12 @@ export class ShoppingRoute extends utils.Adapter {
                 return { writes, interrupted: true, additionalItems };
             }
             const previousUpdatedDateTime = currentItem.updatedDateTime;
-            const marker = `__SHOPPINGROUTE_REIHENFOLGE_${Date.now().toString(36)}_${index}__`;
+            const transactionId = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
+            const marker = createVisibleOrderMarker(transactionId, index, expectedValues.values());
             const touchProgram = createVisibleOrderTouchProgram(id, expectedValue, marker);
             const journal: SortTransactionJournal = {
                 version: 1,
-                transactionId: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`,
+                transactionId,
                 listName,
                 marker,
                 startedAt: new Date().toISOString(),

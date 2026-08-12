@@ -4,6 +4,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 
 const {
+    createVisibleOrderMarker,
     createVisibleOrderRefreshPlan,
     createVisibleOrderTouchProgram,
     sortIdsByAlexaUpdatedTime,
@@ -49,6 +50,26 @@ test("visible-order touch rejects empty values and marker collisions", () => {
     assert.throws(() => createVisibleOrderTouchProgram("", "ALDI", "marker"), /Eintrags-ID/);
     assert.throws(() => createVisibleOrderTouchProgram("id", "", "marker"), /sichtbaren Text/);
     assert.throws(() => createVisibleOrderTouchProgram("id", "ALDI", "ALDI"), /kollidiert/);
+});
+
+test("visible-order marker contains only Alexa-compatible letters, digits and spaces", () => {
+    const marker = createVisibleOrderMarker("msq8gg3y-unsafe_suffix", 0, []);
+    assert.equal(marker, "ShoppingRoute Reihenfolge msq8gg3yunsafesuffix 0");
+    assert.match(marker, /^[A-Za-z0-9ÄÖÜäöüß ]+$/);
+    assert.doesNotMatch(marker, /_/);
+    assert.equal(marker, marker.trim());
+});
+
+test("visible-order marker is unique per transaction and step and avoids real item collisions", () => {
+    const first = createVisibleOrderMarker("msq8gg3y", 0, []);
+    const nextStep = createVisibleOrderMarker("msq8gg3y", 1, []);
+    const nextTransaction = createVisibleOrderMarker("msq8gg3z", 0, []);
+    const collisionSafe = createVisibleOrderMarker("msq8gg3y", 0, [first, `${first} 1`]);
+
+    assert.notEqual(first, nextStep);
+    assert.notEqual(first, nextTransaction);
+    assert.equal(collisionSafe, `${first} 2`);
+    assert.ok(!new Set([first, `${first} 1`]).has(collisionSafe));
 });
 
 test("visible-order refresh plan is minimal for random permutations", () => {

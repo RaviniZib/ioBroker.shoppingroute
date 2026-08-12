@@ -265,3 +265,23 @@ export function createVisibleOrderTouchProgram(id: string, value: string, marker
         ],
     };
 }
+
+export function createVisibleOrderMarker(
+    transactionId: string,
+    step: number,
+    existingValues: Iterable<string>,
+): string {
+    const token = String(transactionId || '').replace(/[^A-Za-z0-9]/g, '');
+    if (!token) throw new Error('Reihenfolge-Marker benötigt eine alphanumerische Transaktionskennung.');
+
+    const stepNumber = Math.max(0, Math.floor(Number(step) || 0));
+    const existing = new Set([...existingValues].map(value => String(value || '').trim()));
+    const base = `ShoppingRoute Reihenfolge ${token} ${stepNumber}`;
+    let marker = base;
+    let collision = 0;
+    while (existing.has(marker)) {
+        collision += 1;
+        marker = `${base} ${collision}`;
+    }
+    return marker;
+}

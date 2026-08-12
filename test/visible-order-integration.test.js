@@ -12,6 +12,8 @@ test("runtime finalizes Alexa visible order with journaled marker writes", () =>
     assert.match(main, /refreshVisibleAlexaOrder/);
     assert.match(main, /updatedDateTime/);
     assert.match(main, /createVisibleOrderTouchProgram/);
+    assert.match(main, /createVisibleOrderMarker\(transactionId, index, expectedValues\.values\(\)\)/);
+    assert.doesNotMatch(main, /__SHOPPINGROUTE_REIHENFOLGE_/);
     assert.match(main, /await this\.persistSortTransaction\(journal\);[\s\S]*await this\.writeAlexaState\(valueStateId, marker\);/);
     assert.match(main, /await this\.writeAlexaState\(valueStateId, expectedValue\);/);
     assert.match(main, /currentUpdated !== previousUpdated/);

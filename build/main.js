@@ -923,11 +923,12 @@ class ShoppingRoute extends utils.Adapter {
                 return { writes, interrupted: true, additionalItems };
             }
             const previousUpdatedDateTime = currentItem.updatedDateTime;
-            const marker = `__SHOPPINGROUTE_REIHENFOLGE_${Date.now().toString(36)}_${index}__`;
+            const transactionId = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
+            const marker = (0, buffered_sort_1.createVisibleOrderMarker)(transactionId, index, expectedValues.values());
             const touchProgram = (0, buffered_sort_1.createVisibleOrderTouchProgram)(id, expectedValue, marker);
             const journal = {
                 version: 1,
-                transactionId: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`,
+                transactionId,
                 listName,
                 marker,
                 startedAt: new Date().toISOString(),
