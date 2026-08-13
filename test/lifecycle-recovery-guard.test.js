@@ -62,6 +62,34 @@ test('rollback never decrements the journal for missing, foreign or contradictor
     assert.doesNotMatch(rollback, /überschreibt extern geänderte/);
 });
 
+test('rollback late settlement observes once without repeating the Alexa write and preserves journal ordering', () => {
+    const rollback = main.slice(
+        main.indexOf('private async rollbackBufferedTransaction'),
+        main.indexOf('private async recoverInterruptedSortTransaction'),
+    );
+    const write = rollback.indexOf('writeAlexaState(valueStateId, step.from)');
+    const normalWait = rollback.indexOf('waitForAlexaWriteSettlement', write);
+    const lateWait = rollback.indexOf('waitForRecoveryLateSettlement', normalWait);
+    const decrement = rollback.indexOf('journal.confirmedSteps -= 1', lateWait);
+    const persist = rollback.indexOf('persistSortTransaction(journal)', decrement);
+
+    assert.equal((rollback.match(/writeAlexaState\(valueStateId, step\.from\)/g) || []).length, 1);
+    assert.ok(write >= 0 && write < normalWait && normalWait < lateWait && lateWait < decrement && decrement < persist);
+    assert.match(rollback, /readAlexaWriteSnapshot\(journal\.listName, step\.id\)[\s\S]*waitForAlexaWriteSettlement\([\s\S]*rollbackBaseline/);
+    assert.match(rollback, /if \(confirmation !== 'confirmed' && !this\.isUnloading\)/);
+    assert.ok(rollback.indexOf('return this.clearSortTransaction()') > persist);
+});
+
+test('late settlement is read-only and shutdown-aware', () => {
+    const lateWait = main.slice(
+        main.indexOf('private async waitForRecoveryLateSettlement'),
+        main.indexOf('private async reconcilePendingTransactionStep'),
+    );
+    assert.match(lateWait, /shouldAbort: \(\) => this\.isUnloading/);
+    assert.match(lateWait, /probe: \(\) => this\.readAlexaWriteReadinessSnapshot/);
+    assert.doesNotMatch(lateWait, /writeAlexaState|setForeignStateAsync|clearSortTransaction|persistSortTransaction/);
+});
+
 test('sort, pending processing, compatibility writes and header writes are recovery guarded', () => {
     assert.match(main, /private async processPendingSorts[\s\S]*this\.recoveryInProgress/);
     assert.match(main, /private async sortList[\s\S]*this\.recoveryInProgress/);

@@ -60,6 +60,7 @@ import {
 } from './lib/alexa-write-readiness';
 import { inspectAlexaWriteSettlement } from './lib/alexa-write-settlement';
 import { classifyRecoveryStepState, type RecoveryStepState } from './lib/recovery-state';
+import { observeRecoveryLateSettlement } from './lib/recovery-late-settlement';
 
 const VERSION = '0.3.2';
 const LIST_STABILITY_MS = 5000;
@@ -1667,6 +1668,30 @@ export class ShoppingRoute extends utils.Adapter {
         return !this.isUnloading && result === 'confirmed';
     }
 
+    private async waitForRecoveryLateSettlement(
+        listName: string,
+        id: string,
+        from: string,
+        to: string,
+        baseline: AlexaWriteSnapshot,
+    ): Promise<ConfirmationResult> {
+        const startedAt = Date.now();
+        try {
+            return await observeRecoveryLateSettlement({
+                from,
+                to,
+                baseline,
+                timeoutMs: ALEXA_CONFIRMATION_TIMEOUT_MS,
+                pollIntervalMs: ALEXA_CONFIRMATION_POLL_MS,
+                pause: ms => this.wait(ms),
+                shouldAbort: () => this.isUnloading,
+                probe: () => this.readAlexaWriteReadinessSnapshot(listName, id),
+            });
+        } finally {
+            this.recordAlexaWaitRuntime('confirmation', id, 'rollback', startedAt);
+        }
+    }
+
     private async reconcilePendingTransactionStep(
         journal: SortTransactionJournal,
     ): Promise<'confirmed' | 'not-applied' | 'ambiguous'> {
@@ -1740,15 +1765,16 @@ export class ShoppingRoute extends utils.Adapter {
                 }
                 const beforeState = await this.getForeignStateAsync(valueStateId);
                 const beforeTs = Number((beforeState as { ts?: number } | null)?.ts || 0);
+                const rollbackBaseline = await this.readAlexaWriteSnapshot(journal.listName, step.id);
                 await this.writeAlexaState(valueStateId, step.from);
-                const confirmation = journal.confirmedSteps > 1
+                let confirmation = journal.confirmedSteps > 1
                     ? await this.waitForAlexaWriteSettlement(
                         journal.listName,
                         step.id,
                         step.to,
                         step.from,
                         beforeTs,
-                        undefined,
+                        rollbackBaseline,
                         'rollback',
                     )
                     : await this.waitForAlexaValueConfirmation(
@@ -1757,9 +1783,21 @@ export class ShoppingRoute extends utils.Adapter {
                         step.to,
                         step.from,
                         beforeTs,
-                        undefined,
+                        rollbackBaseline,
                         'rollback',
                     );
+                if (confirmation !== 'confirmed' && !this.isUnloading) {
+                    this.log.warn(
+                        `${journal.listName}: Rollback-Schritt für ID ${step.id} ist nach der normalen Bestätigung noch offen; späte Remote-Aktualisierung wird einmalig beobachtet.`,
+                    );
+                    confirmation = await this.waitForRecoveryLateSettlement(
+                        journal.listName,
+                        step.id,
+                        step.to,
+                        step.from,
+                        rollbackBaseline,
+                    );
+                }
                 if (confirmation !== 'confirmed') {
                     this.log.error(`${journal.listName}: Rollback-Schritt für ID ${step.id} wurde nicht eindeutig bestätigt.`);
                     return false;

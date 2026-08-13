@@ -46,6 +46,7 @@ test("all transactional item-write paths use readiness without fixed write pause
     assert.ok(rollback.indexOf('waitForRecoveryStepState') < rollback.indexOf('writeAlexaState(valueStateId, step.from)'));
     assert.match(rollback, /journal\.confirmedSteps > 1[\s\S]*waitForAlexaWriteSettlement/);
     assert.match(rollback, /: await this\.waitForAlexaValueConfirmation/);
+    assert.match(rollback, /confirmation !== 'confirmed'[\s\S]*waitForRecoveryLateSettlement/);
     assert.doesNotMatch(rollback, /await this\.wait\(this\.writePauseMs\)/);
 });
 
