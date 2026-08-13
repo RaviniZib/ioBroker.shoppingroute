@@ -7,6 +7,7 @@ exports.realActiveItems = realActiveItems;
 exports.optimizeMarketAssignments = optimizeMarketAssignments;
 exports.requiredMarkets = requiredMarkets;
 exports.planMarketHeaderAction = planMarketHeaderAction;
+exports.optimizeMarketHeaderCreationOrder = optimizeMarketHeaderCreationOrder;
 const parser_1 = require("./parser");
 const HEADER_PATTERN = /^----\s+(.+?)\s+----$/;
 function formatMarketHeader(market) {
@@ -210,5 +211,57 @@ function planMarketHeaderAction(list, required, markets, fallbackMarket, enabled
             return { type: 'delete', market: market.name, id: String(header.id) };
     }
     return null;
+}
+/**
+ * Finds the lowest-scoring deterministic creation order. Header counts are normally small, so all permutations are
+ * evaluated through six headers; larger inputs use deterministic insertion optimization to keep planning bounded.
+ *
+ * @param markets Missing market headers in their normal route order.
+ * @param score Estimated final Amazon-write count for one creation order.
+ * @returns Creation order with the lowest estimated write count.
+ */
+function optimizeMarketHeaderCreationOrder(markets, score) {
+    const source = markets.map(String);
+    if (source.length < 2)
+        return source;
+    let best = [...source];
+    let bestScore = score(best);
+    const consider = (candidate) => {
+        const candidateScore = score(candidate);
+        if (candidateScore < bestScore) {
+            best = [...candidate];
+            bestScore = candidateScore;
+        }
+    };
+    if (source.length <= 6) {
+        const visit = (prefix, remaining) => {
+            if (remaining.length === 0) {
+                consider(prefix);
+                return;
+            }
+            for (let index = 0; index < remaining.length; index++) {
+                visit(prefix.concat(remaining[index]), remaining.slice(0, index).concat(remaining.slice(index + 1)));
+            }
+        };
+        visit([], source);
+        return best;
+    }
+    let ordered = [];
+    for (const market of source) {
+        let insertion = ordered.concat(market);
+        let insertionScore = score(insertion.concat(source.filter(entry => !insertion.includes(entry))));
+        for (let index = 0; index <= ordered.length; index++) {
+            const candidate = ordered.slice(0, index).concat(market, ordered.slice(index));
+            const completed = candidate.concat(source.filter(entry => !candidate.includes(entry)));
+            const candidateScore = score(completed);
+            if (candidateScore < insertionScore) {
+                insertion = candidate;
+                insertionScore = candidateScore;
+            }
+        }
+        ordered = insertion;
+    }
+    consider(ordered);
+    return best;
 }
 //# sourceMappingURL=market-plan.js.map

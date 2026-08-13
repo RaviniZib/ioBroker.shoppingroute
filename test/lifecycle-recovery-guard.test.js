@@ -25,7 +25,7 @@ test('visible marker confirmation is persisted before restore and shutdown block
     );
     const confirmed = visible.indexOf('journal.confirmedSteps = 1;');
     const persisted = visible.indexOf('persistSortTransaction(journal);', confirmed);
-    const restore = visible.indexOf('writeAlexaState(valueStateId, expectedValue);', persisted);
+    const restore = visible.indexOf("writeAlexaState(valueStateId, expectedValue, 'restore');", persisted);
     assert.ok(confirmed >= 0 && confirmed < persisted && persisted < restore);
     assert.match(main, /private async writeAlexaState[\s\S]*assertAlexaWriteAllowed\(\)/);
 });
@@ -67,13 +67,13 @@ test('rollback late settlement observes once without repeating the Alexa write a
         main.indexOf('private async rollbackBufferedTransaction'),
         main.indexOf('private async recoverInterruptedSortTransaction'),
     );
-    const write = rollback.indexOf('writeAlexaState(valueStateId, step.from)');
+    const write = rollback.indexOf("writeAlexaState(valueStateId, step.from, 'rollback')");
     const normalWait = rollback.indexOf('waitForAlexaWriteSettlement', write);
     const lateWait = rollback.indexOf('waitForRecoveryLateSettlement', normalWait);
     const decrement = rollback.indexOf('journal.confirmedSteps -= 1', lateWait);
     const persist = rollback.indexOf('persistSortTransaction(journal)', decrement);
 
-    assert.equal((rollback.match(/writeAlexaState\(valueStateId, step\.from\)/g) || []).length, 1);
+    assert.equal((rollback.match(/writeAlexaState\(valueStateId, step\.from, 'rollback'\)/g) || []).length, 1);
     assert.ok(write >= 0 && write < normalWait && normalWait < lateWait && lateWait < decrement && decrement < persist);
     assert.match(rollback, /readAlexaWriteSnapshot\(journal\.listName, step\.id\)[\s\S]*waitForAlexaWriteSettlement\([\s\S]*rollbackBaseline/);
     assert.match(rollback, /if \(confirmation !== 'confirmed' && !this\.isUnloading\)/);

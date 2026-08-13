@@ -41,7 +41,10 @@ import {
 } from './lib/buffered-sort';
 import { findProduct, parseItem, suggestAliases } from './lib/parser';
 import {
+    formatMarketHeader,
     isMarketHeader,
+    marketFromHeader,
+    optimizeMarketHeaderCreationOrder,
     planMarketHeaderAction,
     realActiveItems,
     requiredMarkets,
@@ -61,6 +64,12 @@ import {
 import { inspectAlexaWriteSettlement } from './lib/alexa-write-settlement';
 import { classifyRecoveryStepState, type RecoveryStepState } from './lib/recovery-state';
 import { observeRecoveryLateSettlement } from './lib/recovery-late-settlement';
+import {
+    activeListValues,
+    classifyExpectedListEvent,
+    classifyHeaderActionObservation,
+    type ExpectedListTransition,
+} from './lib/list-change-tracking';
 
 const VERSION = '0.3.2';
 const LIST_STABILITY_MS = 5000;
@@ -116,8 +125,19 @@ interface SortRuntimeTiming {
     contentMs: number;
     visibleOrderMs: number;
     visibleTouches: number;
+    seriesRuns: number;
+    suppressedSelfTriggers: number;
+    externalChangeEvents: number;
+    writes: Record<'content' | 'header' | 'marker' | 'restore' | 'rollback', number>;
     readiness: AlexaWaitRuntimeTiming[];
     confirmation: AlexaWaitRuntimeTiming[];
+}
+
+interface ActiveListChangeTracker {
+    listName: string;
+    expectedValues: Map<string, string>;
+    transition?: ExpectedListTransition;
+    suspectedExternalEvents: number;
 }
 
 export class ShoppingRoute extends utils.Adapter {
@@ -127,7 +147,8 @@ export class ShoppingRoute extends utils.Adapter {
     private pendingSortRequestedAt = new Map<string, number>();
     private sortingListName = '';
     private activeSortRuntime: SortRuntimeTiming | null = null;
-    private listChangedDuringSort = false;
+    private activeListChangeTracker: ActiveListChangeTracker | null = null;
+    private sortSeriesRuns = new Map<string, number>();
     private runtimeProducts: ProductConfig[] = [];
     private runtimeReviews: ReviewItemConfig[] = [];
     private productsDirty = false;
@@ -543,7 +564,10 @@ export class ShoppingRoute extends utils.Adapter {
         if (list) {
             await this.setStateAsync('info.connection', true, true);
             if (this.compatibilityTesting) return;
-            if (this.sortingListName === list.name) this.listChangedDuringSort = true;
+            if (this.sortingListName === list.name) {
+                this.observeActiveListEvent(state.val);
+                return;
+            }
             if (this.recoveryInProgress) {
                 this.pendingLists.add(list.name);
                 this.pendingSortRequestedAt.set(list.name, Date.now());
@@ -575,6 +599,9 @@ export class ShoppingRoute extends utils.Adapter {
     private scheduleAll(delay: number, requestedAt = Date.now()): void {
         if (this.isUnloading) return;
         for (const list of this.listConfigs) {
+            if (!this.pendingLists.has(list.name) && this.sortingListName !== list.name) {
+                this.sortSeriesRuns.set(list.name, 0);
+            }
             this.pendingLists.add(list.name);
             this.pendingSortRequestedAt.set(list.name, requestedAt);
         }
@@ -583,6 +610,9 @@ export class ShoppingRoute extends utils.Adapter {
 
     private scheduleSort(listName: string, delay: number, requestedAt = Date.now()): void {
         if (this.isUnloading) return;
+        if (!this.pendingLists.has(listName) && this.sortingListName !== listName) {
+            this.sortSeriesRuns.set(listName, 0);
+        }
         this.pendingLists.add(listName);
         this.pendingSortRequestedAt.set(listName, requestedAt);
         this.armSortTimer(delay);
@@ -623,6 +653,71 @@ export class ShoppingRoute extends utils.Adapter {
         return parsed as AlexaListItem[];
     }
 
+    private observeActiveListEvent(rawValue: unknown): void {
+        const tracker = this.activeListChangeTracker;
+        const runtime = this.activeSortRuntime;
+        if (!tracker || tracker.listName !== this.sortingListName || typeof rawValue !== 'string') {
+            if (tracker) tracker.suspectedExternalEvents += 1;
+            return;
+        }
+        try {
+            const parsed: unknown = JSON.parse(rawValue);
+            if (!Array.isArray(parsed)) throw new Error('kein Array');
+            const classification = classifyExpectedListEvent(
+                parsed,
+                tracker.expectedValues,
+                tracker.transition,
+            );
+            if (classification === 'expected') {
+                if (runtime) runtime.suppressedSelfTriggers += 1;
+            } else {
+                tracker.suspectedExternalEvents += 1;
+            }
+        } catch {
+            tracker.suspectedExternalEvents += 1;
+        }
+    }
+
+    private updateActiveListExpectation(list: AlexaListItem[]): void {
+        if (!this.activeListChangeTracker) return;
+        this.activeListChangeTracker.expectedValues = activeListValues(list);
+        this.activeListChangeTracker.transition = undefined;
+    }
+
+    private setActiveListTransition(transition?: ExpectedListTransition): void {
+        if (this.activeListChangeTracker) this.activeListChangeTracker.transition = transition;
+    }
+
+    private confirmActiveListValue(id: string, value: string): void {
+        if (!this.activeListChangeTracker) return;
+        this.activeListChangeTracker.expectedValues.set(id, value);
+        this.activeListChangeTracker.transition = undefined;
+    }
+
+    private async finalizeActiveListChangeTracking(listName: string, runtime: SortRuntimeTiming): Promise<void> {
+        const tracker = this.activeListChangeTracker;
+        if (!tracker || tracker.listName !== listName || this.isUnloading) return;
+        try {
+            const current = await this.readList(listName);
+            const matchesExpected = classifyExpectedListEvent(current, tracker.expectedValues) === 'expected';
+            if (matchesExpected) {
+                runtime.suppressedSelfTriggers += tracker.suspectedExternalEvents;
+            } else {
+                runtime.externalChangeEvents += Math.max(1, tracker.suspectedExternalEvents);
+                this.pendingLists.add(listName);
+                if (!this.pendingSortRequestedAt.has(listName)) {
+                    this.pendingSortRequestedAt.set(listName, Date.now());
+                }
+            }
+        } catch {
+            runtime.externalChangeEvents += Math.max(1, tracker.suspectedExternalEvents);
+            this.pendingLists.add(listName);
+            if (!this.pendingSortRequestedAt.has(listName)) {
+                this.pendingSortRequestedAt.set(listName, Date.now());
+            }
+        }
+    }
+
     private async sortList(listName: string, requestedAt = Date.now()): Promise<void> {
         if (this.isUnloading || this.recoveryInProgress) {
             if (!this.isUnloading) this.pendingLists.add(listName);
@@ -634,6 +729,8 @@ export class ShoppingRoute extends utils.Adapter {
         }
         const startedAt = Date.now();
         if (!(await this.isEnabled())) return;
+        const seriesRuns = (this.sortSeriesRuns.get(listName) || 0) + 1;
+        this.sortSeriesRuns.set(listName, seriesRuns);
         const runtime: SortRuntimeTiming = {
             requestedAt,
             startedAt,
@@ -643,20 +740,29 @@ export class ShoppingRoute extends utils.Adapter {
             contentMs: 0,
             visibleOrderMs: 0,
             visibleTouches: 0,
+            seriesRuns,
+            suppressedSelfTriggers: 0,
+            externalChangeEvents: 0,
+            writes: { content: 0, header: 0, marker: 0, restore: 0, rollback: 0 },
             readiness: [],
             confirmation: [],
         };
         this.activeSortRuntime = runtime;
         this.sortingListName = listName;
-        this.listChangedDuringSort = false;
+        this.activeListChangeTracker = {
+            listName,
+            expectedValues: new Map(),
+            suspectedExternalEvents: 0,
+        };
 
         await this.ensureTrafficDay();
         this.traffic.localChecks += 1;
         await this.persistTrafficMetrics();
 
         try {
-            const list = await this.readList(listName);
-            const active = activeItems(list);
+            let list = await this.readList(listName);
+            this.updateActiveListExpectation(list);
+            let active = activeItems(list);
             const realActive = realActiveItems(list, this.markets);
             this.activeCountByList.set(listName, realActive.length);
             await this.updateActiveItemCount();
@@ -726,14 +832,10 @@ export class ShoppingRoute extends utils.Adapter {
                     this.log.error(message);
                     return;
                 }
-                await this.applyMarketHeaderAction(listName, headerAction);
-                await this.setStateAsync(
-                    'info.lastSort',
-                    `${new Date().toISOString()} – ${listName}: Marktüberschrift ${headerAction.market} aktualisiert`,
-                    true,
-                );
-                await this.setStateAsync('info.lastError', '', true);
-                return;
+                const headerResult = await this.reconcileMarketHeaders(listName, list, required);
+                if (headerResult.interrupted) return;
+                list = headerResult.list;
+                active = activeItems(list);
             }
 
             const plan = createSortPlan(
@@ -934,7 +1036,8 @@ export class ShoppingRoute extends utils.Adapter {
                         return;
                     }
 
-                    await this.writeAlexaState(valueStateId, step.to);
+                    this.setActiveListTransition({ type: 'item', id: step.id, from: step.from, to: step.to });
+                    await this.writeAlexaState(valueStateId, step.to, 'content');
                     const confirmation = index + 1 < program.steps.length
                         ? await this.waitForAlexaWriteSettlement(
                             listName,
@@ -982,6 +1085,7 @@ export class ShoppingRoute extends utils.Adapter {
                     }
 
                     expectedValues.set(step.id, step.to);
+                    this.confirmActiveListValue(step.id, step.to);
                     journal.confirmedSteps = index + 1;
                     await this.persistSortTransaction(journal);
                     written += 1;
@@ -1069,23 +1173,180 @@ export class ShoppingRoute extends utils.Adapter {
             this.log.error(message);
         } finally {
             this.finishSortRuntimePhase(runtime);
+            await this.finalizeActiveListChangeTracking(listName, runtime);
             this.sortingListName = '';
+            this.activeListChangeTracker = null;
             try {
                 await this.persistRuntimeConfig();
                 await this.refreshExports();
                 await this.updateFeedbackReport();
-                if (this.listChangedDuringSort) {
-                    this.pendingLists.add(listName);
-                    if (!this.pendingSortRequestedAt.has(listName)) {
-                        this.pendingSortRequestedAt.set(listName, Date.now());
-                    }
-                }
                 if (this.pendingLists.size > 0) this.armSortTimer(this.sortStabilityDelayMs);
             } finally {
                 this.logSortRuntime(listName, runtime);
+                if (!this.pendingLists.has(listName)) this.sortSeriesRuns.delete(listName);
                 if (this.activeSortRuntime === runtime) this.activeSortRuntime = null;
             }
         }
+    }
+
+    private missingRequiredMarketHeaders(list: AlexaListItem[], required: string[]): string[] {
+        const present = new Set<string>();
+        for (const item of list) {
+            const market = marketFromHeader(String(item?.value || ''), this.markets);
+            if (market) present.add(market.toLocaleLowerCase('de'));
+        }
+        return required.filter(market => !present.has(market.toLocaleLowerCase('de')));
+    }
+
+    private estimateHeaderCreationWrites(
+        list: AlexaListItem[],
+        markets: string[],
+        listName: string,
+    ): number {
+        const timestamps = list.flatMap(item => [Number(item.createdDateTime) || 0, Number(item.updatedDateTime) || 0]);
+        const newest = Math.max(Date.now(), ...timestamps);
+        const simulated: AlexaListItem[] = list.map(item => ({ ...item }));
+        markets.forEach((market, index) => simulated.push({
+            id: `ShoppingRouteHeaderPlan${index}`,
+            value: formatMarketHeader(market),
+            completed: false,
+            createdDateTime: newest + index + 1,
+            updatedDateTime: newest + index + 1,
+        }));
+
+        const priority = this.priorityMarketForList(listName);
+        const plan = createSortPlan(
+            simulated,
+            this.markets,
+            this.routes,
+            this.products,
+            this.fallbackMarket,
+            priority,
+            this.minimumItemsPerMarket,
+            this.marketHeadersEnabled,
+        );
+        const currentOrderIds = sortIdsByAlexaUpdatedTime(activeItems(simulated));
+        const desiredOrderIds = [...plan]
+            .sort((left, right) => Number(left.position) - Number(right.position))
+            .map(entry => String(entry.id));
+        const existingValues = plan.flatMap(entry => [String(entry.from), String(entry.to)]);
+        const marker = createBufferedSortMarker('HeaderPlan', 0, existingValues);
+        const program = createBufferedSortProgram(plan, marker, { currentOrderIds, desiredOrderIds });
+        const afterContent = [...currentOrderIds];
+        for (const step of program.steps) {
+            const currentIndex = afterContent.indexOf(step.id);
+            if (currentIndex >= 0) afterContent.splice(currentIndex, 1);
+            afterContent.push(step.id);
+        }
+        const touches = createVisibleOrderRefreshPlan(afterContent, desiredOrderIds);
+        return markets.length + program.amazonWrites + touches.length * 2;
+    }
+
+    private optimizedMissingHeaderOrder(list: AlexaListItem[], required: string[], listName: string): string[] {
+        const missing = this.missingRequiredMarketHeaders(list, required);
+        if (missing.length < 2) return missing;
+        try {
+            const normalWrites = this.estimateHeaderCreationWrites(list, missing, listName);
+            const optimized = optimizeMarketHeaderCreationOrder(
+                missing,
+                order => this.estimateHeaderCreationWrites(list, order, listName),
+            );
+            const optimizedWrites = this.estimateHeaderCreationWrites(list, optimized, listName);
+            if (optimizedWrites < normalWrites) {
+                this.log.info(
+                    `${listName}: Erzeugungsreihenfolge für ${missing.length} Marktüberschriften reduziert die geschätzten Amazon-Writes von ${normalWrites} auf ${optimizedWrites}.`,
+                );
+            }
+            return optimized;
+        } catch (error) {
+            this.log.debug(
+                `${listName}: Marktüberschriften-Reihenfolge bleibt unverändert, da die Vorabschätzung nicht möglich war: ${error instanceof Error ? error.message : String(error)}`,
+            );
+            return missing;
+        }
+    }
+
+    private async waitForMarketHeaderAction(
+        listName: string,
+        expected: ReadonlyMap<string, string>,
+        transition: Extract<ExpectedListTransition, { type: 'header-create' | 'header-delete' }>,
+    ): Promise<{ result: 'confirmed' | 'not-applied' | 'ambiguous'; list: AlexaListItem[] }> {
+        let elapsedMs = 0;
+        let latest = await this.readList(listName);
+        while (true) {
+            if (this.isUnloading) return { result: 'ambiguous', list: latest };
+            const observation = classifyHeaderActionObservation(latest, expected, transition);
+            if (observation === 'confirmed' || observation === 'ambiguous') {
+                return { result: observation, list: latest };
+            }
+            if (elapsedMs >= ALEXA_CONFIRMATION_TIMEOUT_MS) {
+                return { result: 'not-applied', list: latest };
+            }
+            const delayMs = Math.min(
+                ALEXA_CONFIRMATION_POLL_MS,
+                ALEXA_CONFIRMATION_TIMEOUT_MS - elapsedMs,
+            );
+            await this.wait(delayMs);
+            elapsedMs += delayMs;
+            latest = await this.readList(listName);
+        }
+    }
+
+    private async reconcileMarketHeaders(
+        listName: string,
+        initialList: AlexaListItem[],
+        required: string[],
+    ): Promise<{ list: AlexaListItem[]; interrupted: boolean }> {
+        let list = initialList;
+        let creationOrder = this.optimizedMissingHeaderOrder(list, required, listName);
+        const maximumActions = list.length + this.markets.length * 2 + 10;
+
+        for (let actionIndex = 0; actionIndex < maximumActions; actionIndex++) {
+            const planned = planMarketHeaderAction(
+                list,
+                required,
+                this.markets,
+                this.fallbackMarket,
+                this.marketHeadersEnabled,
+            );
+            if (!planned) return { list, interrupted: false };
+
+            let action = planned;
+            if (planned.type === 'create' && creationOrder.length > 0) {
+                const market = creationOrder.shift();
+                if (market) action = { type: 'create', market, value: formatMarketHeader(market) };
+            }
+
+            const expected = activeListValues(list);
+            const transition: Extract<ExpectedListTransition, { type: 'header-create' | 'header-delete' }> =
+                action.type === 'create'
+                    ? { type: 'header-create', value: action.value }
+                    : { type: 'header-delete', id: action.id };
+            this.setActiveListTransition(transition);
+            await this.applyMarketHeaderAction(listName, action);
+            const settlement = await this.waitForMarketHeaderAction(listName, expected, transition);
+            if (settlement.result !== 'confirmed') {
+                this.setActiveListTransition(undefined);
+                this.pendingLists.add(listName);
+                if (!this.pendingSortRequestedAt.has(listName)) {
+                    this.pendingSortRequestedAt.set(listName, Date.now());
+                }
+                this.log.warn(
+                    settlement.result === 'not-applied'
+                        ? `${listName}: Marktüberschrift ${action.market} wurde innerhalb des Bestätigungsfensters nicht angewendet; genau eine neue Prüfung folgt.`
+                        : `${listName}: Während der Marktüberschrift ${action.market} wurde eine externe Listenänderung erkannt; genau eine neue Berechnung folgt.`,
+                );
+                return { list: settlement.list, interrupted: true };
+            }
+
+            list = settlement.list;
+            this.updateActiveListExpectation(list);
+            if (action.type !== 'create') creationOrder = this.optimizedMissingHeaderOrder(list, required, listName);
+        }
+
+        this.pendingLists.add(listName);
+        this.log.error(`${listName}: Marktüberschriften konnten nicht innerhalb der begrenzten Aktionszahl abgeglichen werden.`);
+        return { list, interrupted: true };
     }
 
     private visibleOrderRefreshIds(
@@ -1235,8 +1496,13 @@ export class ShoppingRoute extends utils.Adapter {
         const startWaitMs = Math.max(0, runtime.startedAt - runtime.requestedAt);
         const readinessMs = sum(runtime.readiness);
         const confirmationMs = sum(runtime.confirmation);
+        const totalWrites = Object.values(runtime.writes).reduce((total, value) => total + value, 0);
         this.log.info(
             `${listName} Laufzeit: gesamt ${totalMs} ms | Startwartezeit ${startWaitMs} ms | ` +
+            `Serie ${runtime.seriesRuns} Lauf/Läufe | Amazon-Writes ${totalWrites} ` +
+            `(Inhalt ${runtime.writes.content}, Header ${runtime.writes.header}, Marker ${runtime.writes.marker}, ` +
+            `Restore ${runtime.writes.restore}, Rollback ${runtime.writes.rollback}) | ` +
+            `Eigen-Trigger ${runtime.suppressedSelfTriggers} resorbiert | externe Änderungen ${runtime.externalChangeEvents} | ` +
             `Planung ${runtime.planningMs} ms | Inhalt ${runtime.contentMs} ms | ` +
             `Reihenfolge ${runtime.visibleOrderMs} ms | ${runtime.visibleTouches} Touches | ` +
             `Readiness ${readinessMs} ms (Inhalt ${sum(runtime.readiness, 'content')}, Marker ${sum(runtime.readiness, 'marker')}, ` +
@@ -1350,7 +1616,8 @@ export class ShoppingRoute extends utils.Adapter {
                 return { writes, interrupted: true, additionalItems };
             }
             const markerBaseline = await this.readAlexaWriteSnapshot(listName, id);
-            await this.writeAlexaState(valueStateId, marker);
+            this.setActiveListTransition({ type: 'item', id, from: expectedValue, to: marker });
+            await this.writeAlexaState(valueStateId, marker, 'marker');
             const markerConfirmation = await this.waitForAlexaWriteSettlement(
                 listName,
                 id,
@@ -1370,10 +1637,12 @@ export class ShoppingRoute extends utils.Adapter {
                 return { writes, interrupted: true, additionalItems };
             }
             journal.confirmedSteps = 1;
+            this.confirmActiveListValue(id, marker);
             await this.persistSortTransaction(journal);
 
             const restoreBaseline = await this.readAlexaWriteSnapshot(listName, id);
-            await this.writeAlexaState(valueStateId, expectedValue);
+            this.setActiveListTransition({ type: 'item', id, from: marker, to: expectedValue });
+            await this.writeAlexaState(valueStateId, expectedValue, 'restore');
             const restored = await this.waitForAlexaValueConfirmation(
                 listName,
                 id,
@@ -1394,6 +1663,7 @@ export class ShoppingRoute extends utils.Adapter {
                 return { writes, interrupted: true, additionalItems };
             }
             journal.confirmedSteps = 2;
+            this.confirmActiveListValue(id, expectedValue);
             await this.persistSortTransaction(journal);
             if (!(await this.clearSortTransaction())) {
                 return { writes, interrupted: true, additionalItems };
@@ -1743,6 +2013,7 @@ export class ShoppingRoute extends utils.Adapter {
                 if (this.isUnloading) return false;
                 if (state === 'from') {
                     journal.confirmedSteps -= 1;
+                    this.confirmActiveListValue(step.id, step.from);
                     if (!(await this.persistSortTransaction(journal))) return false;
                     continue;
                 }
@@ -1766,7 +2037,8 @@ export class ShoppingRoute extends utils.Adapter {
                 const beforeState = await this.getForeignStateAsync(valueStateId);
                 const beforeTs = Number((beforeState as { ts?: number } | null)?.ts || 0);
                 const rollbackBaseline = await this.readAlexaWriteSnapshot(journal.listName, step.id);
-                await this.writeAlexaState(valueStateId, step.from);
+                this.setActiveListTransition({ type: 'item', id: step.id, from: step.to, to: step.from });
+                await this.writeAlexaState(valueStateId, step.from, 'rollback');
                 let confirmation = journal.confirmedSteps > 1
                     ? await this.waitForAlexaWriteSettlement(
                         journal.listName,
@@ -1804,6 +2076,7 @@ export class ShoppingRoute extends utils.Adapter {
                 }
 
                 journal.confirmedSteps -= 1;
+                this.confirmActiveListValue(step.id, step.from);
                 if (!(await this.persistSortTransaction(journal))) return false;
             } catch (error) {
                 this.log.error(
@@ -1929,11 +2202,15 @@ export class ShoppingRoute extends utils.Adapter {
         const value = action.type === 'create' ? action.value : true;
         const stateObject = await this.getForeignObjectAsync(stateId);
         if (!stateObject) throw new Error(`Alexa-Datenpunkt für Marktüberschrift fehlt: ${stateId}`);
-        await this.writeAlexaState(stateId, value);
+        await this.writeAlexaState(stateId, value, 'header');
         this.log.info(`${listName}: Marktüberschrift ${action.market} – ${action.type}.`);
     }
 
-    private async writeAlexaState(stateId: string, value: string | boolean): Promise<void> {
+    private async writeAlexaState(
+        stateId: string,
+        value: string | boolean,
+        runtimePhase?: 'content' | 'header' | 'marker' | 'restore' | 'rollback',
+    ): Promise<void> {
         let lastError: unknown;
         for (let attempt = 0; attempt <= this.maxWriteRetries; attempt++) {
             try {
@@ -1947,6 +2224,7 @@ export class ShoppingRoute extends utils.Adapter {
                     this.activeAlexaWrites -= 1;
                 }
                 this.writeTimestamps.push(Date.now());
+                if (runtimePhase && this.activeSortRuntime) this.activeSortRuntime.writes[runtimePhase] += 1;
                 this.traffic.alexaWrites += 1;
                 this.traffic.lastAlexaWrite = new Date().toISOString();
                 await this.persistTrafficMetrics();

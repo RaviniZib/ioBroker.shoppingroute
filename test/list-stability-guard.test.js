@@ -24,7 +24,7 @@ test("normal sort writes use adaptive Alexa2 readiness instead of a fixed pause"
     const normalLoopEnd = main.indexOf('const verifyList = await this.readList(listName);', normalLoopStart);
     const normalLoop = main.slice(normalLoopStart, normalLoopEnd);
     assert.match(normalLoop, /waitForAlexaWriteReadiness\([\s\S]*listName,[\s\S]*step\.id,[\s\S]*step\.from,[\s\S]*'content'/);
-    assert.ok(normalLoop.indexOf('waitForAlexaWriteReadiness') < normalLoop.indexOf('writeAlexaState(valueStateId, step.to)'));
+    assert.ok(normalLoop.indexOf('waitForAlexaWriteReadiness') < normalLoop.indexOf('writeAlexaState(valueStateId, step.to,'));
     assert.match(normalLoop, /index \+ 1 < program\.steps\.length[\s\S]*waitForAlexaWriteSettlement/);
     assert.match(normalLoop, /: await this\.waitForAlexaValueConfirmation/);
     assert.doesNotMatch(normalLoop, /await this\.wait\(this\.writePauseMs\)/);
@@ -43,7 +43,7 @@ test("all transactional item-write paths use readiness without fixed write pause
     const rollbackEnd = main.indexOf('private async recoverInterruptedSortTransaction', rollbackStart);
     const rollback = main.slice(rollbackStart, rollbackEnd);
     assert.match(rollback, /waitForRecoveryStepState\([\s\S]*journal\.listName,[\s\S]*step\.id,[\s\S]*step\.to/);
-    assert.ok(rollback.indexOf('waitForRecoveryStepState') < rollback.indexOf('writeAlexaState(valueStateId, step.from)'));
+    assert.ok(rollback.indexOf('waitForRecoveryStepState') < rollback.indexOf('writeAlexaState(valueStateId, step.from,'));
     assert.match(rollback, /journal\.confirmedSteps > 1[\s\S]*waitForAlexaWriteSettlement/);
     assert.match(rollback, /: await this\.waitForAlexaValueConfirmation/);
     assert.match(rollback, /confirmation !== 'confirmed'[\s\S]*waitForRecoveryLateSettlement/);
@@ -87,6 +87,15 @@ test("all automatic sort triggers retain the stability window", () => {
     assert.equal((main.match(/this\.scheduleAll\(this\.sortStabilityDelayMs\);/g) || []).length, 4);
 });
 
+test('Alexa2 refreshes from the active list are absorbed before automatic scheduling', () => {
+    const stateChange = main.slice(main.indexOf('private async onStateChange'), main.indexOf('private onUnload'));
+    assert.match(
+        stateChange,
+        /sortingListName === list\.name[\s\S]*observeActiveListEvent\(state\.val\)[\s\S]*return;[\s\S]*scheduleSort/,
+    );
+    assert.doesNotMatch(main, /listChangedDuringSort/);
+});
+
 test("runtime measurement observes existing waits without changing polling or timeout", () => {
     const confirmationStart = main.indexOf('private async waitForAlexaValueConfirmation');
     const settlementStart = main.indexOf('private async waitForAlexaWriteSettlement', confirmationStart);
@@ -107,6 +116,11 @@ test("runtime measurement observes existing waits without changing polling or ti
     const measurement = main.slice(measurementStart, visibleStart);
     assert.doesNotMatch(measurement, /await |\.wait\(|setTimeout|setInterval/);
     assert.equal((main.match(/this\.logSortRuntime\(listName, runtime\);/g) || []).length, 1);
+    assert.match(main, /Amazon-Writes \$\{totalWrites\}/);
+    assert.match(main, /Inhalt \$\{runtime\.writes\.content\}, Header \$\{runtime\.writes\.header\}, Marker \$\{runtime\.writes\.marker\}/);
+    assert.match(main, /Restore \$\{runtime\.writes\.restore\}, Rollback \$\{runtime\.writes\.rollback\}/);
+    assert.match(main, /Eigen-Trigger \$\{runtime\.suppressedSelfTriggers\} resorbiert/);
+    assert.match(main, /externe Änderungen \$\{runtime\.externalChangeEvents\}/);
 });
 
 test("buffered transaction rolls back when a new active id appears", () => {
@@ -116,7 +130,7 @@ test("buffered transaction rolls back when a new active id appears", () => {
 
 test("visible-order finalization aborts on a new id before another marker write", () => {
     const loopGuard = main.indexOf("Neuer aktiver Alexa-Listeneintrag während der Reihenfolge-Finalisierung erkannt");
-    const markerWrite = main.indexOf("await this.writeAlexaState(valueStateId, marker);", loopGuard);
+    const markerWrite = main.indexOf("await this.writeAlexaState(valueStateId, marker, 'marker');", loopGuard);
     assert.ok(loopGuard >= 0);
     assert.ok(markerWrite > loopGuard);
     const guardWindow = main.slice(loopGuard, markerWrite);

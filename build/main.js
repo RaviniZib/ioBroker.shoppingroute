@@ -52,6 +52,7 @@ const alexa_write_readiness_1 = require("./lib/alexa-write-readiness");
 const alexa_write_settlement_1 = require("./lib/alexa-write-settlement");
 const recovery_state_1 = require("./lib/recovery-state");
 const recovery_late_settlement_1 = require("./lib/recovery-late-settlement");
+const list_change_tracking_1 = require("./lib/list-change-tracking");
 const VERSION = '0.3.2';
 const LIST_STABILITY_MS = 5000;
 const ALEXA_CONFIRMATION_TIMEOUT_MS = 10000;
@@ -80,7 +81,8 @@ class ShoppingRoute extends utils.Adapter {
     pendingSortRequestedAt = new Map();
     sortingListName = '';
     activeSortRuntime = null;
-    listChangedDuringSort = false;
+    activeListChangeTracker = null;
+    sortSeriesRuns = new Map();
     runtimeProducts = [];
     runtimeReviews = [];
     productsDirty = false;
@@ -479,8 +481,10 @@ class ShoppingRoute extends utils.Adapter {
             await this.setStateAsync('info.connection', true, true);
             if (this.compatibilityTesting)
                 return;
-            if (this.sortingListName === list.name)
-                this.listChangedDuringSort = true;
+            if (this.sortingListName === list.name) {
+                this.observeActiveListEvent(state.val);
+                return;
+            }
             if (this.recoveryInProgress) {
                 this.pendingLists.add(list.name);
                 this.pendingSortRequestedAt.set(list.name, Date.now());
@@ -514,6 +518,9 @@ class ShoppingRoute extends utils.Adapter {
         if (this.isUnloading)
             return;
         for (const list of this.listConfigs) {
+            if (!this.pendingLists.has(list.name) && this.sortingListName !== list.name) {
+                this.sortSeriesRuns.set(list.name, 0);
+            }
             this.pendingLists.add(list.name);
             this.pendingSortRequestedAt.set(list.name, requestedAt);
         }
@@ -522,6 +529,9 @@ class ShoppingRoute extends utils.Adapter {
     scheduleSort(listName, delay, requestedAt = Date.now()) {
         if (this.isUnloading)
             return;
+        if (!this.pendingLists.has(listName) && this.sortingListName !== listName) {
+            this.sortSeriesRuns.set(listName, 0);
+        }
         this.pendingLists.add(listName);
         this.pendingSortRequestedAt.set(listName, requestedAt);
         this.armSortTimer(delay);
@@ -563,6 +573,73 @@ class ShoppingRoute extends utils.Adapter {
             throw new Error(`${stateId} enthält kein JSON-Array.`);
         return parsed;
     }
+    observeActiveListEvent(rawValue) {
+        const tracker = this.activeListChangeTracker;
+        const runtime = this.activeSortRuntime;
+        if (!tracker || tracker.listName !== this.sortingListName || typeof rawValue !== 'string') {
+            if (tracker)
+                tracker.suspectedExternalEvents += 1;
+            return;
+        }
+        try {
+            const parsed = JSON.parse(rawValue);
+            if (!Array.isArray(parsed))
+                throw new Error('kein Array');
+            const classification = (0, list_change_tracking_1.classifyExpectedListEvent)(parsed, tracker.expectedValues, tracker.transition);
+            if (classification === 'expected') {
+                if (runtime)
+                    runtime.suppressedSelfTriggers += 1;
+            }
+            else {
+                tracker.suspectedExternalEvents += 1;
+            }
+        }
+        catch {
+            tracker.suspectedExternalEvents += 1;
+        }
+    }
+    updateActiveListExpectation(list) {
+        if (!this.activeListChangeTracker)
+            return;
+        this.activeListChangeTracker.expectedValues = (0, list_change_tracking_1.activeListValues)(list);
+        this.activeListChangeTracker.transition = undefined;
+    }
+    setActiveListTransition(transition) {
+        if (this.activeListChangeTracker)
+            this.activeListChangeTracker.transition = transition;
+    }
+    confirmActiveListValue(id, value) {
+        if (!this.activeListChangeTracker)
+            return;
+        this.activeListChangeTracker.expectedValues.set(id, value);
+        this.activeListChangeTracker.transition = undefined;
+    }
+    async finalizeActiveListChangeTracking(listName, runtime) {
+        const tracker = this.activeListChangeTracker;
+        if (!tracker || tracker.listName !== listName || this.isUnloading)
+            return;
+        try {
+            const current = await this.readList(listName);
+            const matchesExpected = (0, list_change_tracking_1.classifyExpectedListEvent)(current, tracker.expectedValues) === 'expected';
+            if (matchesExpected) {
+                runtime.suppressedSelfTriggers += tracker.suspectedExternalEvents;
+            }
+            else {
+                runtime.externalChangeEvents += Math.max(1, tracker.suspectedExternalEvents);
+                this.pendingLists.add(listName);
+                if (!this.pendingSortRequestedAt.has(listName)) {
+                    this.pendingSortRequestedAt.set(listName, Date.now());
+                }
+            }
+        }
+        catch {
+            runtime.externalChangeEvents += Math.max(1, tracker.suspectedExternalEvents);
+            this.pendingLists.add(listName);
+            if (!this.pendingSortRequestedAt.has(listName)) {
+                this.pendingSortRequestedAt.set(listName, Date.now());
+            }
+        }
+    }
     async sortList(listName, requestedAt = Date.now()) {
         if (this.isUnloading || this.recoveryInProgress) {
             if (!this.isUnloading)
@@ -576,6 +653,8 @@ class ShoppingRoute extends utils.Adapter {
         const startedAt = Date.now();
         if (!(await this.isEnabled()))
             return;
+        const seriesRuns = (this.sortSeriesRuns.get(listName) || 0) + 1;
+        this.sortSeriesRuns.set(listName, seriesRuns);
         const runtime = {
             requestedAt,
             startedAt,
@@ -585,18 +664,27 @@ class ShoppingRoute extends utils.Adapter {
             contentMs: 0,
             visibleOrderMs: 0,
             visibleTouches: 0,
+            seriesRuns,
+            suppressedSelfTriggers: 0,
+            externalChangeEvents: 0,
+            writes: { content: 0, header: 0, marker: 0, restore: 0, rollback: 0 },
             readiness: [],
             confirmation: [],
         };
         this.activeSortRuntime = runtime;
         this.sortingListName = listName;
-        this.listChangedDuringSort = false;
+        this.activeListChangeTracker = {
+            listName,
+            expectedValues: new Map(),
+            suspectedExternalEvents: 0,
+        };
         await this.ensureTrafficDay();
         this.traffic.localChecks += 1;
         await this.persistTrafficMetrics();
         try {
-            const list = await this.readList(listName);
-            const active = (0, sorter_1.activeItems)(list);
+            let list = await this.readList(listName);
+            this.updateActiveListExpectation(list);
+            let active = (0, sorter_1.activeItems)(list);
             const realActive = (0, market_plan_1.realActiveItems)(list, this.markets);
             this.activeCountByList.set(listName, realActive.length);
             await this.updateActiveItemCount();
@@ -643,10 +731,11 @@ class ShoppingRoute extends utils.Adapter {
                     this.log.error(message);
                     return;
                 }
-                await this.applyMarketHeaderAction(listName, headerAction);
-                await this.setStateAsync('info.lastSort', `${new Date().toISOString()} – ${listName}: Marktüberschrift ${headerAction.market} aktualisiert`, true);
-                await this.setStateAsync('info.lastError', '', true);
-                return;
+                const headerResult = await this.reconcileMarketHeaders(listName, list, required);
+                if (headerResult.interrupted)
+                    return;
+                list = headerResult.list;
+                active = (0, sorter_1.activeItems)(list);
             }
             const plan = (0, sorter_1.createSortPlan)(list, this.markets, this.routes, this.products, this.fallbackMarket, priority, this.minimumItemsPerMarket, this.marketHeadersEnabled);
             await this.setStateAsync('info.lastPlan', JSON.stringify({ listName, plan }, null, 2), true);
@@ -805,7 +894,8 @@ class ShoppingRoute extends utils.Adapter {
                         await this.activateSortSafetyStop(listName, `${listName}: Alexa2-Metadaten für ID ${step.id} waren vor Sortierschritt ${index + 1}/${program.steps.length} nicht synchron.`, journal);
                         return;
                     }
-                    await this.writeAlexaState(valueStateId, step.to);
+                    this.setActiveListTransition({ type: 'item', id: step.id, from: step.from, to: step.to });
+                    await this.writeAlexaState(valueStateId, step.to, 'content');
                     const confirmation = index + 1 < program.steps.length
                         ? await this.waitForAlexaWriteSettlement(listName, step.id, step.from, step.to, beforeTs, undefined, 'content')
                         : await this.waitForAlexaValueConfirmation(listName, step.id, step.from, step.to, beforeTs, undefined, 'content');
@@ -828,6 +918,7 @@ class ShoppingRoute extends utils.Adapter {
                         return;
                     }
                     expectedValues.set(step.id, step.to);
+                    this.confirmActiveListValue(step.id, step.to);
                     journal.confirmedSteps = index + 1;
                     await this.persistSortTransaction(journal);
                     written += 1;
@@ -907,26 +998,141 @@ class ShoppingRoute extends utils.Adapter {
         }
         finally {
             this.finishSortRuntimePhase(runtime);
+            await this.finalizeActiveListChangeTracking(listName, runtime);
             this.sortingListName = '';
+            this.activeListChangeTracker = null;
             try {
                 await this.persistRuntimeConfig();
                 await this.refreshExports();
                 await this.updateFeedbackReport();
-                if (this.listChangedDuringSort) {
-                    this.pendingLists.add(listName);
-                    if (!this.pendingSortRequestedAt.has(listName)) {
-                        this.pendingSortRequestedAt.set(listName, Date.now());
-                    }
-                }
                 if (this.pendingLists.size > 0)
                     this.armSortTimer(this.sortStabilityDelayMs);
             }
             finally {
                 this.logSortRuntime(listName, runtime);
+                if (!this.pendingLists.has(listName))
+                    this.sortSeriesRuns.delete(listName);
                 if (this.activeSortRuntime === runtime)
                     this.activeSortRuntime = null;
             }
         }
+    }
+    missingRequiredMarketHeaders(list, required) {
+        const present = new Set();
+        for (const item of list) {
+            const market = (0, market_plan_1.marketFromHeader)(String(item?.value || ''), this.markets);
+            if (market)
+                present.add(market.toLocaleLowerCase('de'));
+        }
+        return required.filter(market => !present.has(market.toLocaleLowerCase('de')));
+    }
+    estimateHeaderCreationWrites(list, markets, listName) {
+        const timestamps = list.flatMap(item => [Number(item.createdDateTime) || 0, Number(item.updatedDateTime) || 0]);
+        const newest = Math.max(Date.now(), ...timestamps);
+        const simulated = list.map(item => ({ ...item }));
+        markets.forEach((market, index) => simulated.push({
+            id: `ShoppingRouteHeaderPlan${index}`,
+            value: (0, market_plan_1.formatMarketHeader)(market),
+            completed: false,
+            createdDateTime: newest + index + 1,
+            updatedDateTime: newest + index + 1,
+        }));
+        const priority = this.priorityMarketForList(listName);
+        const plan = (0, sorter_1.createSortPlan)(simulated, this.markets, this.routes, this.products, this.fallbackMarket, priority, this.minimumItemsPerMarket, this.marketHeadersEnabled);
+        const currentOrderIds = (0, buffered_sort_1.sortIdsByAlexaUpdatedTime)((0, sorter_1.activeItems)(simulated));
+        const desiredOrderIds = [...plan]
+            .sort((left, right) => Number(left.position) - Number(right.position))
+            .map(entry => String(entry.id));
+        const existingValues = plan.flatMap(entry => [String(entry.from), String(entry.to)]);
+        const marker = (0, buffered_sort_1.createBufferedSortMarker)('HeaderPlan', 0, existingValues);
+        const program = (0, buffered_sort_1.createBufferedSortProgram)(plan, marker, { currentOrderIds, desiredOrderIds });
+        const afterContent = [...currentOrderIds];
+        for (const step of program.steps) {
+            const currentIndex = afterContent.indexOf(step.id);
+            if (currentIndex >= 0)
+                afterContent.splice(currentIndex, 1);
+            afterContent.push(step.id);
+        }
+        const touches = (0, buffered_sort_1.createVisibleOrderRefreshPlan)(afterContent, desiredOrderIds);
+        return markets.length + program.amazonWrites + touches.length * 2;
+    }
+    optimizedMissingHeaderOrder(list, required, listName) {
+        const missing = this.missingRequiredMarketHeaders(list, required);
+        if (missing.length < 2)
+            return missing;
+        try {
+            const normalWrites = this.estimateHeaderCreationWrites(list, missing, listName);
+            const optimized = (0, market_plan_1.optimizeMarketHeaderCreationOrder)(missing, order => this.estimateHeaderCreationWrites(list, order, listName));
+            const optimizedWrites = this.estimateHeaderCreationWrites(list, optimized, listName);
+            if (optimizedWrites < normalWrites) {
+                this.log.info(`${listName}: Erzeugungsreihenfolge für ${missing.length} Marktüberschriften reduziert die geschätzten Amazon-Writes von ${normalWrites} auf ${optimizedWrites}.`);
+            }
+            return optimized;
+        }
+        catch (error) {
+            this.log.debug(`${listName}: Marktüberschriften-Reihenfolge bleibt unverändert, da die Vorabschätzung nicht möglich war: ${error instanceof Error ? error.message : String(error)}`);
+            return missing;
+        }
+    }
+    async waitForMarketHeaderAction(listName, expected, transition) {
+        let elapsedMs = 0;
+        let latest = await this.readList(listName);
+        while (true) {
+            if (this.isUnloading)
+                return { result: 'ambiguous', list: latest };
+            const observation = (0, list_change_tracking_1.classifyHeaderActionObservation)(latest, expected, transition);
+            if (observation === 'confirmed' || observation === 'ambiguous') {
+                return { result: observation, list: latest };
+            }
+            if (elapsedMs >= ALEXA_CONFIRMATION_TIMEOUT_MS) {
+                return { result: 'not-applied', list: latest };
+            }
+            const delayMs = Math.min(ALEXA_CONFIRMATION_POLL_MS, ALEXA_CONFIRMATION_TIMEOUT_MS - elapsedMs);
+            await this.wait(delayMs);
+            elapsedMs += delayMs;
+            latest = await this.readList(listName);
+        }
+    }
+    async reconcileMarketHeaders(listName, initialList, required) {
+        let list = initialList;
+        let creationOrder = this.optimizedMissingHeaderOrder(list, required, listName);
+        const maximumActions = list.length + this.markets.length * 2 + 10;
+        for (let actionIndex = 0; actionIndex < maximumActions; actionIndex++) {
+            const planned = (0, market_plan_1.planMarketHeaderAction)(list, required, this.markets, this.fallbackMarket, this.marketHeadersEnabled);
+            if (!planned)
+                return { list, interrupted: false };
+            let action = planned;
+            if (planned.type === 'create' && creationOrder.length > 0) {
+                const market = creationOrder.shift();
+                if (market)
+                    action = { type: 'create', market, value: (0, market_plan_1.formatMarketHeader)(market) };
+            }
+            const expected = (0, list_change_tracking_1.activeListValues)(list);
+            const transition = action.type === 'create'
+                ? { type: 'header-create', value: action.value }
+                : { type: 'header-delete', id: action.id };
+            this.setActiveListTransition(transition);
+            await this.applyMarketHeaderAction(listName, action);
+            const settlement = await this.waitForMarketHeaderAction(listName, expected, transition);
+            if (settlement.result !== 'confirmed') {
+                this.setActiveListTransition(undefined);
+                this.pendingLists.add(listName);
+                if (!this.pendingSortRequestedAt.has(listName)) {
+                    this.pendingSortRequestedAt.set(listName, Date.now());
+                }
+                this.log.warn(settlement.result === 'not-applied'
+                    ? `${listName}: Marktüberschrift ${action.market} wurde innerhalb des Bestätigungsfensters nicht angewendet; genau eine neue Prüfung folgt.`
+                    : `${listName}: Während der Marktüberschrift ${action.market} wurde eine externe Listenänderung erkannt; genau eine neue Berechnung folgt.`);
+                return { list: settlement.list, interrupted: true };
+            }
+            list = settlement.list;
+            this.updateActiveListExpectation(list);
+            if (action.type !== 'create')
+                creationOrder = this.optimizedMissingHeaderOrder(list, required, listName);
+        }
+        this.pendingLists.add(listName);
+        this.log.error(`${listName}: Marktüberschriften konnten nicht innerhalb der begrenzten Aktionszahl abgeglichen werden.`);
+        return { list, interrupted: true };
     }
     visibleOrderRefreshIds(list, plan) {
         const orderedPlan = [...plan].sort((left, right) => Number(left.position) - Number(right.position));
@@ -1056,7 +1262,12 @@ class ShoppingRoute extends utils.Adapter {
         const startWaitMs = Math.max(0, runtime.startedAt - runtime.requestedAt);
         const readinessMs = sum(runtime.readiness);
         const confirmationMs = sum(runtime.confirmation);
+        const totalWrites = Object.values(runtime.writes).reduce((total, value) => total + value, 0);
         this.log.info(`${listName} Laufzeit: gesamt ${totalMs} ms | Startwartezeit ${startWaitMs} ms | ` +
+            `Serie ${runtime.seriesRuns} Lauf/Läufe | Amazon-Writes ${totalWrites} ` +
+            `(Inhalt ${runtime.writes.content}, Header ${runtime.writes.header}, Marker ${runtime.writes.marker}, ` +
+            `Restore ${runtime.writes.restore}, Rollback ${runtime.writes.rollback}) | ` +
+            `Eigen-Trigger ${runtime.suppressedSelfTriggers} resorbiert | externe Änderungen ${runtime.externalChangeEvents} | ` +
             `Planung ${runtime.planningMs} ms | Inhalt ${runtime.contentMs} ms | ` +
             `Reihenfolge ${runtime.visibleOrderMs} ms | ${runtime.visibleTouches} Touches | ` +
             `Readiness ${readinessMs} ms (Inhalt ${sum(runtime.readiness, 'content')}, Marker ${sum(runtime.readiness, 'marker')}, ` +
@@ -1148,16 +1359,19 @@ class ShoppingRoute extends utils.Adapter {
                 return { writes, interrupted: true, additionalItems };
             }
             const markerBaseline = await this.readAlexaWriteSnapshot(listName, id);
-            await this.writeAlexaState(valueStateId, marker);
+            this.setActiveListTransition({ type: 'item', id, from: expectedValue, to: marker });
+            await this.writeAlexaState(valueStateId, marker, 'marker');
             const markerConfirmation = await this.waitForAlexaWriteSettlement(listName, id, expectedValue, marker, 0, markerBaseline, 'marker', 'restore');
             if (markerConfirmation !== 'confirmed') {
                 await this.activateSortSafetyStop(listName, `${listName}: Temporärer Reihenfolge-Marker für ID ${id} wurde nicht eindeutig bestätigt.`, journal);
                 return { writes, interrupted: true, additionalItems };
             }
             journal.confirmedSteps = 1;
+            this.confirmActiveListValue(id, marker);
             await this.persistSortTransaction(journal);
             const restoreBaseline = await this.readAlexaWriteSnapshot(listName, id);
-            await this.writeAlexaState(valueStateId, expectedValue);
+            this.setActiveListTransition({ type: 'item', id, from: marker, to: expectedValue });
+            await this.writeAlexaState(valueStateId, expectedValue, 'restore');
             const restored = await this.waitForAlexaValueConfirmation(listName, id, marker, expectedValue, 0, restoreBaseline, 'restore');
             if (restored !== 'confirmed') {
                 await this.activateSortSafetyStop(listName, restored === 'not-applied'
@@ -1166,6 +1380,7 @@ class ShoppingRoute extends utils.Adapter {
                 return { writes, interrupted: true, additionalItems };
             }
             journal.confirmedSteps = 2;
+            this.confirmActiveListValue(id, expectedValue);
             await this.persistSortTransaction(journal);
             if (!(await this.clearSortTransaction())) {
                 return { writes, interrupted: true, additionalItems };
@@ -1447,6 +1662,7 @@ class ShoppingRoute extends utils.Adapter {
                     return false;
                 if (state === 'from') {
                     journal.confirmedSteps -= 1;
+                    this.confirmActiveListValue(step.id, step.from);
                     if (!(await this.persistSortTransaction(journal)))
                         return false;
                     continue;
@@ -1468,7 +1684,8 @@ class ShoppingRoute extends utils.Adapter {
                 const beforeState = await this.getForeignStateAsync(valueStateId);
                 const beforeTs = Number(beforeState?.ts || 0);
                 const rollbackBaseline = await this.readAlexaWriteSnapshot(journal.listName, step.id);
-                await this.writeAlexaState(valueStateId, step.from);
+                this.setActiveListTransition({ type: 'item', id: step.id, from: step.to, to: step.from });
+                await this.writeAlexaState(valueStateId, step.from, 'rollback');
                 let confirmation = journal.confirmedSteps > 1
                     ? await this.waitForAlexaWriteSettlement(journal.listName, step.id, step.to, step.from, beforeTs, rollbackBaseline, 'rollback')
                     : await this.waitForAlexaValueConfirmation(journal.listName, step.id, step.to, step.from, beforeTs, rollbackBaseline, 'rollback');
@@ -1481,6 +1698,7 @@ class ShoppingRoute extends utils.Adapter {
                     return false;
                 }
                 journal.confirmedSteps -= 1;
+                this.confirmActiveListValue(step.id, step.from);
                 if (!(await this.persistSortTransaction(journal)))
                     return false;
             }
@@ -1579,10 +1797,10 @@ class ShoppingRoute extends utils.Adapter {
         const stateObject = await this.getForeignObjectAsync(stateId);
         if (!stateObject)
             throw new Error(`Alexa-Datenpunkt für Marktüberschrift fehlt: ${stateId}`);
-        await this.writeAlexaState(stateId, value);
+        await this.writeAlexaState(stateId, value, 'header');
         this.log.info(`${listName}: Marktüberschrift ${action.market} – ${action.type}.`);
     }
-    async writeAlexaState(stateId, value) {
+    async writeAlexaState(stateId, value, runtimePhase) {
         let lastError;
         for (let attempt = 0; attempt <= this.maxWriteRetries; attempt++) {
             try {
@@ -1598,6 +1816,8 @@ class ShoppingRoute extends utils.Adapter {
                     this.activeAlexaWrites -= 1;
                 }
                 this.writeTimestamps.push(Date.now());
+                if (runtimePhase && this.activeSortRuntime)
+                    this.activeSortRuntime.writes[runtimePhase] += 1;
                 this.traffic.alexaWrites += 1;
                 this.traffic.lastAlexaWrite = new Date().toISOString();
                 await this.persistTrafficMetrics();

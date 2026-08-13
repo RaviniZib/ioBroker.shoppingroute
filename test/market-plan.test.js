@@ -5,6 +5,7 @@ const {
     formatMarketHeader,
     marketFromHeader,
     optimizeMarketAssignments,
+    optimizeMarketHeaderCreationOrder,
     planMarketHeaderAction,
     realActiveItems,
     requiredMarkets,
@@ -107,4 +108,12 @@ test('sort plan places the header before its market while retaining fixed Alexa 
     const plan = createSortPlan(list, markets, routes, products, 'Ohne Markt', '', 3, true);
     assert.deepEqual(plan.map(entry => entry.id), ['id1', 'id2', 'idh']);
     assert.deepEqual(plan.map(entry => entry.to), ['---- ALDI ----', 'Eier', 'Milch']);
+});
+
+test('header creation order optimizer exhaustively chooses the lowest Amazon-write score', () => {
+    const order = optimizeMarketHeaderCreationOrder(
+        ['ALDI', 'LIDL', 'REWE', 'EDEKA', 'KAUFLAND'],
+        candidate => candidate.join(',') === 'KAUFLAND,REWE,EDEKA,LIDL,ALDI' ? 70 : 75,
+    );
+    assert.deepEqual(order, ['KAUFLAND', 'REWE', 'EDEKA', 'LIDL', 'ALDI']);
 });
