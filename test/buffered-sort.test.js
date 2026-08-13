@@ -4,6 +4,32 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { createBufferedSortMarker, createBufferedSortProgram } = require('../build/lib/buffered-sort');
 
+function applyVisibleWrites(currentOrder, steps) {
+    const order = [...currentOrder];
+    for (const step of steps) {
+        const index = order.indexOf(step.id);
+        assert.ok(index >= 0, `unknown visible ID ${step.id}`);
+        order.splice(index, 1);
+        order.push(step.id);
+    }
+    return order;
+}
+
+function minimalTouches(current, desired) {
+    let currentIndex = 0;
+    let keepPrefix = 0;
+    for (; keepPrefix < desired.length; keepPrefix++) {
+        const found = current.indexOf(desired[keepPrefix], currentIndex);
+        if (found < 0) break;
+        currentIndex = found + 1;
+    }
+    return desired.slice(keepPrefix);
+}
+
+function visiblePreference(ids) {
+    return { currentOrderIds: ids, desiredOrderIds: ids };
+}
+
 test('normal buffer marker contains only Alexa-compatible letters, digits and spaces', () => {
     const marker = createBufferedSortMarker('msqakdsi-unsafe_suffix', 0, []);
     assert.equal(marker, 'ShoppingRoute Puffer msqakdsiunsafesuffix 0');
@@ -68,6 +94,88 @@ test('buffered sorter rotates a three-item cycle with one extra write', () => {
     assert.deepEqual(valuesFor(sourcePlan, applySteps(sourcePlan, program)), ['B', 'C', 'A']);
 });
 
+test('content-write rotation removes the visible touch from a two-item swap', () => {
+    const sourcePlan = plan(['A', 'B'], ['B', 'A']);
+    const ids = sourcePlan.map(entry => entry.id);
+    const baseline = createBufferedSortProgram(sourcePlan, 'BUFFER');
+    const optimized = createBufferedSortProgram(sourcePlan, 'BUFFER', visiblePreference(ids));
+    const baselineTouches = minimalTouches(applyVisibleWrites(ids, baseline.steps), ids);
+    const optimizedTouches = minimalTouches(applyVisibleWrites(ids, optimized.steps), ids);
+
+    assert.equal(baseline.amazonWrites, 3);
+    assert.equal(optimized.amazonWrites, 3);
+    assert.equal(baselineTouches.length, 1);
+    assert.equal(optimizedTouches.length, 0);
+    assert.equal(baseline.amazonWrites + baselineTouches.length * 2, 5);
+    assert.equal(optimized.amazonWrites + optimizedTouches.length * 2, 3);
+    assert.deepEqual(valuesFor(sourcePlan, applySteps(sourcePlan, optimized)), ['B', 'A']);
+});
+
+test('content-write rotation reduces a three-item cycle from two visible touches to one', () => {
+    const sourcePlan = plan(['A', 'B', 'C'], ['B', 'C', 'A']);
+    const ids = sourcePlan.map(entry => entry.id);
+    const baseline = createBufferedSortProgram(sourcePlan, 'BUFFER');
+    const optimized = createBufferedSortProgram(sourcePlan, 'BUFFER', visiblePreference(ids));
+    const baselineTouches = minimalTouches(applyVisibleWrites(ids, baseline.steps), ids);
+    const optimizedTouches = minimalTouches(applyVisibleWrites(ids, optimized.steps), ids);
+
+    assert.equal(baseline.amazonWrites, 4);
+    assert.equal(optimized.amazonWrites, 4);
+    assert.equal(baselineTouches.length, 2);
+    assert.equal(optimizedTouches.length, 1);
+    assert.equal(baseline.amazonWrites + baselineTouches.length * 2, 8);
+    assert.equal(optimized.amazonWrites + optimizedTouches.length * 2, 6);
+    assert.deepEqual(valuesFor(sourcePlan, applySteps(sourcePlan, optimized)), ['B', 'C', 'A']);
+});
+
+test('independent content cycles are ordered to eliminate all later visible touches', () => {
+    const sourcePlan = plan(['A', 'B', 'C', 'D'], ['B', 'A', 'D', 'C']);
+    const ids = sourcePlan.map(entry => entry.id);
+    const baseline = createBufferedSortProgram(sourcePlan, 'BUFFER');
+    const optimized = createBufferedSortProgram(sourcePlan, 'BUFFER', visiblePreference(ids));
+    const baselineTouches = minimalTouches(applyVisibleWrites(ids, baseline.steps), ids);
+    const optimizedTouches = minimalTouches(applyVisibleWrites(ids, optimized.steps), ids);
+
+    assert.equal(baseline.amazonWrites, optimized.amazonWrites);
+    assert.equal(baselineTouches.length, 3);
+    assert.equal(optimizedTouches.length, 0);
+    assert.equal(baseline.amazonWrites + baselineTouches.length * 2, 12);
+    assert.equal(optimized.amazonWrites + optimizedTouches.length * 2, 6);
+    assert.deepEqual(valuesFor(sourcePlan, applySteps(sourcePlan, optimized)), ['B', 'A', 'D', 'C']);
+});
+
+test('duplicate texts retain distinct IDs and exact final values while reusing content writes for order', () => {
+    const sourcePlan = plan(['A', 'A', 'B', 'B'], ['B', 'B', 'A', 'A']);
+    const ids = sourcePlan.map(entry => entry.id);
+    const baseline = createBufferedSortProgram(sourcePlan, 'BUFFER');
+    const optimized = createBufferedSortProgram(sourcePlan, 'BUFFER', visiblePreference(ids));
+    const baselineTouches = minimalTouches(applyVisibleWrites(ids, baseline.steps), ids);
+    const optimizedTouches = minimalTouches(applyVisibleWrites(ids, optimized.steps), ids);
+
+    assert.equal(optimized.amazonWrites, 5);
+    assert.deepEqual(valuesFor(sourcePlan, applySteps(sourcePlan, optimized)), ['B', 'B', 'A', 'A']);
+    assert.equal(new Set(applyVisibleWrites(ids, optimized.steps)).size, ids.length);
+    assert.equal(baseline.amazonWrites + baselineTouches.length * 2, 11);
+    assert.equal(optimized.amazonWrites + optimizedTouches.length * 2, 7);
+});
+
+test('target-aware Euler traversal minimizes a duplicate-value content cycle', () => {
+    const sourcePlan = plan(['A', 'B', 'A', 'C', 'B', 'C'], ['B', 'C', 'B', 'A', 'C', 'A']);
+    const ids = sourcePlan.map(entry => entry.id);
+    const baseline = createBufferedSortProgram(sourcePlan, 'BUFFER');
+    const optimized = createBufferedSortProgram(sourcePlan, 'BUFFER', visiblePreference(ids));
+    const baselineTouches = minimalTouches(applyVisibleWrites(ids, baseline.steps), ids);
+    const optimizedTouches = minimalTouches(applyVisibleWrites(ids, optimized.steps), ids);
+
+    assert.equal(baseline.amazonWrites, 7);
+    assert.equal(optimized.amazonWrites, 7);
+    assert.equal(baselineTouches.length, 5);
+    assert.equal(optimizedTouches.length, 1);
+    assert.equal(baseline.amazonWrites + baselineTouches.length * 2, 17);
+    assert.equal(optimized.amazonWrites + optimizedTouches.length * 2, 9);
+    assert.deepEqual(valuesFor(sourcePlan, applySteps(sourcePlan, optimized)), ['B', 'C', 'B', 'A', 'C', 'A']);
+});
+
 test('duplicate values stay in one Euler circuit instead of creating extra swaps', () => {
     const sourcePlan = plan(['A', 'A', 'B', 'B'], ['B', 'B', 'A', 'A']);
     const program = createBufferedSortProgram(sourcePlan, 'BUFFER');
@@ -117,6 +225,58 @@ test('reversing every confirmed prefix restores the exact original list', () => 
             values.set(step.id, step.from);
         }
         assert.deepEqual(valuesFor(sourcePlan, values), sourcePlan.map(entry => entry.from));
+    }
+});
+
+test('visible-order optimized journal prefixes remain exactly reversible', () => {
+    const sourcePlan = plan(['A', 'B', 'C', 'D', 'E', 'F'], ['B', 'A', 'D', 'C', 'F', 'E']);
+    const ids = sourcePlan.map(entry => entry.id);
+    const program = createBufferedSortProgram(sourcePlan, 'BUFFER', visiblePreference(ids));
+
+    for (let confirmed = 0; confirmed < program.steps.length; confirmed++) {
+        const values = applySteps(sourcePlan, program, confirmed);
+        for (const step of program.steps.slice(0, confirmed).reverse()) {
+            assert.equal(values.get(step.id), step.to);
+            values.set(step.id, step.from);
+        }
+        assert.deepEqual(valuesFor(sourcePlan, values), sourcePlan.map(entry => entry.from));
+    }
+});
+
+test('content-order optimization never increases Amazon writes or remaining minimal touches', () => {
+    let seed = 0x5eed1234;
+    const random = () => {
+        seed = (seed * 1664525 + 1013904223) >>> 0;
+        return seed / 2 ** 32;
+    };
+    const shuffle = values => {
+        const result = [...values];
+        for (let index = result.length - 1; index > 0; index--) {
+            const other = Math.floor(random() * (index + 1));
+            [result[index], result[other]] = [result[other], result[index]];
+        }
+        return result;
+    };
+
+    for (let run = 0; run < 500; run++) {
+        const length = 2 + Math.floor(random() * 10);
+        const source = Array.from({ length }, () => String.fromCharCode(65 + Math.floor(random() * Math.min(5, length))));
+        const target = shuffle(source);
+        const sourcePlan = plan(source, target);
+        const desiredIds = sourcePlan.map(entry => entry.id);
+        const currentIds = shuffle(desiredIds);
+        const marker = `BUFFER_${run}`;
+        const baseline = createBufferedSortProgram(sourcePlan, marker);
+        const optimized = createBufferedSortProgram(sourcePlan, marker, {
+            currentOrderIds: currentIds,
+            desiredOrderIds: desiredIds,
+        });
+        const baselineTouches = minimalTouches(applyVisibleWrites(currentIds, baseline.steps), desiredIds);
+        const optimizedTouches = minimalTouches(applyVisibleWrites(currentIds, optimized.steps), desiredIds);
+
+        assert.equal(optimized.amazonWrites, baseline.amazonWrites);
+        assert.ok(optimizedTouches.length <= baselineTouches.length);
+        assert.deepEqual(valuesFor(sourcePlan, applySteps(sourcePlan, optimized)), target);
     }
 });
 

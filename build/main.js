@@ -50,6 +50,7 @@ const confirmation_wait_1 = require("./lib/confirmation-wait");
 const alexa_write_confirmation_1 = require("./lib/alexa-write-confirmation");
 const alexa_write_readiness_1 = require("./lib/alexa-write-readiness");
 const alexa_write_settlement_1 = require("./lib/alexa-write-settlement");
+const recovery_state_1 = require("./lib/recovery-state");
 const VERSION = '0.3.2';
 const LIST_STABILITY_MS = 5000;
 const ALEXA_CONFIRMATION_TIMEOUT_MS = 10000;
@@ -86,6 +87,12 @@ class ShoppingRoute extends utils.Adapter {
     routesDirty = false;
     runtimeRoutes = [];
     compatibilityTesting = false;
+    isUnloading = false;
+    recoveryInProgress = true;
+    recoveryWritesAllowed = false;
+    activeAlexaWrites = 0;
+    journalOperation = null;
+    lastSortTransactionPayload = '';
     writeCapability = 'unknown';
     compatibilityDetail = 'Noch nicht geprüft.';
     alexa2Version = 'unbekannt';
@@ -202,7 +209,6 @@ class ShoppingRoute extends utils.Adapter {
         await this.updateTemporaryMarketStateOptions();
         await this.persistRuntimeConfig();
         await this.setStateAsync('info.connection', false, true);
-        await this.setStateAsync('info.lastError', '', true);
         await this.setStateAsync('info.versionInstalled', VERSION, true);
         await this.setStateAsync('control.sortNow', false, true);
         await this.setStateAsync('control.compatibilityTest', false, true);
@@ -248,7 +254,15 @@ class ShoppingRoute extends utils.Adapter {
             return;
         }
         await this.runStartupCompatibilityCheck();
-        await this.recoverInterruptedSortTransaction();
+        const recoverySucceeded = await this.recoverInterruptedSortTransaction();
+        if (this.isUnloading)
+            return;
+        if (!recoverySucceeded) {
+            this.log.warn('Normale Sortierläufe bleiben nach nicht abgeschlossener Recovery gesperrt.');
+            return;
+        }
+        this.recoveryInProgress = false;
+        await this.setStateAsync('info.lastError', '', true);
         await this.refreshExports();
         await this.checkNpmVersion();
         await this.updateFeedbackReport();
@@ -377,7 +391,7 @@ class ShoppingRoute extends utils.Adapter {
         }
     }
     async onStateChange(id, state) {
-        if (!state)
+        if (!state || this.isUnloading)
             return;
         const local = `${this.namespace}.`;
         if (id === `${local}control.sortNow` && !state.ack && state.val === true) {
@@ -466,19 +480,38 @@ class ShoppingRoute extends utils.Adapter {
                 return;
             if (this.sortingListName === list.name)
                 this.listChangedDuringSort = true;
+            if (this.recoveryInProgress) {
+                this.pendingLists.add(list.name);
+                this.pendingSortRequestedAt.set(list.name, Date.now());
+                return;
+            }
             this.scheduleSort(list.name, this.sortStabilityDelayMs);
         }
     }
     onUnload(callback) {
+        this.isUnloading = true;
         if (this.sortTimer)
             this.clearTimeout(this.sortTimer);
+        this.sortTimer = null;
         if (this.versionTimer)
             this.clearInterval(this.versionTimer);
-        void this.setStateAsync('info.connection', false, true)
-            .catch(() => undefined)
-            .finally(callback);
+        this.versionTimer = null;
+        this.pendingLists.clear();
+        this.pendingSortRequestedAt.clear();
+        void (async () => {
+            try {
+                await this.journalOperation?.catch(() => undefined);
+                if (this.lastSortTransactionPayload) {
+                    await this.setStateAsync('info.sortTransaction', this.lastSortTransactionPayload, true);
+                }
+                await this.setStateAsync('info.connection', false, true);
+            }
+            catch { /* adapter is already stopping */ }
+        })().finally(callback);
     }
     scheduleAll(delay, requestedAt = Date.now()) {
+        if (this.isUnloading)
+            return;
         for (const list of this.listConfigs) {
             this.pendingLists.add(list.name);
             this.pendingSortRequestedAt.set(list.name, requestedAt);
@@ -486,11 +519,15 @@ class ShoppingRoute extends utils.Adapter {
         this.armSortTimer(delay);
     }
     scheduleSort(listName, delay, requestedAt = Date.now()) {
+        if (this.isUnloading)
+            return;
         this.pendingLists.add(listName);
         this.pendingSortRequestedAt.set(listName, requestedAt);
         this.armSortTimer(delay);
     }
     armSortTimer(delay) {
+        if (this.isUnloading || this.recoveryInProgress)
+            return;
         if (this.sortTimer)
             this.clearTimeout(this.sortTimer);
         this.sortTimer = this.setTimeout(() => {
@@ -499,7 +536,7 @@ class ShoppingRoute extends utils.Adapter {
         }, delay);
     }
     async processPendingSorts() {
-        if (this.sortingListName)
+        if (this.isUnloading || this.recoveryInProgress || this.sortingListName)
             return;
         while (this.pendingLists.size > 0) {
             const listName = this.pendingLists.values().next().value;
@@ -526,6 +563,11 @@ class ShoppingRoute extends utils.Adapter {
         return parsed;
     }
     async sortList(listName, requestedAt = Date.now()) {
+        if (this.isUnloading || this.recoveryInProgress) {
+            if (!this.isUnloading)
+                this.pendingLists.add(listName);
+            return;
+        }
         if (this.sortingListName) {
             this.pendingLists.add(listName);
             return;
@@ -676,12 +718,18 @@ class ShoppingRoute extends utils.Adapter {
             const expectedValues = new Map(Object.entries(originalValues));
             const transactionId = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
             const existingValues = [...Object.values(originalValues), ...Object.values(targetValues)];
+            const visibleOrderPreference = {
+                currentOrderIds: (0, buffered_sort_1.sortIdsByAlexaUpdatedTime)(active),
+                desiredOrderIds: [...plan]
+                    .sort((left, right) => Number(left.position) - Number(right.position))
+                    .map(entry => String(entry.id)),
+            };
             let program;
             let marker = '';
             for (let attempt = 0; attempt < 10; attempt++) {
                 marker = (0, buffered_sort_1.createBufferedSortMarker)(transactionId, attempt, existingValues);
                 try {
-                    program = (0, buffered_sort_1.createBufferedSortProgram)(plan, marker);
+                    program = (0, buffered_sort_1.createBufferedSortProgram)(plan, marker, visibleOrderPreference);
                     break;
                 }
                 catch (error) {
@@ -842,7 +890,8 @@ class ShoppingRoute extends utils.Adapter {
                 this.log.error(`${listName}: Gepufferte Sortierung abgebrochen und zurückgesetzt: ${message}`);
                 return;
             }
-            await this.persistSortTransaction(null);
+            if (!(await this.clearSortTransaction()))
+                return;
             this.transitionSortRuntimePhase(runtime, 'visible-order');
             const visibleResult = await this.refreshVisibleAlexaOrder(listName, plan);
             if (visibleResult.interrupted)
@@ -1117,7 +1166,9 @@ class ShoppingRoute extends utils.Adapter {
             }
             journal.confirmedSteps = 2;
             await this.persistSortTransaction(journal);
-            await this.persistSortTransaction(null);
+            if (!(await this.clearSortTransaction())) {
+                return { writes, interrupted: true, additionalItems };
+            }
             writes += touchProgram.amazonWrites;
             if (index + 1 < touchIds.length) {
                 if (this.apiSafeMode &&
@@ -1151,13 +1202,49 @@ class ShoppingRoute extends utils.Adapter {
         return { writes, interrupted: false, additionalItems };
     }
     async persistSortTransaction(journal) {
-        await this.setStateAsync('info.sortTransaction', journal ? JSON.stringify(journal, null, 2) : '{}', true);
+        if (this.isUnloading)
+            return false;
+        const payload = JSON.stringify(journal, null, 2);
+        this.lastSortTransactionPayload = payload;
+        const operation = this.setStateAsync('info.sortTransaction', payload, true);
+        this.journalOperation = operation;
+        try {
+            await operation;
+            return !this.isUnloading;
+        }
+        finally {
+            if (this.journalOperation === operation)
+                this.journalOperation = null;
+        }
+    }
+    async clearSortTransaction() {
+        if (this.isUnloading || this.activeAlexaWrites > 0)
+            return false;
+        const operation = this.setStateAsync('info.sortTransaction', '{}', true);
+        this.journalOperation = operation;
+        try {
+            await operation;
+            if (this.isUnloading) {
+                if (this.lastSortTransactionPayload) {
+                    await this.setStateAsync('info.sortTransaction', this.lastSortTransactionPayload, true);
+                }
+                return false;
+            }
+            this.lastSortTransactionPayload = '';
+            return true;
+        }
+        finally {
+            if (this.journalOperation === operation)
+                this.journalOperation = null;
+        }
     }
     async readSortTransaction() {
         const state = await this.getStateAsync('info.sortTransaction');
         const raw = String(state?.val || '').trim();
-        if (!raw || raw === '{}')
+        if (!raw || raw === '{}') {
+            this.lastSortTransactionPayload = '';
             return null;
+        }
         try {
             const parsed = JSON.parse(raw);
             if (parsed?.version !== 1 ||
@@ -1172,6 +1259,7 @@ class ShoppingRoute extends utils.Adapter {
                 !['applying', 'rollback', 'failed-applying', 'failed-rollback'].includes(parsed.status)) {
                 throw new Error('ungültige Journal-Struktur');
             }
+            this.lastSortTransactionPayload = raw;
             return parsed;
         }
         catch (error) {
@@ -1257,110 +1345,105 @@ class ShoppingRoute extends utils.Adapter {
             this.recordAlexaWaitRuntime('readiness', id, runtimePhase, startedAt);
         }
     }
+    async waitForRecoveryStepState(listName, id, from, to) {
+        let latest = 'ambiguous';
+        await (0, confirmation_wait_1.waitForConfirmation)({
+            timeoutMs: ALEXA_CONFIRMATION_TIMEOUT_MS,
+            pollIntervalMs: ALEXA_CONFIRMATION_POLL_MS,
+            pause: ms => this.wait(ms),
+            probe: async () => {
+                if (this.isUnloading)
+                    return 'confirmed';
+                latest = (0, recovery_state_1.classifyRecoveryStepState)(from, to, await this.readAlexaWriteReadinessSnapshot(listName, id));
+                return latest === 'ambiguous' ? 'ambiguous' : 'confirmed';
+            },
+        });
+        return latest;
+    }
+    async waitForRecoveryTargetConsistency(journal) {
+        const targets = Object.entries(journal.targetValues);
+        const result = await (0, confirmation_wait_1.waitForConfirmation)({
+            timeoutMs: ALEXA_CONFIRMATION_TIMEOUT_MS,
+            pollIntervalMs: ALEXA_CONFIRMATION_POLL_MS,
+            pause: ms => this.wait(ms),
+            probe: async () => {
+                if (this.isUnloading)
+                    return 'ambiguous';
+                const snapshots = await Promise.all(targets.map(([id]) => this.readAlexaWriteReadinessSnapshot(journal.listName, id)));
+                return snapshots.every((snapshot, index) => (0, alexa_write_readiness_1.isAlexaWriteReady)(targets[index][1], snapshot))
+                    ? 'confirmed'
+                    : 'ambiguous';
+            },
+        });
+        return !this.isUnloading && result === 'confirmed';
+    }
     async reconcilePendingTransactionStep(journal) {
         if (journal.confirmedSteps >= journal.steps.length)
             return 'confirmed';
         const step = journal.steps[journal.confirmedSteps];
-        const valueStateId = `${this.alexaInstance}.Lists.${journal.listName}.items.${step.id}.value`;
-        const [state, list] = await Promise.all([
-            this.getForeignStateAsync(valueStateId),
-            this.readList(journal.listName),
-        ]);
-        const item = list.find(entry => String(entry?.id || '') === step.id);
-        const listValue = item ? String(item.value || '').trim() : undefined;
-        const stateValue = state ? String(state.val ?? '').trim() : undefined;
-        if (listValue === step.to && stateValue === step.to && state?.ack === true) {
-            const writeReady = await this.waitForAlexaWriteReadiness(journal.listName, step.id, step.to, 'rollback');
-            if (!writeReady)
-                return 'ambiguous';
+        const state = await this.waitForRecoveryStepState(journal.listName, step.id, step.from, step.to);
+        if (this.isUnloading)
+            return 'ambiguous';
+        if (state === 'to') {
             journal.confirmedSteps += 1;
-            await this.persistSortTransaction(journal);
+            if (!(await this.persistSortTransaction(journal)))
+                return 'ambiguous';
             return 'confirmed';
         }
-        if (listValue === step.from && stateValue === step.from && state?.ack === true)
+        if (state === 'from')
             return 'not-applied';
-        if (stateValue === step.to && state?.ack === false) {
-            const result = await this.waitForAlexaWriteSettlement(journal.listName, step.id, step.from, step.to, Number(state?.ts || 0), undefined, 'content', 'rollback');
-            if (result === 'confirmed') {
-                journal.confirmedSteps += 1;
-                await this.persistSortTransaction(journal);
-            }
-            return result;
-        }
         return 'ambiguous';
     }
     async reconcilePendingRollbackStep(journal) {
         if (journal.confirmedSteps <= 0)
             return 'confirmed';
         const step = journal.steps[journal.confirmedSteps - 1];
-        const valueStateId = `${this.alexaInstance}.Lists.${journal.listName}.items.${step.id}.value`;
-        const [state, list] = await Promise.all([
-            this.getForeignStateAsync(valueStateId),
-            this.readList(journal.listName),
-        ]);
-        const item = list.find(entry => String(entry?.id || '') === step.id);
-        const listValue = item ? String(item.value || '').trim() : undefined;
-        const stateValue = state ? String(state.val ?? '').trim() : undefined;
-        if (listValue === step.from && stateValue === step.from && state?.ack === true) {
-            if (journal.confirmedSteps > 1) {
-                const writeReady = await this.waitForAlexaWriteReadiness(journal.listName, step.id, step.from, 'rollback');
-                if (!writeReady)
-                    return 'ambiguous';
-            }
+        const state = await this.waitForRecoveryStepState(journal.listName, step.id, step.from, step.to);
+        if (this.isUnloading)
+            return 'ambiguous';
+        if (state === 'from') {
             journal.confirmedSteps -= 1;
-            await this.persistSortTransaction(journal);
+            if (!(await this.persistSortTransaction(journal)))
+                return 'ambiguous';
             return 'confirmed';
         }
-        if (listValue === step.to && stateValue === step.to && state?.ack === true)
+        if (state === 'to')
             return 'not-applied';
-        if (stateValue === step.from && state?.ack === false) {
-            const result = journal.confirmedSteps > 1
-                ? await this.waitForAlexaWriteSettlement(journal.listName, step.id, step.to, step.from, Number(state?.ts || 0), undefined, 'rollback')
-                : await this.waitForAlexaValueConfirmation(journal.listName, step.id, step.to, step.from, Number(state?.ts || 0), undefined, 'rollback');
-            if (result === 'confirmed') {
-                journal.confirmedSteps -= 1;
-                await this.persistSortTransaction(journal);
-            }
-            return result;
-        }
         return 'ambiguous';
     }
     async rollbackBufferedTransaction(journal) {
+        if (this.isUnloading)
+            return false;
         journal.status = 'rollback';
-        await this.persistSortTransaction(journal);
+        if (!(await this.persistSortTransaction(journal)))
+            return false;
         while (journal.confirmedSteps > 0) {
+            if (this.isUnloading)
+                return false;
             const index = journal.confirmedSteps - 1;
             const step = journal.steps[index];
             try {
-                const currentList = await this.readList(journal.listName);
-                const currentItem = currentList.find(item => String(item?.id || '') === step.id);
-                if (!currentItem) {
-                    this.log.warn(`${journal.listName}: Rollback überspringt extern entfernte ID ${step.id}.`);
+                const state = await this.waitForRecoveryStepState(journal.listName, step.id, step.from, step.to);
+                if (this.isUnloading)
+                    return false;
+                if (state === 'from') {
                     journal.confirmedSteps -= 1;
-                    await this.persistSortTransaction(journal);
+                    if (!(await this.persistSortTransaction(journal)))
+                        return false;
                     continue;
                 }
-                const currentValue = String(currentItem.value || '').trim();
-                if (currentValue === step.from) {
-                    journal.confirmedSteps -= 1;
-                    await this.persistSortTransaction(journal);
-                    continue;
-                }
-                if (currentValue !== step.to) {
-                    this.log.warn(`${journal.listName}: Rollback überschreibt extern geänderte ID ${step.id} nicht.`);
-                    journal.confirmedSteps -= 1;
-                    await this.persistSortTransaction(journal);
-                    continue;
+                if (state !== 'to') {
+                    this.log.error(state === 'missing'
+                        ? `${journal.listName}: Rollback-ID ${step.id} fehlt; Journal bleibt erhalten.`
+                        : state === 'foreign'
+                            ? `${journal.listName}: Rollback-ID ${step.id} enthält einen Fremdwert; Journal bleibt erhalten.`
+                            : `${journal.listName}: Rollback-ID ${step.id} ist zwischen JSON und Einzelstates widersprüchlich; Journal bleibt erhalten.`);
+                    return false;
                 }
                 const valueStateId = `${this.alexaInstance}.Lists.${journal.listName}.items.${step.id}.value`;
                 const valueObject = await this.getForeignObjectAsync(valueStateId);
                 if (!valueObject) {
                     this.log.error(`${journal.listName}: Rollback-Datenpunkt fehlt: ${valueStateId}`);
-                    return false;
-                }
-                const writeReady = await this.waitForAlexaWriteReadiness(journal.listName, step.id, step.to, 'rollback');
-                if (!writeReady) {
-                    this.log.error(`${journal.listName}: Alexa2 war vor dem Rollback für ID ${step.id} nicht schreibbereit.`);
                     return false;
                 }
                 const beforeState = await this.getForeignStateAsync(valueStateId);
@@ -1374,24 +1457,15 @@ class ShoppingRoute extends utils.Adapter {
                     return false;
                 }
                 journal.confirmedSteps -= 1;
-                await this.persistSortTransaction(journal);
+                if (!(await this.persistSortTransaction(journal)))
+                    return false;
             }
             catch (error) {
                 this.log.error(`${journal.listName}: Rollback für ID ${step.id} fehlgeschlagen: ${error instanceof Error ? error.message : String(error)}`);
                 return false;
             }
         }
-        await this.persistSortTransaction(null);
-        return true;
-    }
-    async transactionMatchesTarget(journal) {
-        const list = await this.readList(journal.listName);
-        const values = new Map(list.map(item => [String(item?.id || ''), String(item?.value || '').trim()]));
-        for (const [id, expected] of Object.entries(journal.targetValues)) {
-            if (values.get(id) !== expected)
-                return false;
-        }
-        return true;
+        return this.clearSortTransaction();
     }
     async recoverInterruptedSortTransaction() {
         let journal;
@@ -1400,47 +1474,66 @@ class ShoppingRoute extends utils.Adapter {
         }
         catch (error) {
             await this.activateSortSafetyStop('unbekannt', error instanceof Error ? error.message : String(error));
-            return;
+            return false;
         }
         if (!journal)
-            return;
+            return true;
         this.log.warn(`${journal.listName}: Unterbrochene Sortiertransaktion ${journal.transactionId} gefunden; Wiederherstellung startet.`);
         if (!(0, compatibility_1.canWriteAlexa)(this.writeCapability)) {
             await this.activateSortSafetyStop(journal.listName, `${journal.listName}: Unterbrochene Sortierung kann wegen fehlender Alexa-Schreibfreigabe nicht wiederhergestellt werden.`, journal);
-            return;
+            return false;
         }
+        this.recoveryWritesAllowed = true;
         try {
-            if (await this.transactionMatchesTarget(journal)) {
-                await this.persistSortTransaction(null);
-                this.log.info(`${journal.listName}: Unterbrochene Transaktion war bereits vollständig abgeschlossen; Journal bereinigt.`);
-                return;
-            }
             if (journal.status === 'rollback' || journal.status === 'failed-rollback') {
                 const pendingRollback = await this.reconcilePendingRollbackStep(journal);
                 if (pendingRollback === 'ambiguous') {
                     await this.activateSortSafetyStop(journal.listName, `${journal.listName}: Letzter Rollback-Schritt der unterbrochenen Transaktion ist nicht eindeutig auflösbar.`, journal);
-                    return;
+                    return false;
                 }
             }
             else if (journal.confirmedSteps < journal.steps.length) {
                 const pending = await this.reconcilePendingTransactionStep(journal);
                 if (pending === 'ambiguous') {
                     await this.activateSortSafetyStop(journal.listName, `${journal.listName}: Letzter Sortierschritt der unterbrochenen Transaktion ist nicht eindeutig auflösbar.`, journal);
-                    return;
+                    return false;
                 }
+            }
+            if (this.isUnloading)
+                return false;
+            if (journal.confirmedSteps === journal.steps.length) {
+                if (!(await this.waitForRecoveryTargetConsistency(journal))) {
+                    if (!this.isUnloading) {
+                        await this.activateSortSafetyStop(journal.listName, `${journal.listName}: Vollständig protokollierte Transaktion ist remote nicht konsistent bestätigt.`, journal);
+                    }
+                    return false;
+                }
+                if (!(await this.clearSortTransaction()))
+                    return false;
+                this.log.info(`${journal.listName}: Unterbrochene Transaktion war eindeutig vollständig abgeschlossen; Journal bereinigt.`);
+                return true;
             }
             const restored = await this.rollbackBufferedTransaction(journal);
             if (!restored) {
                 await this.activateSortSafetyStop(journal.listName, `${journal.listName}: Unterbrochene Sortierung konnte nicht vollständig zurückgesetzt werden.`, journal);
-                return;
+                return false;
             }
             this.log.warn(`${journal.listName}: Unterbrochene Sortierung wurde anhand des lokalen Journals vollständig rückwärts aufgelöst.`);
+            return true;
         }
         catch (error) {
+            if (this.isUnloading)
+                return false;
             await this.activateSortSafetyStop(journal.listName, `${journal.listName}: Wiederherstellung der unterbrochenen Sortierung fehlgeschlagen: ${error instanceof Error ? error.message : String(error)}`, journal);
+            return false;
+        }
+        finally {
+            this.recoveryWritesAllowed = false;
         }
     }
     async activateSortSafetyStop(listName, reason, journal) {
+        if (this.isUnloading)
+            return;
         this.pendingLists.clear();
         if (journal) {
             journal.status = journal.status === 'rollback' || journal.status === 'failed-rollback'
@@ -1469,9 +1562,17 @@ class ShoppingRoute extends utils.Adapter {
         let lastError;
         for (let attempt = 0; attempt <= this.maxWriteRetries; attempt++) {
             try {
+                this.assertAlexaWriteAllowed();
                 if (this.apiSafeMode)
                     await this.waitForWriteBudget();
-                await this.setForeignStateAsync(stateId, { val: value, ack: false });
+                this.assertAlexaWriteAllowed();
+                this.activeAlexaWrites += 1;
+                try {
+                    await this.setForeignStateAsync(stateId, { val: value, ack: false });
+                }
+                finally {
+                    this.activeAlexaWrites -= 1;
+                }
                 this.writeTimestamps.push(Date.now());
                 this.traffic.alexaWrites += 1;
                 this.traffic.lastAlexaWrite = new Date().toISOString();
@@ -1480,6 +1581,8 @@ class ShoppingRoute extends utils.Adapter {
             }
             catch (error) {
                 lastError = error;
+                if (this.isUnloading || (this.recoveryInProgress && !this.recoveryWritesAllowed))
+                    throw error;
                 if (attempt >= this.maxWriteRetries)
                     break;
                 const delay = this.retryBaseMs * Math.pow(2, attempt);
@@ -1488,6 +1591,13 @@ class ShoppingRoute extends utils.Adapter {
             }
         }
         throw lastError instanceof Error ? lastError : new Error(String(lastError));
+    }
+    assertAlexaWriteAllowed() {
+        if (this.isUnloading)
+            throw new Error('Alexa-Schreibzugriff wegen Adapter-Shutdown abgebrochen.');
+        if (this.recoveryInProgress && !this.recoveryWritesAllowed) {
+            throw new Error('Alexa-Schreibzugriff bleibt bis zum Abschluss der Recovery gesperrt.');
+        }
     }
     async waitForWriteBudget() {
         while (true) {
@@ -1585,7 +1695,7 @@ class ShoppingRoute extends utils.Adapter {
         return 'unbekannt';
     }
     async runLiveCompatibilityTest() {
-        if (this.compatibilityTesting || this.sortingListName)
+        if (this.isUnloading || this.recoveryInProgress || this.compatibilityTesting || this.sortingListName)
             return;
         this.compatibilityTesting = true;
         try {
@@ -1602,7 +1712,14 @@ class ShoppingRoute extends utils.Adapter {
             if (!originalValue)
                 throw new Error('Der Testeintrag enthält keinen sichtbaren value-Text.');
             const beforeTs = Number(before?.ts || 0);
-            await this.setForeignStateAsync(valueStateId, { val: originalValue, ack: false });
+            this.assertAlexaWriteAllowed();
+            this.activeAlexaWrites += 1;
+            try {
+                await this.setForeignStateAsync(valueStateId, { val: originalValue, ack: false });
+            }
+            finally {
+                this.activeAlexaWrites -= 1;
+            }
             this.traffic.alexaWrites += 1;
             this.traffic.compatibilityWrites += 1;
             this.traffic.lastAlexaWrite = new Date().toISOString();

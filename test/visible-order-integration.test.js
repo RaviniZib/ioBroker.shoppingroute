@@ -19,6 +19,11 @@ test("runtime finalizes Alexa visible order with journaled marker writes", () =>
     assert.match(main, /items\.\$\{id\}\.version/);
     assert.match(main, /items\.\$\{id\}\.updatedDateTime/);
     assert.match(main, /classifyAlexaWriteConfirmation/);
+    assert.match(
+        main,
+        /const visibleOrderPreference = \{[\s\S]*currentOrderIds: sortIdsByAlexaUpdatedTime\(active\),[\s\S]*desiredOrderIds:[\s\S]*createBufferedSortProgram\(plan, marker, visibleOrderPreference\)/,
+        'normal content writes must be ordered to reduce later visible-order touches',
+    );
     assert.match(main, /const markerBaseline = await this\.readAlexaWriteSnapshot\(listName, id\);/);
     assert.match(main, /const restoreBaseline = await this\.readAlexaWriteSnapshot\(listName, id\);/);
     assert.match(main, /if \(changes\.length === 0\)[\s\S]*visibleOrderRefreshIds\(list, plan\)/);
@@ -58,10 +63,10 @@ test("runtime finalizes Alexa visible order with journaled marker writes", () =>
     assert.match(refresh, /restored !== 'confirmed'[\s\S]*activateSortSafetyStop/);
     assert.match(
         refresh,
-        /journal\.confirmedSteps = 2;[\s\S]*persistSortTransaction\(journal\);[\s\S]*persistSortTransaction\(null\);/,
+        /journal\.confirmedSteps = 2;[\s\S]*persistSortTransaction\(journal\);[\s\S]*clearSortTransaction\(\)/,
     );
     assert.ok(
-        refresh.indexOf("if (restored !== 'confirmed')") < refresh.indexOf("await this.persistSortTransaction(null);"),
+        refresh.indexOf("if (restored !== 'confirmed')") < refresh.indexOf("await this.clearSortTransaction()"),
         "the journal is cleared only after the restored value was confirmed",
     );
     assert.doesNotMatch(main, /Same-Value-Writes/);

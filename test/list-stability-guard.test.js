@@ -40,10 +40,10 @@ test("all transactional item-write paths use readiness without fixed write pause
     assert.doesNotMatch(visible, /await this\.wait\(this\.writePauseMs\)/);
 
     const rollbackStart = main.indexOf('private async rollbackBufferedTransaction');
-    const rollbackEnd = main.indexOf('private async transactionMatchesTarget', rollbackStart);
+    const rollbackEnd = main.indexOf('private async recoverInterruptedSortTransaction', rollbackStart);
     const rollback = main.slice(rollbackStart, rollbackEnd);
-    assert.match(rollback, /waitForAlexaWriteReadiness\([\s\S]*journal\.listName,[\s\S]*step\.id,[\s\S]*step\.to/);
-    assert.ok(rollback.indexOf('waitForAlexaWriteReadiness') < rollback.indexOf('writeAlexaState(valueStateId, step.from)'));
+    assert.match(rollback, /waitForRecoveryStepState\([\s\S]*journal\.listName,[\s\S]*step\.id,[\s\S]*step\.to/);
+    assert.ok(rollback.indexOf('waitForRecoveryStepState') < rollback.indexOf('writeAlexaState(valueStateId, step.from)'));
     assert.match(rollback, /journal\.confirmedSteps > 1[\s\S]*waitForAlexaWriteSettlement/);
     assert.match(rollback, /: await this\.waitForAlexaValueConfirmation/);
     assert.doesNotMatch(rollback, /await this\.wait\(this\.writePauseMs\)/);
@@ -64,9 +64,10 @@ test("recovery reconciliation settles intermediate writes but does not require r
     const transaction = main.slice(transactionStart, rollbackStart);
     const rollback = main.slice(rollbackStart, bufferedRollbackStart);
 
-    assert.match(transaction, /waitForAlexaWriteSettlement\([\s\S]*'content',[\s\S]*'rollback'/);
-    assert.match(rollback, /journal\.confirmedSteps > 1[\s\S]*waitForAlexaWriteSettlement/);
-    assert.match(rollback, /: await this\.waitForAlexaValueConfirmation/);
+    assert.match(transaction, /waitForRecoveryStepState/);
+    assert.match(rollback, /waitForRecoveryStepState/);
+    assert.match(rollback, /state === 'from'[\s\S]*confirmedSteps -= 1/);
+    assert.match(rollback, /state === 'to'[\s\S]*return 'not-applied'/);
 });
 
 test("manual sortNow is scheduled immediately without the stability delay", () => {

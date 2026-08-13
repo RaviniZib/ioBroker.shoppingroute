@@ -65,6 +65,43 @@ test("already correct visible order needs no additional write", () => {
     assert.deepEqual(createVisibleOrderRefreshPlan(ids, ids), []);
 });
 
+test("one misplaced element needs exactly one minimal touch", () => {
+    const current = ["a", "c", "b"];
+    const desired = ["a", "b", "c"];
+    const touches = createVisibleOrderRefreshPlan(current, desired);
+
+    assert.deepEqual(touches, ["c"]);
+    assert.deepEqual(applyTouches(current, touches), desired);
+});
+
+test("reversed and cyclic orders use their mathematically minimal suffix", () => {
+    assert.deepEqual(
+        createVisibleOrderRefreshPlan(["e", "d", "c", "b", "a"], ["a", "b", "c", "d", "e"]),
+        ["b", "c", "d", "e"],
+    );
+    assert.deepEqual(
+        createVisibleOrderRefreshPlan(["c", "d", "a", "b"], ["a", "b", "c", "d"]),
+        ["c", "d"],
+    );
+    assert.deepEqual(
+        createVisibleOrderRefreshPlan(["b", "c", "d", "a"], ["a", "b", "c", "d"]),
+        ["b", "c", "d"],
+    );
+});
+
+test("duplicate texts do not affect minimal ordering because Alexa IDs are distinct", () => {
+    const items = [
+        { id: "milk-2", value: "Milch" },
+        { id: "bread", value: "Brot" },
+        { id: "milk-1", value: "Milch" },
+    ];
+    const desired = ["milk-1", "milk-2", "bread"];
+    const touches = createVisibleOrderRefreshPlan(items.map(item => item.id), desired);
+
+    assert.deepEqual(touches, ["milk-2", "bread"]);
+    assert.deepEqual(applyTouches(items.map(item => item.id), touches), desired);
+});
+
 test("visible-order touch uses a real marker change and restores the exact original text", () => {
     const program = createVisibleOrderTouchProgram("aldi-header", "---- ALDI ----", "__ORDER_MARKER__");
     assert.equal(program.amazonWrites, 2);
@@ -124,6 +161,28 @@ test("visible-order refresh plan is minimal for random permutations", () => {
             const selectedSet = new Set(selected);
             const orderedTouches = desired.filter(id => selectedSet.has(id));
             assert.notDeepEqual(applyTouches(current, orderedTouches), desired);
+        }
+    }
+});
+
+test("visible-order refresh plan is exhaustive-minimal through six distinct IDs", () => {
+    function permutations(values) {
+        if (values.length <= 1) return [values];
+        return values.flatMap((value, index) => permutations(values.filter((_entry, other) => other !== index))
+            .map(rest => [value, ...rest]));
+    }
+
+    for (let size = 1; size <= 6; size++) {
+        const desired = Array.from({ length: size }, (_value, index) => `id${index}`);
+        for (const current of permutations(desired)) {
+            const touches = createVisibleOrderRefreshPlan(current, desired);
+            assert.deepEqual(applyTouches(current, touches), desired);
+
+            for (let mask = 0; mask < (1 << size); mask++) {
+                const selected = desired.filter((_id, index) => (mask & (1 << index)) !== 0);
+                if (selected.length >= touches.length) continue;
+                assert.notDeepEqual(applyTouches(current, selected), desired);
+            }
         }
     }
 });
