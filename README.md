@@ -2,9 +2,9 @@
 
 ![ShoppingRoute](admin/shoppingroute.png)
 
-**Current version: 0.3.1**
+**Current version: 0.3.3**
 
-ShoppingRoute sorts Alexa shopping-list entries by market, product group and each store's individual walking route. Normal shopping items are still sorted only by redistributing visible texts across existing Alexa IDs. Optionally, ShoppingRoute can use Alexa2 to create its own market headings such as `---- ALDI ----`. Once a market is no longer needed, ShoppingRoute completely deletes only that self-managed heading entry. Managed Alexa lists must be set to **Oldest to newest** in the Alexa app.
+ShoppingRoute sorts Alexa shopping-list entries by market, product group and each store's individual walking route. It assigns visible two-digit keys such as `20> Bananas` and `40> **** ALDI ****`; managed lists must therefore be set to **A–Z** in the Alexa app. ShoppingRoute reuses the local Alexa2 authentication for direct item updates, deletes and batch creates, while Alexa2 list states remain the external change trigger.
 
 ## User guide / Bedienungsanleitung
 
@@ -16,7 +16,7 @@ ShoppingRoute sorts Alexa shopping-list entries by market, product group and eac
 - multiple Alexa lists with per-list priority markets
 - global, per-list and temporary market priorities
 - market aliases and common market-name variants
-- optional automatically managed market headings such as `---- ALDI ----`
+- optional automatically managed market headings such as `**** ALDI ****`
 - optional cross-market consolidation using a minimum-item threshold; explicit market requests are never moved
 - configurable product groups and store-specific routes
 - product catalogue with aliases, preferred and available markets
@@ -26,32 +26,35 @@ ShoppingRoute sorts Alexa shopping-list entries by market, product group and eac
 - automatic/review/off learning modes
 - category and alias suggestions
 - sorting preview before writes
+- incremental `00>`–`99>` prefix sorting with gap-preserving inserts and suffix-only rebuilds
+- direct Amazon responses plus one final list read as write confirmation
 - API safe mode with write-rate limiting, batches and retry backoff
 - local-only shopping statistics
 - configuration backup/restore
 - shareable market-route profiles
 - npm beta version check
 - privacy-safe diagnostic/feedback report
-- Alexa2/alexa-remote2 write compatibility guard
+- Alexa2/alexa-remote2 direct-session diagnostics
 - Dry Run safety mode
 
 See `README_DE.md` for the detailed German documentation.
 
 ## Changelog
 
+### 0.3.3 (2026-08-13)
+
+- New direct `00>`–`99>` prefix sorting for Alexa lists configured to A–Z.
+- Added very fast incremental insertion into free numeric gaps; only the affected suffix is rebuilt when a gap is exhausted.
+- Direct Amazon responses confirm each operation, followed by one final direct verification of the complete list result.
+- Managed Alexa lists must be set to **A–Z** in the Alexa app.
+
 ### 0.3.2 (2026-08-11)
 
-- List stability guard: after every Alexa2 list change, ShoppingRoute waits for at least 30 seconds with no further list change before sorting writes start. If a new active ID appears during a buffered sort, the confirmed sort path is rolled back while the new ID itself remains untouched. The `updatedDateTime` visible-order finalizer also aborts immediately on new IDs and replans only after another quiet window.
-
-- Alexa visible order is now finalized from `updatedDateTime` after the buffered content permutation. Only the minimum necessary items are touched again with their unchanged text; normal shopping items are still neither deleted nor recreated. This keeps the anti-duplication buffer protection while restoring the ShoppingRoute order in Alexa App “oldest to newest” view.
-
-- Sorting target texts are now trimmed at their edges just like existing Alexa list values. This prevents invisible trailing whitespace (for example `Camembert `) from falsely failing the buffered permutation safety check.
-
-- Replaced direct sequential value redistribution with a buffered Euler-cycle transaction. A sort now uses one temporary buffer value per disconnected value circuit, so normal list items are not deleted/recreated and Amazon write traffic stays close to the number of actually changed slots.
-- Added a persistent local sort transaction journal (`info.sortTransaction`). Every confirmed step is recorded locally and interrupted transactions are reversed step-by-step after restart instead of treating an intermediate Alexa list as the new source of truth.
-- Added per-step Alexa2 confirmation and a safety stop for ambiguous remote write states. If new active items appear during a running transaction, the current buffered sort is aborted safely and replanned only after another 30-second quiet synchronization window.
-- Fixed Admin configuration handling for independent market routes, newly added markets/product groups, alternative-market multi-selection in Products and Review, and the Review action “Accept all”.
-- Documented that ShoppingRoute can only process the list state currently supplied by Alexa2; a stale Alexa2 list synchronization can therefore delay newly added app items until Alexa2 has synchronized them.
+- Replaced the former buffered/marker/`updatedDateTime` sorter with one direct `00>`–`99>` prefix architecture for Alexa A–Z lists.
+- Added midpoint insertion into existing numeric gaps; if a gap is exhausted, only the smallest necessary suffix is deleted serially and recreated with one batch request.
+- Reuses Alexa2 credentials locally without logging secrets or writing Alexa2 item states. Direct Amazon responses confirm each operation and one final direct list read verifies the complete apply.
+- Added a simple exclusive `IDLE`/`COLLECTING`/`APPLYING` lifecycle: one new item waits at most five seconds, while a second new item starts the collected run immediately.
+- Replaced the old marker transaction with a compact persistent direct-apply journal and a safety stop for incomplete or ambiguous remote results.
 
 ### 0.3.1 (2026-08-10)
 
@@ -59,7 +62,7 @@ See `README_DE.md` for the detailed German documentation.
 
 ### 0.3.0 (2026-08-10)
 
-- Added optional `---- MARKET ----` headings.
+- Added optional market headings (now formatted as `**** MARKET ****`).
 - A heading stays active until the last real item for that market is completed and is then deleted completely instead of remaining among completed items.
 - Added configurable minimum-items-per-market consolidation for flexible articles.
 - Explicit market phrases always remain assigned to the requested market.

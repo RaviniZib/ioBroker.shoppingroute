@@ -13,7 +13,7 @@ Local source/unit verification in the build environment:
 - walking routes use a standalone native market dropdown plus a calculated one-market table; no custom Module Federation component is required
 - API protection is integrated into General settings
 - route synchronization still adds missing rows for new markets/product groups
-- Alexa safety test still finds no `#New`, `#delete` or automatic `completed` write path
+- Alexa safety test finds no Alexa2 item-state or automatic `completed` write path
 - ioBroker checker metadata tests cover type/tier/extIcon/testing dependency and centralized reusable Admin i18n variables
 - adapter-managed timers are used instead of plain global timers
 

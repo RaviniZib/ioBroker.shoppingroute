@@ -6,7 +6,7 @@ The most important architectural rule is the Alexa-list safety invariant:
 
 **shoppingroute must not create, delete or complete Alexa list entries.**
 
-Do not add writes to `#New`, `#delete` or `completed` without a major design review and an explicit safety discussion.
+Do not add writes to Alexa2 list-item states or `completed`. Direct Amazon PUT/DELETE/batch-CREATE changes require a design review, explicit safety handling and final direct verification.
 
 Before opening a pull request:
 

@@ -1,26 +1,32 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.formatMarketHeader = formatMarketHeader;
-exports.marketFromHeader = marketFromHeader;
+exports.marketNameFromHeader = marketNameFromHeader;
 exports.isMarketHeader = isMarketHeader;
 exports.realActiveItems = realActiveItems;
 exports.optimizeMarketAssignments = optimizeMarketAssignments;
-exports.requiredMarkets = requiredMarkets;
-exports.planMarketHeaderAction = planMarketHeaderAction;
 const parser_1 = require("./parser");
-const HEADER_PATTERN = /^----\s+(.+?)\s+----$/;
+const HEADER_PATTERN = /^\*\*\*\*\s+(.+?)\s+\*\*\*\*$/;
+const LEGACY_HEADER_PATTERN = /^----\s+(.+?)\s+----$/;
 function formatMarketHeader(market) {
-    return `---- ${String(market || '').trim().toLocaleUpperCase('de-DE')} ----`;
+    return `**** ${String(market || '').trim().toLocaleUpperCase('de-DE')} ****`;
 }
-function marketFromHeader(value, markets) {
-    const match = String(value || '').trim().match(HEADER_PATTERN);
+/**
+ * Recognize current and legacy managed headers so an upgrade reuses the existing Alexa item.
+ *
+ * @param value Prefix-free Alexa item text.
+ * @param markets Configured active markets.
+ */
+function marketNameFromHeader(value, markets) {
+    const text = String(value || '').trim();
+    const match = text.match(HEADER_PATTERN) || text.match(LEGACY_HEADER_PATTERN);
     if (!match?.[1])
         return undefined;
     const wanted = (0, parser_1.normalize)(match[1]);
     return markets.find(market => market.enabled !== false && (0, parser_1.normalize)(market.name) === wanted)?.name;
 }
-function isMarketHeader(value, _markets) {
-    return HEADER_PATTERN.test(String(value || '').trim());
+function isMarketHeader(value, markets) {
+    return Boolean(marketNameFromHeader(value, markets));
 }
 function realActiveItems(list, markets) {
     return list.filter(item => item &&
@@ -130,85 +136,5 @@ function optimizeMarketAssignments(items, markets, products, fallbackMarket, pri
             ? item
             : { source: item.source, parsed: { ...item.parsed, market } };
     });
-}
-function requiredMarkets(items, markets, products, fallbackMarket, priorityMarket = '', minimumItemsPerMarket = 1) {
-    const order = marketOrderMap(markets);
-    const assigned = optimizeMarketAssignments(items, markets, products, fallbackMarket, priorityMarket, minimumItemsPerMarket);
-    const used = new Set(assigned.map(item => item.parsed.market).filter(market => (0, parser_1.normalize)(market) !== (0, parser_1.normalize)(fallbackMarket)));
-    return [...used].sort((a, b) => {
-        const orderDiff = (order.get(a) || 9999) - (order.get(b) || 9999);
-        if (orderDiff !== 0)
-            return orderDiff;
-        return a.localeCompare(b, 'de', { sensitivity: 'base' });
-    });
-}
-function planMarketHeaderAction(list, required, markets, fallbackMarket, enabled) {
-    const requiredSet = new Set(required.map(parser_1.normalize));
-    const byMarket = new Map();
-    const staleHeaders = [];
-    for (const item of list) {
-        const raw = String(item?.value || '').trim();
-        const match = raw.match(HEADER_PATTERN);
-        if (!match?.[1])
-            continue;
-        const market = marketFromHeader(raw, markets);
-        if (!market || (0, parser_1.normalize)(market) === (0, parser_1.normalize)(fallbackMarket)) {
-            staleHeaders.push({ market: match[1].trim(), item });
-            continue;
-        }
-        const key = (0, parser_1.normalize)(market);
-        const entry = byMarket.get(key) || { market, active: [], completed: [] };
-        if (item.completed === false)
-            entry.active.push(item);
-        else
-            entry.completed.push(item);
-        byMarket.set(key, entry);
-    }
-    // Alte, umbenannte oder nicht mehr konfigurierte ShoppingRoute-Header vollständig entfernen.
-    if (staleHeaders.length) {
-        const stale = staleHeaders[0];
-        return { type: 'delete', market: stale.market, id: String(stale.item.id) };
-    }
-    // Bei deaktivierter Funktion alle ShoppingRoute-Header aus der Alexa-Liste entfernen.
-    if (!enabled) {
-        for (const market of markets) {
-            const entry = byMarket.get((0, parser_1.normalize)(market.name));
-            const header = entry?.active[0] || entry?.completed[0];
-            if (header)
-                return { type: 'delete', market: entry?.market || market.name, id: String(header.id) };
-        }
-        return null;
-    }
-    // Für benötigte Märkte genau einen aktiven Header behalten.
-    for (const market of required) {
-        const key = (0, parser_1.normalize)(market);
-        const entry = byMarket.get(key);
-        if (entry?.active.length) {
-            // Erledigte Alt-Header aus der bisherigen Beta zuerst aufräumen.
-            if (entry.completed.length) {
-                return { type: 'delete', market, id: String(entry.completed[0].id) };
-            }
-            if (entry.active.length > 1) {
-                return { type: 'delete', market, id: String(entry.active[1].id) };
-            }
-            continue;
-        }
-        // Ein erledigter Alt-Header wird nicht reaktiviert, sondern gelöscht. Im nächsten Lauf wird sauber neu angelegt.
-        if (entry?.completed.length) {
-            return { type: 'delete', market, id: String(entry.completed[0].id) };
-        }
-        return { type: 'create', market, value: formatMarketHeader(market) };
-    }
-    // Nicht mehr benötigte Header vollständig löschen – auch bereits erledigte Alt-Header.
-    for (const market of markets) {
-        const key = (0, parser_1.normalize)(market.name);
-        if ((0, parser_1.normalize)(market.name) === (0, parser_1.normalize)(fallbackMarket) || requiredSet.has(key))
-            continue;
-        const entry = byMarket.get(key);
-        const header = entry?.active[0] || entry?.completed[0];
-        if (header)
-            return { type: 'delete', market: market.name, id: String(header.id) };
-    }
-    return null;
 }
 //# sourceMappingURL=market-plan.js.map

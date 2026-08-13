@@ -1,6 +1,7 @@
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
+const crypto=require('node:crypto');
 const fs=require('node:fs');
 const path=require('node:path');
 const root=path.join(__dirname,'..');
@@ -25,7 +26,7 @@ test('user-facing admin areas are present and diagnostics tab is hidden',()=>{
 });
 test('backup and sharing use an Admin 7.6 compatible launcher without raw JSON controls',()=>{
   const transfer=jsonConfig.items.transferTab.items;
-  assert.deepEqual(Object.keys(transfer),['backupHelp','backupTransfer']);
+  assert.deepEqual(Object.keys(transfer),['transferSectionTitle','backupHelp','backupTransfer']);
 
   const launcher=transfer.backupTransfer;
   assert.equal(launcher.type,'sendTo');
@@ -53,6 +54,66 @@ test('backup and sharing use an Admin 7.6 compatible launcher without raw JSON c
   assert.equal(adminDependency.admin,'>=7.6.20');
 });
 
+test('native Admin tabs share the phase-one visual hierarchy',()=>{
+  const sections={
+    listsTab:['listsSectionTitle','listsHelp'],
+    productsTab:['productsSectionTitle','productsHelp'],
+    reviewTab:['reviewSectionTitle','reviewHelp'],
+    transferTab:['transferSectionTitle','backupHelp'],
+  };
+
+  for(const [tab,[headerKey,helpKey]] of Object.entries(sections)) {
+    const items=jsonConfig.items[tab].items;
+    assert.equal(items[headerKey].type,'header',`${tab} header`);
+    assert.equal(items[headerKey].size,3,`${tab} header size`);
+    assert.equal(items[headerKey].xs,12,`${tab} mobile header width`);
+    assert.equal(items[helpKey].type,'staticText',`${tab} help`);
+    assert.equal(items[helpKey].style.fontSize,'0.9rem',`${tab} help size`);
+    assert.equal(items[helpKey].style.opacity,0.78,`${tab} theme-neutral help color`);
+  }
+
+  const general=jsonConfig.items.general.items;
+  assert.equal(general.betaWarning.type,'infoBox');
+  assert.equal(general.betaWarning.boxType,'warning');
+  assert.equal(general.betaWarning.closeable,false);
+  for(const key of ['basicSectionTitle','marketSectionTitle','timingSectionTitle','apiSectionTitle']) {
+    assert.equal(general[key].type,'header',key);
+    assert.equal(general[key].size,3,key);
+  }
+  for(const key of ['marketSectionDivider','timingSectionDivider','apiDivider']) assert.equal(general[key].type,'divider',key);
+  assert.equal(jsonConfig.items.reviewTab.items.reviewAcceptAll.variant,'outlined');
+  assert.equal(jsonConfig.items.transferTab.items.backupTransfer.variant,'contained');
+  assert.equal(jsonConfig.items.transferTab.items.backupTransfer.md,6);
+});
+
+test('phase-one styling preserves the functional JSON config outside the migrated product groups tab',()=>{
+  const visualProperties=new Set([
+    'label','text','title','width','style','darkStyle','innerStyle','controlStyle',
+    'xs','sm','md','lg','xl','newLine','variant','icon','iconPosition','boxType',
+    'closeable','size','help','tooltip','placeholder',
+  ]);
+  const presentationTypes=new Set(['header','staticText','infoBox','divider']);
+  const stripVisualProperties=value=>{
+    if(Array.isArray(value)) return value.map(stripVisualProperties);
+    if(!value||typeof value!=='object') return value;
+    return Object.fromEntries(Object.entries(value)
+      .filter(([key])=>!visualProperties.has(key))
+      .map(([key,item])=>[key,stripVisualProperties(item)]));
+  };
+  const panels=['general','listsTab','routesTab','productsTab','reviewTab','transferTab'];
+  const projection=Object.fromEntries(panels.map(panel=>[
+    panel,
+    Object.fromEntries(Object.entries(jsonConfig.items[panel].items)
+      .filter(([,item])=>!presentationTypes.has(item.type))
+      .map(([key,item])=>[key,stripVisualProperties(item)])),
+  ]));
+  const hash=crypto.createHash('sha256').update(JSON.stringify(projection)).digest('hex');
+
+  assert.equal(hash,'67b566d6d90e5605680cdfed51c073872a0b1cb479e7f00f801bd0e5e88bb89e');
+  const routeHash=crypto.createHash('sha256').update(JSON.stringify(jsonConfig.items.routesTab)).digest('hex');
+  assert.equal(routeHash,'23228bada006eac4b1d8193a56d4978e64371e4886d8ad6bfe851ddc93fd58be');
+});
+
 test('known instances, lists, markets and product groups use dropdown controls',()=>{
   const general=jsonConfig.items.general.items;
   assert.equal(general.alexaInstance.type,'instance');
@@ -64,10 +125,67 @@ test('known instances, lists, markets and product groups use dropdown controls',
   assert.equal(listFields.find(x=>x.attr==='name').type,'selectSendTo');
   assert.equal(listFields.find(x=>x.attr==='name').command,'getAlexaLists');
   const route=jsonConfig.items.routesTab.items;
-  assert.equal(route.routeMarketFilter.type,'selectSendTo');
-  assert.equal(route.routeMarketFilter.command,'getActiveMarkets');
-  assert.equal(route.routeMarketFilter.manual,false);
-  assert.equal(route._routeEditorRows.items.find(x=>x.attr==='category').command,'getProductGroups');
+  assert.equal(route.routeEditor.type,'custom');
+});
+
+test('product groups use a dedicated draft editor with the original native structure',()=>{
+  const productGroups=jsonConfig.items.productGroupsTab.items;
+  assert.deepEqual(Object.keys(productGroups),['productGroupsEditor','productGroups']);
+  assert.equal(productGroups.productGroupsEditor.type,'custom');
+  assert.equal(productGroups.productGroupsEditor.url,'custom/productGroups/productGroupsEditor.js');
+  assert.equal(
+    productGroups.productGroupsEditor.name,
+    'ShoppingRouteProductGroupsSet/Components/ProductGroupsEditor',
+  );
+  assert.equal(productGroups.productGroupsEditor.bundlerType,'module');
+  assert.equal(productGroups.productGroups.type,'table');
+  assert.equal(productGroups.productGroups.hidden,'true');
+  assert.deepEqual(productGroups.productGroups.items,[{
+    type:'text',
+    attr:'name',
+    title:'ui.items.productgroupstab.items.productgroups.items.0.title',
+    width:'100%',
+    sort:true,
+  }]);
+});
+
+test('markets use a dedicated draft editor with the original native structure',()=>{
+  const markets=jsonConfig.items.marketsTab.items;
+  assert.deepEqual(Object.keys(markets),['marketsEditor','markets']);
+  assert.equal(markets.marketsEditor.type,'custom');
+  assert.equal(markets.marketsEditor.url,'custom/markets/marketsEditor.js');
+  assert.equal(markets.marketsEditor.name,'ShoppingRouteMarketsSet/Components/MarketsEditor');
+  assert.equal(markets.marketsEditor.bundlerType,'module');
+  assert.equal(markets.markets.type,'table');
+  assert.equal(markets.markets.hidden,'true');
+  assert.deepEqual(markets.markets.items,[
+    {
+      type:'checkbox',
+      attr:'enabled',
+      title:'ui.items.liststab.items.lists.items.0.title',
+      width:'10%',
+    },
+    {
+      type:'number',
+      attr:'order',
+      title:'ui.items.marketstab.items.markets.items.1.title',
+      width:'12%',
+      sort:true,
+    },
+    {
+      type:'text',
+      attr:'name',
+      title:'ui.items.marketstab.items.markets.items.2.title',
+      width:'28%',
+      sort:true,
+    },
+    {
+      type:'text',
+      attr:'aliases',
+      title:'ui.items.marketstab.items.markets.items.3.title',
+      width:'50%',
+    },
+  ]);
 });
 
 test('product list is sortable by product, group and market',()=>{
@@ -80,6 +198,18 @@ test('multiple lists, review queue, API protection and diagnostics states exist'
   for(const id of ['info.reviewQueue','info.previewText','info.statistics','info.configExport','info.marketProfiles','info.versionInstalled','info.versionBeta','info.feedbackReport','control.temporaryPriorityMarket','control.importConfigJson','control.marketProfileImport']) assert.ok(ids.has(id),id);
   assert.ok(Array.isArray(ioPackage.native.lists));
   assert.equal(ioPackage.native.apiSafeMode,true);
+});
+
+test('new installations receive complete initial routes from io-package defaults',()=>{
+  const groups=ioPackage.native.productGroups.map(group=>group.name);
+  const activeMarkets=ioPackage.native.markets.filter(market=>market.enabled!==false).map(market=>market.name);
+  const configured=new Set(ioPackage.native.routes.map(route=>`${route.market.toLocaleLowerCase('de')}\u0000${route.category.toLocaleLowerCase('de')}`));
+
+  for(const market of activeMarkets) {
+    for(const group of groups) {
+      assert.ok(configured.has(`${market.toLocaleLowerCase('de')}\u0000${group.toLocaleLowerCase('de')}`),`${market}: ${group}`);
+    }
+  }
 });
 
 test('dynamic dropdown handlers sort alphabetically',()=>{
@@ -97,43 +227,33 @@ test('public beta publishing is protected by a root publish guard and package bu
   assert.ok(fs.existsSync(path.join(root,'scripts','make-beta-package.js')));
 });
 
-test('walking routes use a standalone market dropdown and a calculated one-market editor',()=>{
+test('walking routes use a dedicated editor with routes as the only persisted source',()=>{
   const route=jsonConfig.items.routesTab.items;
-  assert.equal(route.routeMarketFilter.type,'selectSendTo');
-  assert.equal(route.routeMarketFilter.command,'getActiveMarkets');
-  assert.equal(route.routeMarketFilter.manual,false);
-  assert.equal(route._routeEditorRows.type,'table');
-  assert.equal(route._routeEditorRows.doNotSave,undefined);
-  assert.ok(route._routeEditorRows.onChange.alsoDependsOn.includes('routeMarketFilter'));
+  assert.equal(route.routeMarketFilter,undefined);
+  assert.equal(route._routeEditorRows,undefined);
+  assert.equal(route.routeEditor.type,'custom');
+  assert.equal(route.routeEditor.url,'custom/routeEditor.js');
+  assert.equal(route.routeEditor.name,'ShoppingRouteAdminSet/Components/RouteEditor');
+  assert.equal(route.routeEditor.bundlerType,'module');
   assert.equal(route.routes.type,'table');
   assert.equal(route.routes.hidden,'true');
-  assert.ok(route.routes.onChange.alsoDependsOn.includes('_routeEditorRows'));
+  assert.equal(route.routes.onChange,undefined);
+  assert.ok(fs.existsSync(path.join(root,'src-admin','route-editor.js')));
+  assert.ok(fs.existsSync(path.join(root,'src-admin','route-editor-components.mjs')));
+  assert.ok(fs.existsSync(path.join(root,'vite.config.mjs')));
+  assert.ok(fs.existsSync(path.join(root,'admin','custom','routeEditor.js')));
   const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
-  assert.equal(pkg.scripts['build:admin'],undefined);
-});
-
-test('walking-route calculate functions keep only the selected market visible and merge edits back',()=>{
-  const route=jsonConfig.items.routesTab.items;
-  const source=[
-    {market:'ALDI',category:'Obst/Gemüse',order:10},
-    {market:'ALDI',category:'Milchprodukte',order:20},
-    {market:'REWE',category:'Getränke',order:10},
-  ];
-  const calcEditor=new Function('data',`return ${route._routeEditorRows.onChange.calculateFunc}`);
-  const editor=calcEditor({routes:source,routeMarketFilter:'ALDI'});
-  assert.deepEqual(editor.map(x=>x.category),['Obst/Gemüse','Milchprodukte']);
-  const calcRoutes=new Function('data',`return ${route.routes.onChange.calculateFunc}`);
-  const merged=calcRoutes({routes:source,routeMarketFilter:'ALDI',_routeEditorRows:[editor[1],editor[0]]});
-  assert.deepEqual(merged.filter(x=>x.market==='ALDI').map(x=>x.category),['Milchprodukte','Obst/Gemüse']);
-  assert.deepEqual(merged.filter(x=>x.market==='ALDI').map(x=>x.order),[10,20]);
-  assert.deepEqual(merged.filter(x=>x.market==='REWE').map(x=>x.category),['Getränke']);
+  assert.equal(
+    pkg.scripts['build:admin'],
+    'vite build && vite build --config vite.product-groups.config.mjs && vite build --config vite.markets.config.mjs',
+  );
+  assert.equal(pkg.devDependencies.browserify,undefined);
+  assert.equal(pkg.devDependencies['@module-federation/vite'],'1.4.1');
+  assert.match(pkg.scripts.build,/build:admin/);
 });
 
 
 test('unsaved markets and product groups are fed into the real product and review tables',()=>{
-  const route=jsonConfig.items.routesTab.items;
-  assert.match(route.routeMarketFilter.jsonData,/data\.markets/);
-
   const products=jsonConfig.items.productsTab.items;
   assert.equal(products._productEditorRows,undefined);
   assert.notEqual(products.products.hidden,'true');
@@ -172,34 +292,6 @@ test('unsaved markets and product groups are fed into the real product and revie
   assert.match(review.reviewAcceptAll.jsonData,/JSON\.stringify\(data\)/);
   const source=fs.readFileSync(path.join(root,'src','main.ts'),'utf8');
   assert.match(source,/normalizeMarketSelection/);
-});
-
-test('walking route editor keeps source market and appends new product groups',()=>{
-  const route=jsonConfig.items.routesTab.items;
-  assert.doesNotMatch(route._routeEditorRows.onChange.calculateFunc,/\breturn\b/);
-  const calcEditor=new Function('data',`return ${route._routeEditorRows.onChange.calculateFunc}`);
-  const rows=calcEditor({
-    routes:[
-      {market:'ALDI',category:'Milchprodukte',order:10},
-      {market:'REWE',category:'Getränke',order:10},
-    ],
-    routeMarketFilter:'ALDI',
-    productGroups:[{name:'Milchprodukte'},{name:'Obst/Gemüse'}],
-  });
-  assert.deepEqual(rows.map(r=>r.category),['Milchprodukte','Obst/Gemüse']);
-  assert.ok(rows.every(r=>r._market==='ALDI'));
-
-  const calcRoutes=new Function('data',`return ${route.routes.onChange.calculateFunc}`);
-  const merged=calcRoutes({
-    routes:[
-      {market:'ALDI',category:'Milchprodukte',order:10},
-      {market:'REWE',category:'Getränke',order:10},
-    ],
-    routeMarketFilter:'ALDI',
-    _routeEditorRows:[rows[1],rows[0]],
-  });
-  assert.deepEqual(merged.filter(r=>r.market==='ALDI').map(r=>r.category),['Obst/Gemüse','Milchprodukte']);
-  assert.deepEqual(merged.filter(r=>r.market==='REWE').map(r=>r.category),['Getränke']);
 });
 
 test('API protection is integrated into General and no longer has its own tab',()=>{
@@ -270,6 +362,6 @@ test('adapter source uses adapter-managed timers',()=>{
   assert.doesNotMatch(source,/(^|[^.A-Za-z])setInterval\s*\(/m);
   assert.match(source,/this\.setTimeout\(/);
   assert.match(source,/this\.setInterval\(/);
-  assert.match(source,/private sortTimer: ioBroker\.Timeout \| null \| undefined/);
+  assert.match(source,/timer\?: ioBroker\.Timeout/);
   assert.match(source,/private versionTimer: ioBroker\.Interval \| null \| undefined/);
 });

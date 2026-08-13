@@ -1,17 +1,17 @@
 # ShoppingRoute – Bedienungsanleitung
 
-**Stand: ioBroker.shoppingroute 0.2.0 (Stable)**
+**Stand: ioBroker.shoppingroute 0.3.3 (Stable)**
 
-ShoppingRoute sortiert vorhandene aktive Alexa-Einkaufslisteneinträge nach Markt, Produktgruppe und deinem individuellen Laufweg durch den jeweiligen Markt. Der Adapter legt keine Alexa-Listeneinträge an, löscht keine und hakt keine automatisch ab. Er verteilt ausschließlich die sichtbaren Texte auf bereits vorhandene aktive Alexa-IDs.
+ShoppingRoute sortiert aktive Alexa-Einkaufslisteneinträge nach Markt, Produktgruppe und deinem individuellen Laufweg. Sichtbare zweistellige Präfixe von `00>` bis `99>` bilden den Sortierschlüssel. Marktüberschriften erscheinen als `**** MARKT ****`. Einzelne Einträge werden direkt aktualisiert; bei ausgeschöpften Nummernlücken wird nur das notwendige Listensuffix gelöscht und in einem Batch neu angelegt. ShoppingRoute hakt keine Artikel automatisch ab.
 
-> **Wichtig:** Jede von ShoppingRoute verwaltete Alexa-Liste muss in der Alexa-App auf **„Älteste bis neueste“** stehen. Für die Ersteinrichtung sollte **Dry-Run** aktiviert bleiben.
+> **Wichtig:** Jede von ShoppingRoute verwaltete Alexa-Liste muss in der Alexa-App auf **A–Z** stehen. Für die Ersteinrichtung sollte **Dry-Run** aktiviert bleiben.
 
 ## 1. Voraussetzungen
 
 - ioBroker mit Admin ab 7.6.20
 - installierte und aktivierte Alexa2-Instanz
 - mindestens eine Alexa-Einkaufsliste
-- ShoppingRoute 0.2.0 oder neuer
+- ShoppingRoute 0.3.3 oder neuer
 
 ## 2. Grundprinzip
 
@@ -91,7 +91,7 @@ Im Reiter **Produktgruppen** definierst du die Bereiche, nach denen innerhalb ei
 - Nonfood
 - Sonstiges
 
-Neue Produktgruppen werden für aktive Märkte automatisch in die Laufwege aufgenommen und können anschließend passend einsortiert werden.
+`Produktgruppen` ist die zentrale Hauptliste aller bekannten Gruppen. Die Laufwege der einzelnen Märkte werden unabhängig voneinander gespeichert. Im Laufweg-Editor werden zum Hinzufügen nur die Gruppen angeboten, die im gewählten Markt noch fehlen. Das Hinzufügen oder Löschen einer Laufwegzeile verändert weder die Hauptliste noch die Laufwege anderer Märkte.
 
 ## 7. Laufwege
 
@@ -141,7 +141,7 @@ Mehrere mögliche Märkte können durch Komma oder Semikolon angegeben werden, z
 ALDI, REWE, LIDL
 ```
 
-**Wichtig für 0.2.0:** Mehrere verfügbare Märkte werden bereits erkannt. Eine globale Optimierung nach einer Mindestanzahl von Artikeln je Markt ist in 0.2.0 noch nicht enthalten.
+Mehrere verfügbare Märkte werden erkannt. Flexible Artikel können anhand der konfigurierten Mindestanzahl marktübergreifend optimiert werden; explizite Marktangaben bleiben dabei unverändert.
 
 ## 9. Markt direkt über Alexa vorgeben
 
@@ -248,7 +248,7 @@ shoppingroute.0.control.enabled
 
 ## 17. API-Schutz
 
-ShoppingRoute besitzt einen API-Schonmodus, damit Alexa nicht unnötig mit vielen Schreibzugriffen belastet wird.
+ShoppingRoute besitzt einen API-Schonmodus, damit Alexa nicht unnötig mit vielen direkten Schreibzugriffen belastet wird. Batch-CREATE wird bevorzugt; einzelne PUT- und DELETE-Anfragen laufen seriell.
 
 Einstellbar sind unter anderem:
 
@@ -268,9 +268,9 @@ Aktuelle Zähler stehen unter:
 shoppingroute.0.info.traffic
 ```
 
-## 18. Alexa-Kompatibilitätsprüfung
+## 18. Direkte Alexa-Verbindungsprüfung
 
-ShoppingRoute kann prüfen, ob die verwendete Alexa2-/alexa-remote2-Umgebung das benötigte Schreiben unterstützt.
+ShoppingRoute kann prüfen, ob aus der lokalen Alexa2-Anmeldung eine direkte, lesbare alexa-remote2-Sitzung aufgebaut werden kann. Dabei wird kein Test-Write ausgeführt.
 
 Wichtige Datenpunkte:
 
@@ -325,7 +325,7 @@ Alexa2-Instanz prüfen, in ShoppingRoute auswählen, speichern und die Konfigura
 
 ### Reihenfolge in Alexa wirkt falsch
 
-Prüfen, ob die betreffende Liste in der Alexa-App auf **„Älteste bis neueste“** steht.
+Prüfen, ob die betreffende Liste in der Alexa-App auf **A–Z** steht und alle aktiven Einträge einen Präfix `00>`–`99>` besitzen.
 
 ### Artikel landet im falschen Markt
 
@@ -355,7 +355,7 @@ API-Schonmodus, Schreibpausen und `info.traffic`, `info.compatibility` sowie `in
 
 1. Alexa2-Instanz auswählen.
 2. Dry-Run eingeschaltet lassen.
-3. Alexa-Liste auswählen und in Alexa auf „Älteste bis neueste“ stellen.
+3. Alexa-Liste auswählen und in Alexa auf A–Z stellen.
 4. Märkte anlegen oder kontrollieren.
 5. Produktgruppen kontrollieren.
 6. Für jeden Markt den Laufweg sortieren.
@@ -369,9 +369,7 @@ API-Schonmodus, Schreibpausen und `info.traffic`, `info.compatibility` sowie `in
 
 ## 24. Versionshinweis
 
-Diese Anleitung beschreibt **ShoppingRoute 0.2.0**.
-
-Geplante Funktionen späterer Versionen – insbesondere automatische Marktüberschriften in der Alexa-Liste sowie eine marktübergreifende Optimierung anhand einer Mindestanzahl von Artikeln je Markt – sind **noch nicht Bestandteil von 0.2.0**.
+Diese Anleitung beschreibt **ShoppingRoute 0.3.3 Stable** mit automatischen Marktüberschriften, marktübergreifender Optimierung und direkter `00>`–`99>`-Präfixsortierung. Jede verwaltete Alexa-Liste muss in der Alexa-App auf **A–Z** gestellt sein.
 
 ## Lizenz
 

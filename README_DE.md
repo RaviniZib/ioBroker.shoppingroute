@@ -2,9 +2,9 @@
 
 ![ShoppingRoute](admin/shoppingroute.png)
 
-**Aktuelle Version: 0.3.1**
+**Aktuelle Version: 0.3.3**
 
-ShoppingRoute sortiert Alexa-Einkaufslisteneinträge nach Markt, Produktgruppe und dem individuellen Laufweg durch den jeweiligen Markt. Normale Einkaufsartikel werden weiterhin ausschließlich über ihre vorhandenen Alexa-IDs und sichtbaren Texte sortiert. Optional kann ShoppingRoute über Alexa2 eigene Marktüberschriften wie `---- ALDI ----` anlegen. Sobald ein Markt nicht mehr benötigt wird, löscht ShoppingRoute ausschließlich diesen selbst verwalteten Überschriftseintrag wieder vollständig. Die Alexa-App muss für verwaltete Listen auf **„Älteste bis neueste“** gestellt sein.
+ShoppingRoute sortiert Alexa-Einkaufslisteneinträge nach Markt, Produktgruppe und dem individuellen Laufweg durch den jeweiligen Markt. Dazu vergibt es sichtbare zweistellige Schlüssel wie `20> Bananen` und `40> **** ALDI ****`; verwaltete Listen müssen deshalb in der Alexa-App auf **A–Z** stehen. ShoppingRoute übernimmt lokal die Alexa2-Authentifizierung für direkte Updates, Deletes und Batch-Creates; Alexa2-Listenstates bleiben die Triggerquelle für externe Änderungen.
 
 ## Bedienungsanleitung / User guide
 
@@ -16,7 +16,7 @@ ShoppingRoute sortiert Alexa-Einkaufslisteneinträge nach Markt, Produktgruppe u
 - mehrere Alexa-Einkaufslisten mit eigenem Prioritätsmarkt
 - globale, listenbezogene und temporäre Marktpriorität
 - Markt-Aliase und automatische Erkennung häufiger Marktvarianten
-- optionale, automatisch verwaltete Marktüberschriften wie `---- ALDI ----`
+- optionale, automatisch verwaltete Marktüberschriften wie `**** ALDI ****`
 - optionale marktübergreifende Zusammenlegung anhand einer Mindestanzahl von Artikeln pro zusätzlichem Markt; explizite Marktangaben bleiben unverändert
 - frei pflegbare Produktgruppen und marktbezogene Laufwege
 - Laufweg nach Tabellenreihenfolge; Reihenfolgen werden automatisch neu nummeriert
@@ -28,13 +28,15 @@ ShoppingRoute sortiert Alexa-Einkaufslisteneinträge nach Markt, Produktgruppe u
 - intelligente Kategorie-Vorschläge aus Regeln und bereits bekannten Artikeln
 - Alias-Vorschläge für erkannte Schreibvarianten
 - Sortiervorschau vor Alexa-Schreibzugriffen
+- inkrementelle Präfixsortierung `00>`–`99>` mit Lückenerhalt und Suffix-Fallback
+- direkte Amazon-Antworten plus ein abschließender Listenabruf als Bestätigung
 - API-Schonmodus mit Rate-Limit, Blöcken und Retry-Backoff
 - lokale Einkaufsstatistik ohne Cloud-Telemetrie
 - Konfigurations-Export/Import
 - exportierbare/importierbare Marktprofile zum Teilen von Laufwegen
 - npm-Beta-Versionsprüfung im Adapter
 - datenschutzfreundlicher Diagnose-/Feedbackbericht
-- Alexa2/alexa-remote2-Kompatibilitätsprüfung vor echten Schreibzugriffen
+- Alexa2/alexa-remote2-Diagnose der direkten Sitzung
 - Dry-Run für sichere Tests
 
 ## Prioritätslogik
@@ -76,19 +78,20 @@ ShoppingRoute wird ab dieser Version unter der **MIT-Lizenz** veröffentlicht. F
 
 ## Changelog
 
+### 0.3.3 (2026-08-13)
+
+- Neue direkte `00>`–`99>`-Präfixsortierung für Alexa-Listen in A–Z.
+- Sehr schnelle inkrementelle Einfügungen in freie Nummernlücken; nur bei ausgeschöpfter Lücke wird das betroffene Suffix neu aufgebaut.
+- Direkte Amazon-Antworten bestätigen jede Operation, anschließend verifiziert genau ein direkter Kontrollabruf das vollständige Listenergebnis.
+- Verwaltete Alexa-Listen müssen in der Alexa-App auf **A–Z** gestellt sein.
+
 ### 0.3.2 (2026-08-11)
 
-- List-Stability-Guard: Nach jeder Alexa2-Listenänderung wartet ShoppingRoute mindestens 30 Sekunden ohne weitere Listenänderung, bevor Sortierschreibzugriffe beginnen. Taucht während einer gepufferten Sortierung eine neue aktive ID auf, wird der bestätigte Sortierpfad rückwärts zurückgesetzt; die neue ID selbst bleibt unangetastet. Auch die `updatedDateTime`-Finalisierung bricht bei neuen IDs sofort ab und plant erst nach erneuter Synchronisationsruhe neu.
-
-- Die sichtbare Alexa-Reihenfolge wird nach der gepufferten Inhalts-Permutation jetzt anhand von `updatedDateTime` finalisiert. Dafür werden nur die minimal notwendigen Einträge mit ihrem unveränderten Text erneut bestätigt; normale Einkaufsartikel werden weiterhin weder gelöscht noch neu angelegt. Dadurch bleibt der Puffer-Schutz gegen Artikelvervielfältigung erhalten, während „Älteste bis neueste“ in der Alexa-App wieder dem ShoppingRoute-Sortierplan entspricht.
-
-- Zieltexte der Sortierplanung werden jetzt genauso wie die vorhandenen Alexa-Listentexte an den Rändern bereinigt. Dadurch kann ein unsichtbares nachgestelltes Leerzeichen (z. B. `Camembert `) die gepufferte Permutationsprüfung nicht mehr fälschlich blockieren.
-
-- Die direkte, schrittweise Textumverteilung wurde durch eine gepufferte Euler-Kreis-Transaktion ersetzt. Pro getrenntem Wertekreis wird genau ein temporärer Pufferwert verwendet; normale Einkaufsartikel werden weder gelöscht noch neu angelegt und der Amazon-Schreibverkehr bleibt nahe an der Zahl der tatsächlich geänderten Listenplätze.
-- Ein dauerhaftes lokales Sortierjournal (`info.sortTransaction`) wurde ergänzt. Jeder bestätigte Schritt wird lokal festgehalten; nach einem Neustart wird eine unterbrochene Transaktion Schritt für Schritt rückwärts aufgelöst, statt einen Zwischenstand der Alexa-Liste als neue Wahrheit zu übernehmen.
-- Jeder Sortierschritt wird von Alexa2 bestätigt. Bei einem nicht eindeutig auflösbaren Schreibstatus greift ein Sicherheitsstopp. Tauchen während einer laufenden Transaktion neue aktive Artikel auf, wird die gepufferte Sortierung sicher abgebrochen und erst nach einer erneuten 30-sekündigen Synchronisationsruhe neu geplant.
-- Admin-Korrekturen für voneinander unabhängige Marktlaufwege, neu angelegte Märkte/Produktgruppen, die Mehrfachauswahl alternativer Märkte in Artikel- und Prüfliste sowie „Alle übernehmen“ dokumentiert und abgesichert.
-- Dokumentiert, dass ShoppingRoute ausschließlich den von Alexa2 aktuell gelieferten Listenstand verarbeiten kann. Bei einer festhängenden Alexa2-Listensynchronisierung erscheinen neue App-Einträge deshalb erst nach der erneuten Alexa2-Synchronisierung in ShoppingRoute.
+- Den bisherigen Puffer-/Marker-/`updatedDateTime`-Sortierer durch genau eine direkte `00>`–`99>`-Präfixarchitektur für Alexa-Listen in A–Z ersetzt.
+- Neue Artikel werden mittig in freie Nummernlücken eingesetzt; reicht eine Lücke nicht, wird nur das kleinste notwendige Suffix seriell gelöscht und mit einem Batch neu erzeugt.
+- Die Alexa2-Anmeldedaten werden lokal wiederverwendet, ohne Secrets zu loggen oder Alexa2-Itemstates zu beschreiben. Direkte Amazon-Antworten bestätigen jede Operation; genau ein direkter Listenabruf prüft anschließend den Gesamtlauf.
+- Einfachen exklusiven Lebenszyklus `IDLE`/`COLLECTING`/`APPLYING` ergänzt: Ein neuer Artikel wartet höchstens fünf Sekunden, der zweite startet den gemeinsamen Lauf sofort.
+- Die alte Marker-Transaktion wurde durch ein kompaktes persistentes Direkt-Apply-Journal und Sicherheitsstopp bei unvollständigem oder uneindeutigem Remote-Ergebnis ersetzt.
 
 ### 0.3.1 (2026-08-10)
 
@@ -96,11 +99,11 @@ ShoppingRoute wird ab dieser Version unter der **MIT-Lizenz** veröffentlicht. F
 
 ### 0.3.0 (2026-08-10)
 
-- Optionale Marktüberschriften im Format `---- MARKT ----` ergänzt.
+- Optionale Marktüberschriften ergänzt (jetziges Format: `**** MARKT ****`).
 - Überschriften bleiben aktiv, solange mindestens ein echter Artikel des Marktes offen ist, und werden danach vollständig gelöscht statt unter erledigten Artikeln stehen zu bleiben.
 - Marktübergreifende Zusammenlegung anhand einer konfigurierbaren Mindestanzahl ergänzt.
 - Explizite Marktangaben bleiben von der Zusammenlegung ausnahmslos unberührt.
-- Header-Verwaltung nutzt ausschließlich Alexa2-Datenpunkte (`#New`, `#delete`) und erzeugt keine zweite Amazon-Sitzung; normale Einkaufsartikel werden niemals automatisch gelöscht oder erledigt.
+- Die damalige Header-Verwaltung nutzte Alexa2-Datenpunkte (`#New`, `#delete`). Ab 0.3.2 werden Header als normale präfixierte Items über die direkte, lokal authentifizierte Sitzung verwaltet.
 
 ### 0.2.0 (2026-08-09)
 

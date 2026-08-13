@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "shoppingroute",
-    "version": "0.3.2",
+    "version": "0.3.3",
     "titleLang": {
       "en": "ShoppingRoute",
       "de": "ShoppingRoute",
@@ -60,6 +60,19 @@
     "icon": "shoppingroute.png",
     "tier": 3,
     "news": {
+      "0.3.3": {
+        "en": "New direct 00>–99> prefix sorting for Alexa lists in A–Z, with very fast incremental insertion into free number gaps, suffix rebuilds only when a gap is exhausted, direct Amazon confirmation and final verification.",
+        "de": "Neue direkte 00>–99>-Präfixsortierung für Alexa-Listen in A–Z mit sehr schnellen inkrementellen Einfügungen in freie Nummernlücken, Suffix-Rebuild nur bei ausgeschöpfter Lücke, direkter Amazon-Bestätigung und abschließender Verifikation.",
+        "ru": "Новая прямая сортировка по префиксам 00>–99> для списков Alexa в режиме A–Z: очень быстрая поэтапная вставка в свободные числовые промежутки, перестроение суффикса только при отсутствии места, прямое подтверждение Amazon и итоговая проверка.",
+        "pt": "Nova ordenação direta por prefixos 00>–99> para listas Alexa em A–Z, com inserções incrementais muito rápidas em intervalos numéricos livres, reconstrução do sufixo apenas quando o intervalo se esgota, confirmação direta da Amazon e verificação final.",
+        "nl": "Nieuwe directe 00>–99>-prefixsortering voor Alexa-lijsten in A–Z, met zeer snelle incrementele invoegingen in vrije nummergaten, alleen een suffix-rebuild als een gat vol is, directe Amazon-bevestiging en eindcontrole.",
+        "fr": "Nouveau tri direct par préfixes 00>–99> pour les listes Alexa en A–Z, avec insertions incrémentales très rapides dans les intervalles numériques libres, reconstruction du suffixe uniquement quand l’intervalle est épuisé, confirmation Amazon directe et vérification finale.",
+        "it": "Nuovo ordinamento diretto con prefissi 00>–99> per le liste Alexa in A–Z, con inserimenti incrementali molto rapidi negli intervalli numerici liberi, ricostruzione del suffisso solo quando lo spazio è esaurito, conferma Amazon diretta e verifica finale.",
+        "es": "Nueva ordenación directa por prefijos 00>–99> para listas Alexa en A–Z, con inserciones incrementales muy rápidas en huecos numéricos libres, reconstrucción del sufijo solo cuando se agota el hueco, confirmación directa de Amazon y verificación final.",
+        "pl": "Nowe bezpośrednie sortowanie prefiksami 00>–99> dla list Alexa w trybie A–Z, z bardzo szybkim wstawianiem przyrostowym w wolne luki numeracji, przebudową sufiksu tylko po wyczerpaniu luki, bezpośrednim potwierdzeniem Amazon i końcową weryfikacją.",
+        "uk": "Нове пряме сортування за префіксами 00>–99> для списків Alexa в режимі A–Z: дуже швидке інкрементне вставлення у вільні числові проміжки, перебудова суфікса лише за відсутності місця, пряме підтвердження Amazon і фінальна перевірка.",
+        "zh-cn": "全新的 Alexa A–Z 列表直接 00>–99> 前缀排序：可快速增量插入空闲编号间隙，仅在间隙耗尽时重建后缀，并使用 Amazon 直接确认和最终校验。"
+      },
       "0.3.0": {
         "en": "Development preview for automatic market headings and minimum-items-per-market route consolidation. Explicit market requests always remain unchanged.",
         "de": "Entwicklungsvorschau mit automatischen Marktüberschriften und marktübergreifender Zusammenlegung anhand einer Mindestartikelzahl. Explizite Marktangaben bleiben immer unverändert.",
@@ -230,6 +243,16 @@
         "order": 130
       },
       {
+        "market": "ALDI",
+        "category": "Schokolade/Naschen",
+        "order": 140
+      },
+      {
+        "market": "ALDI",
+        "category": "Tee/Kaffee",
+        "order": 150
+      },
+      {
         "market": "PENNY",
         "category": "Obst/Gemüse",
         "order": 10
@@ -295,6 +318,16 @@
         "order": 130
       },
       {
+        "market": "PENNY",
+        "category": "Schokolade/Naschen",
+        "order": 140
+      },
+      {
+        "market": "PENNY",
+        "category": "Tee/Kaffee",
+        "order": 150
+      },
+      {
         "market": "LIDL",
         "category": "Obst/Gemüse",
         "order": 10
@@ -360,6 +393,16 @@
         "order": 130
       },
       {
+        "market": "LIDL",
+        "category": "Schokolade/Naschen",
+        "order": 140
+      },
+      {
+        "market": "LIDL",
+        "category": "Tee/Kaffee",
+        "order": 150
+      },
+      {
         "market": "REWE",
         "category": "Obst/Gemüse",
         "order": 10
@@ -423,6 +466,16 @@
         "market": "REWE",
         "category": "Sonstiges",
         "order": 130
+      },
+      {
+        "market": "REWE",
+        "category": "Schokolade/Naschen",
+        "order": 140
+      },
+      {
+        "market": "REWE",
+        "category": "Tee/Kaffee",
+        "order": 150
       },
       {
         "market": "Ohne Markt",

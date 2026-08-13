@@ -6,25 +6,29 @@ export interface ParsedShoppingItem {
     parsed: ParsedItem;
 }
 
-export type MarketHeaderAction =
-    | { type: 'create'; market: string; value: string }
-    | { type: 'delete'; market: string; id: string };
-
-const HEADER_PATTERN = /^----\s+(.+?)\s+----$/;
+const HEADER_PATTERN = /^\*\*\*\*\s+(.+?)\s+\*\*\*\*$/;
+const LEGACY_HEADER_PATTERN = /^----\s+(.+?)\s+----$/;
 
 export function formatMarketHeader(market: string): string {
-    return `---- ${String(market || '').trim().toLocaleUpperCase('de-DE')} ----`;
+    return `**** ${String(market || '').trim().toLocaleUpperCase('de-DE')} ****`;
 }
 
-export function marketFromHeader(value: string, markets: MarketConfig[]): string | undefined {
-    const match = String(value || '').trim().match(HEADER_PATTERN);
+/**
+ * Recognize current and legacy managed headers so an upgrade reuses the existing Alexa item.
+ *
+ * @param value Prefix-free Alexa item text.
+ * @param markets Configured active markets.
+ */
+export function marketNameFromHeader(value: string, markets: MarketConfig[]): string | undefined {
+    const text = String(value || '').trim();
+    const match = text.match(HEADER_PATTERN) || text.match(LEGACY_HEADER_PATTERN);
     if (!match?.[1]) return undefined;
     const wanted = normalize(match[1]);
     return markets.find(market => market.enabled !== false && normalize(market.name) === wanted)?.name;
 }
 
-export function isMarketHeader(value: string, _markets: MarketConfig[]): boolean {
-    return HEADER_PATTERN.test(String(value || '').trim());
+export function isMarketHeader(value: string, markets: MarketConfig[]): boolean {
+    return Boolean(marketNameFromHeader(value, markets));
 }
 
 export function realActiveItems(list: AlexaListItem[], markets: MarketConfig[]): AlexaListItem[] {
@@ -152,105 +156,4 @@ export function optimizeMarketAssignments(
             ? item
             : { source: item.source, parsed: { ...item.parsed, market } };
     });
-}
-
-export function requiredMarkets(
-    items: AlexaListItem[],
-    markets: MarketConfig[],
-    products: ProductConfig[],
-    fallbackMarket: string,
-    priorityMarket = '',
-    minimumItemsPerMarket = 1,
-): string[] {
-    const order = marketOrderMap(markets);
-    const assigned = optimizeMarketAssignments(
-        items,
-        markets,
-        products,
-        fallbackMarket,
-        priorityMarket,
-        minimumItemsPerMarket,
-    );
-    const used = new Set(assigned.map(item => item.parsed.market).filter(market => normalize(market) !== normalize(fallbackMarket)));
-    return [...used].sort((a, b) => {
-        const orderDiff = (order.get(a) || 9999) - (order.get(b) || 9999);
-        if (orderDiff !== 0) return orderDiff;
-        return a.localeCompare(b, 'de', { sensitivity: 'base' });
-    });
-}
-
-export function planMarketHeaderAction(
-    list: AlexaListItem[],
-    required: string[],
-    markets: MarketConfig[],
-    fallbackMarket: string,
-    enabled: boolean,
-): MarketHeaderAction | null {
-    const requiredSet = new Set(required.map(normalize));
-    const byMarket = new Map<string, { market: string; active: AlexaListItem[]; completed: AlexaListItem[] }>();
-    const staleHeaders: Array<{ market: string; item: AlexaListItem }> = [];
-
-    for (const item of list) {
-        const raw = String(item?.value || '').trim();
-        const match = raw.match(HEADER_PATTERN);
-        if (!match?.[1]) continue;
-        const market = marketFromHeader(raw, markets);
-        if (!market || normalize(market) === normalize(fallbackMarket)) {
-            staleHeaders.push({ market: match[1].trim(), item });
-            continue;
-        }
-        const key = normalize(market);
-        const entry = byMarket.get(key) || { market, active: [], completed: [] };
-        if (item.completed === false) entry.active.push(item);
-        else entry.completed.push(item);
-        byMarket.set(key, entry);
-    }
-
-    // Alte, umbenannte oder nicht mehr konfigurierte ShoppingRoute-Header vollständig entfernen.
-    if (staleHeaders.length) {
-        const stale = staleHeaders[0];
-        return { type: 'delete', market: stale.market, id: String(stale.item.id) };
-    }
-
-    // Bei deaktivierter Funktion alle ShoppingRoute-Header aus der Alexa-Liste entfernen.
-    if (!enabled) {
-        for (const market of markets) {
-            const entry = byMarket.get(normalize(market.name));
-            const header = entry?.active[0] || entry?.completed[0];
-            if (header) return { type: 'delete', market: entry?.market || market.name, id: String(header.id) };
-        }
-        return null;
-    }
-
-    // Für benötigte Märkte genau einen aktiven Header behalten.
-    for (const market of required) {
-        const key = normalize(market);
-        const entry = byMarket.get(key);
-        if (entry?.active.length) {
-            // Erledigte Alt-Header aus der bisherigen Beta zuerst aufräumen.
-            if (entry.completed.length) {
-                return { type: 'delete', market, id: String(entry.completed[0].id) };
-            }
-            if (entry.active.length > 1) {
-                return { type: 'delete', market, id: String(entry.active[1].id) };
-            }
-            continue;
-        }
-        // Ein erledigter Alt-Header wird nicht reaktiviert, sondern gelöscht. Im nächsten Lauf wird sauber neu angelegt.
-        if (entry?.completed.length) {
-            return { type: 'delete', market, id: String(entry.completed[0].id) };
-        }
-        return { type: 'create', market, value: formatMarketHeader(market) };
-    }
-
-    // Nicht mehr benötigte Header vollständig löschen – auch bereits erledigte Alt-Header.
-    for (const market of markets) {
-        const key = normalize(market.name);
-        if (normalize(market.name) === normalize(fallbackMarket) || requiredSet.has(key)) continue;
-        const entry = byMarket.get(key);
-        const header = entry?.active[0] || entry?.completed[0];
-        if (header) return { type: 'delete', market: market.name, id: String(header.id) };
-    }
-
-    return null;
 }

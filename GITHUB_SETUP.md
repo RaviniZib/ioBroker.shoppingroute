@@ -35,7 +35,7 @@ After the repository is online, install the adapter in ioBroker via the custom G
 
 - Alexa2 instance: `alexa2.0`
 - List: `SHOP`
-- Alexa app sorting: **Oldest to newest / Älteste bis neueste**
+- Alexa app sorting: **A–Z**
 - Dry-Run: enabled
 
 Check:

@@ -1,4 +1,4 @@
-import type { AdapterConfigShape, ConfigExport, MarketConfig, MarketProfile, ProductGroupConfig, RouteConfig } from './model';
+import type { AdapterConfigShape, ConfigExport, MarketConfig, MarketProfile, RouteConfig } from './model';
 
 const EXPORT_KEYS: Array<keyof AdapterConfigShape> = [
     'alexaInstance', 'listName', 'lists', 'dryRun', 'autoLearnProducts', 'learningMode',
@@ -83,44 +83,6 @@ export function groupRoutesByMarket(routes: RouteConfig[]): RouteConfig[] {
             return byMarket || a.index - b.index;
         })
         .map(entry => entry.route);
-}
-
-export function ensureMarketRoutes(
-    markets: MarketConfig[],
-    productGroups: ProductGroupConfig[],
-    routes: RouteConfig[],
-): { routes: RouteConfig[]; added: number } {
-    const result = routes.filter(Boolean).map(route => ({ ...route }));
-    const existing = new Set(
-        result.map(route => `${String(route.market || '').trim().toLocaleLowerCase('de')}\u0000${String(route.category || '').trim().toLocaleLowerCase('de')}`),
-    );
-    let added = 0;
-
-    const activeMarkets = markets
-        .filter(market => market && market.name && market.enabled !== false)
-        .slice()
-        .sort((a, b) => String(a.name).localeCompare(String(b.name), 'de', { sensitivity: 'base' }));
-    const groups = productGroups
-        .filter(group => group && group.name)
-        .map(group => String(group.name).trim())
-        .filter(Boolean);
-
-    for (const market of activeMarkets) {
-        const marketName = String(market.name).trim();
-        const marketKey = marketName.toLocaleLowerCase('de');
-        for (const category of groups) {
-            const key = `${marketKey}\u0000${category.toLocaleLowerCase('de')}`;
-            if (existing.has(key)) continue;
-            // Missing groups are appended to this market's existing walking route.
-            // groupRoutesByMarket() moves them into the correct market block without
-            // changing the relative route order inside that market.
-            result.push({ market: marketName, category, order: 0 });
-            existing.add(key);
-            added += 1;
-        }
-    }
-
-    return { routes: reindexRoutes(groupRoutesByMarket(result)), added };
 }
 
 export function reindexRoutes(routes: RouteConfig[]): RouteConfig[] {

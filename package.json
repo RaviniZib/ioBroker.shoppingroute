@@ -1,6 +1,6 @@
 {
   "name": "iobroker.shoppingroute",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Smart Alexa shopping-list routing by market, product group and individual store walking route with learning, multi-list support and API protection.",
   "author": "RaviniZib",
   "license": "MIT",
@@ -34,12 +34,13 @@
     "README_DE.md"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "npm run build:admin && tsc -p tsconfig.json",
+    "build:admin": "vite build && vite build --config vite.product-groups.config.mjs && vite build --config vite.markets.config.mjs",
     "check": "tsc -p tsconfig.json --noEmit",
     "test": "npm run build && node --test test/*.test.js",
     "test:unit": "node --test test/*.test.js",
     "beta:package": "npm run build && node scripts/make-beta-package.js",
-    "lint": "eslint src test scripts && npm run check",
+    "lint": "eslint src src-admin test scripts && npm run check",
     "prepublishOnly": "node scripts/block-root-publish.js",
     "test:integration": "mocha test/integration.js --exit",
     "test:package": "mocha test/package.js --exit",
@@ -51,9 +52,13 @@
   "devDependencies": {
     "@iobroker/eslint-config": "^2.3.4",
     "@iobroker/testing": "^5.2.2",
+    "@module-federation/vite": "1.4.1",
     "@tsconfig/node22": "^22.0.5",
     "@types/node": "^22.15.0",
     "javascript-obfuscator": "^5.5.0",
-    "typescript": "^5.8.3"
+    "react": "18.3.1",
+    "typescript": "^5.8.3",
+    "vite": "6.3.5",
+    "vite-plugin-commonjs": "0.10.4"
   }
 }
