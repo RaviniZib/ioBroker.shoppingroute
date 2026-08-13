@@ -1,6 +1,6 @@
 # ShoppingRoute – Bedienungsanleitung
 
-**Stand: ioBroker.shoppingroute 0.2.0 (Stable)**
+**Stand: ioBroker.shoppingroute 0.3.3 (Stable)**
 
 ShoppingRoute sortiert aktive Alexa-Einkaufslisteneinträge nach Markt, Produktgruppe und deinem individuellen Laufweg. Sichtbare zweistellige Präfixe von `00>` bis `99>` bilden den Sortierschlüssel. Marktüberschriften erscheinen als `**** MARKT ****`. Einzelne Einträge werden direkt aktualisiert; bei ausgeschöpften Nummernlücken wird nur das notwendige Listensuffix gelöscht und in einem Batch neu angelegt. ShoppingRoute hakt keine Artikel automatisch ab.
 
@@ -11,7 +11,7 @@ ShoppingRoute sortiert aktive Alexa-Einkaufslisteneinträge nach Markt, Produktg
 - ioBroker mit Admin ab 7.6.20
 - installierte und aktivierte Alexa2-Instanz
 - mindestens eine Alexa-Einkaufsliste
-- ShoppingRoute 0.2.0 oder neuer
+- ShoppingRoute 0.3.3 oder neuer
 
 ## 2. Grundprinzip
 
@@ -141,7 +141,7 @@ Mehrere mögliche Märkte können durch Komma oder Semikolon angegeben werden, z
 ALDI, REWE, LIDL
 ```
 
-**Wichtig für 0.2.0:** Mehrere verfügbare Märkte werden bereits erkannt. Eine globale Optimierung nach einer Mindestanzahl von Artikeln je Markt ist in 0.2.0 noch nicht enthalten.
+Mehrere verfügbare Märkte werden erkannt. Flexible Artikel können anhand der konfigurierten Mindestanzahl marktübergreifend optimiert werden; explizite Marktangaben bleiben dabei unverändert.
 
 ## 9. Markt direkt über Alexa vorgeben
 
@@ -369,9 +369,7 @@ API-Schonmodus, Schreibpausen und `info.traffic`, `info.compatibility` sowie `in
 
 ## 24. Versionshinweis
 
-Diese Anleitung beschreibt **ShoppingRoute 0.2.0**.
-
-Geplante Funktionen späterer Versionen – insbesondere automatische Marktüberschriften in der Alexa-Liste sowie eine marktübergreifende Optimierung anhand einer Mindestanzahl von Artikeln je Markt – sind **noch nicht Bestandteil von 0.2.0**.
+Diese Anleitung beschreibt **ShoppingRoute 0.3.3 Stable** mit automatischen Marktüberschriften, marktübergreifender Optimierung und direkter `00>`–`99>`-Präfixsortierung. Jede verwaltete Alexa-Liste muss in der Alexa-App auf **A–Z** gestellt sein.
 
 ## Lizenz
 

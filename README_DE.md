@@ -2,7 +2,7 @@
 
 ![ShoppingRoute](admin/shoppingroute.png)
 
-**Aktuelle Version: 0.3.1**
+**Aktuelle Version: 0.3.3**
 
 ShoppingRoute sortiert Alexa-Einkaufslisteneinträge nach Markt, Produktgruppe und dem individuellen Laufweg durch den jeweiligen Markt. Dazu vergibt es sichtbare zweistellige Schlüssel wie `20> Bananen` und `40> **** ALDI ****`; verwaltete Listen müssen deshalb in der Alexa-App auf **A–Z** stehen. ShoppingRoute übernimmt lokal die Alexa2-Authentifizierung für direkte Updates, Deletes und Batch-Creates; Alexa2-Listenstates bleiben die Triggerquelle für externe Änderungen.
 
@@ -77,6 +77,13 @@ Solange ShoppingRoute noch nicht im offiziellen ioBroker-Repository geführt wir
 ShoppingRoute wird ab dieser Version unter der **MIT-Lizenz** veröffentlicht. Frühere bereits veröffentlichte Versionen bleiben unter der jeweils damals gültigen Lizenz.
 
 ## Changelog
+
+### 0.3.3 (2026-08-13)
+
+- Neue direkte `00>`–`99>`-Präfixsortierung für Alexa-Listen in A–Z.
+- Sehr schnelle inkrementelle Einfügungen in freie Nummernlücken; nur bei ausgeschöpfter Lücke wird das betroffene Suffix neu aufgebaut.
+- Direkte Amazon-Antworten bestätigen jede Operation, anschließend verifiziert genau ein direkter Kontrollabruf das vollständige Listenergebnis.
+- Verwaltete Alexa-Listen müssen in der Alexa-App auf **A–Z** gestellt sein.
 
 ### 0.3.2 (2026-08-11)
 

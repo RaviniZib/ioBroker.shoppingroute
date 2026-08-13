@@ -2,7 +2,7 @@
 
 ![ShoppingRoute](admin/shoppingroute.png)
 
-**Current version: 0.3.1**
+**Current version: 0.3.3**
 
 ShoppingRoute sorts Alexa shopping-list entries by market, product group and each store's individual walking route. It assigns visible two-digit keys such as `20> Bananas` and `40> **** ALDI ****`; managed lists must therefore be set to **A–Z** in the Alexa app. ShoppingRoute reuses the local Alexa2 authentication for direct item updates, deletes and batch creates, while Alexa2 list states remain the external change trigger.
 
@@ -40,6 +40,13 @@ ShoppingRoute sorts Alexa shopping-list entries by market, product group and eac
 See `README_DE.md` for the detailed German documentation.
 
 ## Changelog
+
+### 0.3.3 (2026-08-13)
+
+- New direct `00>`–`99>` prefix sorting for Alexa lists configured to A–Z.
+- Added very fast incremental insertion into free numeric gaps; only the affected suffix is rebuilt when a gap is exhausted.
+- Direct Amazon responses confirm each operation, followed by one final direct verification of the complete list result.
+- Managed Alexa lists must be set to **A–Z** in the Alexa app.
 
 ### 0.3.2 (2026-08-11)
 

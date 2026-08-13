@@ -45,7 +45,7 @@ import {
     type DirectSortPhase,
 } from './lib/direct-sort-lifecycle';
 
-const VERSION = '0.3.2';
+const VERSION = '0.3.3';
 const COLLECT_WINDOW_MS = 5000;
 const MAX_ACTIVE_ITEMS = 99;
 const OWN_REFRESH_MAX_MS = 30000;

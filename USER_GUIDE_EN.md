@@ -1,6 +1,6 @@
 # ShoppingRoute – User Guide
 
-**Applies to: ioBroker.shoppingroute 0.2.0 (Stable)**
+**Applies to: ioBroker.shoppingroute 0.3.3 (Stable)**
 
 ShoppingRoute sorts active Alexa shopping-list entries by market, product group and your individual walking route. Visible two-digit prefixes from `00>` through `99>` are the sort keys. Market headings appear as `**** MARKET ****`. Individual entries are updated directly; when a numeric gap is exhausted, only the necessary list suffix is deleted and recreated in one batch. ShoppingRoute never marks items as completed automatically.
 
@@ -11,7 +11,7 @@ ShoppingRoute sorts active Alexa shopping-list entries by market, product group 
 - ioBroker with Admin 7.6.20 or newer
 - an installed and enabled Alexa2 instance
 - at least one Alexa shopping list
-- ShoppingRoute 0.2.0 or newer
+- ShoppingRoute 0.3.3 or newer
 
 ## 2. Basic principle
 
@@ -143,7 +143,7 @@ Multiple possible markets can be entered, separated by commas or semicolons, for
 ALDI, REWE, LIDL
 ```
 
-**Important for version 0.2.0:** Multiple available markets are already supported. However, 0.2.0 does not yet perform global optimisation based on a minimum number of items per market.
+Multiple available markets are supported. Flexible items can be optimised across markets according to the configured minimum item count; explicit market requests remain unchanged.
 
 ## 9. Specify a market directly via Alexa
 
@@ -385,9 +385,7 @@ Check API safe mode, write delays, `info.traffic`, `info.compatibility` and `inf
 
 ## 24. Version note
 
-This guide describes **ShoppingRoute 0.2.0**.
-
-Planned features for later versions – especially automatically generated market headings in the Alexa list and cross-market optimisation based on a minimum number of items per market – are **not part of 0.2.0**.
+This guide describes **ShoppingRoute 0.3.3 Stable** with automatic market headings, cross-market optimisation and direct `00>`–`99>` prefix sorting. Every managed Alexa list must be set to **A–Z** in the Alexa app.
 
 ## License
 
