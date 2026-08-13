@@ -46,6 +46,7 @@ import {
     marketFromHeader,
     optimizeMarketHeaderCreationOrder,
     planMarketHeaderAction,
+    planMarketHeaderActions,
     realActiveItems,
     requiredMarkets,
     type MarketHeaderAction,
@@ -72,12 +73,20 @@ import {
 } from './lib/list-change-tracking';
 import {
     activeValueSignature,
-    collectExternalChange,
-    createInputQuiescenceSeries,
-    deferAfterActiveSort,
-    recordSortListRun,
-    type InputQuiescenceSeries,
-} from './lib/input-quiescence';
+    beginExecuting,
+    beginPlanning,
+    beginVerifying,
+    collectExternalEvent,
+    createListSortLifecycle,
+    finishVerifying,
+    recordAmazonWrite,
+    recordExternalRollback,
+    recordPlanDiscard,
+    recordSelfTrigger,
+    requestFollowup,
+    requestSortRun,
+    type ListSortLifecycle,
+} from './lib/sort-lifecycle';
 
 const VERSION = '0.3.2';
 const LIST_STABILITY_MS = 5000;
@@ -133,7 +142,7 @@ interface SortRuntimeTiming {
     contentMs: number;
     visibleOrderMs: number;
     visibleTouches: number;
-    inputSeries: InputQuiescenceSeries;
+    lifecycle: ListSortLifecycle;
     externalRollbackRecorded: boolean;
     writes: Record<'content' | 'header' | 'marker' | 'restore' | 'rollback', number>;
     readiness: AlexaWaitRuntimeTiming[];
@@ -152,15 +161,13 @@ interface ActiveListChangeTracker {
 class InputPlanSupersededError extends Error {}
 
 export class ShoppingRoute extends utils.Adapter {
-    private sortTimer: ioBroker.Timeout | null | undefined = null;
+    private sortTimers = new Map<string, ioBroker.Timeout | undefined>();
     private versionTimer: ioBroker.Interval | null | undefined = null;
-    private pendingLists = new Set<string>();
-    private pendingSortRequestedAt = new Map<string, number>();
-    private pendingSortNotBefore = new Map<string, number>();
     private sortingListName = '';
     private activeSortRuntime: SortRuntimeTiming | null = null;
     private activeListChangeTracker: ActiveListChangeTracker | null = null;
-    private inputSeriesByList = new Map<string, InputQuiescenceSeries>();
+    private sortLifecycles = new Map<string, ListSortLifecycle>();
+    private lifecycleRunnerListName = '';
     private settledListValues = new Map<string, Map<string, string>>();
     private runtimeProducts: ProductConfig[] = [];
     private runtimeReviews: ReviewItemConfig[] = [];
@@ -588,13 +595,10 @@ export class ShoppingRoute extends utils.Adapter {
 
     private onUnload(callback: () => void): void {
         this.isUnloading = true;
-        if (this.sortTimer) this.clearTimeout(this.sortTimer);
-        this.sortTimer = null;
+        for (const timer of this.sortTimers.values()) if (timer) this.clearTimeout(timer);
+        this.sortTimers.clear();
         if (this.versionTimer) this.clearInterval(this.versionTimer);
         this.versionTimer = null;
-        this.pendingLists.clear();
-        this.pendingSortRequestedAt.clear();
-        this.pendingSortNotBefore.clear();
         void (async () => {
             try {
                 await this.journalOperation?.catch(() => undefined);
@@ -608,50 +612,68 @@ export class ShoppingRoute extends utils.Adapter {
 
     private scheduleAll(delay: number, requestedAt = Date.now()): void {
         if (this.isUnloading) return;
-        const notBefore = Date.now() + Math.max(0, delay);
         for (const list of this.listConfigs) {
-            this.pendingLists.add(list.name);
-            this.pendingSortRequestedAt.set(list.name, requestedAt);
-            const current = this.pendingSortNotBefore.get(list.name) ?? 0;
-            this.pendingSortNotBefore.set(list.name, delay === 0 ? notBefore : Math.max(current, notBefore));
+            this.setSortLifecycle(
+                list.name,
+                requestSortRun(this.getSortLifecycle(list.name), requestedAt, delay),
+            );
+            this.armListLifecycle(list.name);
         }
-        this.armSortTimer(delay);
     }
 
-    private armSortTimer(delay: number): void {
+    private getSortLifecycle(listName: string): ListSortLifecycle {
+        return this.sortLifecycles.get(listName) ?? createListSortLifecycle();
+    }
+
+    private setSortLifecycle(listName: string, lifecycle: ListSortLifecycle): void {
+        this.sortLifecycles.set(listName, lifecycle);
+        if (this.activeSortRuntime && this.sortingListName === listName) {
+            this.activeSortRuntime.lifecycle = lifecycle;
+        }
+    }
+
+    private armListLifecycle(listName: string): void {
+        const existing = this.sortTimers.get(listName);
+        if (existing) this.clearTimeout(existing);
+        this.sortTimers.delete(listName);
         if (this.isUnloading || this.recoveryInProgress) return;
-        if (this.sortTimer) this.clearTimeout(this.sortTimer);
-        const now = Date.now();
-        let nextAt = Number.POSITIVE_INFINITY;
-        for (const listName of this.pendingLists) {
-            let notBefore = this.pendingSortNotBefore.get(listName);
-            if (notBefore === undefined) {
-                notBefore = now + Math.max(0, delay);
-                this.pendingSortNotBefore.set(listName, notBefore);
-            }
-            nextAt = Math.min(nextAt, notBefore);
-        }
-        if (!Number.isFinite(nextAt)) return;
-        this.sortTimer = this.setTimeout(() => {
-            this.sortTimer = null;
-            void this.processPendingSorts();
-        }, Math.max(0, nextAt - now));
+        const lifecycle = this.getSortLifecycle(listName);
+        if (lifecycle.phase !== 'COLLECTING') return;
+        const timer = this.setTimeout(() => {
+            this.sortTimers.delete(listName);
+            void this.runSortLifecycle(listName);
+        }, Math.max(0, lifecycle.quietUntil - Date.now()));
+        this.sortTimers.set(listName, timer);
     }
 
-    private async processPendingSorts(): Promise<void> {
-        if (this.isUnloading || this.recoveryInProgress || this.sortingListName) return;
-        const now = Date.now();
-        const listName = [...this.pendingLists].find(name => (this.pendingSortNotBefore.get(name) ?? now) <= now);
-        if (!listName) {
-            this.armSortTimer(0);
-            return;
+    private armCollectingLifecycles(): void {
+        if (this.isUnloading || this.recoveryInProgress || this.sortingListName || this.lifecycleRunnerListName) return;
+        for (const [listName, lifecycle] of this.sortLifecycles) {
+            if (lifecycle.phase === 'COLLECTING') this.armListLifecycle(listName);
         }
-        this.pendingLists.delete(listName);
-        this.pendingSortNotBefore.delete(listName);
-        const requestedAt = this.pendingSortRequestedAt.get(listName) ?? now;
-        this.pendingSortRequestedAt.delete(listName);
-        await this.sortList(listName, requestedAt);
-        if (this.pendingLists.size > 0 && !this.sortTimer) this.armSortTimer(0);
+    }
+
+    private async runSortLifecycle(listName: string): Promise<void> {
+        if (this.isUnloading || this.recoveryInProgress) return;
+        if (this.sortingListName || this.lifecycleRunnerListName) return;
+        this.lifecycleRunnerListName = listName;
+        try {
+            const current = this.getSortLifecycle(listName);
+            const planning = beginPlanning(current, Date.now());
+            if (planning.phase !== 'PLANNING') {
+                this.armListLifecycle(listName);
+                return;
+            }
+            if (!(await this.isEnabled())) {
+                this.setSortLifecycle(listName, createListSortLifecycle());
+                return;
+            }
+            this.setSortLifecycle(listName, planning);
+            await this.sortList(listName, planning.requestedAt);
+        } finally {
+            this.lifecycleRunnerListName = '';
+            this.armCollectingLifecycles();
+        }
     }
 
     private async isEnabled(): Promise<boolean> {
@@ -678,13 +700,6 @@ export class ShoppingRoute extends utils.Adapter {
         }
     }
 
-    private updateInputSeries(listName: string, series: InputQuiescenceSeries): void {
-        this.inputSeriesByList.set(listName, series);
-        if (this.activeSortRuntime && this.sortingListName === listName) {
-            this.activeSortRuntime.inputSeries = series;
-        }
-    }
-
     private collectExternalListChange(listName: string, rawValue: unknown, observedAt = Date.now()): boolean {
         if (this.isUnloading) return false;
         const values = this.parseActiveValues(rawValue);
@@ -694,26 +709,22 @@ export class ShoppingRoute extends utils.Adapter {
             settled,
         ) === 'expected') {
             this.lastObservedActiveSignature.set(listName, activeValueSignature(values));
-            const series = this.inputSeriesByList.get(listName);
-            if (series) this.updateInputSeries(listName, { ...series, suppressedSelfTriggers: series.suppressedSelfTriggers + 1 });
+            this.setSortLifecycle(listName, recordSelfTrigger(this.getSortLifecycle(listName)));
             return false;
         }
 
         const signature = values ? activeValueSignature(values) : `unlesbar:${String(rawValue)}`;
         if (this.lastObservedActiveSignature.get(listName) === signature) return false;
         this.lastObservedActiveSignature.set(listName, signature);
-        const collected = collectExternalChange(
-            this.inputSeriesByList.get(listName),
+        const collected = collectExternalEvent(
+            this.getSortLifecycle(listName),
             signature,
             observedAt,
             this.sortStabilityDelayMs,
         );
-        this.updateInputSeries(listName, collected.series);
+        this.setSortLifecycle(listName, collected.lifecycle);
         if (!collected.collected) return false;
-        this.pendingLists.add(listName);
-        this.pendingSortRequestedAt.set(listName, collected.series.startedAt);
-        this.pendingSortNotBefore.set(listName, collected.series.quietUntil);
-        if (!this.sortingListName && !this.recoveryInProgress) this.armSortTimer(0);
+        if (collected.lifecycle.phase === 'COLLECTING') this.armListLifecycle(listName);
         return true;
     }
 
@@ -732,10 +743,10 @@ export class ShoppingRoute extends utils.Adapter {
                 tracker.transition,
             );
             if (classification === 'expected') {
-                if (runtime) this.updateInputSeries(tracker.listName, {
-                    ...runtime.inputSeries,
-                    suppressedSelfTriggers: runtime.inputSeries.suppressedSelfTriggers + 1,
-                });
+                if (runtime) this.setSortLifecycle(
+                    tracker.listName,
+                    recordSelfTrigger(runtime.lifecycle),
+                );
             } else {
                 const signature = activeValueSignature(values);
                 if (this.collectExternalListChange(tracker.listName, rawValue, observedAt)) {
@@ -779,7 +790,17 @@ export class ShoppingRoute extends utils.Adapter {
     }
 
     private requestSortFollowup(listName: string): void {
-        this.pendingLists.add(listName);
+        const current = this.getSortLifecycle(listName);
+        if (current.phase === 'IDLE') {
+            const requestedAt = Date.now();
+            this.setSortLifecycle(
+                listName,
+                requestSortRun(current, requestedAt, this.sortStabilityDelayMs),
+            );
+            this.armListLifecycle(listName);
+            return;
+        }
+        this.setSortLifecycle(listName, requestFollowup(this.getSortLifecycle(listName)));
         if (this.activeListChangeTracker?.listName === listName) {
             this.activeListChangeTracker.followupRequired = true;
         }
@@ -790,10 +811,7 @@ export class ShoppingRoute extends utils.Adapter {
         const tracker = this.activeListChangeTracker;
         if (runtime && tracker && !tracker.planDiscarded) {
             tracker.planDiscarded = true;
-            this.updateInputSeries(tracker.listName, {
-                ...runtime.inputSeries,
-                plansDiscardedBeforeWrite: runtime.inputSeries.plansDiscardedBeforeWrite + 1,
-            });
+            this.setSortLifecycle(tracker.listName, recordPlanDiscard(runtime.lifecycle));
         }
         throw new InputPlanSupersededError(reason);
     }
@@ -807,10 +825,7 @@ export class ShoppingRoute extends utils.Adapter {
             runtime.externalRollbackRecorded
         ) return;
         runtime.externalRollbackRecorded = true;
-        this.updateInputSeries(tracker.listName, {
-            ...runtime.inputSeries,
-            rollbacksDueToExternalChange: runtime.inputSeries.rollbacksDueToExternalChange + 1,
-        });
+        this.setSortLifecycle(tracker.listName, recordExternalRollback(runtime.lifecycle));
     }
 
     private confirmActiveListValue(id: string, value: string): void {
@@ -819,9 +834,10 @@ export class ShoppingRoute extends utils.Adapter {
         this.activeListChangeTracker.transition = undefined;
     }
 
-    private async finalizeActiveListChangeTracking(listName: string, runtime: SortRuntimeTiming): Promise<void> {
+    private async finalizeActiveListChangeTracking(listName: string): Promise<void> {
         const tracker = this.activeListChangeTracker;
         if (!tracker || tracker.listName !== listName || this.isUnloading) return;
+        this.setSortLifecycle(listName, beginVerifying(this.getSortLifecycle(listName)));
         try {
             const current = await this.readList(listName);
             const matchesExpected = classifyExpectedListEvent(current, tracker.expectedValues) === 'expected';
@@ -829,50 +845,22 @@ export class ShoppingRoute extends utils.Adapter {
                 const currentValues = activeListValues(current);
                 this.settledListValues.set(listName, currentValues);
                 this.lastObservedActiveSignature.set(listName, activeValueSignature(currentValues));
-                if (
-                    tracker.suspectedExternalSnapshots.length > 0 &&
-                    !tracker.followupRequired &&
-                    !tracker.planDiscarded
-                ) {
-                    this.pendingLists.delete(listName);
-                    this.pendingSortRequestedAt.delete(listName);
-                    this.pendingSortNotBefore.delete(listName);
-                }
             } else {
                 this.collectExternalListChange(listName, JSON.stringify(current));
             }
         } catch {
             this.collectExternalListChange(listName, 'unlesbar:final');
         }
-
-        if (this.pendingLists.has(listName)) {
-            const series = deferAfterActiveSort(
-                this.inputSeriesByList.get(listName) ?? runtime.inputSeries,
-                Date.now(),
-                this.sortStabilityDelayMs,
-            );
-            this.updateInputSeries(listName, series);
-            this.pendingLists.add(listName);
-            this.pendingSortRequestedAt.set(listName, series.startedAt);
-            this.pendingSortNotBefore.set(listName, series.quietUntil);
-        }
+        const verifying = this.getSortLifecycle(listName);
+        const settled = finishVerifying(verifying, Date.now(), this.sortStabilityDelayMs);
+        this.setSortLifecycle(listName, settled);
     }
 
     private async sortList(listName: string, requestedAt = Date.now()): Promise<void> {
-        if (this.isUnloading || this.recoveryInProgress) {
-            if (!this.isUnloading) this.pendingLists.add(listName);
-            return;
-        }
-        if (this.sortingListName) {
-            this.pendingLists.add(listName);
-            return;
-        }
+        if (this.isUnloading || this.recoveryInProgress || this.sortingListName) return;
+        const lifecycle = this.getSortLifecycle(listName);
+        if (lifecycle.phase !== 'PLANNING') return;
         const startedAt = Date.now();
-        if (!(await this.isEnabled())) return;
-        const inputSeries = recordSortListRun(
-            this.inputSeriesByList.get(listName) ?? createInputQuiescenceSeries(requestedAt),
-        );
-        this.updateInputSeries(listName, inputSeries);
         const settledValues = this.settledListValues.get(listName);
         this.settledListValues.delete(listName);
         const runtime: SortRuntimeTiming = {
@@ -884,7 +872,7 @@ export class ShoppingRoute extends utils.Adapter {
             contentMs: 0,
             visibleOrderMs: 0,
             visibleTouches: 0,
-            inputSeries,
+            lifecycle,
             externalRollbackRecorded: false,
             writes: { content: 0, header: 0, marker: 0, restore: 0, rollback: 0 },
             readiness: [],
@@ -907,7 +895,7 @@ export class ShoppingRoute extends utils.Adapter {
         try {
             let list = await this.readList(listName);
             this.updateActiveListExpectation(list);
-            if (this.pendingLists.has(listName)) {
+            if (this.getSortLifecycle(listName).externalDirty) {
                 this.rejectInputPlanBeforeFirstWrite(
                     `${listName}: Eingabeserie wurde unmittelbar vor dem Snapshot fortgesetzt; Planung wartet erneut auf Listenruhe.`,
                 );
@@ -950,17 +938,21 @@ export class ShoppingRoute extends utils.Adapter {
                 priority,
                 this.minimumItemsPerMarket,
             );
-            const headerAction = planMarketHeaderAction(
+            const headerActions = planMarketHeaderActions(
                 list,
                 required,
                 this.markets,
                 this.fallbackMarket,
                 this.marketHeadersEnabled,
+                this.optimizedMissingHeaderOrder(list, required, listName),
             );
+            const headerAction = headerActions[0];
+            this.assertInputPlanCurrentBeforeFirstWrite();
+            this.setSortLifecycle(listName, beginExecuting(this.getSortLifecycle(listName)));
             if (headerAction) {
                 await this.setStateAsync(
                     'info.lastPlan',
-                    JSON.stringify({ listName, requiredMarkets: required, headerAction }, null, 2),
+                    JSON.stringify({ listName, requiredMarkets: required, headerActions }, null, 2),
                     true,
                 );
                 if (this.dryRun) {
@@ -982,7 +974,7 @@ export class ShoppingRoute extends utils.Adapter {
                     this.log.error(message);
                     return;
                 }
-                const headerResult = await this.reconcileMarketHeaders(listName, list, required);
+                const headerResult = await this.reconcileMarketHeaders(listName, list, required, headerActions);
                 if (headerResult.interrupted) return;
                 list = headerResult.list;
                 active = activeItems(list);
@@ -1138,8 +1130,8 @@ export class ShoppingRoute extends utils.Adapter {
                                 : `${listName}: Ein ursprünglicher Listeneintrag wurde während der Sortierung verändert.`;
                         this.traffic.abortedRuns += 1;
                         await this.persistTrafficMetrics();
+                        this.collectExternalListChange(listName, JSON.stringify(fresh));
                         if (this.totalRuntimeWrites(runtime) === 0) {
-                            this.collectExternalListChange(listName, JSON.stringify(fresh));
                             this.rejectInputPlanBeforeFirstWrite(reason);
                         }
                         this.recordRollbackDueToExternalChange();
@@ -1158,8 +1150,8 @@ export class ShoppingRoute extends utils.Adapter {
                         this.traffic.abortedRuns += 1;
                         await this.persistTrafficMetrics();
                         const reason = `${listName}: Sortierpuffer erwartete bei ID ${step.id} „${step.from}“, gefunden wurde ein anderer Wert.`;
+                        this.collectExternalListChange(listName, JSON.stringify(fresh));
                         if (this.totalRuntimeWrites(runtime) === 0) {
-                            this.collectExternalListChange(listName, JSON.stringify(fresh));
                             this.rejectInputPlanBeforeFirstWrite(reason);
                         }
                         this.recordRollbackDueToExternalChange();
@@ -1258,6 +1250,7 @@ export class ShoppingRoute extends utils.Adapter {
                         this.traffic.abortedRuns += 1;
                         await this.persistTrafficMetrics();
                         const reason = `${listName}: Die Liste wurde während der gepufferten Sortierung außerhalb des bestätigten Schritts verändert.`;
+                        this.collectExternalListChange(listName, JSON.stringify(confirmedList));
                         this.recordRollbackDueToExternalChange();
                         const restored = await this.rollbackBufferedTransaction(journal);
                         if (!restored) {
@@ -1288,6 +1281,7 @@ export class ShoppingRoute extends utils.Adapter {
                     this.traffic.abortedRuns += 1;
                     await this.persistTrafficMetrics();
                     const reason = `${listName}: Abschlussprüfung der gepufferten Sortierung ist fehlgeschlagen.`;
+                    this.collectExternalListChange(listName, JSON.stringify(verifyList));
                     this.recordRollbackDueToExternalChange();
                     const restored = await this.rollbackBufferedTransaction(journal);
                     if (!restored) {
@@ -1313,6 +1307,7 @@ export class ShoppingRoute extends utils.Adapter {
                     await this.activateSortSafetyStop(listName, `${listName}: Sortierfehler mit unklarem Alexa2-Schreibstatus: ${message}`, journal);
                     return;
                 }
+                this.recordRollbackDueToExternalChange();
                 const restored = await this.rollbackBufferedTransaction(journal);
                 if (!restored) {
                     await this.activateSortSafetyStop(listName, `${listName}: Sortierfehler: ${message}`, journal);
@@ -1346,18 +1341,17 @@ export class ShoppingRoute extends utils.Adapter {
             this.log.error(message);
         } finally {
             this.finishSortRuntimePhase(runtime);
-            await this.finalizeActiveListChangeTracking(listName, runtime);
+            await this.finalizeActiveListChangeTracking(listName);
             this.sortingListName = '';
             this.activeListChangeTracker = null;
             try {
                 await this.persistRuntimeConfig();
                 await this.refreshExports();
                 await this.updateFeedbackReport();
-                if (this.pendingLists.size > 0) this.armSortTimer(0);
             } finally {
                 this.logSortRuntime(listName, runtime);
-                if (!this.pendingLists.has(listName)) this.inputSeriesByList.delete(listName);
                 if (this.activeSortRuntime === runtime) this.activeSortRuntime = null;
+                this.armCollectingLifecycles();
             }
         }
     }
@@ -1469,27 +1463,10 @@ export class ShoppingRoute extends utils.Adapter {
         listName: string,
         initialList: AlexaListItem[],
         required: string[],
+        actions: readonly MarketHeaderAction[],
     ): Promise<{ list: AlexaListItem[]; interrupted: boolean }> {
         let list = initialList;
-        let creationOrder = this.optimizedMissingHeaderOrder(list, required, listName);
-        const maximumActions = list.length + this.markets.length * 2 + 10;
-
-        for (let actionIndex = 0; actionIndex < maximumActions; actionIndex++) {
-            const planned = planMarketHeaderAction(
-                list,
-                required,
-                this.markets,
-                this.fallbackMarket,
-                this.marketHeadersEnabled,
-            );
-            if (!planned) return { list, interrupted: false };
-
-            let action = planned;
-            if (planned.type === 'create' && creationOrder.length > 0) {
-                const market = creationOrder.shift();
-                if (market) action = { type: 'create', market, value: formatMarketHeader(market) };
-            }
-
+        for (const action of actions) {
             const expected = activeListValues(list);
             const transition: Extract<ExpectedListTransition, { type: 'header-create' | 'header-delete' }> =
                 action.type === 'create'
@@ -1500,10 +1477,10 @@ export class ShoppingRoute extends utils.Adapter {
             const settlement = await this.waitForMarketHeaderAction(listName, expected, transition);
             if (settlement.result !== 'confirmed') {
                 this.setActiveListTransition(undefined);
-                this.requestSortFollowup(listName);
-                if (!this.pendingSortRequestedAt.has(listName)) {
-                    this.pendingSortRequestedAt.set(listName, Date.now());
+                if (settlement.result === 'ambiguous') {
+                    this.collectExternalListChange(listName, JSON.stringify(settlement.list));
                 }
+                this.requestSortFollowup(listName);
                 this.log.warn(
                     settlement.result === 'not-applied'
                         ? `${listName}: Marktüberschrift ${action.market} wurde innerhalb des Bestätigungsfensters nicht angewendet; genau eine neue Prüfung folgt.`
@@ -1514,11 +1491,18 @@ export class ShoppingRoute extends utils.Adapter {
 
             list = settlement.list;
             this.updateActiveListExpectation(list);
-            if (action.type !== 'create') creationOrder = this.optimizedMissingHeaderOrder(list, required, listName);
         }
 
+        const remaining = planMarketHeaderAction(
+            list,
+            required,
+            this.markets,
+            this.fallbackMarket,
+            this.marketHeadersEnabled,
+        );
+        if (!remaining) return { list, interrupted: false };
         this.requestSortFollowup(listName);
-        this.log.error(`${listName}: Marktüberschriften konnten nicht innerhalb der begrenzten Aktionszahl abgeglichen werden.`);
+        this.log.error(`${listName}: Ausgeführter Marktüberschriften-Gesamtplan ist nach der Remote-Verifikation nicht vollständig.`);
         return { list, interrupted: true };
     }
 
@@ -1670,10 +1654,10 @@ export class ShoppingRoute extends utils.Adapter {
         const readinessMs = sum(runtime.readiness);
         const confirmationMs = sum(runtime.confirmation);
         const totalWrites = this.totalRuntimeWrites(runtime);
-        const series = runtime.inputSeries;
+        const series = runtime.lifecycle.metrics;
         this.log.info(
             `${listName} Laufzeit: gesamt ${totalMs} ms | Startwartezeit ${startWaitMs} ms | ` +
-            `Serie: externe Events ${series.externalEventsCollected}, Quiet-Resets ${series.quietTimerResets}, ` +
+            `Serie: externe Events ${series.externalEvents}, Quiet-Resets ${series.quietResets}, ` +
             `sortList-Läufe ${series.sortListRuns}, Pläne vor Write verworfen ${series.plansDiscardedBeforeWrite}, ` +
             `Rollbacks durch externe Änderung ${series.rollbacksDueToExternalChange}, ` +
             `Eigen-Trigger ${series.suppressedSelfTriggers} resorbiert, Amazon-Writes gesamt ${series.amazonWrites} | ` +
@@ -1703,6 +1687,7 @@ export class ShoppingRoute extends utils.Adapter {
         const firstList = await this.readList(listName);
         let additionalItems = activeItems(firstList).some(item => !desiredSet.has(String(item.id)));
         if (additionalItems) {
+            this.collectExternalListChange(listName, JSON.stringify(firstList));
             this.requestSortFollowup(listName);
             this.log.warn(`${listName}: Neuer aktiver Alexa-Listeneintrag vor der Reihenfolge-Finalisierung erkannt; Finalisierung abgebrochen. Neue Berechnung folgt nach Synchronisationsruhe.`);
             return { writes: 0, interrupted: true, additionalItems: true };
@@ -1711,6 +1696,7 @@ export class ShoppingRoute extends utils.Adapter {
         try {
             touchIds = this.visibleOrderRefreshIds(firstList, orderedPlan);
         } catch (error) {
+            this.collectExternalListChange(listName, JSON.stringify(firstList));
             this.requestSortFollowup(listName);
             this.log.warn(`${listName}: Sichtbare Reihenfolge wird neu berechnet: ${error instanceof Error ? error.message : String(error)}`);
             return { writes: 0, interrupted: true, additionalItems };
@@ -1725,6 +1711,7 @@ export class ShoppingRoute extends utils.Adapter {
             const active = activeItems(fresh);
             if (active.some(item => !desiredSet.has(String(item.id)))) {
                 additionalItems = true;
+                this.collectExternalListChange(listName, JSON.stringify(fresh));
                 this.requestSortFollowup(listName);
                 this.log.warn(`${listName}: Neuer aktiver Alexa-Listeneintrag während der Reihenfolge-Finalisierung erkannt; weitere Reihenfolge-Aktualisierungen werden abgebrochen.`);
                 return { writes, interrupted: true, additionalItems };
@@ -1740,6 +1727,7 @@ export class ShoppingRoute extends utils.Adapter {
                 }
             }
             if (conflict) {
+                this.collectExternalListChange(listName, JSON.stringify(fresh));
                 this.requestSortFollowup(listName);
                 this.log.warn(`${listName}: Liste wurde während der Reihenfolge-Finalisierung verändert; keine Textwerte wurden zurückgerollt, neue Berechnung folgt.`);
                 return { writes, interrupted: true, additionalItems };
@@ -1748,6 +1736,7 @@ export class ShoppingRoute extends utils.Adapter {
             const currentItem = byId.get(id);
             const expectedValue = expectedValues.get(id);
             if (!currentItem || expectedValue === undefined) {
+                this.collectExternalListChange(listName, JSON.stringify(fresh));
                 this.requestSortFollowup(listName);
                 return { writes, interrupted: true, additionalItems };
             }
@@ -1862,6 +1851,7 @@ export class ShoppingRoute extends utils.Adapter {
         const verifyList = await this.readList(listName);
         if (activeItems(verifyList).some(item => !desiredSet.has(String(item.id)))) {
             additionalItems = true;
+            this.collectExternalListChange(listName, JSON.stringify(verifyList));
             this.requestSortFollowup(listName);
             this.log.warn(`${listName}: Neuer aktiver Alexa-Listeneintrag bei der Abschlussprüfung erkannt; neue Berechnung folgt nach Synchronisationsruhe.`);
             return { writes, interrupted: true, additionalItems };
@@ -1870,6 +1860,7 @@ export class ShoppingRoute extends utils.Adapter {
         try {
             remaining = this.visibleOrderRefreshIds(verifyList, orderedPlan);
         } catch (error) {
+            this.collectExternalListChange(listName, JSON.stringify(verifyList));
             this.requestSortFollowup(listName);
             this.log.warn(`${listName}: Abschlussprüfung der sichtbaren Reihenfolge wird neu berechnet: ${error instanceof Error ? error.message : String(error)}`);
             return { writes, interrupted: true, additionalItems };
@@ -2358,9 +2349,9 @@ export class ShoppingRoute extends utils.Adapter {
         journal?: SortTransactionJournal,
     ): Promise<void> {
         if (this.isUnloading) return;
-        this.pendingLists.clear();
-        this.pendingSortRequestedAt.clear();
-        this.pendingSortNotBefore.clear();
+        for (const timer of this.sortTimers.values()) if (timer) this.clearTimeout(timer);
+        this.sortTimers.clear();
+        this.sortLifecycles.clear();
         if (journal) {
             journal.status = journal.status === 'rollback' || journal.status === 'failed-rollback'
                 ? 'failed-rollback'
@@ -2407,10 +2398,10 @@ export class ShoppingRoute extends utils.Adapter {
                 this.writeTimestamps.push(Date.now());
                 if (runtimePhase && this.activeSortRuntime) {
                     this.activeSortRuntime.writes[runtimePhase] += 1;
-                    this.updateInputSeries(this.sortingListName, {
-                        ...this.activeSortRuntime.inputSeries,
-                        amazonWrites: this.activeSortRuntime.inputSeries.amazonWrites + 1,
-                    });
+                    this.setSortLifecycle(
+                        this.sortingListName,
+                        recordAmazonWrite(this.activeSortRuntime.lifecycle),
+                    );
                 }
                 this.traffic.alexaWrites += 1;
                 this.traffic.lastAlexaWrite = new Date().toISOString();

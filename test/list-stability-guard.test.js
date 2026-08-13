@@ -81,10 +81,10 @@ test("manual sortNow is scheduled immediately without the stability delay", () =
 });
 
 test("all automatic sort triggers retain the stability window", () => {
-    assert.match(main, /collectExternalChange\([\s\S]*this\.sortStabilityDelayMs/);
+    assert.match(main, /collectExternalEvent\([\s\S]*this\.sortStabilityDelayMs/);
     assert.match(main, /if \(state\.val === true\) this\.scheduleAll\(this\.sortStabilityDelayMs\);/);
-    assert.match(main, /pendingSortNotBefore\.set\(listName, collected\.series\.quietUntil\)/);
-    assert.match(main, /pendingSortNotBefore\.set\(listName, series\.quietUntil\)/);
+    assert.match(main, /requestSortRun\(this\.getSortLifecycle\(list\.name\), requestedAt, delay\)/);
+    assert.match(main, /lifecycle\.quietUntil - Date\.now\(\)/);
     assert.equal((main.match(/this\.scheduleAll\(this\.sortStabilityDelayMs\);/g) || []).length, 4);
 });
 
@@ -121,22 +121,23 @@ test("runtime measurement observes existing waits without changing polling or ti
     assert.match(main, /Inhalt \$\{runtime\.writes\.content\}, Header \$\{runtime\.writes\.header\}, Marker \$\{runtime\.writes\.marker\}/);
     assert.match(main, /Restore \$\{runtime\.writes\.restore\}, Rollback \$\{runtime\.writes\.rollback\}/);
     assert.match(main, /Eigen-Trigger \$\{series\.suppressedSelfTriggers\} resorbiert/);
-    assert.match(main, /externe Events \$\{series\.externalEventsCollected\}/);
+    assert.match(main, /externe Events \$\{series\.externalEvents\}/);
 });
 
-test('pending work is processed only after its per-list quiet deadline and never drained in a while loop', () => {
-    const scheduler = main.slice(main.indexOf('private armSortTimer'), main.indexOf('private async isEnabled'));
-    assert.match(scheduler, /pendingSortNotBefore\.get\(name\)/);
-    assert.match(scheduler, /await this\.sortList\(listName, requestedAt\)/);
-    assert.doesNotMatch(scheduler, /while \(this\.pendingLists\.size > 0\)/);
+test('one per-list lifecycle runs only after its quiet deadline and has no pending drain loop', () => {
+    const scheduler = main.slice(main.indexOf('private getSortLifecycle'), main.indexOf('private async isEnabled'));
+    assert.match(scheduler, /lifecycle\.phase !== 'COLLECTING'/);
+    assert.match(scheduler, /beginPlanning\(current, Date\.now\(\)\)/);
+    assert.match(scheduler, /await this\.sortList\(listName, planning\.requestedAt\)/);
+    assert.doesNotMatch(main, /pendingLists|pendingSortRequestedAt|pendingSortNotBefore|processPendingSorts/);
 });
 
 test('an external change can discard a stale plan before its first Alexa write', () => {
     assert.match(main, /class InputPlanSupersededError extends Error/);
-    assert.match(main, /plansDiscardedBeforeWrite: runtime\.inputSeries\.plansDiscardedBeforeWrite \+ 1/);
+    assert.match(main, /recordPlanDiscard\(runtime\.lifecycle\)/);
     const write = main.slice(main.indexOf('private async writeAlexaState'), main.indexOf('private assertAlexaWriteAllowed'));
     assert.equal((write.match(/assertInputPlanCurrentBeforeFirstWrite\(\)/g) || []).length, 2);
-    assert.match(main, /pendingLists\.has\(listName\)[\s\S]*Eingabeserie wurde unmittelbar vor dem Snapshot fortgesetzt/);
+    assert.match(main, /getSortLifecycle\(listName\)\.externalDirty[\s\S]*Eingabeserie wurde unmittelbar vor dem Snapshot fortgesetzt/);
 });
 
 test("buffered transaction rolls back when a new active id appears", () => {

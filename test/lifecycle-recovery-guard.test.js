@@ -7,11 +7,10 @@ const path = require('node:path');
 
 const main = fs.readFileSync(path.join(__dirname, '..', 'src', 'main.ts'), 'utf8');
 
-test('shutdown synchronously blocks writes, clears runtime queues and preserves the journal', () => {
+test('shutdown synchronously blocks writes, clears lifecycle timers and preserves the journal', () => {
     const unload = main.slice(main.indexOf('private onUnload'), main.indexOf('private scheduleAll'));
     assert.match(unload, /this\.isUnloading = true;/);
-    assert.match(unload, /this\.pendingLists\.clear\(\)/);
-    assert.match(unload, /this\.pendingSortRequestedAt\.clear\(\)/);
+    assert.match(unload, /this\.sortTimers\.clear\(\)/);
     assert.doesNotMatch(unload, /persistSortTransaction/);
 
     const writer = main.slice(main.indexOf('private async writeAlexaState'), main.indexOf('private async waitForWriteBudget'));
@@ -90,8 +89,8 @@ test('late settlement is read-only and shutdown-aware', () => {
     assert.doesNotMatch(lateWait, /writeAlexaState|setForeignStateAsync|clearSortTransaction|persistSortTransaction/);
 });
 
-test('sort, pending processing, compatibility writes and header writes are recovery guarded', () => {
-    assert.match(main, /private async processPendingSorts[\s\S]*this\.recoveryInProgress/);
+test('sort lifecycle, compatibility writes and header writes are recovery guarded', () => {
+    assert.match(main, /private async runSortLifecycle[\s\S]*this\.recoveryInProgress/);
     assert.match(main, /private async sortList[\s\S]*this\.recoveryInProgress/);
     assert.match(main, /private async runLiveCompatibilityTest[\s\S]*this\.recoveryInProgress/);
     assert.match(main, /private assertAlexaWriteAllowed[\s\S]*this\.recoveryInProgress && !this\.recoveryWritesAllowed/);
@@ -105,14 +104,14 @@ test('sortNow during recovery only queues work because recovery prevents timer p
         stateChange.indexOf('control.compatibilityTest'),
     );
     assert.match(sortNow, /scheduleAll\(0, requestedAt\)/);
-    assert.match(main, /private armSortTimer[\s\S]*this\.recoveryInProgress/);
-    assert.match(main, /private async processPendingSorts[\s\S]*this\.recoveryInProgress/);
+    assert.match(main, /private armListLifecycle[\s\S]*this\.recoveryInProgress/);
+    assert.match(main, /private async runSortLifecycle[\s\S]*this\.recoveryInProgress/);
 });
 
 test('list changes during recovery are queued without arming a parallel sort', () => {
     const stateChange = main.slice(main.indexOf('private async onStateChange'), main.indexOf('private onUnload'));
     assert.match(stateChange, /this\.collectExternalListChange\(list\.name, state\.val\)/);
     const collection = main.slice(main.indexOf('private collectExternalListChange'), main.indexOf('private observeActiveListEvent'));
-    assert.match(collection, /pendingLists\.add\(listName\)/);
-    assert.match(collection, /if \(!this\.sortingListName && !this\.recoveryInProgress\) this\.armSortTimer\(0\)/);
+    assert.match(collection, /collectExternalEvent/);
+    assert.match(collection, /if \(collected\.lifecycle\.phase === 'COLLECTING'\) this\.armListLifecycle\(listName\)/);
 });

@@ -7,6 +7,7 @@ exports.realActiveItems = realActiveItems;
 exports.optimizeMarketAssignments = optimizeMarketAssignments;
 exports.requiredMarkets = requiredMarkets;
 exports.planMarketHeaderAction = planMarketHeaderAction;
+exports.planMarketHeaderActions = planMarketHeaderActions;
 exports.optimizeMarketHeaderCreationOrder = optimizeMarketHeaderCreationOrder;
 const parser_1 = require("./parser");
 const HEADER_PATTERN = /^----\s+(.+?)\s+----$/;
@@ -211,6 +212,47 @@ function planMarketHeaderAction(list, required, markets, fallbackMarket, enabled
             return { type: 'delete', market: market.name, id: String(header.id) };
     }
     return null;
+}
+/**
+ * Builds the complete deterministic header action sequence before the first Alexa write.
+ * Newly created headers use temporary IDs in the simulation; real IDs are observed while the fixed sequence executes.
+ *
+ * @param list Current Alexa list snapshot.
+ * @param required Markets which need an active header.
+ * @param markets Configured markets.
+ * @param fallbackMarket Fallback market, which never gets a header.
+ * @param enabled Whether managed headers are enabled.
+ * @param preferredCreationOrder Optional optimized order for missing headers.
+ * @returns Complete header create/delete sequence for this snapshot.
+ */
+function planMarketHeaderActions(list, required, markets, fallbackMarket, enabled, preferredCreationOrder = []) {
+    let simulated = list.map(item => ({ ...item }));
+    const creationOrder = [...preferredCreationOrder];
+    const actions = [];
+    const maximumActions = list.length + markets.length * 2 + 10;
+    for (let actionIndex = 0; actionIndex < maximumActions; actionIndex++) {
+        const planned = planMarketHeaderAction(simulated, required, markets, fallbackMarket, enabled);
+        if (!planned)
+            return actions;
+        let action = planned;
+        if (planned.type === 'create' && creationOrder.length > 0) {
+            const market = creationOrder.shift();
+            if (market)
+                action = { type: 'create', market, value: formatMarketHeader(market) };
+        }
+        actions.push(action);
+        if (action.type === 'create') {
+            simulated.push({
+                id: `ShoppingRoutePlannedHeader${actionIndex}`,
+                value: action.value,
+                completed: false,
+            });
+        }
+        else {
+            simulated = simulated.filter(item => String(item.id) !== action.id);
+        }
+    }
+    throw new Error('Marktüberschriften-Gesamtplan überschreitet die begrenzte Aktionszahl.');
 }
 /**
  * Finds the lowest-scoring deterministic creation order. Header counts are normally small, so all permutations are

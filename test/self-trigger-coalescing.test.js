@@ -26,8 +26,8 @@ test('one final snapshot absorbs own refreshes and gives an unresolved external 
     assert.match(finalize, /const current = await this\.readList\(listName\)/);
     assert.match(finalize, /matchesExpected[\s\S]*settledListValues\.set/);
     assert.match(finalize, /else \{[\s\S]*collectExternalListChange/);
-    assert.match(finalize, /deferAfterActiveSort\([\s\S]*sortStabilityDelayMs/);
-    assert.match(finalize, /pendingSortNotBefore\.set\(listName, series\.quietUntil\)/);
+    assert.match(finalize, /beginVerifying/);
+    assert.match(finalize, /finishVerifying\(verifying, Date\.now\(\), this\.sortStabilityDelayMs\)/);
 });
 
 test('header reconciliation stays inside one sortList run and waits for each list effect', () => {
@@ -35,8 +35,10 @@ test('header reconciliation stays inside one sortList run and waits for each lis
         main.indexOf('private async reconcileMarketHeaders'),
         main.indexOf('private visibleOrderRefreshIds'),
     );
-    assert.match(headers, /for \(let actionIndex = 0;/);
+    assert.match(main, /const headerActions = planMarketHeaderActions/);
+    assert.match(headers, /for \(const action of actions\)/);
     assert.match(headers, /applyMarketHeaderAction[\s\S]*waitForMarketHeaderAction/);
     assert.match(headers, /updateActiveListExpectation\(list\)/);
+    assert.doesNotMatch(headers, /creationOrder\.shift/);
     assert.doesNotMatch(headers, /sortList\(|scheduleSort\(|scheduleAll\(/);
 });
