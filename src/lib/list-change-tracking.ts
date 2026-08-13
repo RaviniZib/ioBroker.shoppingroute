@@ -15,10 +15,17 @@ export interface ExpectedHeaderDeleteTransition {
     id: string;
 }
 
+export interface ExpectedHeaderBatchTransition {
+    type: 'header-batch';
+    creates: string[];
+    deletes: string[];
+}
+
 export type ExpectedListTransition =
     | ExpectedItemTransition
     | ExpectedHeaderCreateTransition
-    | ExpectedHeaderDeleteTransition;
+    | ExpectedHeaderDeleteTransition
+    | ExpectedHeaderBatchTransition;
 
 export interface ListValueItem {
     id?: unknown;
@@ -70,12 +77,35 @@ function sameExpectedValues(
         return added.length === 0 || (added.length === 1 && added[0][1] === transition.value);
     }
 
-    if (current.size !== expected.size && current.size !== expected.size - 1) return false;
-    for (const [id, value] of expected) {
-        if (id === transition.id && !current.has(id)) continue;
-        if (current.get(id) !== value) return false;
+    if (transition.type === 'header-delete') {
+        if (current.size !== expected.size && current.size !== expected.size - 1) return false;
+        for (const [id, value] of expected) {
+            if (id === transition.id && !current.has(id)) continue;
+            if (current.get(id) !== value) return false;
+        }
+        return true;
+    }
+
+    const deletedIds = new Set(transition.deletes);
+    const allowedCreates = valueCounts(transition.creates);
+    const observedCreates = new Map<string, number>();
+    for (const [id, expectedValue] of expected) {
+        if (deletedIds.has(id) && !current.has(id)) continue;
+        if (current.get(id) !== expectedValue) return false;
+    }
+    for (const [id, value] of current) {
+        if (expected.has(id)) continue;
+        const count = (observedCreates.get(value) || 0) + 1;
+        if (count > (allowedCreates.get(value) || 0)) return false;
+        observedCreates.set(value, count);
     }
     return true;
+}
+
+function valueCounts(values: readonly string[]): Map<string, number> {
+    const counts = new Map<string, number>();
+    for (const value of values) counts.set(value, (counts.get(value) || 0) + 1);
+    return counts;
 }
 
 /**
@@ -116,4 +146,36 @@ export function classifyHeaderActionObservation(
     }
     const allIds = new Set(items.map(item => scalarText(item.id)).filter(Boolean));
     return allIds.has(transition.id) ? 'pending' : 'confirmed';
+}
+
+/**
+ * Observes a fixed batch of managed header creates/deletes. Partial Alexa2 refreshes are pending, while any unrelated
+ * active value/ID change is ambiguous. This lets all #New writes from one plan settle as one lifecycle transition.
+ *
+ * @param items Current Alexa2 list JSON items.
+ * @param expected Stable active values before the header writes.
+ * @param transition Complete header batch being observed.
+ * @returns Whether the complete batch settled, is partially pending, or conflicts with another change.
+ */
+export function classifyHeaderBatchObservation(
+    items: ListValueItem[],
+    expected: ReadonlyMap<string, string>,
+    transition: ExpectedHeaderBatchTransition,
+): HeaderActionObservation {
+    const current = activeListValues(items);
+    if (!sameExpectedValues(current, expected, transition)) return 'ambiguous';
+
+    const allIds = new Set(items.map(item => scalarText(item.id)).filter(Boolean));
+    if (transition.deletes.some(id => allIds.has(id))) return 'pending';
+
+    const observedCreates = valueCounts(
+        [...current]
+            .filter(([id]) => !expected.has(id))
+            .map(([, value]) => value),
+    );
+    const expectedCreates = valueCounts(transition.creates);
+    for (const [value, count] of expectedCreates) {
+        if ((observedCreates.get(value) || 0) !== count) return 'pending';
+    }
+    return 'confirmed';
 }

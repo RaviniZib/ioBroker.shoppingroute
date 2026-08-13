@@ -7,10 +7,10 @@ exports.beginPlanning = beginPlanning;
 exports.beginExecuting = beginExecuting;
 exports.beginVerifying = beginVerifying;
 exports.finishVerifying = finishVerifying;
-exports.requestFollowup = requestFollowup;
 exports.recordSelfTrigger = recordSelfTrigger;
 exports.recordAmazonWrite = recordAmazonWrite;
 exports.recordPlanDiscard = recordPlanDiscard;
+exports.lifecycleTimerDelay = lifecycleTimerDelay;
 exports.recordExternalRollback = recordExternalRollback;
 exports.activeValueSignature = activeValueSignature;
 function emptyMetrics(startedAt = 0) {
@@ -33,7 +33,6 @@ function createListSortLifecycle() {
         quietUntil: 0,
         lastExternalSignature: '',
         externalDirty: false,
-        followupRequested: false,
         metrics: emptyMetrics(),
     };
 }
@@ -81,7 +80,7 @@ function requestSortRun(current, requestedAt, delayMs) {
                 : Math.max(current.quietUntil, requestedAt + delayMs),
         };
     }
-    return { ...current, followupRequested: true };
+    return current;
 }
 function beginPlanning(current, observedAt) {
     if (current.phase !== 'COLLECTING' || observedAt < current.quietUntil)
@@ -90,7 +89,6 @@ function beginPlanning(current, observedAt) {
         ...current,
         phase: 'PLANNING',
         externalDirty: false,
-        followupRequested: false,
         metrics: { ...current.metrics, sortListRuns: current.metrics.sortListRuns + 1 },
     };
 }
@@ -111,20 +109,6 @@ function finishVerifying(current, observedAt, quietMs) {
             phase: 'COLLECTING',
             quietUntil: observedAt + quietMs,
             externalDirty: false,
-            followupRequested: false,
-        };
-    }
-    if (current.followupRequested) {
-        const nextSeriesAt = Math.max(observedAt, current.metrics.lastExternalAt);
-        return {
-            ...current,
-            phase: 'COLLECTING',
-            requestedAt: nextSeriesAt,
-            quietUntil: observedAt + quietMs,
-            lastExternalSignature: '',
-            externalDirty: false,
-            followupRequested: false,
-            metrics: emptyMetrics(nextSeriesAt),
         };
     }
     return {
@@ -134,11 +118,7 @@ function finishVerifying(current, observedAt, quietMs) {
         quietUntil: 0,
         lastExternalSignature: '',
         externalDirty: false,
-        followupRequested: false,
     };
-}
-function requestFollowup(current) {
-    return { ...current, followupRequested: true };
 }
 function recordSelfTrigger(current) {
     return {
@@ -152,12 +132,14 @@ function recordAmazonWrite(current) {
 function recordPlanDiscard(current) {
     return {
         ...current,
-        followupRequested: true,
         metrics: {
             ...current.metrics,
             plansDiscardedBeforeWrite: current.metrics.plansDiscardedBeforeWrite + 1,
         },
     };
+}
+function lifecycleTimerDelay(current, observedAt) {
+    return current.phase === 'COLLECTING' ? Math.max(0, current.quietUntil - observedAt) : undefined;
 }
 function recordExternalRollback(current) {
     if (!current.externalDirty)

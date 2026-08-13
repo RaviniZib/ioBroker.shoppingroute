@@ -18,7 +18,6 @@ export interface ListSortLifecycle {
     quietUntil: number;
     lastExternalSignature: string;
     externalDirty: boolean;
-    followupRequested: boolean;
     metrics: SortSeriesMetrics;
 }
 
@@ -43,7 +42,6 @@ export function createListSortLifecycle(): ListSortLifecycle {
         quietUntil: 0,
         lastExternalSignature: '',
         externalDirty: false,
-        followupRequested: false,
         metrics: emptyMetrics(),
     };
 }
@@ -102,7 +100,7 @@ export function requestSortRun(
                 : Math.max(current.quietUntil, requestedAt + delayMs),
         };
     }
-    return { ...current, followupRequested: true };
+    return current;
 }
 
 export function beginPlanning(current: ListSortLifecycle, observedAt: number): ListSortLifecycle {
@@ -111,7 +109,6 @@ export function beginPlanning(current: ListSortLifecycle, observedAt: number): L
         ...current,
         phase: 'PLANNING',
         externalDirty: false,
-        followupRequested: false,
         metrics: { ...current.metrics, sortListRuns: current.metrics.sortListRuns + 1 },
     };
 }
@@ -138,20 +135,6 @@ export function finishVerifying(
             phase: 'COLLECTING',
             quietUntil: observedAt + quietMs,
             externalDirty: false,
-            followupRequested: false,
-        };
-    }
-    if (current.followupRequested) {
-        const nextSeriesAt = Math.max(observedAt, current.metrics.lastExternalAt);
-        return {
-            ...current,
-            phase: 'COLLECTING',
-            requestedAt: nextSeriesAt,
-            quietUntil: observedAt + quietMs,
-            lastExternalSignature: '',
-            externalDirty: false,
-            followupRequested: false,
-            metrics: emptyMetrics(nextSeriesAt),
         };
     }
     return {
@@ -161,12 +144,7 @@ export function finishVerifying(
         quietUntil: 0,
         lastExternalSignature: '',
         externalDirty: false,
-        followupRequested: false,
     };
-}
-
-export function requestFollowup(current: ListSortLifecycle): ListSortLifecycle {
-    return { ...current, followupRequested: true };
 }
 
 export function recordSelfTrigger(current: ListSortLifecycle): ListSortLifecycle {
@@ -183,12 +161,15 @@ export function recordAmazonWrite(current: ListSortLifecycle): ListSortLifecycle
 export function recordPlanDiscard(current: ListSortLifecycle): ListSortLifecycle {
     return {
         ...current,
-        followupRequested: true,
         metrics: {
             ...current.metrics,
             plansDiscardedBeforeWrite: current.metrics.plansDiscardedBeforeWrite + 1,
         },
     };
+}
+
+export function lifecycleTimerDelay(current: ListSortLifecycle, observedAt: number): number | undefined {
+    return current.phase === 'COLLECTING' ? Math.max(0, current.quietUntil - observedAt) : undefined;
 }
 
 export function recordExternalRollback(current: ListSortLifecycle): ListSortLifecycle {

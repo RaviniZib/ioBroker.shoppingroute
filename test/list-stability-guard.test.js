@@ -84,7 +84,7 @@ test("all automatic sort triggers retain the stability window", () => {
     assert.match(main, /collectExternalEvent\([\s\S]*this\.sortStabilityDelayMs/);
     assert.match(main, /if \(state\.val === true\) this\.scheduleAll\(this\.sortStabilityDelayMs\);/);
     assert.match(main, /requestSortRun\(this\.getSortLifecycle\(list\.name\), requestedAt, delay\)/);
-    assert.match(main, /lifecycle\.quietUntil - Date\.now\(\)/);
+    assert.match(main, /lifecycleTimerDelay\(lifecycle, Date\.now\(\)\)/);
     assert.equal((main.match(/this\.scheduleAll\(this\.sortStabilityDelayMs\);/g) || []).length, 4);
 });
 

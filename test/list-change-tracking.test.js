@@ -7,6 +7,7 @@ const {
     activeListValues,
     classifyExpectedListEvent,
     classifyHeaderActionObservation,
+    classifyHeaderBatchObservation,
 } = require('../build/lib/list-change-tracking');
 
 const item = (id, value, completed = false) => ({ id, value, completed });
@@ -63,4 +64,37 @@ test('only removal of the selected managed header confirms deletion', () => {
         classifyHeaderActionObservation(baseline, completedValues, { type: 'header-delete', id: 'old' }),
         'confirmed',
     );
+});
+
+test('a complete header batch accepts partial own refreshes but confirms only after every action', () => {
+    const expected = activeListValues(baseline);
+    const transition = {
+        type: 'header-batch',
+        creates: ['---- ALDI ----', '---- LIDL ----'],
+        deletes: [],
+    };
+    assert.equal(classifyHeaderBatchObservation(baseline, expected, transition), 'pending');
+    assert.equal(
+        classifyHeaderBatchObservation(baseline.concat(item('h1', '---- ALDI ----')), expected, transition),
+        'pending',
+    );
+    assert.equal(
+        classifyHeaderBatchObservation(
+            baseline.concat(item('h1', '---- ALDI ----'), item('h2', '---- LIDL ----')),
+            expected,
+            transition,
+        ),
+        'confirmed',
+    );
+    assert.equal(
+        classifyHeaderBatchObservation(baseline.concat(item('x', 'Benutzereintrag')), expected, transition),
+        'ambiguous',
+    );
+});
+
+test('a freshly created header in the next snapshot is confirmed and never planned as missing again', () => {
+    const expected = activeListValues(baseline);
+    const transition = { type: 'header-batch', creates: ['---- ALDI ----'], deletes: [] };
+    const refreshed = baseline.concat(item('remote-header-id', '---- ALDI ----'));
+    assert.equal(classifyHeaderBatchObservation(refreshed, expected, transition), 'confirmed');
 });

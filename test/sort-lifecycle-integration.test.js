@@ -10,6 +10,8 @@ const {
     collectExternalEvent,
     createListSortLifecycle,
     finishVerifying,
+    lifecycleTimerDelay,
+    requestSortRun,
     recordAmazonWrite,
     recordSelfTrigger,
 } = require('../build/lib/sort-lifecycle');
@@ -23,6 +25,46 @@ function externalSnapshot(lifecycle, itemCount, observedAt) {
         `Artikel ${index}`,
     ]));
     return collectExternalEvent(lifecycle, signature, observedAt, QUIET_MS).lifecycle;
+}
+
+class FakeLifecycleTimer {
+    constructor() {
+        this.now = 0;
+        this.lifecycle = createListSortLifecycle();
+        this.timerAt = undefined;
+        this.runs = 0;
+    }
+
+    collect(itemCount) {
+        this.lifecycle = externalSnapshot(this.lifecycle, itemCount, this.now);
+        this.arm();
+    }
+
+    arm() {
+        const delay = lifecycleTimerDelay(this.lifecycle, this.now);
+        this.timerAt = delay === undefined ? undefined : this.now + delay;
+    }
+
+    advanceTo(target) {
+        while (this.timerAt !== undefined && this.timerAt <= target) {
+            this.now = this.timerAt;
+            this.timerAt = undefined;
+            const planning = beginPlanning(this.lifecycle, this.now);
+            if (planning.phase === 'PLANNING') {
+                this.lifecycle = beginExecuting(planning);
+                this.runs += 1;
+            } else {
+                this.lifecycle = planning;
+                this.arm();
+            }
+        }
+        this.now = target;
+    }
+
+    verify() {
+        this.lifecycle = finishVerifying(beginVerifying(this.lifecycle), this.now, QUIET_MS);
+        this.arm();
+    }
 }
 
 test('A: ten one-second external snapshots produce zero writes and exactly one planning/executing run', () => {
@@ -117,4 +159,55 @@ test('E: verification without an external change returns to idle without another
     assert.equal(lifecycle.phase, 'IDLE');
     assert.equal(lifecycle.metrics.sortListRuns, 1);
     assert.equal(beginPlanning(lifecycle, 100_000).phase, 'IDLE');
+});
+
+test('F: idle has no lifecycle timer and cannot restart during five minutes of fake time', () => {
+    const fake = new FakeLifecycleTimer();
+    for (let index = 0; index < 8; index++) {
+        fake.advanceTo(index * 1_000);
+        fake.collect(index + 1);
+    }
+    fake.advanceTo(11_999);
+    assert.equal(fake.runs, 0);
+    fake.advanceTo(12_000);
+    assert.equal(fake.runs, 1);
+
+    const marketNames = ['ALDI', 'LIDL', 'REWE', 'EDEKA', 'KAUFLAND'];
+    const markets = marketNames.map((name, index) => ({ name, order: index + 1, enabled: true }));
+    const items = Array.from({ length: 20 }, (_entry, index) => ({
+        id: `article-${index}`,
+        value: `Artikel ${index}`,
+        completed: false,
+    }));
+    const headerActions = planMarketHeaderActions(items, marketNames, markets, 'Ohne Markt', true, marketNames);
+    assert.equal(headerActions.length, 5);
+    headerActions.forEach(() => { fake.lifecycle = recordAmazonWrite(fake.lifecycle); });
+    fake.advanceTo(13_000);
+    fake.verify();
+
+    assert.equal(fake.lifecycle.phase, 'IDLE');
+    assert.equal(fake.lifecycle.metrics.externalEvents, 8);
+    assert.equal(fake.lifecycle.metrics.quietResets, 7);
+    assert.equal(fake.lifecycle.metrics.sortListRuns, 1);
+    assert.equal(fake.lifecycle.metrics.amazonWrites, 5);
+    assert.equal(fake.timerAt, undefined);
+
+    fake.advanceTo(313_000);
+    assert.equal(fake.runs, 1);
+    assert.equal(fake.lifecycle.metrics.sortListRuns, 1);
+    assert.equal(fake.lifecycle.metrics.amazonWrites, 5);
+    assert.equal(fake.timerAt, undefined);
+});
+
+test('G: an internal run request during execution cannot create a follow-up lifecycle', () => {
+    let lifecycle = externalSnapshot(createListSortLifecycle(), 8, 0);
+    lifecycle = beginExecuting(beginPlanning(lifecycle, QUIET_MS));
+    lifecycle = requestSortRun(lifecycle, 15_000, QUIET_MS);
+    assert.equal(lifecycle.phase, 'EXECUTING');
+
+    lifecycle = finishVerifying(beginVerifying(lifecycle), 16_000, QUIET_MS);
+    assert.equal(lifecycle.phase, 'IDLE');
+    assert.equal(lifecycleTimerDelay(lifecycle, 16_000), undefined);
+    assert.equal(beginPlanning(lifecycle, 76_000).phase, 'IDLE');
+    assert.equal(lifecycle.metrics.sortListRuns, 1);
 });

@@ -88,6 +88,11 @@ test('headers are excluded from real item counts and disabled feature deletes th
     );
 });
 
+test('a newly created active header is present in the next snapshot and is not planned again', () => {
+    const refreshed = [item('remote-header-id', '---- ALDI ----'), item('a', 'Milch')];
+    assert.equal(planMarketHeaderAction(refreshed, ['ALDI'], markets, 'Ohne Markt', true), null);
+});
+
 test('legacy completed and stale headers are deleted instead of reused', () => {
     assert.deepEqual(
         planMarketHeaderAction([item('old', '---- LIDL ----', true), item('a', 'Cola')], ['LIDL'], markets, 'Ohne Markt', true),
@@ -108,6 +113,20 @@ test('sort plan places the header before its market while retaining fixed Alexa 
     const plan = createSortPlan(list, markets, routes, products, 'Ohne Markt', '', 3, true);
     assert.deepEqual(plan.map(entry => entry.id), ['id1', 'id2', 'idh']);
     assert.deepEqual(plan.map(entry => entry.to), ['---- ALDI ----', 'Eier', 'Milch']);
+});
+
+test('final target order interleaves every header with its assigned market items', () => {
+    const list = [
+        item('a1', 'Milch von ALDI', false, 1),
+        item('l1', 'Spezial', false, 2),
+        item('ha', '---- ALDI ----', false, 3),
+        item('hl', '---- LIDL ----', false, 4),
+    ];
+    const plan = createSortPlan(list, markets, routes, products, 'Ohne Markt', '', 1, true);
+    assert.deepEqual(
+        plan.map(entry => entry.to),
+        ['---- ALDI ----', 'Milch von ALDI', '---- LIDL ----', 'Spezial'],
+    );
 });
 
 test('header creation order optimizer exhaustively chooses the lowest Amazon-write score', () => {
