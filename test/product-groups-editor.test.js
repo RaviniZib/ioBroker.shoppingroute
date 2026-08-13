@@ -157,7 +157,8 @@ test('walking route editor source and delivered entry remain file-identical', ()
   };
 
   for (const [file, expected] of Object.entries(hashes)) {
-    const actual = crypto.createHash('sha256').update(readFileSync(join(root, file))).digest('hex');
+    const content = readFileSync(join(root, file), 'utf8').replace(/\r\n?/g, '\n');
+    const actual = crypto.createHash('sha256').update(content).digest('hex');
     assert.equal(actual, expected, file);
   }
 });
