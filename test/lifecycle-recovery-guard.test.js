@@ -111,8 +111,8 @@ test('sortNow during recovery only queues work because recovery prevents timer p
 
 test('list changes during recovery are queued without arming a parallel sort', () => {
     const stateChange = main.slice(main.indexOf('private async onStateChange'), main.indexOf('private onUnload'));
-    assert.match(
-        stateChange,
-        /if \(this\.recoveryInProgress\)[\s\S]*pendingLists\.add\(list\.name\)[\s\S]*return;[\s\S]*scheduleSort/,
-    );
+    assert.match(stateChange, /this\.collectExternalListChange\(list\.name, state\.val\)/);
+    const collection = main.slice(main.indexOf('private collectExternalListChange'), main.indexOf('private observeActiveListEvent'));
+    assert.match(collection, /pendingLists\.add\(listName\)/);
+    assert.match(collection, /if \(!this\.sortingListName && !this\.recoveryInProgress\) this\.armSortTimer\(0\)/);
 });

@@ -11,22 +11,23 @@ test('events for the actively sorted list are classified and never scheduled dir
     const stateChange = main.slice(main.indexOf('private async onStateChange'), main.indexOf('private onUnload'));
     const activeBranch = stateChange.slice(
         stateChange.indexOf('if (this.sortingListName === list.name)'),
-        stateChange.indexOf('if (this.recoveryInProgress)'),
+        stateChange.indexOf('this.collectExternalListChange(list.name, state.val)'),
     );
     assert.match(activeBranch, /observeActiveListEvent\(state\.val\)/);
     assert.match(activeBranch, /return;/);
     assert.doesNotMatch(activeBranch, /scheduleSort|pendingLists/);
 });
 
-test('one final snapshot absorbs own refreshes and schedules one unresolved external follow-up', () => {
+test('one final snapshot absorbs own refreshes and gives an unresolved external follow-up a full quiet phase', () => {
     const finalize = main.slice(
         main.indexOf('private async finalizeActiveListChangeTracking'),
         main.indexOf('private async sortList'),
     );
     assert.match(finalize, /const current = await this\.readList\(listName\)/);
-    assert.match(finalize, /matchesExpected[\s\S]*suppressedSelfTriggers/);
-    assert.match(finalize, /else \{[\s\S]*externalChangeEvents[\s\S]*pendingLists\.add\(listName\)/);
-    assert.equal((finalize.match(/pendingLists\.add\(listName\)/g) || []).length, 2);
+    assert.match(finalize, /matchesExpected[\s\S]*settledListValues\.set/);
+    assert.match(finalize, /else \{[\s\S]*collectExternalListChange/);
+    assert.match(finalize, /deferAfterActiveSort\([\s\S]*sortStabilityDelayMs/);
+    assert.match(finalize, /pendingSortNotBefore\.set\(listName, series\.quietUntil\)/);
 });
 
 test('header reconciliation stays inside one sortList run and waits for each list effect', () => {

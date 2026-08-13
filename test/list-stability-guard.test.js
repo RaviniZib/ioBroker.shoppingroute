@@ -81,9 +81,10 @@ test("manual sortNow is scheduled immediately without the stability delay", () =
 });
 
 test("all automatic sort triggers retain the stability window", () => {
-    assert.match(main, /this\.scheduleSort\(list\.name, this\.sortStabilityDelayMs\);/);
+    assert.match(main, /collectExternalChange\([\s\S]*this\.sortStabilityDelayMs/);
     assert.match(main, /if \(state\.val === true\) this\.scheduleAll\(this\.sortStabilityDelayMs\);/);
-    assert.match(main, /if \(this\.pendingLists\.size > 0\) this\.armSortTimer\(this\.sortStabilityDelayMs\);/);
+    assert.match(main, /pendingSortNotBefore\.set\(listName, collected\.series\.quietUntil\)/);
+    assert.match(main, /pendingSortNotBefore\.set\(listName, series\.quietUntil\)/);
     assert.equal((main.match(/this\.scheduleAll\(this\.sortStabilityDelayMs\);/g) || []).length, 4);
 });
 
@@ -91,7 +92,7 @@ test('Alexa2 refreshes from the active list are absorbed before automatic schedu
     const stateChange = main.slice(main.indexOf('private async onStateChange'), main.indexOf('private onUnload'));
     assert.match(
         stateChange,
-        /sortingListName === list\.name[\s\S]*observeActiveListEvent\(state\.val\)[\s\S]*return;[\s\S]*scheduleSort/,
+        /sortingListName === list\.name[\s\S]*observeActiveListEvent\(state\.val\)[\s\S]*return;[\s\S]*collectExternalListChange/,
     );
     assert.doesNotMatch(main, /listChangedDuringSort/);
 });
@@ -116,11 +117,26 @@ test("runtime measurement observes existing waits without changing polling or ti
     const measurement = main.slice(measurementStart, visibleStart);
     assert.doesNotMatch(measurement, /await |\.wait\(|setTimeout|setInterval/);
     assert.equal((main.match(/this\.logSortRuntime\(listName, runtime\);/g) || []).length, 1);
-    assert.match(main, /Amazon-Writes \$\{totalWrites\}/);
+    assert.match(main, /Amazon-Writes gesamt \$\{series\.amazonWrites\}/);
     assert.match(main, /Inhalt \$\{runtime\.writes\.content\}, Header \$\{runtime\.writes\.header\}, Marker \$\{runtime\.writes\.marker\}/);
     assert.match(main, /Restore \$\{runtime\.writes\.restore\}, Rollback \$\{runtime\.writes\.rollback\}/);
-    assert.match(main, /Eigen-Trigger \$\{runtime\.suppressedSelfTriggers\} resorbiert/);
-    assert.match(main, /externe Änderungen \$\{runtime\.externalChangeEvents\}/);
+    assert.match(main, /Eigen-Trigger \$\{series\.suppressedSelfTriggers\} resorbiert/);
+    assert.match(main, /externe Events \$\{series\.externalEventsCollected\}/);
+});
+
+test('pending work is processed only after its per-list quiet deadline and never drained in a while loop', () => {
+    const scheduler = main.slice(main.indexOf('private armSortTimer'), main.indexOf('private async isEnabled'));
+    assert.match(scheduler, /pendingSortNotBefore\.get\(name\)/);
+    assert.match(scheduler, /await this\.sortList\(listName, requestedAt\)/);
+    assert.doesNotMatch(scheduler, /while \(this\.pendingLists\.size > 0\)/);
+});
+
+test('an external change can discard a stale plan before its first Alexa write', () => {
+    assert.match(main, /class InputPlanSupersededError extends Error/);
+    assert.match(main, /plansDiscardedBeforeWrite: runtime\.inputSeries\.plansDiscardedBeforeWrite \+ 1/);
+    const write = main.slice(main.indexOf('private async writeAlexaState'), main.indexOf('private assertAlexaWriteAllowed'));
+    assert.equal((write.match(/assertInputPlanCurrentBeforeFirstWrite\(\)/g) || []).length, 2);
+    assert.match(main, /pendingLists\.has\(listName\)[\s\S]*Eingabeserie wurde unmittelbar vor dem Snapshot fortgesetzt/);
 });
 
 test("buffered transaction rolls back when a new active id appears", () => {

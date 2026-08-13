@@ -53,6 +53,7 @@ const alexa_write_settlement_1 = require("./lib/alexa-write-settlement");
 const recovery_state_1 = require("./lib/recovery-state");
 const recovery_late_settlement_1 = require("./lib/recovery-late-settlement");
 const list_change_tracking_1 = require("./lib/list-change-tracking");
+const input_quiescence_1 = require("./lib/input-quiescence");
 const VERSION = '0.3.2';
 const LIST_STABILITY_MS = 5000;
 const ALEXA_CONFIRMATION_TIMEOUT_MS = 10000;
@@ -74,15 +75,19 @@ const DEFAULT_CATEGORIES = [
     'TK-Produkte',
     'Sonstiges',
 ];
+class InputPlanSupersededError extends Error {
+}
 class ShoppingRoute extends utils.Adapter {
     sortTimer = null;
     versionTimer = null;
     pendingLists = new Set();
     pendingSortRequestedAt = new Map();
+    pendingSortNotBefore = new Map();
     sortingListName = '';
     activeSortRuntime = null;
     activeListChangeTracker = null;
-    sortSeriesRuns = new Map();
+    inputSeriesByList = new Map();
+    settledListValues = new Map();
     runtimeProducts = [];
     runtimeReviews = [];
     productsDirty = false;
@@ -105,6 +110,7 @@ class ShoppingRoute extends utils.Adapter {
     statistics = (0, statistics_1.emptyUsageStatistics)();
     knownActiveIds = new Map();
     activeCountByList = new Map();
+    lastObservedActiveSignature = new Map();
     writeTimestamps = [];
     temporaryPriorityMarket = '';
     latestBetaVersion = '';
@@ -485,12 +491,7 @@ class ShoppingRoute extends utils.Adapter {
                 this.observeActiveListEvent(state.val);
                 return;
             }
-            if (this.recoveryInProgress) {
-                this.pendingLists.add(list.name);
-                this.pendingSortRequestedAt.set(list.name, Date.now());
-                return;
-            }
-            this.scheduleSort(list.name, this.sortStabilityDelayMs);
+            this.collectExternalListChange(list.name, state.val);
         }
     }
     onUnload(callback) {
@@ -503,6 +504,7 @@ class ShoppingRoute extends utils.Adapter {
         this.versionTimer = null;
         this.pendingLists.clear();
         this.pendingSortRequestedAt.clear();
+        this.pendingSortNotBefore.clear();
         void (async () => {
             try {
                 await this.journalOperation?.catch(() => undefined);
@@ -517,23 +519,13 @@ class ShoppingRoute extends utils.Adapter {
     scheduleAll(delay, requestedAt = Date.now()) {
         if (this.isUnloading)
             return;
+        const notBefore = Date.now() + Math.max(0, delay);
         for (const list of this.listConfigs) {
-            if (!this.pendingLists.has(list.name) && this.sortingListName !== list.name) {
-                this.sortSeriesRuns.set(list.name, 0);
-            }
             this.pendingLists.add(list.name);
             this.pendingSortRequestedAt.set(list.name, requestedAt);
+            const current = this.pendingSortNotBefore.get(list.name) ?? 0;
+            this.pendingSortNotBefore.set(list.name, delay === 0 ? notBefore : Math.max(current, notBefore));
         }
-        this.armSortTimer(delay);
-    }
-    scheduleSort(listName, delay, requestedAt = Date.now()) {
-        if (this.isUnloading)
-            return;
-        if (!this.pendingLists.has(listName) && this.sortingListName !== listName) {
-            this.sortSeriesRuns.set(listName, 0);
-        }
-        this.pendingLists.add(listName);
-        this.pendingSortRequestedAt.set(listName, requestedAt);
         this.armSortTimer(delay);
     }
     armSortTimer(delay) {
@@ -541,23 +533,39 @@ class ShoppingRoute extends utils.Adapter {
             return;
         if (this.sortTimer)
             this.clearTimeout(this.sortTimer);
+        const now = Date.now();
+        let nextAt = Number.POSITIVE_INFINITY;
+        for (const listName of this.pendingLists) {
+            let notBefore = this.pendingSortNotBefore.get(listName);
+            if (notBefore === undefined) {
+                notBefore = now + Math.max(0, delay);
+                this.pendingSortNotBefore.set(listName, notBefore);
+            }
+            nextAt = Math.min(nextAt, notBefore);
+        }
+        if (!Number.isFinite(nextAt))
+            return;
         this.sortTimer = this.setTimeout(() => {
             this.sortTimer = null;
             void this.processPendingSorts();
-        }, delay);
+        }, Math.max(0, nextAt - now));
     }
     async processPendingSorts() {
         if (this.isUnloading || this.recoveryInProgress || this.sortingListName)
             return;
-        while (this.pendingLists.size > 0) {
-            const listName = this.pendingLists.values().next().value;
-            if (!listName)
-                break;
-            this.pendingLists.delete(listName);
-            const requestedAt = this.pendingSortRequestedAt.get(listName) ?? Date.now();
-            this.pendingSortRequestedAt.delete(listName);
-            await this.sortList(listName, requestedAt);
+        const now = Date.now();
+        const listName = [...this.pendingLists].find(name => (this.pendingSortNotBefore.get(name) ?? now) <= now);
+        if (!listName) {
+            this.armSortTimer(0);
+            return;
         }
+        this.pendingLists.delete(listName);
+        this.pendingSortNotBefore.delete(listName);
+        const requestedAt = this.pendingSortRequestedAt.get(listName) ?? now;
+        this.pendingSortRequestedAt.delete(listName);
+        await this.sortList(listName, requestedAt);
+        if (this.pendingLists.size > 0 && !this.sortTimer)
+            this.armSortTimer(0);
     }
     async isEnabled() {
         const state = await this.getStateAsync('control.enabled');
@@ -573,29 +581,81 @@ class ShoppingRoute extends utils.Adapter {
             throw new Error(`${stateId} enthält kein JSON-Array.`);
         return parsed;
     }
+    parseActiveValues(rawValue) {
+        if (typeof rawValue !== 'string')
+            return undefined;
+        try {
+            const parsed = JSON.parse(rawValue);
+            return Array.isArray(parsed) ? (0, list_change_tracking_1.activeListValues)(parsed) : undefined;
+        }
+        catch {
+            return undefined;
+        }
+    }
+    updateInputSeries(listName, series) {
+        this.inputSeriesByList.set(listName, series);
+        if (this.activeSortRuntime && this.sortingListName === listName) {
+            this.activeSortRuntime.inputSeries = series;
+        }
+    }
+    collectExternalListChange(listName, rawValue, observedAt = Date.now()) {
+        if (this.isUnloading)
+            return false;
+        const values = this.parseActiveValues(rawValue);
+        const settled = this.settledListValues.get(listName);
+        if (!this.sortingListName && values && settled && (0, list_change_tracking_1.classifyExpectedListEvent)([...values].map(([id, value]) => ({ id, value, completed: false })), settled) === 'expected') {
+            this.lastObservedActiveSignature.set(listName, (0, input_quiescence_1.activeValueSignature)(values));
+            const series = this.inputSeriesByList.get(listName);
+            if (series)
+                this.updateInputSeries(listName, { ...series, suppressedSelfTriggers: series.suppressedSelfTriggers + 1 });
+            return false;
+        }
+        const signature = values ? (0, input_quiescence_1.activeValueSignature)(values) : `unlesbar:${String(rawValue)}`;
+        if (this.lastObservedActiveSignature.get(listName) === signature)
+            return false;
+        this.lastObservedActiveSignature.set(listName, signature);
+        const collected = (0, input_quiescence_1.collectExternalChange)(this.inputSeriesByList.get(listName), signature, observedAt, this.sortStabilityDelayMs);
+        this.updateInputSeries(listName, collected.series);
+        if (!collected.collected)
+            return false;
+        this.pendingLists.add(listName);
+        this.pendingSortRequestedAt.set(listName, collected.series.startedAt);
+        this.pendingSortNotBefore.set(listName, collected.series.quietUntil);
+        if (!this.sortingListName && !this.recoveryInProgress)
+            this.armSortTimer(0);
+        return true;
+    }
     observeActiveListEvent(rawValue) {
         const tracker = this.activeListChangeTracker;
         const runtime = this.activeSortRuntime;
-        if (!tracker || tracker.listName !== this.sortingListName || typeof rawValue !== 'string') {
-            if (tracker)
-                tracker.suspectedExternalEvents += 1;
+        if (!tracker || tracker.listName !== this.sortingListName)
             return;
-        }
+        const observedAt = Date.now();
         try {
-            const parsed = JSON.parse(rawValue);
-            if (!Array.isArray(parsed))
+            const values = this.parseActiveValues(rawValue);
+            if (!values)
                 throw new Error('kein Array');
+            const parsed = [...values].map(([id, value]) => ({ id, value, completed: false }));
             const classification = (0, list_change_tracking_1.classifyExpectedListEvent)(parsed, tracker.expectedValues, tracker.transition);
             if (classification === 'expected') {
                 if (runtime)
-                    runtime.suppressedSelfTriggers += 1;
+                    this.updateInputSeries(tracker.listName, {
+                        ...runtime.inputSeries,
+                        suppressedSelfTriggers: runtime.inputSeries.suppressedSelfTriggers + 1,
+                    });
             }
             else {
-                tracker.suspectedExternalEvents += 1;
+                const signature = (0, input_quiescence_1.activeValueSignature)(values);
+                if (this.collectExternalListChange(tracker.listName, rawValue, observedAt)) {
+                    tracker.suspectedExternalSnapshots.push({ signature, observedAt });
+                }
             }
         }
         catch {
-            tracker.suspectedExternalEvents += 1;
+            const signature = `unlesbar:${String(rawValue)}`;
+            if (this.collectExternalListChange(tracker.listName, rawValue, observedAt)) {
+                tracker.suspectedExternalSnapshots.push({ signature, observedAt });
+            }
         }
     }
     updateActiveListExpectation(list) {
@@ -607,6 +667,50 @@ class ShoppingRoute extends utils.Adapter {
     setActiveListTransition(transition) {
         if (this.activeListChangeTracker)
             this.activeListChangeTracker.transition = transition;
+    }
+    totalRuntimeWrites(runtime) {
+        return Object.values(runtime.writes).reduce((total, value) => total + value, 0);
+    }
+    assertInputPlanCurrentBeforeFirstWrite() {
+        const runtime = this.activeSortRuntime;
+        const tracker = this.activeListChangeTracker;
+        if (!runtime ||
+            !tracker ||
+            tracker.suspectedExternalSnapshots.length === 0 ||
+            this.totalRuntimeWrites(runtime) > 0)
+            return;
+        this.rejectInputPlanBeforeFirstWrite(`${tracker.listName}: Sortierplan vor dem ersten Alexa-Schreibzugriff durch externe Listenänderung überholt.`);
+    }
+    requestSortFollowup(listName) {
+        this.pendingLists.add(listName);
+        if (this.activeListChangeTracker?.listName === listName) {
+            this.activeListChangeTracker.followupRequired = true;
+        }
+    }
+    rejectInputPlanBeforeFirstWrite(reason) {
+        const runtime = this.activeSortRuntime;
+        const tracker = this.activeListChangeTracker;
+        if (runtime && tracker && !tracker.planDiscarded) {
+            tracker.planDiscarded = true;
+            this.updateInputSeries(tracker.listName, {
+                ...runtime.inputSeries,
+                plansDiscardedBeforeWrite: runtime.inputSeries.plansDiscardedBeforeWrite + 1,
+            });
+        }
+        throw new InputPlanSupersededError(reason);
+    }
+    recordRollbackDueToExternalChange() {
+        const runtime = this.activeSortRuntime;
+        const tracker = this.activeListChangeTracker;
+        if (!runtime ||
+            !tracker ||
+            runtime.externalRollbackRecorded)
+            return;
+        runtime.externalRollbackRecorded = true;
+        this.updateInputSeries(tracker.listName, {
+            ...runtime.inputSeries,
+            rollbacksDueToExternalChange: runtime.inputSeries.rollbacksDueToExternalChange + 1,
+        });
     }
     confirmActiveListValue(id, value) {
         if (!this.activeListChangeTracker)
@@ -622,22 +726,30 @@ class ShoppingRoute extends utils.Adapter {
             const current = await this.readList(listName);
             const matchesExpected = (0, list_change_tracking_1.classifyExpectedListEvent)(current, tracker.expectedValues) === 'expected';
             if (matchesExpected) {
-                runtime.suppressedSelfTriggers += tracker.suspectedExternalEvents;
+                const currentValues = (0, list_change_tracking_1.activeListValues)(current);
+                this.settledListValues.set(listName, currentValues);
+                this.lastObservedActiveSignature.set(listName, (0, input_quiescence_1.activeValueSignature)(currentValues));
+                if (tracker.suspectedExternalSnapshots.length > 0 &&
+                    !tracker.followupRequired &&
+                    !tracker.planDiscarded) {
+                    this.pendingLists.delete(listName);
+                    this.pendingSortRequestedAt.delete(listName);
+                    this.pendingSortNotBefore.delete(listName);
+                }
             }
             else {
-                runtime.externalChangeEvents += Math.max(1, tracker.suspectedExternalEvents);
-                this.pendingLists.add(listName);
-                if (!this.pendingSortRequestedAt.has(listName)) {
-                    this.pendingSortRequestedAt.set(listName, Date.now());
-                }
+                this.collectExternalListChange(listName, JSON.stringify(current));
             }
         }
         catch {
-            runtime.externalChangeEvents += Math.max(1, tracker.suspectedExternalEvents);
+            this.collectExternalListChange(listName, 'unlesbar:final');
+        }
+        if (this.pendingLists.has(listName)) {
+            const series = (0, input_quiescence_1.deferAfterActiveSort)(this.inputSeriesByList.get(listName) ?? runtime.inputSeries, Date.now(), this.sortStabilityDelayMs);
+            this.updateInputSeries(listName, series);
             this.pendingLists.add(listName);
-            if (!this.pendingSortRequestedAt.has(listName)) {
-                this.pendingSortRequestedAt.set(listName, Date.now());
-            }
+            this.pendingSortRequestedAt.set(listName, series.startedAt);
+            this.pendingSortNotBefore.set(listName, series.quietUntil);
         }
     }
     async sortList(listName, requestedAt = Date.now()) {
@@ -653,8 +765,10 @@ class ShoppingRoute extends utils.Adapter {
         const startedAt = Date.now();
         if (!(await this.isEnabled()))
             return;
-        const seriesRuns = (this.sortSeriesRuns.get(listName) || 0) + 1;
-        this.sortSeriesRuns.set(listName, seriesRuns);
+        const inputSeries = (0, input_quiescence_1.recordSortListRun)(this.inputSeriesByList.get(listName) ?? (0, input_quiescence_1.createInputQuiescenceSeries)(requestedAt));
+        this.updateInputSeries(listName, inputSeries);
+        const settledValues = this.settledListValues.get(listName);
+        this.settledListValues.delete(listName);
         const runtime = {
             requestedAt,
             startedAt,
@@ -664,9 +778,8 @@ class ShoppingRoute extends utils.Adapter {
             contentMs: 0,
             visibleOrderMs: 0,
             visibleTouches: 0,
-            seriesRuns,
-            suppressedSelfTriggers: 0,
-            externalChangeEvents: 0,
+            inputSeries,
+            externalRollbackRecorded: false,
             writes: { content: 0, header: 0, marker: 0, restore: 0, rollback: 0 },
             readiness: [],
             confirmation: [],
@@ -675,8 +788,10 @@ class ShoppingRoute extends utils.Adapter {
         this.sortingListName = listName;
         this.activeListChangeTracker = {
             listName,
-            expectedValues: new Map(),
-            suspectedExternalEvents: 0,
+            expectedValues: new Map(settledValues ?? []),
+            suspectedExternalSnapshots: [],
+            planDiscarded: false,
+            followupRequired: false,
         };
         await this.ensureTrafficDay();
         this.traffic.localChecks += 1;
@@ -684,6 +799,9 @@ class ShoppingRoute extends utils.Adapter {
         try {
             let list = await this.readList(listName);
             this.updateActiveListExpectation(list);
+            if (this.pendingLists.has(listName)) {
+                this.rejectInputPlanBeforeFirstWrite(`${listName}: Eingabeserie wurde unmittelbar vor dem Snapshot fortgesetzt; Planung wartet erneut auf Listenruhe.`);
+            }
             let active = (0, sorter_1.activeItems)(list);
             const realActive = (0, market_plan_1.realActiveItems)(list, this.markets);
             this.activeCountByList.set(listName, realActive.length);
@@ -741,6 +859,7 @@ class ShoppingRoute extends utils.Adapter {
             await this.setStateAsync('info.lastPlan', JSON.stringify({ listName, plan }, null, 2), true);
             await this.setStateAsync('info.preview', JSON.stringify({ listName, changes: plan.filter(entry => entry.changed), plan }, null, 2), true);
             await this.setStateAsync('info.previewText', (0, sorter_1.makePreviewText)(listName, plan), true);
+            this.assertInputPlanCurrentBeforeFirstWrite();
             const changes = plan.filter(entry => entry.changed);
             const now = new Date().toISOString();
             if (changes.length > 0) {
@@ -845,6 +964,7 @@ class ShoppingRoute extends utils.Adapter {
             this.transitionSortRuntimePhase(runtime, 'content');
             let written = 0;
             try {
+                this.assertInputPlanCurrentBeforeFirstWrite();
                 for (let index = 0; index < program.steps.length; index++) {
                     const step = program.steps[index];
                     const fresh = await this.readList(listName);
@@ -857,12 +977,17 @@ class ShoppingRoute extends utils.Adapter {
                                 : `${listName}: Ein ursprünglicher Listeneintrag wurde während der Sortierung verändert.`;
                         this.traffic.abortedRuns += 1;
                         await this.persistTrafficMetrics();
+                        if (this.totalRuntimeWrites(runtime) === 0) {
+                            this.collectExternalListChange(listName, JSON.stringify(fresh));
+                            this.rejectInputPlanBeforeFirstWrite(reason);
+                        }
+                        this.recordRollbackDueToExternalChange();
                         const restored = await this.rollbackBufferedTransaction(journal);
                         if (!restored) {
                             await this.activateSortSafetyStop(listName, reason, journal);
                             return;
                         }
-                        this.pendingLists.add(listName);
+                        this.requestSortFollowup(listName);
                         this.log.warn(`${reason} Der bestätigte Sortierpfad wurde rückwärts zurückgesetzt; neue Berechnung folgt.`);
                         return;
                     }
@@ -871,12 +996,17 @@ class ShoppingRoute extends utils.Adapter {
                         this.traffic.abortedRuns += 1;
                         await this.persistTrafficMetrics();
                         const reason = `${listName}: Sortierpuffer erwartete bei ID ${step.id} „${step.from}“, gefunden wurde ein anderer Wert.`;
+                        if (this.totalRuntimeWrites(runtime) === 0) {
+                            this.collectExternalListChange(listName, JSON.stringify(fresh));
+                            this.rejectInputPlanBeforeFirstWrite(reason);
+                        }
+                        this.recordRollbackDueToExternalChange();
                         const restored = await this.rollbackBufferedTransaction(journal);
                         if (!restored) {
                             await this.activateSortSafetyStop(listName, reason, journal);
                             return;
                         }
-                        this.pendingLists.add(listName);
+                        this.requestSortFollowup(listName);
                         this.log.warn(`${reason} Der bestätigte Sortierpfad wurde rückwärts zurückgesetzt.`);
                         return;
                     }
@@ -913,7 +1043,7 @@ class ShoppingRoute extends utils.Adapter {
                             await this.activateSortSafetyStop(listName, `${listName}: Sortierschritt ${index + 1}/${program.steps.length} wurde von Alexa2 verworfen.`, journal);
                             return;
                         }
-                        this.pendingLists.add(listName);
+                        this.requestSortFollowup(listName);
                         await this.setError(`${listName}: Alexa2 hat einen Sortierschritt verworfen; Ausgangszustand wurde wiederhergestellt.`);
                         return;
                     }
@@ -928,12 +1058,13 @@ class ShoppingRoute extends utils.Adapter {
                         this.traffic.abortedRuns += 1;
                         await this.persistTrafficMetrics();
                         const reason = `${listName}: Die Liste wurde während der gepufferten Sortierung außerhalb des bestätigten Schritts verändert.`;
+                        this.recordRollbackDueToExternalChange();
                         const restored = await this.rollbackBufferedTransaction(journal);
                         if (!restored) {
                             await this.activateSortSafetyStop(listName, reason, journal);
                             return;
                         }
-                        this.pendingLists.add(listName);
+                        this.requestSortFollowup(listName);
                         this.log.warn(`${reason} Der bestätigte Sortierpfad wurde rückwärts zurückgesetzt.`);
                         return;
                     }
@@ -953,17 +1084,23 @@ class ShoppingRoute extends utils.Adapter {
                     this.traffic.abortedRuns += 1;
                     await this.persistTrafficMetrics();
                     const reason = `${listName}: Abschlussprüfung der gepufferten Sortierung ist fehlgeschlagen.`;
+                    this.recordRollbackDueToExternalChange();
                     const restored = await this.rollbackBufferedTransaction(journal);
                     if (!restored) {
                         await this.activateSortSafetyStop(listName, reason, journal);
                         return;
                     }
-                    this.pendingLists.add(listName);
+                    this.requestSortFollowup(listName);
                     this.log.warn(`${reason} Ausgangszustand wurde wiederhergestellt.`);
                     return;
                 }
             }
             catch (error) {
+                if (error instanceof InputPlanSupersededError) {
+                    await this.clearSortTransaction();
+                    this.log.info(error.message);
+                    return;
+                }
                 const message = error instanceof Error ? error.message : String(error);
                 this.traffic.abortedRuns += 1;
                 await this.persistTrafficMetrics();
@@ -977,7 +1114,7 @@ class ShoppingRoute extends utils.Adapter {
                     await this.activateSortSafetyStop(listName, `${listName}: Sortierfehler: ${message}`, journal);
                     return;
                 }
-                this.pendingLists.add(listName);
+                this.requestSortFollowup(listName);
                 await this.setError(`${listName}: Gepufferte Sortierung abgebrochen und rückwärts auf den Ausgangszustand gesetzt: ${message}`);
                 this.log.error(`${listName}: Gepufferte Sortierung abgebrochen und zurückgesetzt: ${message}`);
                 return;
@@ -992,6 +1129,10 @@ class ShoppingRoute extends utils.Adapter {
             await this.setStateAsync('info.lastError', '', true);
         }
         catch (error) {
+            if (error instanceof InputPlanSupersededError) {
+                this.log.info(error.message);
+                return;
+            }
             const message = error instanceof Error ? error.message : String(error);
             await this.setError(message);
             this.log.error(message);
@@ -1006,12 +1147,12 @@ class ShoppingRoute extends utils.Adapter {
                 await this.refreshExports();
                 await this.updateFeedbackReport();
                 if (this.pendingLists.size > 0)
-                    this.armSortTimer(this.sortStabilityDelayMs);
+                    this.armSortTimer(0);
             }
             finally {
                 this.logSortRuntime(listName, runtime);
                 if (!this.pendingLists.has(listName))
-                    this.sortSeriesRuns.delete(listName);
+                    this.inputSeriesByList.delete(listName);
                 if (this.activeSortRuntime === runtime)
                     this.activeSortRuntime = null;
             }
@@ -1116,7 +1257,7 @@ class ShoppingRoute extends utils.Adapter {
             const settlement = await this.waitForMarketHeaderAction(listName, expected, transition);
             if (settlement.result !== 'confirmed') {
                 this.setActiveListTransition(undefined);
-                this.pendingLists.add(listName);
+                this.requestSortFollowup(listName);
                 if (!this.pendingSortRequestedAt.has(listName)) {
                     this.pendingSortRequestedAt.set(listName, Date.now());
                 }
@@ -1130,7 +1271,7 @@ class ShoppingRoute extends utils.Adapter {
             if (action.type !== 'create')
                 creationOrder = this.optimizedMissingHeaderOrder(list, required, listName);
         }
-        this.pendingLists.add(listName);
+        this.requestSortFollowup(listName);
         this.log.error(`${listName}: Marktüberschriften konnten nicht innerhalb der begrenzten Aktionszahl abgeglichen werden.`);
         return { list, interrupted: true };
     }
@@ -1262,12 +1403,16 @@ class ShoppingRoute extends utils.Adapter {
         const startWaitMs = Math.max(0, runtime.startedAt - runtime.requestedAt);
         const readinessMs = sum(runtime.readiness);
         const confirmationMs = sum(runtime.confirmation);
-        const totalWrites = Object.values(runtime.writes).reduce((total, value) => total + value, 0);
+        const totalWrites = this.totalRuntimeWrites(runtime);
+        const series = runtime.inputSeries;
         this.log.info(`${listName} Laufzeit: gesamt ${totalMs} ms | Startwartezeit ${startWaitMs} ms | ` +
-            `Serie ${runtime.seriesRuns} Lauf/Läufe | Amazon-Writes ${totalWrites} ` +
+            `Serie: externe Events ${series.externalEventsCollected}, Quiet-Resets ${series.quietTimerResets}, ` +
+            `sortList-Läufe ${series.sortListRuns}, Pläne vor Write verworfen ${series.plansDiscardedBeforeWrite}, ` +
+            `Rollbacks durch externe Änderung ${series.rollbacksDueToExternalChange}, ` +
+            `Eigen-Trigger ${series.suppressedSelfTriggers} resorbiert, Amazon-Writes gesamt ${series.amazonWrites} | ` +
+            `Lauf-Writes ${totalWrites} ` +
             `(Inhalt ${runtime.writes.content}, Header ${runtime.writes.header}, Marker ${runtime.writes.marker}, ` +
             `Restore ${runtime.writes.restore}, Rollback ${runtime.writes.rollback}) | ` +
-            `Eigen-Trigger ${runtime.suppressedSelfTriggers} resorbiert | externe Änderungen ${runtime.externalChangeEvents} | ` +
             `Planung ${runtime.planningMs} ms | Inhalt ${runtime.contentMs} ms | ` +
             `Reihenfolge ${runtime.visibleOrderMs} ms | ${runtime.visibleTouches} Touches | ` +
             `Readiness ${readinessMs} ms (Inhalt ${sum(runtime.readiness, 'content')}, Marker ${sum(runtime.readiness, 'marker')}, ` +
@@ -1283,7 +1428,7 @@ class ShoppingRoute extends utils.Adapter {
         const firstList = await this.readList(listName);
         let additionalItems = (0, sorter_1.activeItems)(firstList).some(item => !desiredSet.has(String(item.id)));
         if (additionalItems) {
-            this.pendingLists.add(listName);
+            this.requestSortFollowup(listName);
             this.log.warn(`${listName}: Neuer aktiver Alexa-Listeneintrag vor der Reihenfolge-Finalisierung erkannt; Finalisierung abgebrochen. Neue Berechnung folgt nach Synchronisationsruhe.`);
             return { writes: 0, interrupted: true, additionalItems: true };
         }
@@ -1292,7 +1437,7 @@ class ShoppingRoute extends utils.Adapter {
             touchIds = this.visibleOrderRefreshIds(firstList, orderedPlan);
         }
         catch (error) {
-            this.pendingLists.add(listName);
+            this.requestSortFollowup(listName);
             this.log.warn(`${listName}: Sichtbare Reihenfolge wird neu berechnet: ${error instanceof Error ? error.message : String(error)}`);
             return { writes: 0, interrupted: true, additionalItems };
         }
@@ -1307,7 +1452,7 @@ class ShoppingRoute extends utils.Adapter {
             const active = (0, sorter_1.activeItems)(fresh);
             if (active.some(item => !desiredSet.has(String(item.id)))) {
                 additionalItems = true;
-                this.pendingLists.add(listName);
+                this.requestSortFollowup(listName);
                 this.log.warn(`${listName}: Neuer aktiver Alexa-Listeneintrag während der Reihenfolge-Finalisierung erkannt; weitere Reihenfolge-Aktualisierungen werden abgebrochen.`);
                 return { writes, interrupted: true, additionalItems };
             }
@@ -1321,14 +1466,14 @@ class ShoppingRoute extends utils.Adapter {
                 }
             }
             if (conflict) {
-                this.pendingLists.add(listName);
+                this.requestSortFollowup(listName);
                 this.log.warn(`${listName}: Liste wurde während der Reihenfolge-Finalisierung verändert; keine Textwerte wurden zurückgerollt, neue Berechnung folgt.`);
                 return { writes, interrupted: true, additionalItems };
             }
             const currentItem = byId.get(id);
             const expectedValue = expectedValues.get(id);
             if (!currentItem || expectedValue === undefined) {
-                this.pendingLists.add(listName);
+                this.requestSortFollowup(listName);
                 return { writes, interrupted: true, additionalItems };
             }
             const valueStateId = `${this.alexaInstance}.Lists.${listName}.items.${id}.value`;
@@ -1398,7 +1543,7 @@ class ShoppingRoute extends utils.Adapter {
         const verifyList = await this.readList(listName);
         if ((0, sorter_1.activeItems)(verifyList).some(item => !desiredSet.has(String(item.id)))) {
             additionalItems = true;
-            this.pendingLists.add(listName);
+            this.requestSortFollowup(listName);
             this.log.warn(`${listName}: Neuer aktiver Alexa-Listeneintrag bei der Abschlussprüfung erkannt; neue Berechnung folgt nach Synchronisationsruhe.`);
             return { writes, interrupted: true, additionalItems };
         }
@@ -1407,7 +1552,7 @@ class ShoppingRoute extends utils.Adapter {
             remaining = this.visibleOrderRefreshIds(verifyList, orderedPlan);
         }
         catch (error) {
-            this.pendingLists.add(listName);
+            this.requestSortFollowup(listName);
             this.log.warn(`${listName}: Abschlussprüfung der sichtbaren Reihenfolge wird neu berechnet: ${error instanceof Error ? error.message : String(error)}`);
             return { writes, interrupted: true, additionalItems };
         }
@@ -1777,6 +1922,8 @@ class ShoppingRoute extends utils.Adapter {
         if (this.isUnloading)
             return;
         this.pendingLists.clear();
+        this.pendingSortRequestedAt.clear();
+        this.pendingSortNotBefore.clear();
         if (journal) {
             journal.status = journal.status === 'rollback' || journal.status === 'failed-rollback'
                 ? 'failed-rollback'
@@ -1805,9 +1952,11 @@ class ShoppingRoute extends utils.Adapter {
         for (let attempt = 0; attempt <= this.maxWriteRetries; attempt++) {
             try {
                 this.assertAlexaWriteAllowed();
+                this.assertInputPlanCurrentBeforeFirstWrite();
                 if (this.apiSafeMode)
                     await this.waitForWriteBudget();
                 this.assertAlexaWriteAllowed();
+                this.assertInputPlanCurrentBeforeFirstWrite();
                 this.activeAlexaWrites += 1;
                 try {
                     await this.setForeignStateAsync(stateId, { val: value, ack: false });
@@ -1816,8 +1965,13 @@ class ShoppingRoute extends utils.Adapter {
                     this.activeAlexaWrites -= 1;
                 }
                 this.writeTimestamps.push(Date.now());
-                if (runtimePhase && this.activeSortRuntime)
+                if (runtimePhase && this.activeSortRuntime) {
                     this.activeSortRuntime.writes[runtimePhase] += 1;
+                    this.updateInputSeries(this.sortingListName, {
+                        ...this.activeSortRuntime.inputSeries,
+                        amazonWrites: this.activeSortRuntime.inputSeries.amazonWrites + 1,
+                    });
+                }
                 this.traffic.alexaWrites += 1;
                 this.traffic.lastAlexaWrite = new Date().toISOString();
                 await this.persistTrafficMetrics();
@@ -1825,6 +1979,8 @@ class ShoppingRoute extends utils.Adapter {
             }
             catch (error) {
                 lastError = error;
+                if (error instanceof InputPlanSupersededError)
+                    throw error;
                 if (this.isUnloading || (this.recoveryInProgress && !this.recoveryWritesAllowed))
                     throw error;
                 if (attempt >= this.maxWriteRetries)
