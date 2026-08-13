@@ -5,18 +5,11 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
-test('runtime restricts Alexa create/delete writes to managed market headers', () => {
+test('runtime performs no writes through Alexa2 states and serializes direct item operations', () => {
     const source = fs.readFileSync(path.join(__dirname, '..', 'src', 'main.ts'), 'utf8');
-
-    // Normale Listeneinträge dürfen niemals automatisch erledigt werden.
-    assert.doesNotMatch(source, /Lists\.[^\n]*\.completed/);
-
-    // Genau ein #New- und ein #delete-Pfad sind erlaubt, beide ausschließlich im Header-Handler.
-    assert.equal((source.match(/#New/g) || []).length, 1);
-    assert.equal((source.match(/#delete/g) || []).length, 1);
-    assert.match(source, /`\$\{this\.alexaInstance\}\.Lists\.\$\{listName\}\.#New`/);
-    assert.match(
-        source,
-        /`\$\{this\.alexaInstance\}\.Lists\.\$\{listName\}\.items\.\$\{action\.id\}\.#delete`/,
-    );
+    assert.doesNotMatch(source, /setForeignStateAsync|\.Lists\.[^\n]*\.#New|\.Lists\.[^\n]*\.#delete/);
+    assert.match(source, /for \(const update of plan\.updates\)/);
+    assert.match(source, /for \(const deletion of plan\.deletes\)/);
+    assert.match(source, /client\.batchCreate/);
+    assert.match(source, /SICHERHEITSSTOPP/);
 });

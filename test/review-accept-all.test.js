@@ -66,11 +66,11 @@ test('Review accept-all preserves every row field and sets all returned actions 
     assert.equal(updatedReviewItems[0].customField, 'bleibt erhalten');
 });
 
-test('buffered transaction is persistent and old direct rollback helper is gone', () => {
+test('direct apply journal is persistent and old buffered rollback is gone', () => {
     const ioPackage = JSON.parse(fs.readFileSync(path.join(root, 'io-package.json'), 'utf8'));
     assert.ok(ioPackage.instanceObjects.some(obj => obj._id === 'info.sortTransaction'));
-    assert.match(main, /createBufferedSortProgram/);
-    assert.match(main, /persistSortTransaction/);
-    assert.match(main, /recoverInterruptedSortTransaction/);
-    assert.doesNotMatch(main, /rollbackSortWrites/);
+    assert.match(main, /applyDirectSort/);
+    assert.match(main, /persistDirectJournal/);
+    assert.match(main, /recoverDirectApplyJournal/);
+    assert.doesNotMatch(main, /createBufferedSortProgram|rollbackBufferedTransaction/);
 });

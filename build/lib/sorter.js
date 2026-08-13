@@ -1,172 +1,17 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.toTimestamp = toTimestamp;
 exports.activeItems = activeItems;
-exports.activeIdSignature = activeIdSignature;
-exports.compareActiveSnapshot = compareActiveSnapshot;
-exports.activeSnapshotHasConflict = activeSnapshotHasConflict;
-exports.sortSlotsOldestFirst = sortSlotsOldestFirst;
-exports.buildDesiredItems = buildDesiredItems;
-exports.createSortPlan = createSortPlan;
 exports.collectUnknownItems = collectUnknownItems;
 exports.mergeUnknownProducts = mergeUnknownProducts;
 exports.mergeReviewQueue = mergeReviewQueue;
 exports.applyReviewActions = applyReviewActions;
-exports.makePreviewText = makePreviewText;
 const parser_1 = require("./parser");
 const market_plan_1 = require("./market-plan");
-function toTimestamp(value) {
-    if (typeof value === 'number' && Number.isFinite(value))
-        return value;
-    if (typeof value === 'string' && value.trim()) {
-        const numeric = Number(value);
-        if (Number.isFinite(numeric))
-            return numeric;
-        const parsed = Date.parse(value);
-        if (Number.isFinite(parsed))
-            return parsed;
-    }
-    return 0;
-}
-function marketOrder(markets, marketName) {
-    const market = markets.find(entry => (0, parser_1.normalize)(entry.name) === (0, parser_1.normalize)(marketName));
-    return Number.isFinite(Number(market?.order)) ? Number(market?.order) : 9999;
-}
-function categoryOrder(routes, marketName, category) {
-    const marketRoutes = routes.filter(entry => (0, parser_1.normalize)(entry.market) === (0, parser_1.normalize)(marketName));
-    const index = marketRoutes.findIndex(entry => (0, parser_1.normalize)(entry.category) === (0, parser_1.normalize)(category));
-    if (index >= 0)
-        return (index + 1) * 10;
-    const route = routes.find(entry => (0, parser_1.normalize)(entry.market) === (0, parser_1.normalize)(marketName) &&
-        (0, parser_1.normalize)(entry.category) === (0, parser_1.normalize)(category));
-    return Number.isFinite(Number(route?.order)) ? Number(route?.order) : 9999;
-}
 function activeItems(list) {
     return list.filter(item => item &&
         item.completed === false &&
         Boolean(item.id) &&
         Boolean(String(item.value || '').trim()));
-}
-function activeIdSignature(list) {
-    return activeItems(list)
-        .map(item => String(item.id))
-        .sort()
-        .join('|');
-}
-function compareActiveSnapshot(originalItems, freshItems, expectedValues) {
-    const original = activeItems(originalItems);
-    const fresh = activeItems(freshItems);
-    const originalIds = new Set(original.map(item => String(item.id)));
-    const freshById = new Map(fresh.map(item => [String(item.id), item]));
-    const addedIds = fresh
-        .map(item => String(item.id))
-        .filter(id => !originalIds.has(id));
-    const missingIds = [];
-    const changedIds = [];
-    for (const item of original) {
-        const id = String(item.id);
-        const current = freshById.get(id);
-        if (!current) {
-            missingIds.push(id);
-            continue;
-        }
-        const expected = expectedValues.get(id);
-        if (expected !== undefined && String(current.value || '').trim() !== expected) {
-            changedIds.push(id);
-        }
-    }
-    return { addedIds, missingIds, changedIds };
-}
-function activeSnapshotHasConflict(comparison) {
-    return comparison.addedIds.length > 0 || comparison.missingIds.length > 0 || comparison.changedIds.length > 0;
-}
-function sortSlotsOldestFirst(items) {
-    return [...items].sort((a, b) => {
-        const timeA = toTimestamp(a.createdDateTime);
-        const timeB = toTimestamp(b.createdDateTime);
-        if (timeA !== timeB)
-            return timeA - timeB;
-        return String(a.id).localeCompare(String(b.id));
-    });
-}
-function buildDesiredItems(items, markets, routes, products, fallbackMarket, priorityMarket = '', minimumItemsPerMarket = 1) {
-    return (0, market_plan_1.optimizeMarketAssignments)(items, markets, products, fallbackMarket, priorityMarket, minimumItemsPerMarket)
-        .map(({ source, parsed }) => {
-        return {
-            source,
-            parsed,
-            marketOrder: marketOrder(markets, parsed.market),
-            categoryOrder: categoryOrder(routes, parsed.market, parsed.category),
-        };
-    })
-        .sort((a, b) => {
-        if (a.marketOrder !== b.marketOrder)
-            return a.marketOrder - b.marketOrder;
-        if (a.categoryOrder !== b.categoryOrder)
-            return a.categoryOrder - b.categoryOrder;
-        const categoryCompare = a.parsed.category.localeCompare(b.parsed.category, 'de', { sensitivity: 'base' });
-        if (categoryCompare !== 0 && a.categoryOrder === 9999 && b.categoryOrder === 9999)
-            return categoryCompare;
-        return a.parsed.productName.localeCompare(b.parsed.productName, 'de', { sensitivity: 'base' });
-    });
-}
-function createSortPlan(items, markets, routes, products, fallbackMarket, priorityMarket = '', minimumItemsPerMarket = 1, marketHeaders = false) {
-    const active = activeItems(items);
-    const real = active.filter(item => !(0, market_plan_1.isMarketHeader)(String(item.value), markets));
-    const slots = sortSlotsOldestFirst(active);
-    const desired = buildDesiredItems(real, markets, routes, products, fallbackMarket, priorityMarket, minimumItemsPerMarket);
-    const targets = [];
-    let lastMarket = '';
-    for (const target of desired) {
-        const market = target.parsed.market;
-        if (marketHeaders &&
-            (0, parser_1.normalize)(market) !== (0, parser_1.normalize)(fallbackMarket) &&
-            (0, parser_1.normalize)(market) !== (0, parser_1.normalize)(lastMarket)) {
-            const header = (0, market_plan_1.formatMarketHeader)(market);
-            targets.push({ text: header, market, category: '', product: header });
-        }
-        targets.push({
-            text: String(target.parsed.originalText).trim(),
-            market,
-            category: target.parsed.category,
-            product: target.parsed.productName,
-        });
-        lastMarket = market;
-    }
-    // Header creation/completion is reconciled before sorting. If the slot count is not yet
-    // synchronized, leave all texts untouched rather than risk losing or overwriting an item.
-    if (targets.length !== slots.length) {
-        return slots.map((slot, index) => {
-            const from = String(slot.value).trim();
-            return {
-                position: index + 1,
-                id: String(slot.id),
-                createdDateTime: toTimestamp(slot.createdDateTime),
-                from,
-                to: from,
-                market: fallbackMarket,
-                category: '',
-                product: from,
-                changed: false,
-            };
-        });
-    }
-    return slots.map((slot, index) => {
-        const target = targets[index];
-        const from = String(slot.value).trim();
-        const to = target?.text || from;
-        return {
-            position: index + 1,
-            id: String(slot.id),
-            createdDateTime: toTimestamp(slot.createdDateTime),
-            from,
-            to,
-            market: target?.market || fallbackMarket,
-            category: target?.category || '',
-            product: target?.product || to,
-            changed: from !== to,
-        };
-    });
 }
 function collectUnknownItems(items, markets, products, fallbackMarket, priorityMarket = '') {
     const seen = new Set();
@@ -308,13 +153,5 @@ function applyReviewActions(products, reviewItems) {
         remainingReviews: remaining,
         accepted,
     };
-}
-function makePreviewText(listName, plan) {
-    const lines = [`Liste: ${listName}`, `Aktive Plätze: ${plan.length}`, `Änderungen: ${plan.filter(entry => entry.changed).length}`];
-    for (const entry of plan) {
-        const marker = entry.changed ? '→' : '=';
-        lines.push(`${String(entry.position).padStart(2, '0')}. ${entry.from} ${marker} ${entry.to} [${entry.market} / ${entry.category}]`);
-    }
-    return lines.join('\n');
 }
 //# sourceMappingURL=sorter.js.map

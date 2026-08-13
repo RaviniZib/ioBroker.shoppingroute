@@ -2,9 +2,9 @@
 
 **Stand: ioBroker.shoppingroute 0.2.0 (Stable)**
 
-ShoppingRoute sortiert vorhandene aktive Alexa-Einkaufslisteneinträge nach Markt, Produktgruppe und deinem individuellen Laufweg durch den jeweiligen Markt. Der Adapter legt keine Alexa-Listeneinträge an, löscht keine und hakt keine automatisch ab. Er verteilt ausschließlich die sichtbaren Texte auf bereits vorhandene aktive Alexa-IDs.
+ShoppingRoute sortiert aktive Alexa-Einkaufslisteneinträge nach Markt, Produktgruppe und deinem individuellen Laufweg. Sichtbare zweistellige Präfixe von `[00]` bis `[99]` bilden den Sortierschlüssel. Einzelne Einträge werden direkt aktualisiert; bei ausgeschöpften Nummernlücken wird nur das notwendige Listensuffix gelöscht und in einem Batch neu angelegt. ShoppingRoute hakt keine Artikel automatisch ab.
 
-> **Wichtig:** Jede von ShoppingRoute verwaltete Alexa-Liste muss in der Alexa-App auf **„Älteste bis neueste“** stehen. Für die Ersteinrichtung sollte **Dry-Run** aktiviert bleiben.
+> **Wichtig:** Jede von ShoppingRoute verwaltete Alexa-Liste muss in der Alexa-App auf **A–Z** stehen. Für die Ersteinrichtung sollte **Dry-Run** aktiviert bleiben.
 
 ## 1. Voraussetzungen
 
@@ -248,7 +248,7 @@ shoppingroute.0.control.enabled
 
 ## 17. API-Schutz
 
-ShoppingRoute besitzt einen API-Schonmodus, damit Alexa nicht unnötig mit vielen Schreibzugriffen belastet wird.
+ShoppingRoute besitzt einen API-Schonmodus, damit Alexa nicht unnötig mit vielen direkten Schreibzugriffen belastet wird. Batch-CREATE wird bevorzugt; einzelne PUT- und DELETE-Anfragen laufen seriell.
 
 Einstellbar sind unter anderem:
 
@@ -268,9 +268,9 @@ Aktuelle Zähler stehen unter:
 shoppingroute.0.info.traffic
 ```
 
-## 18. Alexa-Kompatibilitätsprüfung
+## 18. Direkte Alexa-Verbindungsprüfung
 
-ShoppingRoute kann prüfen, ob die verwendete Alexa2-/alexa-remote2-Umgebung das benötigte Schreiben unterstützt.
+ShoppingRoute kann prüfen, ob aus der lokalen Alexa2-Anmeldung eine direkte, lesbare alexa-remote2-Sitzung aufgebaut werden kann. Dabei wird kein Test-Write ausgeführt.
 
 Wichtige Datenpunkte:
 
@@ -325,7 +325,7 @@ Alexa2-Instanz prüfen, in ShoppingRoute auswählen, speichern und die Konfigura
 
 ### Reihenfolge in Alexa wirkt falsch
 
-Prüfen, ob die betreffende Liste in der Alexa-App auf **„Älteste bis neueste“** steht.
+Prüfen, ob die betreffende Liste in der Alexa-App auf **A–Z** steht und alle aktiven Einträge einen Präfix `[00]`–`[99]` besitzen.
 
 ### Artikel landet im falschen Markt
 
@@ -355,7 +355,7 @@ API-Schonmodus, Schreibpausen und `info.traffic`, `info.compatibility` sowie `in
 
 1. Alexa2-Instanz auswählen.
 2. Dry-Run eingeschaltet lassen.
-3. Alexa-Liste auswählen und in Alexa auf „Älteste bis neueste“ stellen.
+3. Alexa-Liste auswählen und in Alexa auf A–Z stellen.
 4. Märkte anlegen oder kontrollieren.
 5. Produktgruppen kontrollieren.
 6. Für jeden Markt den Laufweg sortieren.

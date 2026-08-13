@@ -2,6 +2,8 @@ export interface AlexaListItem {
     id: string;
     value: string;
     completed: boolean;
+    listId?: string;
+    version?: number;
     createdDateTime?: number | string;
     updatedDateTime?: number | string;
 }
@@ -94,25 +96,6 @@ export interface ParsedItem {
     explicitMarket: boolean;
     quantityPrefix: string;
     ambiguousMarketSuffix?: string;
-}
-
-export interface SortableItem {
-    source: AlexaListItem;
-    parsed: ParsedItem;
-    marketOrder: number;
-    categoryOrder: number;
-}
-
-export interface SortPlanEntry {
-    position: number;
-    id: string;
-    createdDateTime: number;
-    from: string;
-    to: string;
-    market: string;
-    category: string;
-    product: string;
-    changed: boolean;
 }
 
 export interface MarketProfile {

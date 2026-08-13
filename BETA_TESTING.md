@@ -5,9 +5,9 @@ This public beta is intended for testing on different ioBroker/Alexa2 systems.
 ## Safety
 
 - Dry-Run is enabled by default on new installations.
-- The adapter still never uses `#New`, `#delete` or `completed`.
-- Real sorting writes are blocked when Alexa2/alexa-remote2 write compatibility cannot be confirmed safely.
-- The Alexa app must sort the shopping list by **Oldest to newest**.
+- The adapter never writes Alexa2 list-item states or `completed`; it reuses the local Alexa2 login for direct requests.
+- Direct sorting is blocked when the alexa-remote2 session cannot be initialized safely.
+- The Alexa app must sort the shopping list by **A–Z**.
 
 ## Recommended flow
 
@@ -17,11 +17,11 @@ This public beta is intended for testing on different ioBroker/Alexa2 systems.
 4. Add a few test items through Alexa or the Alexa app.
 5. Inspect `shoppingroute.0.info.lastPlan`.
 6. Inspect `shoppingroute.0.info.compatibility`.
-7. If `info.writeCapability` is `unknown`, set `shoppingroute.0.control.compatibilityTest` to `true` once while at least one active list item exists.
-8. Only when `info.writeCapability` is `source-ok` or `live-ok`, disable Dry-Run for a small real sorting test.
+7. Optionally set `shoppingroute.0.control.compatibilityTest` to `true` to perform a direct read-only connection check.
+8. Only when `info.writeCapability` is `direct-ok`, disable Dry-Run for a small real sorting test.
 9. Verify that adding and normally checking off items in the Alexa app still works.
 
-The live test writes the **same visible `value` text** of one existing active item once and waits up to 10 seconds for Alexa2 to acknowledge it. It does not create, delete, complete or visibly rename an item.
+The compatibility test only reads the configured list through the direct session. It does not create, delete, complete or rename an item.
 
 For feedback include `info.compatibility`, `info.lastError`, `info.lastPlan` when relevant, and the related ioBroker log lines. Never include tokens or passwords.
 

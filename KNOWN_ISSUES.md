@@ -20,12 +20,11 @@ The adapter itself does **not** patch another adapter or its node_modules. Stabl
 
 ## Alexa app sorting
 
-The list in the Alexa app must be configured to **Oldest to newest**. Alphabetical sorting overrides the positional effect of redistributing values across existing IDs.
-## Compatibility guard
+The list in the Alexa app must be configured to **A–Z**. ShoppingRoute deliberately uses visible `[00]`–`[99]` prefixes because Alexa ignores invisible Unicode prefixes during alphabetic sorting.
 
-`0.2.0` does not patch foreign modules. It detects the known malformed query where possible and blocks real Alexa sorting writes if compatibility is unsafe or unknown. An explicit same-value compatibility test is available through `control.compatibilityTest`.
+## Direct-session guard
 
-The compatibility guard remains as an additional safety mechanism.
+ShoppingRoute does not patch foreign modules. It reuses the locally stored Alexa2 authentication to initialize alexa-remote2 and performs direct item requests. `control.compatibilityTest` is read-only and reports `direct-ok` or `direct-unavailable`.
 
 
 

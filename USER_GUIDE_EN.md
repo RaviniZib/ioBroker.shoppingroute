@@ -2,9 +2,9 @@
 
 **Applies to: ioBroker.shoppingroute 0.2.0 (Stable)**
 
-ShoppingRoute sorts existing active Alexa shopping-list entries by market, product group and your individual walking route through each store. The adapter does not create Alexa list items, delete them or mark them as completed automatically. It only redistributes the visible texts across existing active Alexa IDs.
+ShoppingRoute sorts active Alexa shopping-list entries by market, product group and your individual walking route. Visible two-digit prefixes from `[00]` through `[99]` are the sort keys. Individual entries are updated directly; when a numeric gap is exhausted, only the necessary list suffix is deleted and recreated in one batch. ShoppingRoute never marks items as completed automatically.
 
-> **Important:** Every Alexa list managed by ShoppingRoute must be set to **“Oldest to newest”** in the Alexa app. Keep **Dry Run** enabled during the initial setup.
+> **Important:** Every Alexa list managed by ShoppingRoute must be set to **A–Z** in the Alexa app. Keep **Dry Run** enabled during the initial setup.
 
 ## 1. Requirements
 
@@ -262,7 +262,7 @@ shoppingroute.0.control.enabled
 
 ## 17. API protection
 
-ShoppingRoute includes an API safe mode to avoid unnecessary Alexa write traffic.
+ShoppingRoute includes an API safe mode to avoid unnecessary direct Alexa write traffic. Batch CREATE is preferred, while individual PUT and DELETE requests run serially.
 
 Settings include:
 
@@ -282,9 +282,9 @@ Current counters are available under:
 shoppingroute.0.info.traffic
 ```
 
-## 18. Alexa compatibility check
+## 18. Direct Alexa connection check
 
-ShoppingRoute can check whether the installed Alexa2/alexa-remote2 environment supports the required list-item writes.
+ShoppingRoute can check whether the local Alexa2 login can initialize a readable direct alexa-remote2 session. The check performs no test write.
 
 Important states:
 
@@ -341,7 +341,7 @@ Check the Alexa2 instance, select it in ShoppingRoute, save the settings and reo
 
 ### The order in Alexa looks wrong
 
-Check that the affected list in the Alexa app is set to **“Oldest to newest”**.
+Check that the affected list in the Alexa app is set to **A–Z** and that every active item has a `[00]`–`[99]` prefix.
 
 ### An item is assigned to the wrong market
 
@@ -371,7 +371,7 @@ Check API safe mode, write delays, `info.traffic`, `info.compatibility` and `inf
 
 1. Select the Alexa2 instance.
 2. Keep Dry Run enabled.
-3. Select an Alexa list and set it to “Oldest to newest” in the Alexa app.
+3. Select an Alexa list and set it to A–Z in the Alexa app.
 4. Add or check your markets.
 5. Check the product groups.
 6. Sort the walking route for each market.

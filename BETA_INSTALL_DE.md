@@ -12,9 +12,9 @@
 1. Nach der Installation eine ShoppingRoute-Instanz anlegen.
 2. **Dry-Run eingeschaltet lassen.**
 3. Alexa2-Instanz und Listenname auswählen.
-4. In der Alexa-App die betreffende Liste auf **„Älteste bis neueste“** stellen.
+4. In der Alexa-App die betreffende Liste auf **A–Z** stellen.
 5. `shoppingroute.0.info.writeCapability` prüfen.
-6. Falls der Wert `unknown` ist, mit mindestens einem aktiven Listeneintrag einmal `shoppingroute.0.control.compatibilityTest` auslösen.
+6. Optional `shoppingroute.0.control.compatibilityTest` auslösen; die nur lesende Direktprüfung soll `direct-ok` melden.
 7. Erst wenn `source-ok` oder `live-ok` gemeldet wird, Dry-Run für einen kleinen Test ausschalten.
 
 ShoppingRoute legt keine Alexa-Listeneinträge an, löscht keine und hakt keine automatisch ab. Für die Sortierung werden nur die sichtbaren `value`-Texte vorhandener aktiver IDs verteilt.

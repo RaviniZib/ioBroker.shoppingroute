@@ -362,6 +362,6 @@ test('adapter source uses adapter-managed timers',()=>{
   assert.doesNotMatch(source,/(^|[^.A-Za-z])setInterval\s*\(/m);
   assert.match(source,/this\.setTimeout\(/);
   assert.match(source,/this\.setInterval\(/);
-  assert.match(source,/private sortTimers = new Map<string, ioBroker\.Timeout \| undefined>/);
+  assert.match(source,/timer\?: ioBroker\.Timeout/);
   assert.match(source,/private versionTimer: ioBroker\.Interval \| null \| undefined/);
 });
