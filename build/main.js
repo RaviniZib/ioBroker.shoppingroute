@@ -248,7 +248,7 @@ class ShoppingRoute extends utils.Adapter {
         this.versionTimer = this.setInterval(() => void this.checkNpmVersion(), 6 * 60 * 60 * 1000);
         this.log.warn(`ShoppingRoute ${VERSION} BETA: Dry-Run ist für Ersttests ausdrücklich empfohlen.`);
         this.log.info('WICHTIG: Die Alexa-App muss für jede verwaltete Liste auf alphabetische Sortierung A–Z gestellt sein.');
-        this.log.info('Direkt-Sortierung: sichtbare Präfixe [00]–[99]; Alexa2-Listenstates dienen nur noch als externe Triggerquelle.');
+        this.log.info('Direkt-Sortierung: sichtbare Präfixe 00>–99>; Alexa2-Listenstates dienen nur noch als externe Triggerquelle.');
         this.scheduleAll(COLLECT_WINDOW_MS);
     }
     async discoverAlexaLists(instanceName = this.alexaInstance) {

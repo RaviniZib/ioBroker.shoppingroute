@@ -2,7 +2,7 @@
 
 **Stand: ioBroker.shoppingroute 0.2.0 (Stable)**
 
-ShoppingRoute sortiert aktive Alexa-Einkaufslisteneinträge nach Markt, Produktgruppe und deinem individuellen Laufweg. Sichtbare zweistellige Präfixe von `[00]` bis `[99]` bilden den Sortierschlüssel. Einzelne Einträge werden direkt aktualisiert; bei ausgeschöpften Nummernlücken wird nur das notwendige Listensuffix gelöscht und in einem Batch neu angelegt. ShoppingRoute hakt keine Artikel automatisch ab.
+ShoppingRoute sortiert aktive Alexa-Einkaufslisteneinträge nach Markt, Produktgruppe und deinem individuellen Laufweg. Sichtbare zweistellige Präfixe von `00>` bis `99>` bilden den Sortierschlüssel. Marktüberschriften erscheinen als `**** MARKT ****`. Einzelne Einträge werden direkt aktualisiert; bei ausgeschöpften Nummernlücken wird nur das notwendige Listensuffix gelöscht und in einem Batch neu angelegt. ShoppingRoute hakt keine Artikel automatisch ab.
 
 > **Wichtig:** Jede von ShoppingRoute verwaltete Alexa-Liste muss in der Alexa-App auf **A–Z** stehen. Für die Ersteinrichtung sollte **Dry-Run** aktiviert bleiben.
 
@@ -325,7 +325,7 @@ Alexa2-Instanz prüfen, in ShoppingRoute auswählen, speichern und die Konfigura
 
 ### Reihenfolge in Alexa wirkt falsch
 
-Prüfen, ob die betreffende Liste in der Alexa-App auf **A–Z** steht und alle aktiven Einträge einen Präfix `[00]`–`[99]` besitzen.
+Prüfen, ob die betreffende Liste in der Alexa-App auf **A–Z** steht und alle aktiven Einträge einen Präfix `00>`–`99>` besitzen.
 
 ### Artikel landet im falschen Markt
 

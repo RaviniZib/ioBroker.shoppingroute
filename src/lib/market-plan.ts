@@ -1,19 +1,34 @@
 import type { AlexaListItem, MarketConfig, ParsedItem, ProductConfig } from './model';
-import { findProduct, parseItem, parseMarketList } from './parser';
+import { findProduct, normalize, parseItem, parseMarketList } from './parser';
 
 export interface ParsedShoppingItem {
     source: AlexaListItem;
     parsed: ParsedItem;
 }
 
-const HEADER_PATTERN = /^----\s+(.+?)\s+----$/;
+const HEADER_PATTERN = /^\*\*\*\*\s+(.+?)\s+\*\*\*\*$/;
+const LEGACY_HEADER_PATTERN = /^----\s+(.+?)\s+----$/;
 
 export function formatMarketHeader(market: string): string {
-    return `---- ${String(market || '').trim().toLocaleUpperCase('de-DE')} ----`;
+    return `**** ${String(market || '').trim().toLocaleUpperCase('de-DE')} ****`;
 }
 
-export function isMarketHeader(value: string, _markets: MarketConfig[]): boolean {
-    return HEADER_PATTERN.test(String(value || '').trim());
+/**
+ * Recognize current and legacy managed headers so an upgrade reuses the existing Alexa item.
+ *
+ * @param value Prefix-free Alexa item text.
+ * @param markets Configured active markets.
+ */
+export function marketNameFromHeader(value: string, markets: MarketConfig[]): string | undefined {
+    const text = String(value || '').trim();
+    const match = text.match(HEADER_PATTERN) || text.match(LEGACY_HEADER_PATTERN);
+    if (!match?.[1]) return undefined;
+    const wanted = normalize(match[1]);
+    return markets.find(market => market.enabled !== false && normalize(market.name) === wanted)?.name;
+}
+
+export function isMarketHeader(value: string, markets: MarketConfig[]): boolean {
+    return Boolean(marketNameFromHeader(value, markets));
 }
 
 export function realActiveItems(list: AlexaListItem[], markets: MarketConfig[]): AlexaListItem[] {

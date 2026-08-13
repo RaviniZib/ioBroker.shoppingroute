@@ -20,7 +20,7 @@ The adapter itself does **not** patch another adapter or its node_modules. Stabl
 
 ## Alexa app sorting
 
-The list in the Alexa app must be configured to **A–Z**. ShoppingRoute deliberately uses visible `[00]`–`[99]` prefixes because Alexa ignores invisible Unicode prefixes during alphabetic sorting.
+The list in the Alexa app must be configured to **A–Z**. ShoppingRoute deliberately uses visible `00>`–`99>` prefixes because Alexa ignores invisible Unicode prefixes during alphabetic sorting.
 
 ## Direct-session guard
 

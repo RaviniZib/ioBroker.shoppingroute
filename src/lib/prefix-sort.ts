@@ -4,10 +4,11 @@ import type {
     ProductConfig,
     RouteConfig,
 } from './model';
-import { formatMarketHeader, isMarketHeader, optimizeMarketAssignments } from './market-plan';
+import { formatMarketHeader, marketNameFromHeader, optimizeMarketAssignments } from './market-plan';
 import { normalize } from './parser';
 
-const SORT_PREFIX = /^\[(\d{2})\]\s+(.+)$/s;
+const SORT_PREFIX = /^(\d{2})>\s+(.+)$/s;
+const LEGACY_SORT_PREFIX = /^\[(\d{2})\]\s+(.+)$/s;
 
 export interface SortPrefix {
     number: number;
@@ -55,7 +56,8 @@ export interface PrefixSortPlan {
 }
 
 export function parseSortPrefix(text: string): SortPrefix | undefined {
-    const match = String(text || '').trim().match(SORT_PREFIX);
+    const value = String(text || '').trim();
+    const match = value.match(SORT_PREFIX) || value.match(LEGACY_SORT_PREFIX);
     if (!match) return undefined;
     const number = Number(match[1]);
     const originalText = String(match[2] || '').trim();
@@ -73,7 +75,7 @@ export function formatSortPrefix(number: number, originalText: string): string {
     }
     const text = stripSortPrefix(originalText);
     if (!text) throw new Error('Ein Sortierpräfix benötigt einen sichtbaren Originaltext.');
-    return `[${String(number).padStart(2, '0')}] ${text}`;
+    return `${String(number).padStart(2, '0')}> ${text}`;
 }
 
 function marketOrder(markets: MarketConfig[], marketName: string): number {
@@ -127,10 +129,9 @@ export function buildPrefixTargets(
     const real: AlexaListItem[] = [];
     for (const item of current) {
         const text = stripSortPrefix(item.value);
-        if (isMarketHeader(text, markets)) {
-            const match = text.match(/^----\s+(.+?)\s+----$/);
-            const wanted = normalize(match?.[1] || '');
-            const market = markets.find(entry => entry.enabled !== false && normalize(entry.name) === wanted);
+        const headerMarket = marketNameFromHeader(text, markets);
+        if (headerMarket) {
+            const market = markets.find(entry => entry.enabled !== false && normalize(entry.name) === normalize(headerMarket));
             if (market) {
                 const entries = headersByMarket.get(normalize(market.name)) || [];
                 entries.push(item);
@@ -245,13 +246,13 @@ function buildFallback(
     let lower = rebuildFrom > 0 ? desired[rebuildFrom - 1].currentPrefix ?? -1 : -1;
     let numbers = distribute(lower, 100, desired.length - rebuildFrom);
     // A high preserved prefix (for example 99) may leave too little suffix space. Move the rebuild point upward only
-    // as far as necessary so the remaining targets can be spread over [00]–[99] without renumbering a larger prefix.
+    // as far as necessary so the remaining targets can be spread over 00>–99> without renumbering a larger prefix.
     while (!numbers && rebuildFrom > 0) {
         rebuildFrom -= 1;
         lower = rebuildFrom > 0 ? desired[rebuildFrom - 1].currentPrefix ?? -1 : -1;
         numbers = distribute(lower, 100, desired.length - rebuildFrom);
     }
-    if (!numbers) throw new Error('Der neu aufzubauende Listenteil passt nicht in die Präfixe [00]–[99].');
+    if (!numbers) throw new Error('Der neu aufzubauende Listenteil passt nicht in die Präfixe 00>–99>.');
 
     const deleteById = new Map<string, PrefixDelete>();
     for (const item of staleActiveItems(items, new Set(desired.slice(0, rebuildFrom).flatMap(target => target.id ? [target.id] : [])))) {

@@ -17,13 +17,13 @@ test('direct UPDATE uses the exact item URL/version and requires a newer confirm
     const calls = [];
     const client = new AlexaDirectClient(fakeRemote((path, flags, callback) => {
         calls.push({ path, flags });
-        callback(null, { itemInfo: { itemId: 'item-1', itemName: '[25] Tomaten', version: 5, itemStatus: 'ACTIVE' } });
+        callback(null, { itemInfo: { itemId: 'item-1', itemName: '25> Tomaten', version: 5, itemStatus: 'ACTIVE' } });
     }));
-    const result = await client.updateItem('list-1', 'item-1', 4, '[25] Tomaten');
+    const result = await client.updateItem('list-1', 'item-1', 4, '25> Tomaten');
     assert.equal(result.version, 5);
     assert.match(calls[0].path, /items\/item-1\?version=4$/);
     assert.equal(calls[0].flags.method, 'PUT');
-    assert.deepEqual(JSON.parse(calls[0].flags.data).itemAttributesToUpdate, [{ type: 'itemName', value: '[25] Tomaten' }]);
+    assert.deepEqual(JSON.parse(calls[0].flags.data).itemAttributesToUpdate, [{ type: 'itemName', value: '25> Tomaten' }]);
 });
 
 test('batch CREATE sends every suffix item in one POST and validates failures', async () => {
@@ -32,13 +32,13 @@ test('batch CREATE sends every suffix item in one POST and validates failures', 
         call = { path, flags };
         callback(null, {
             itemInfoList: [
-                { itemId: 'a', itemName: '[30] Milch', version: 1 },
-                { itemId: 'b', itemName: '[40] Eier', version: 1 },
+                { itemId: 'a', itemName: '30> Milch', version: 1 },
+                { itemId: 'b', itemName: '40> Eier', version: 1 },
             ],
             failures: [],
         });
     }));
-    const result = await client.batchCreate('list-1', ['[30] Milch', '[40] Eier']);
+    const result = await client.batchCreate('list-1', ['30> Milch', '40> Eier']);
     assert.equal(result.items.length, 2);
     assert.equal(call.flags.method, 'POST');
     assert.equal(JSON.parse(call.flags.data).items.length, 2);
@@ -46,7 +46,7 @@ test('batch CREATE sends every suffix item in one POST and validates failures', 
     const failed = new AlexaDirectClient(fakeRemote((_path, _flags, callback) => {
         callback(null, { itemInfoList: [], failures: [{ reason: 'bad' }] });
     }));
-    await assert.rejects(failed.batchCreate('list-1', ['[30] Milch']), /Batch-CREATE unvollständig/);
+    await assert.rejects(failed.batchCreate('list-1', ['30> Milch']), /Batch-CREATE unvollständig/);
 });
 
 test('DELETE is item-specific and version conflicts are never retried by the client', async () => {
