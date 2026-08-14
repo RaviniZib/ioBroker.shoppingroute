@@ -1,5 +1,7 @@
 # ShoppingRoute – Installation der öffentlichen Beta
 
+> **Archivhinweis:** Diese Anleitung dokumentiert ausschließlich die historische Testphase bis `0.2.0-beta.12` und ist keine aktuelle Installationsanleitung.
+
 ## Voraussetzungen
 
 - ioBroker mit aktuellem js-controller

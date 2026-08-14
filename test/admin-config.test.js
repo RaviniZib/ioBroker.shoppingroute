@@ -8,7 +8,7 @@ const root=path.join(__dirname,'..');
 const ioPackage=JSON.parse(fs.readFileSync(path.join(root,'io-package.json'),'utf8'));
 const jsonConfig=JSON.parse(fs.readFileSync(path.join(root,'admin','jsonConfig.json'),'utf8'));
 
-test('beta version and branding are consistent',()=>{
+test('version and branding are consistent',()=>{
   const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
   assert.equal(ioPackage.common.version,pkg.version);
   const runtimeSource=fs.readFileSync(path.join(root,'src','main.ts'),'utf8');
@@ -48,10 +48,6 @@ test('backup and sharing use an Admin 7.6 compatible launcher without raw JSON c
   assert.match(source,/getBackupUiUrl/);
   assert.match(source,/openUrl:/);
 
-  const ioPackage=JSON.parse(fs.readFileSync(path.join(root,'io-package.json'),'utf8'));
-  const adminDependency=ioPackage.common.globalDependencies.find(entry=>entry.admin);
-  assert.ok(adminDependency);
-  assert.equal(adminDependency.admin,'>=7.6.20');
 });
 
 test('native Admin tabs share the phase-one visual hierarchy',()=>{
@@ -73,9 +69,9 @@ test('native Admin tabs share the phase-one visual hierarchy',()=>{
   }
 
   const general=jsonConfig.items.general.items;
-  assert.equal(general.betaWarning.type,'infoBox');
-  assert.equal(general.betaWarning.boxType,'warning');
-  assert.equal('closeable' in general.betaWarning,false);
+  assert.equal(general.safetyWarning.type,'infoBox');
+  assert.equal(general.safetyWarning.boxType,'warning');
+  assert.equal('closeable' in general.safetyWarning,false);
   for(const key of ['basicSectionTitle','marketSectionTitle','apiSectionTitle']) {
     assert.equal(general[key].type,'header',key);
     assert.equal(general[key].size,3,key);
@@ -111,7 +107,7 @@ test('phase-one styling preserves the functional JSON config outside the migrate
   ]));
   const hash=crypto.createHash('sha256').update(JSON.stringify(projection)).digest('hex');
 
-  assert.equal(hash,'680e8df1017745e036da57315e0e10850dd3ddf18cf54cd11c81d19fa4352213');
+  assert.equal(hash,'e7a68ae2fa469d8a3c23b7b603cbc09db125cce1c2868150e5eca73fc33345ac');
   const routeHash=crypto.createHash('sha256').update(JSON.stringify(jsonConfig.items.routesTab)).digest('hex');
   assert.equal(routeHash,'8bb35e144be68a1953ee81a22aa94a445162715354c73eb99e4119747c18c518');
 });
@@ -199,7 +195,9 @@ test('product list is sortable by product, group and market',()=>{
 
 test('multiple lists, review queue, API protection and diagnostics states exist',()=>{
   const ids=new Set(ioPackage.instanceObjects.map(o=>o._id));
-  for(const id of ['info.reviewQueue','info.previewText','info.statistics','info.configExport','info.marketProfiles','info.versionInstalled','info.versionBeta','info.feedbackReport','control.temporaryPriorityMarket','control.importConfigJson','control.marketProfileImport']) assert.ok(ids.has(id),id);
+  for(const id of ['info.reviewQueue','info.previewText','info.statistics','info.configExport','info.marketProfiles','info.versionInstalled','info.feedbackReport','control.temporaryPriorityMarket','control.importConfigJson','control.marketProfileImport']) assert.ok(ids.has(id),id);
+  for(const id of ['info.versionBeta','info.versionCheck','info.updateAvailable']) assert.equal(ids.has(id),false,id);
+  assert.equal(ioPackage.instanceObjects.find(object=>object._id==='info.lastCompatibilityTest').common.def,'Not executed yet.');
   assert.ok(Array.isArray(ioPackage.native.lists));
   assert.equal(ioPackage.native.apiSafeMode,true);
 });
@@ -222,13 +220,19 @@ test('dynamic dropdown handlers sort alphabetically',()=>{
   assert.match(source,/getMarkets[\s\S]*localeCompare\(b\.label/);
 });
 
-test('public beta publishing is protected by a root publish guard and package builder',()=>{
+test('stable publishing is protected and release builds remain readable',()=>{
   const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
   assert.equal('private' in pkg,false);
   assert.equal(pkg.license,'MIT');
   assert.equal(pkg.scripts.prepublishOnly,'node scripts/block-root-publish.js');
   assert.ok(fs.existsSync(path.join(root,'scripts','block-root-publish.js')));
-  assert.ok(fs.existsSync(path.join(root,'scripts','make-beta-package.js')));
+  assert.ok(fs.existsSync(path.join(root,'scripts','prepare-stable-build.js')));
+  assert.equal(fs.existsSync(path.join(root,'scripts','make-beta-package.js')),false);
+  assert.equal(pkg.scripts['beta:package'],undefined);
+  assert.equal(pkg.devDependencies['javascript-obfuscator'],undefined);
+  const stableBuild=fs.readFileSync(path.join(root,'scripts','prepare-stable-build.js'),'utf8');
+  assert.doesNotMatch(stableBuild,/obfuscat|javascript-obfuscator/i);
+  assert.match(stableBuild,/endsWith\('\.map'\)/);
 });
 
 test('walking routes use a dedicated editor with routes as the only persisted source',()=>{
@@ -302,7 +306,11 @@ test('unsaved markets and product groups are fed into the real product and revie
 test('API protection is integrated into General and no longer has its own tab',()=>{
   const general=jsonConfig.items.general.items;
   assert.equal(jsonConfig.items.apiTab,undefined);
-  for(const key of ['apiSafeMode','maxWritesPerMinute','batchSize','batchPauseMs','maxWriteRetries','retryBaseMs']) assert.ok(general[key],key);
+  for(const key of ['apiSafeMode','maxWritesPerMinute']) assert.ok(general[key],key);
+  for(const key of ['batchSize','batchPauseMs','maxWriteRetries','retryBaseMs']) {
+    assert.equal(general[key],undefined,key);
+    assert.equal(key in ioPackage.native,false,key);
+  }
 });
 
 test('market terminology distinguishes normal default from current-shopping override',()=>{
@@ -315,7 +323,7 @@ test('market terminology distinguishes normal default from current-shopping over
 test('current-shopping market has a visible no-market reset option',()=>{
   const source=fs.readFileSync(path.join(root,'src','main.ts'),'utf8');
   assert.match(source,/__none__/);
-  assert.match(source,/Kein Markt/);
+  assert.match(source,/No market/);
   const general=jsonConfig.items.general.items;
   assert.equal(general.clearTemporaryMarket,undefined);
 });
@@ -390,7 +398,6 @@ test('adapter source uses adapter-managed timers',()=>{
   assert.doesNotMatch(source,/(^|[^.A-Za-z])setTimeout\s*\(/m);
   assert.doesNotMatch(source,/(^|[^.A-Za-z])setInterval\s*\(/m);
   assert.match(source,/this\.setTimeout\(/);
-  assert.match(source,/this\.setInterval\(/);
   assert.match(source,/timer\?: ioBroker\.Timeout/);
-  assert.match(source,/private versionTimer: ioBroker\.Interval \| null \| undefined/);
+  assert.doesNotMatch(source,/this\.setInterval\(|versionTimer|checkNpmVersion|registry\.npmjs\.org/);
 });

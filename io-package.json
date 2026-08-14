@@ -130,7 +130,7 @@
     "type": "logic",
     "globalDependencies": [
       {
-        "admin": ">=7.6.20"
+        "admin": ">=8.0.0"
       }
     ],
     "readme": "https://github.com/RaviniZib/ioBroker.shoppingroute/blob/main/README.md"
@@ -647,10 +647,6 @@
     "autoAliasSuggestions": true,
     "apiSafeMode": true,
     "maxWritesPerMinute": 20,
-    "batchSize": 10,
-    "batchPauseMs": 5000,
-    "maxWriteRetries": 2,
-    "retryBaseMs": 1500,
     "temporaryPriorityMarket": "",
     "reviewItems": [],
     "marketHeaders": false,
@@ -805,7 +801,7 @@
         "role": "text",
         "read": true,
         "write": false,
-        "def": "Noch nicht ausgeführt."
+        "def": "Not executed yet."
       },
       "native": {}
     },
@@ -1001,45 +997,6 @@
         "read": true,
         "write": false,
         "def": "[]"
-      },
-      "native": {}
-    },
-    {
-      "_id": "info.updateAvailable",
-      "type": "state",
-      "common": {
-        "name": "ShoppingRoute update available",
-        "type": "boolean",
-        "role": "indicator",
-        "read": true,
-        "write": false,
-        "def": false
-      },
-      "native": {}
-    },
-    {
-      "_id": "info.versionBeta",
-      "type": "state",
-      "common": {
-        "name": "Latest npm beta version",
-        "type": "string",
-        "role": "text",
-        "read": true,
-        "write": false,
-        "def": ""
-      },
-      "native": {}
-    },
-    {
-      "_id": "info.versionCheck",
-      "type": "state",
-      "common": {
-        "name": "Last npm version check",
-        "type": "string",
-        "role": "text",
-        "read": true,
-        "write": false,
-        "def": ""
       },
       "native": {}
     },

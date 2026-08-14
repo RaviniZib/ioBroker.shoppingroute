@@ -15,6 +15,7 @@ const {
 
 const root = path.join(__dirname, '..');
 const jsonConfig = JSON.parse(fs.readFileSync(path.join(root, 'admin', 'jsonConfig.json'), 'utf8'));
+const ioPackage = JSON.parse(fs.readFileSync(path.join(root, 'io-package.json'), 'utf8'));
 
 function findCustomEntries(value, location = []) {
     if (Array.isArray(value)) {
@@ -54,6 +55,11 @@ test('every jsonConfig custom component declares GUI API 2 without deprecated bu
         assert.equal(config.guiApi, 2, location.join('.'));
         assert.equal('bundlerType' in config, false, location.join('.'));
     }
+});
+
+test('GUI API 2 custom components require Admin 8', () => {
+    const adminDependencies = ioPackage.common.globalDependencies.filter(entry => 'admin' in entry);
+    assert.deepEqual(adminDependencies, [{ admin: '>=8.0.0' }]);
 });
 
 test('every custom component Vite build enables a Module Federation manifest', () => {

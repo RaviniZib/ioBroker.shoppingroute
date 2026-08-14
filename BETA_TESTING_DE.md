@@ -1,5 +1,7 @@
 # Beta-Test ioBroker.shoppingroute 0.2.0-beta.12
 
+> **Archivhinweis:** Dieses Dokument beschreibt die historische Testphase für `0.2.0-beta.12` und keine aktuelle Veröffentlichungsstufe des Adapters.
+
 Diese öffentliche Beta soll auf unterschiedlichen ioBroker-/Alexa2-Systemen prüfen, ob Einlesen, Erkennung, Sortierplanung und Alexa-`value`-Updates zuverlässig funktionieren.
 
 ## Sicherheitsregeln

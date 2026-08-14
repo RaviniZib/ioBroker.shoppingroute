@@ -2,7 +2,6 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
-const JavaScriptObfuscator = require('javascript-obfuscator');
 
 const root = path.resolve(__dirname, '..');
 const buildDir = path.join(root, 'build');
@@ -35,36 +34,10 @@ if (jsFiles.length === 0) {
     throw new Error('No JavaScript files found in build directory');
 }
 
-for (const file of jsFiles) {
-    const source = fs.readFileSync(file, 'utf8');
-
-    const obfuscated = JavaScriptObfuscator.obfuscate(source, {
-        compact: true,
-        controlFlowFlattening: false,
-        deadCodeInjection: false,
-        debugProtection: false,
-        disableConsoleOutput: false,
-        identifierNamesGenerator: 'hexadecimal',
-        renameGlobals: false,
-        renameProperties: false,
-        selfDefending: false,
-        simplify: true,
-        splitStrings: false,
-        stringArray: true,
-        stringArrayCallsTransform: false,
-        stringArrayEncoding: [],
-        stringArrayThreshold: 0.65,
-        transformObjectKeys: false,
-        unicodeEscapeSequence: false,
-    }).getObfuscatedCode();
-
-    fs.writeFileSync(file, obfuscated + '\n');
-}
-
 for (const file of mapFiles) {
     fs.rmSync(file);
 }
 
 console.log(
-    `Stable build prepared: ${jsFiles.length} JavaScript files obfuscated, ${mapFiles.length} source maps removed.`,
+    `Stable build prepared: ${jsFiles.length} readable JavaScript files, ${mapFiles.length} source maps removed.`,
 );

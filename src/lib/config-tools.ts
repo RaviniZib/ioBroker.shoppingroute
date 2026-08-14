@@ -3,9 +3,15 @@ import type { AdapterConfigShape, ConfigExport, MarketConfig, MarketProfile, Rou
 const EXPORT_KEYS: Array<keyof AdapterConfigShape> = [
     'alexaInstance', 'listName', 'lists', 'dryRun', 'autoLearnProducts', 'learningMode',
     'autoAliasSuggestions', 'logSortSummary', 'apiSafeMode', 'maxWritesPerMinute',
-    'batchSize', 'batchPauseMs', 'maxWriteRetries', 'retryBaseMs', 'fallbackMarket', 'priorityMarket',
-    'temporaryPriorityMarket', 'productGroups', 'markets', 'routes', 'products', 'reviewItems',
+    'fallbackMarket', 'priorityMarket', 'temporaryPriorityMarket', 'productGroups', 'markets',
+    'routes', 'products', 'reviewItems',
 ];
+
+export function normalizeMaxWritesPerMinute(value: unknown): number {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) return 20;
+    return Math.min(120, Math.max(1, Math.floor(parsed)));
+}
 
 export function exportConfig(config: AdapterConfigShape, version: string, now = new Date()): ConfigExport {
     const clean: Partial<AdapterConfigShape> = {};
@@ -26,7 +32,7 @@ export function parseConfigImport(text: string): Partial<AdapterConfigShape> {
     const source = (parsed as ConfigExport).format === 'shoppingroute-config-v1'
         ? (parsed as ConfigExport).config
         : parsed as Partial<AdapterConfigShape>;
-    if (!source || typeof source !== 'object' || Array.isArray(source)) throw new Error('Konfigurationsimport enthält kein Objekt.');
+    if (!source || typeof source !== 'object' || Array.isArray(source)) throw new Error('Configuration import does not contain an object.');
 
     const clean: Partial<AdapterConfigShape> = {};
     for (const key of EXPORT_KEYS) {
@@ -57,7 +63,7 @@ export function importMarketProfile(
 ): { markets: MarketConfig[]; routes: RouteConfig[]; market: string } {
     const profile = JSON.parse(String(text || '')) as MarketProfile;
     if (profile.format !== 'shoppingroute-market-profile-v1' || !profile.market?.name || !Array.isArray(profile.route)) {
-        throw new Error('Ungültiges ShoppingRoute-Marktprofil.');
+        throw new Error('Invalid ShoppingRoute market profile.');
     }
 
     const name = profile.market.name.trim();

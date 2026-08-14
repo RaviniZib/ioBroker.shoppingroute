@@ -1,5 +1,9 @@
 # Gesucht: wenige Betatester für ShoppingRoute
 
+# Historischer Testeraufruf
+
+> **Archivhinweis:** Dieser Aufruf dokumentiert die abgeschlossene frühe Testphase und ist nicht mehr aktuell.
+
 Ich suche zunächst 3–5 technisch versierte ioBroker-Nutzer, die **ioBroker und den Alexa2-Adapter** bereits einsetzen und einen neuen Adapter für Alexa-Einkaufslisten in einer geschlossenen Beta testen möchten.
 
 ShoppingRoute sortiert die bestehende Alexa-Einkaufsliste nach **Märkten, individuellen Laufwegen im Markt und Produktgruppen**. Prioritätsmarkt, Artikel-Standardmärkte, Aliase, Mengenangaben und automatisch gelernte Artikel werden berücksichtigt. Die Alexa-App bleibt dabei die eigentliche Einkaufsliste: Artikel werden dort wie gewohnt hinzugefügt und abgehakt.

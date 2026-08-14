@@ -60,7 +60,7 @@ test('planning uses one fresh direct Amazon snapshot so every PUT/DELETE has the
 
 test('legacy transaction markers are not recovered by the new architecture', () => {
     assert.match(main, /journal\.version !== 2/);
-    assert.match(main, /Alte unterbrochene Marker-Transaktion/);
+    assert.match(main, /Old interrupted marker transaction/);
     assert.doesNotMatch(main, /rollbackBufferedTransaction|recoverInterruptedSortTransaction/);
 });
 
@@ -68,8 +68,8 @@ test('technical runtime metrics use debug and the compact info summary is config
     const runtimeLogger = main.slice(main.indexOf('private logDirectRuntime'), main.indexOf('private async updateLearningAndDiagnostics'));
     assert.match(runtimeLogger, /this\.log\.debug/);
     assert.match(runtimeLogger, /if \(this\.logSortSummary\)/);
-    assert.match(runtimeLogger, /this\.log\.info\(`\$\{runtime\.listName\}: Sortierlauf/);
-    for (const label of ['externe neue Artikel', 'Debounce', 'PUTs', 'DELETEs', 'Batch-CREATE-Items', 'Amazon-Requests', 'Amazon', 'gesamt', 'Fallback', 'Rebuild ab']) {
+    assert.match(runtimeLogger, /this\.log\.info\(`\$\{runtime\.listName\}: sorting run/);
+    for (const label of ['external new items', 'Debounce', 'PUTs', 'DELETEs', 'Batch-CREATE-Items', 'Amazon-Requests', 'Amazon', 'total', 'Fallback', 'Rebuild from']) {
         assert.ok(runtimeLogger.includes(label), label);
     }
     assert.match(main, /private get logSortSummary\(\): boolean \{ return this\.cfg\.logSortSummary !== false; \}/);

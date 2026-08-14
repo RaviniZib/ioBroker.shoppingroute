@@ -8,6 +8,7 @@ const {
   importMarketProfile,
   reindexRoutes,
   normalizeRoutesForAdmin,
+  normalizeMaxWritesPerMinute,
 } = require('../build/lib/config-tools');
 
 test('configuration can be exported and imported with format marker', () => {
@@ -20,8 +21,23 @@ test('configuration can be exported and imported with format marker', () => {
 });
 
 test('obsolete timing settings are ignored when importing old backups', () => {
-  const imported=parseConfigImport(JSON.stringify({priorityMarket:'ALDI',debounceMs:5000,writePauseMs:1000}));
+  const imported=parseConfigImport(JSON.stringify({
+    priorityMarket:'ALDI',
+    debounceMs:5000,
+    writePauseMs:1000,
+    batchSize:10,
+    batchPauseMs:5000,
+    maxWriteRetries:2,
+    retryBaseMs:1500,
+  }));
   assert.deepEqual(imported,{priorityMarket:'ALDI'});
+});
+
+test('maximum writes per minute is clamped to the supported runtime range', () => {
+  assert.equal(normalizeMaxWritesPerMinute(0),1);
+  assert.equal(normalizeMaxWritesPerMinute(999),120);
+  assert.equal(normalizeMaxWritesPerMinute(42),42);
+  assert.equal(normalizeMaxWritesPerMinute(undefined),20);
 });
 
 test('market profiles are shareable independently', () => {

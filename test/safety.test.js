@@ -11,5 +11,5 @@ test('runtime performs no writes through Alexa2 states and serializes direct ite
     assert.match(source, /for \(const update of plan\.updates\)/);
     assert.match(source, /for \(const deletion of plan\.deletes\)/);
     assert.match(source, /client\.batchCreate/);
-    assert.match(source, /SICHERHEITSSTOPP/);
+    assert.match(source, /SAFETY STOP/);
 });

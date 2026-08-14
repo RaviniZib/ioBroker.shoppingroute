@@ -30,11 +30,10 @@ ShoppingRoute sortiert Alexa-Einkaufslisteneinträge nach Markt, Produktgruppe u
 - Sortiervorschau vor Alexa-Schreibzugriffen
 - inkrementelle Präfixsortierung `00>`–`99>` mit Lückenerhalt und Suffix-Fallback
 - direkte Amazon-Antworten plus ein abschließender Listenabruf als Bestätigung
-- API-Schonmodus mit Rate-Limit, Blöcken und Retry-Backoff
+- API-Schonmodus mit konfigurierbarem Schreibzugriffs-Limit
 - lokale Einkaufsstatistik ohne Cloud-Telemetrie
 - Konfigurations-Export/Import
 - exportierbare/importierbare Marktprofile zum Teilen von Laufwegen
-- npm-Beta-Versionsprüfung im Adapter
 - datenschutzfreundlicher Diagnose-/Feedbackbericht
 - Alexa2/alexa-remote2-Diagnose der direkten Sitzung
 - Dry-Run für sichere Tests
@@ -62,19 +61,15 @@ Anschließend kann 0.3.0 flexible Artikel marktübergreifend zusammenlegen, wenn
 - `info.sortTransaction` – lokales Wiederherstellungsjournal einer laufenden Sortierung; im Normalzustand `{}`
 - `info.configExport` – komplette Konfigurationssicherung
 - `info.marketProfiles` – teilbare Marktprofile
-- `info.versionInstalled`, `info.versionBeta`, `info.updateAvailable` – Versionsstatus
+- `info.versionInstalled` – installierte Adapterversion
 - `info.feedbackReport` – bereinigter Diagnose-/Feedbackbericht ohne Einkaufsinhalte
 - `control.temporaryPriorityMarket` – temporärer Markt für den aktuellen Einkauf
 - `control.importConfigJson` – Konfiguration importieren
 - `control.marketProfileImport` – Marktprofil importieren
 
-## Hinweis zur ioBroker-Adapterkarte
+## Lizenz
 
-Solange ShoppingRoute noch nicht im offiziellen ioBroker-Repository geführt wird, kann ioBroker Admin bei **„Verfügbare Version“** generisch **„nicht gewartet“** anzeigen. Das ist keine Aussage des laufenden Adapters. ShoppingRoute zeigt deshalb seinen eigenen npm-Versionsstatus über die `info.version*`-Datenpunkte an.
-
-## Lizenzierung der Beta-Versionen
-
-ShoppingRoute wird ab dieser Version unter der **MIT-Lizenz** veröffentlicht. Frühere bereits veröffentlichte Versionen bleiben unter der jeweils damals gültigen Lizenz.
+ShoppingRoute wird unter der **MIT-Lizenz** veröffentlicht. Frühere bereits veröffentlichte Versionen bleiben unter der jeweils damals gültigen Lizenz.
 
 ## Changelog
 

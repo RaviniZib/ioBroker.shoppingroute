@@ -253,12 +253,6 @@ ShoppingRoute besitzt einen API-Schonmodus, damit Alexa nicht unnötig mit viele
 Einstellbar sind unter anderem:
 
 - maximale Schreibvorgänge pro Minute
-- Schreibvorgänge pro Block
-- Pause zwischen Blöcken
-- maximale Wiederholungen
-- Grundpause für Wiederholungen
-- Schreibpause zwischen einzelnen Änderungen
-- Verzögerung vor der Verarbeitung einer Listenänderung
 
 Für den normalen Betrieb sollte der API-Schonmodus aktiviert bleiben, solange kein konkreter Grund für Änderungen besteht.
 
@@ -311,8 +305,6 @@ shoppingroute.0.info.statistics
 shoppingroute.0.info.traffic
 shoppingroute.0.info.feedbackReport
 shoppingroute.0.info.versionInstalled
-shoppingroute.0.info.versionBeta
-shoppingroute.0.info.updateAvailable
 ```
 
 Der Diagnose-/Feedbackbericht ist dafür vorgesehen, technische Informationen bereitzustellen, ohne Einkaufsinhalte unnötig offenzulegen.
@@ -349,7 +341,7 @@ Den Modus unter **Umgang mit unbekannten Artikeln** prüfen.
 
 ### Zu viele Schreibfehler
 
-API-Schonmodus, Schreibpausen und `info.traffic`, `info.compatibility` sowie `info.lastError` prüfen.
+API-Schonmodus, konfiguriertes Schreiblimit und `info.traffic`, `info.compatibility` sowie `info.lastError` prüfen.
 
 ## 23. Empfohlene Ersteinrichtung
 

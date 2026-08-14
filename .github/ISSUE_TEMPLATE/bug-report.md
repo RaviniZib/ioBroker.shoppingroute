@@ -1,18 +1,18 @@
 ---
-name: Beta feedback
-about: Report a beta test result or problem
-title: "[Beta] "
-labels: beta
+name: Bug report
+about: Report a problem with ShoppingRoute
+title: ""
+labels: bug
 assignees: ''
 ---
 
-## Test result
+## Problem
 
-Describe what you tested and what happened.
+Describe what happened.
 
 ## Expected result
 
-What did you expect?
+Describe what you expected.
 
 ## ShoppingRoute diagnostics
 
@@ -51,5 +51,5 @@ Paste only the relevant lines. Never include tokens, cookies or passwords.
 - ioBroker js-controller:
 - Node.js:
 - Alexa2 adapter:
-- Alexa app sorting set to Oldest to newest: yes/no
-- Dry-Run during test: on/off
+- Alexa app sorting set to A–Z: yes/no
+- Dry Run during test: on/off
