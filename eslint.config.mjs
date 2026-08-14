@@ -4,8 +4,6 @@ export default [
   {
     ignores: [
       'build/**',
-      'beta-package/**',
-      '.beta-package-staging/**',
       'node_modules/**',
     ],
   },

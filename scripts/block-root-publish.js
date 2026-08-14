@@ -18,7 +18,6 @@ if (allowedStableGithubPublish) {
 
 console.error(
     'Direct npm publish from the development repository is blocked. ' +
-    'For public beta releases use: npm run beta:package. ' +
     'Stable releases are published only by the official GitHub release workflow.'
 );
 process.exit(1);

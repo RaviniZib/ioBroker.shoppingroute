@@ -1,5 +1,7 @@
 # Beta testing ioBroker.shoppingroute 0.2.0-beta.12
 
+> **Archive notice:** This document describes the historical test phase for `0.2.0-beta.12`; it does not describe the adapter's current release stage.
+
 This public beta is intended for testing on different ioBroker/Alexa2 systems.
 
 ## Safety

@@ -40,29 +40,6 @@ jobs:
           node-version: ${{ matrix.node-version }}
           os: ${{ matrix.os }}
 
-  beta-artifact:
-    needs: [check-and-lint, adapter-tests]
-    if: |
-      github.event_name == 'push' &&
-      startsWith(github.ref, 'refs/tags/v') &&
-      contains(github.ref_name, '-')
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24.x'
-          cache: npm
-      - run: npm ci
-      - name: Build public-beta package
-        run: npm run beta:package
-      - name: Upload public-beta artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: shoppingroute-public-beta
-          path: beta-package/*.tgz
-          if-no-files-found: error
-
   deploy:
     needs: [check-and-lint, adapter-tests]
     if: |

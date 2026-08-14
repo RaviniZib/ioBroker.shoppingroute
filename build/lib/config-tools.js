@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.normalizeMaxWritesPerMinute = normalizeMaxWritesPerMinute;
 exports.exportConfig = exportConfig;
 exports.parseConfigImport = parseConfigImport;
 exports.buildMarketProfiles = buildMarketProfiles;
@@ -10,9 +11,15 @@ exports.normalizeRoutesForAdmin = normalizeRoutesForAdmin;
 const EXPORT_KEYS = [
     'alexaInstance', 'listName', 'lists', 'dryRun', 'autoLearnProducts', 'learningMode',
     'autoAliasSuggestions', 'logSortSummary', 'apiSafeMode', 'maxWritesPerMinute',
-    'batchSize', 'batchPauseMs', 'maxWriteRetries', 'retryBaseMs', 'fallbackMarket', 'priorityMarket',
-    'temporaryPriorityMarket', 'productGroups', 'markets', 'routes', 'products', 'reviewItems',
+    'fallbackMarket', 'priorityMarket', 'temporaryPriorityMarket', 'productGroups', 'markets',
+    'routes', 'products', 'reviewItems',
 ];
+function normalizeMaxWritesPerMinute(value) {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed))
+        return 20;
+    return Math.min(120, Math.max(1, Math.floor(parsed)));
+}
 function exportConfig(config, version, now = new Date()) {
     const clean = {};
     for (const key of EXPORT_KEYS) {
@@ -33,7 +40,7 @@ function parseConfigImport(text) {
         ? parsed.config
         : parsed;
     if (!source || typeof source !== 'object' || Array.isArray(source))
-        throw new Error('Konfigurationsimport enthält kein Objekt.');
+        throw new Error('Configuration import does not contain an object.');
     const clean = {};
     for (const key of EXPORT_KEYS) {
         if (source[key] !== undefined) {
@@ -57,7 +64,7 @@ function buildMarketProfiles(markets, routes) {
 function importMarketProfile(text, markets, routes) {
     const profile = JSON.parse(String(text || ''));
     if (profile.format !== 'shoppingroute-market-profile-v1' || !profile.market?.name || !Array.isArray(profile.route)) {
-        throw new Error('Ungültiges ShoppingRoute-Marktprofil.');
+        throw new Error('Invalid ShoppingRoute market profile.');
     }
     const name = profile.market.name.trim();
     const nextMarkets = markets.filter(market => market.name.toLocaleLowerCase('de') !== name.toLocaleLowerCase('de'));

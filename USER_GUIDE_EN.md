@@ -267,12 +267,6 @@ ShoppingRoute includes an API safe mode to avoid unnecessary direct Alexa write 
 Settings include:
 
 - maximum writes per minute
-- writes per batch
-- pause between batches
-- maximum retries
-- retry base delay
-- pause between individual writes
-- delay before processing a list change
 
 For normal operation, keep API safe mode enabled unless there is a specific reason to change these values.
 
@@ -327,8 +321,6 @@ shoppingroute.0.info.statistics
 shoppingroute.0.info.traffic
 shoppingroute.0.info.feedbackReport
 shoppingroute.0.info.versionInstalled
-shoppingroute.0.info.versionBeta
-shoppingroute.0.info.updateAvailable
 ```
 
 The diagnostic/feedback report is intended to provide technical information without unnecessarily exposing shopping-list contents.
@@ -365,7 +357,7 @@ Check the selected mode under **Unknown-product handling**.
 
 ### Too many write errors
 
-Check API safe mode, write delays, `info.traffic`, `info.compatibility` and `info.lastError`.
+Check API Safe Mode, the configured write limit, `info.traffic`, `info.compatibility` and `info.lastError`.
 
 ## 23. Recommended initial setup
 

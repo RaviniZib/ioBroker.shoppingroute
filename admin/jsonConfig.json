@@ -5,9 +5,9 @@
       "type": "panel",
       "label": "ui.items.general.label",
       "items": {
-        "betaWarning": {
+        "safetyWarning": {
           "type": "infoBox",
-          "text": "ui.items.general.items.betawarning.text",
+          "text": "ui.items.general.items.safetywarning.text",
           "boxType": "warning",
           "iconPosition": "middle",
           "xs": 12,
@@ -261,52 +261,6 @@
           "label": "ui.items.general.items.maxwritesperminute.label",
           "min": 1,
           "max": 120,
-          "xs": 12,
-          "sm": 12,
-          "md": 6,
-          "lg": 6,
-          "xl": 6
-        },
-        "batchSize": {
-          "type": "number",
-          "label": "ui.items.general.items.batchsize.label",
-          "min": 1,
-          "max": 100,
-          "newLine": true,
-          "xs": 12,
-          "sm": 12,
-          "md": 6,
-          "lg": 6,
-          "xl": 6
-        },
-        "batchPauseMs": {
-          "type": "number",
-          "label": "ui.items.general.items.batchpausems.label",
-          "min": 0,
-          "max": 60000,
-          "xs": 12,
-          "sm": 12,
-          "md": 6,
-          "lg": 6,
-          "xl": 6
-        },
-        "maxWriteRetries": {
-          "type": "number",
-          "label": "ui.items.general.items.maxwriteretries.label",
-          "min": 0,
-          "max": 5,
-          "newLine": true,
-          "xs": 12,
-          "sm": 12,
-          "md": 6,
-          "lg": 6,
-          "xl": 6
-        },
-        "retryBaseMs": {
-          "type": "number",
-          "label": "ui.items.general.items.retrybasems.label",
-          "min": 250,
-          "max": 30000,
           "xs": 12,
           "sm": 12,
           "md": 6,
@@ -834,7 +788,7 @@
       "uk": "Загальні",
       "zh-cn": "常规"
     },
-    "ui.items.general.items.betawarning.text": {
+    "ui.items.general.items.safetywarning.text": {
       "en": "Safety notice: Start with Dry Run enabled. Normal shopping items are still sorted only by redistributing their visible texts. If market headings are enabled, ShoppingRoute creates and deletes only its own ═════ MARKET ═════ heading entries through Alexa2.",
       "de": "Sicherheitshinweis: Zuerst mit Dry-Run testen. Normale Einkaufsartikel werden weiterhin nur durch Umverteilen ihrer sichtbaren Texte sortiert. Bei aktivierten Marktüberschriften legt und löscht ShoppingRoute über Alexa2 ausschließlich eigene Einträge im Format ═════ MARKT ═════.",
       "ru": "Примечание по безопасности: сначала используйте пробный режим. Обычные товары по-прежнему сортируются только перераспределением видимых текстов. При включённых заголовках ShoppingRoute через Alexa2 создаёт и удаляет только собственные строки ═════ МАГАЗИН ═════.",
@@ -1082,17 +1036,17 @@
       "zh-cn": "仅在您清楚自己所做操作时更改这些设置。"
     },
     "ui.items.general.items.apihelp.text": {
-      "en": "API Safe Mode limits Alexa write frequency, groups large sorts into batches and retries temporary write errors with exponential backoff. It protects against unnecessary bursts; it does not poll Amazon.",
-      "de": "Der API-Schonmodus begrenzt Alexa-Schreibzugriffe, teilt große Sortierungen in Blöcke und wiederholt vorübergehende Schreibfehler mit wachsender Pause. Er schützt vor unnötigen Zugriffsspitzen; ShoppingRoute pollt Amazon nicht.",
-      "ru": "Безопасный режим API ограничивает частоту записей Alexa, разбивает большие сортировки на пакеты и повторяет временно неудачные записи с экспоненциальной задержкой. Он защищает от ненужных всплесков запросов; ShoppingRoute не опрашивает Amazon.",
-      "pt": "O Modo Seguro da API limita a frequência de gravações na Alexa, divide grandes ordenações em lotes e repete erros temporários de gravação com espera exponencial. Ele protege contra picos desnecessários; o ShoppingRoute não faz polling da Amazon.",
-      "nl": "De veilige API-modus beperkt de frequentie van Alexa-schrijfbewerkingen, verdeelt grote sorteringen in batches en probeert tijdelijke schrijffouten opnieuw met exponentiële vertraging. Dit voorkomt onnodige pieken; ShoppingRoute pollt Amazon niet.",
-      "fr": "Le mode sécurisé de l’API limite la fréquence des écritures Alexa, répartit les gros tris en lots et réessaie les erreurs d’écriture temporaires avec un délai exponentiel. Il évite les pics inutiles ; ShoppingRoute n’interroge pas Amazon en continu.",
-      "it": "La modalità sicura API limita la frequenza delle scritture Alexa, divide gli ordinamenti grandi in blocchi e riprova gli errori di scrittura temporanei con attesa esponenziale. Protegge da picchi inutili; ShoppingRoute non effettua polling di Amazon.",
-      "es": "El modo seguro de la API limita la frecuencia de escrituras en Alexa, divide las ordenaciones grandes en lotes y reintenta errores temporales de escritura con espera exponencial. Protege frente a picos innecesarios; ShoppingRoute no sondea Amazon.",
-      "pl": "Tryb bezpieczny API ogranicza częstotliwość zapisów Alexa, dzieli duże sortowania na partie i ponawia tymczasowe błędy zapisu z rosnącym opóźnieniem. Chroni przed niepotrzebnymi skokami ruchu; ShoppingRoute nie odpytuje Amazon.",
-      "uk": "Безпечний режим API обмежує частоту записів Alexa, ділить великі сортування на пакети та повторює тимчасово невдалі записи з експоненційною затримкою. Він захищає від зайвих сплесків запитів; ShoppingRoute не опитує Amazon.",
-      "zh-cn": "API 安全模式会限制 Alexa 写入频率，将大型排序分批处理，并对临时写入错误采用指数退避重试。它可避免不必要的突发请求；ShoppingRoute 不会轮询 Amazon。"
+      "en": "API Safe Mode limits direct Alexa write frequency to avoid unnecessary request bursts. ShoppingRoute does not poll Amazon.",
+      "de": "Der API-Schonmodus begrenzt direkte Alexa-Schreibzugriffe, um unnötige Zugriffsspitzen zu vermeiden. ShoppingRoute pollt Amazon nicht.",
+      "ru": "Безопасный режим API ограничивает частоту прямых записей Alexa, чтобы избежать ненужных всплесков запросов. ShoppingRoute не опрашивает Amazon.",
+      "pt": "O Modo Seguro da API limita a frequência de gravações diretas na Alexa para evitar picos desnecessários de solicitações. O ShoppingRoute não consulta a Amazon continuamente.",
+      "nl": "De veilige API-modus beperkt de frequentie van directe Alexa-schrijfbewerkingen om onnodige verzoekpieken te voorkomen. ShoppingRoute pollt Amazon niet.",
+      "fr": "Le mode sécurisé de l’API limite la fréquence des écritures directes Alexa afin d’éviter les pics de requêtes inutiles. ShoppingRoute n’interroge pas Amazon en continu.",
+      "it": "La modalità sicura API limita la frequenza delle scritture dirette Alexa per evitare picchi di richieste non necessari. ShoppingRoute non effettua polling di Amazon.",
+      "es": "El modo seguro de la API limita la frecuencia de escrituras directas en Alexa para evitar picos de solicitudes innecesarios. ShoppingRoute no sondea Amazon.",
+      "pl": "Tryb bezpieczny API ogranicza częstotliwość bezpośrednich zapisów Alexa, aby uniknąć niepotrzebnych skoków liczby żądań. ShoppingRoute nie odpytuje Amazon.",
+      "uk": "Безпечний режим API обмежує частоту прямих записів Alexa, щоб уникнути зайвих сплесків запитів. ShoppingRoute не опитує Amazon.",
+      "zh-cn": "API 安全模式会限制 Alexa 直接写入频率，以避免不必要的请求峰值。ShoppingRoute 不会轮询 Amazon。"
     },
     "ui.items.general.items.apisafemode.label": {
       "en": "Enable API Safe Mode",
@@ -1119,58 +1073,6 @@
       "pl": "Maksymalna liczba zapisów na minutę",
       "uk": "Максимум записів за хвилину",
       "zh-cn": "每分钟最大写入次数"
-    },
-    "ui.items.general.items.batchsize.label": {
-      "en": "Writes per batch",
-      "de": "Schreibzugriffe pro Block",
-      "ru": "Записей в пакете",
-      "pt": "Gravações por lote",
-      "nl": "Schrijfbewerkingen per batch",
-      "fr": "Écritures par lot",
-      "it": "Scritture per blocco",
-      "es": "Escrituras por lote",
-      "pl": "Liczba zapisów w partii",
-      "uk": "Записів у пакеті",
-      "zh-cn": "每批写入次数"
-    },
-    "ui.items.general.items.batchpausems.label": {
-      "en": "Pause between batches (ms)",
-      "de": "Pause zwischen Blöcken (ms)",
-      "ru": "Пауза между пакетами (мс)",
-      "pt": "Pausa entre lotes (ms)",
-      "nl": "Pauze tussen batches (ms)",
-      "fr": "Pause entre les lots (ms)",
-      "it": "Pausa tra i blocchi (ms)",
-      "es": "Pausa entre lotes (ms)",
-      "pl": "Przerwa między partiami (ms)",
-      "uk": "Пауза між пакетами (мс)",
-      "zh-cn": "批次之间的暂停（毫秒）"
-    },
-    "ui.items.general.items.maxwriteretries.label": {
-      "en": "Maximum retries",
-      "de": "Maximale Wiederholungen",
-      "ru": "Максимум повторных попыток",
-      "pt": "Máximo de tentativas",
-      "nl": "Maximaal aantal nieuwe pogingen",
-      "fr": "Nombre maximal de nouvelles tentatives",
-      "it": "Numero massimo di tentativi",
-      "es": "Máximo de reintentos",
-      "pl": "Maksymalna liczba ponowień",
-      "uk": "Максимум повторних спроб",
-      "zh-cn": "最大重试次数"
-    },
-    "ui.items.general.items.retrybasems.label": {
-      "en": "Retry base delay (ms)",
-      "de": "Grundpause für Wiederholungen (ms)",
-      "ru": "Базовая задержка повтора (мс)",
-      "pt": "Atraso base para nova tentativa (ms)",
-      "nl": "Basisvertraging voor nieuwe poging (ms)",
-      "fr": "Délai de base avant nouvelle tentative (ms)",
-      "it": "Ritardo base per i tentativi (ms)",
-      "es": "Retardo base para reintentos (ms)",
-      "pl": "Bazowe opóźnienie ponowienia (ms)",
-      "uk": "Базова затримка повтору (мс)",
-      "zh-cn": "重试基础延迟（毫秒）"
     },
     "ui.items.liststab.label": {
       "en": "Lists",

@@ -27,15 +27,15 @@ function messageOf(value) {
 function classifyDirectAlexaError(error) {
     const message = messageOf(error);
     if (/429|too many requests|rate exceeded|throttlingexception/i.test(message)) {
-        return new DirectAlexaError('throttled', `Amazon-Rate-Limit: ${message}`);
+        return new DirectAlexaError('throttled', `Amazon rate limit: ${message}`);
     }
     if (/401|403|unauthori[sz]ed|authentication|cookie invalid/i.test(message)) {
-        return new DirectAlexaError('authentication', `Amazon-Authentifizierung: ${message}`);
+        return new DirectAlexaError('authentication', `Amazon authentication: ${message}`);
     }
     if (/409|version.?mismatch|version.?conflict|conflict/i.test(message)) {
-        return new DirectAlexaError('version-conflict', `Amazon-Versionskonflikt: ${message}`);
+        return new DirectAlexaError('version-conflict', `Amazon version conflict: ${message}`);
     }
-    return new DirectAlexaError('remote', `Amazon-API: ${message}`);
+    return new DirectAlexaError('remote', `Amazon API: ${message}`);
 }
 function amazonPageFromHost(host) {
     const value = (typeof host === 'string' ? host : '').trim().replace(/^https?:\/\//, '').split('/')[0];
@@ -118,7 +118,7 @@ class AlexaDirectClient {
         }
         const cookie = cookieData || native.cookie;
         if (!cookie)
-            throw new DirectAlexaError('authentication', 'Alexa2 enthält kein wiederverwendbares Cookie.');
+            throw new DirectAlexaError('authentication', 'Alexa2 does not contain a reusable cookie.');
         await callbackPromise(callback => remote.init({
             cookie,
             csrf: native.csrf,
@@ -164,7 +164,7 @@ class AlexaDirectClient {
         const result = await this.request(`https://www.${this.amazonPage}/alexashoppinglists/api/v2/lists/${encodeURIComponent(listId)}/items/${encodeURIComponent(itemId)}?version=${version}`, 'PUT', { itemAttributesToUpdate: [{ type: 'itemName', value }], itemAttributesToRemove: [] });
         const item = mapItem(result?.itemInfo || result?.itemInfoList?.[0]);
         if (!item.itemId || item.itemId !== itemId || item.itemName !== value || item.version <= version) {
-            throw new DirectAlexaError('remote', `UPDATE-Antwort für ID ${itemId} bestätigt Zielwert oder neue Version nicht eindeutig.`);
+            throw new DirectAlexaError('remote', `UPDATE response for ID ${itemId} does not unambiguously confirm the target value or new version.`);
         }
         return item;
     }
@@ -180,7 +180,7 @@ class AlexaDirectClient {
         const failures = Array.isArray(result?.failures) ? result.failures : [];
         const items = (Array.isArray(result?.itemInfoList) ? result.itemInfoList : []).map(mapItem);
         if (failures.length || items.length !== values.length) {
-            throw new DirectAlexaError('remote', `Batch-CREATE unvollständig: ${items.length}/${values.length}, failures=${failures.length}.`);
+            throw new DirectAlexaError('remote', `Batch CREATE incomplete: ${items.length}/${values.length}, failures=${failures.length}.`);
         }
         const expected = new Map();
         const actual = new Map();
@@ -188,11 +188,11 @@ class AlexaDirectClient {
             expected.set(value, (expected.get(value) || 0) + 1);
         for (const item of items) {
             if (!item.itemId || !item.itemName)
-                throw new DirectAlexaError('remote', 'Batch-CREATE-Antwort enthält kein eindeutiges Item.');
+                throw new DirectAlexaError('remote', 'Batch CREATE response does not contain an unambiguous item.');
             actual.set(item.itemName, (actual.get(item.itemName) || 0) + 1);
         }
         if (expected.size !== actual.size || [...expected].some(([value, count]) => actual.get(value) !== count)) {
-            throw new DirectAlexaError('remote', 'Batch-CREATE-Antwort enthält nicht exakt die angeforderten Werte.');
+            throw new DirectAlexaError('remote', 'Batch CREATE response does not contain exactly the requested values.');
         }
         return { items, failures };
     }

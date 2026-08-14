@@ -37,7 +37,6 @@ exports.ShoppingRoute = void 0;
 const utils = __importStar(require("@iobroker/adapter-core"));
 const fs = __importStar(require("node:fs"));
 const path = __importStar(require("node:path"));
-const https = __importStar(require("node:https"));
 const alexa_direct_1 = require("./lib/alexa-direct");
 const metrics_1 = require("./lib/metrics");
 const sorter_1 = require("./lib/sorter");
@@ -47,6 +46,7 @@ const prefix_sort_1 = require("./lib/prefix-sort");
 const config_tools_1 = require("./lib/config-tools");
 const statistics_1 = require("./lib/statistics");
 const review_tools_1 = require("./lib/review-tools");
+const state_change_1 = require("./lib/state-change");
 const direct_sort_lifecycle_1 = require("./lib/direct-sort-lifecycle");
 const VERSION = '0.3.3';
 const COLLECT_WINDOW_MS = 5000;
@@ -86,8 +86,24 @@ function mapsEqual(left, right) {
             return false;
     return true;
 }
+function englishRuntimeError(error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return message
+        .replace(/^Ungültiger ShoppingRoute-Sortierpräfix: (.+)$/, 'Invalid ShoppingRoute sorting prefix: $1')
+        .replace(/^Ein Sortierpräfix benötigt einen sichtbaren Originaltext\.$/, 'A sorting prefix requires visible original text.')
+        .replace(/^Die Liste enthält (\d+) Soll-Einträge; maximal 99 sind zulässig\.$/, 'The list contains $1 target entries; at most 99 are allowed.')
+        .replace(/^(UPDATE|DELETE) für ID (.+): Item-ID oder positive Amazon-Version fehlt\.$/, '$1 for ID $2: item ID or positive Amazon version is missing.')
+        .replace(/^Der neu aufzubauende Listenteil passt nicht in die Präfixe 00>–99>\.$/, 'The list section to rebuild does not fit into prefixes 00>–99>.')
+        .replace(/^DELETE für ID (.+): positive Amazon-Version fehlt\.$/, 'DELETE for ID $1: positive Amazon version is missing.')
+        .replace(/^Maximal 99 aktive Listeneinträge sind zulässig\.$/, 'At most 99 active list entries are allowed.')
+        .replace(/^Gelöschte ID (.+) ist weiterhin aktiv\.$/, 'Deleted ID $1 is still active.')
+        .replace(/^ID (.+) besitzt nicht den erwarteten Zielwert „(.*)“\.$/, 'ID $1 does not have the expected target value “$2”.')
+        .replace(/^Batch-CREATE-Ziel „(.*)“ ist nicht vollständig vorhanden\.$/, 'Batch CREATE target “$1” is not fully present.')
+        .replace(/^Erwartet (\d+), gefunden (\d+) aktive Items\.$/, 'Expected $1 active items, found $2.')
+        .replace(/^Position (\d+): erwartet „(.*)“, gefunden „(.*)“\.$/, 'Position $1: expected “$2”, found “$3”.')
+        .replace(/^Die sichtbaren Originaltexte stimmen nach dem Apply nicht überein\.$/, 'The visible original texts do not match after applying the sort.');
+}
 class ShoppingRoute extends utils.Adapter {
-    versionTimer = null;
     listStates = new Map();
     applyingListName = '';
     directClient = null;
@@ -107,12 +123,10 @@ class ShoppingRoute extends utils.Adapter {
     activeCountByList = new Map();
     writeTimestamps = [];
     temporaryPriorityMarket = '';
-    alexa2Version = 'unbekannt';
-    alexaRemote2Version = 'unbekannt';
-    compatibilityDetail = 'Direkte Alexa-Session noch nicht initialisiert.';
-    lastCompatibilityTest = 'Noch nicht ausgeführt.';
-    latestBetaVersion = '';
-    lastVersionCheck = '';
+    alexa2Version = 'unknown';
+    alexaRemote2Version = 'unknown';
+    compatibilityDetail = 'Direct Alexa session has not been initialized yet.';
+    lastCompatibilityTest = 'Not executed yet.';
     constructor(options = {}) {
         super({ ...options, name: 'shoppingroute' });
         this.on('ready', this.onReady.bind(this));
@@ -167,7 +181,7 @@ class ShoppingRoute extends utils.Adapter {
     get dryRun() { return this.cfg.dryRun !== false; }
     get logSortSummary() { return this.cfg.logSortSummary !== false; }
     get apiSafeMode() { return this.cfg.apiSafeMode !== false; }
-    get maxWritesPerMinute() { return Math.max(1, Number(this.cfg.maxWritesPerMinute) || 20); }
+    get maxWritesPerMinute() { return (0, config_tools_1.normalizeMaxWritesPerMinute)(this.cfg.maxWritesPerMinute); }
     get marketHeadersEnabled() { return this.cfg.marketHeaders === true; }
     get minimumItemsPerMarket() { return Math.max(1, Math.floor(Number(this.cfg.minItemsPerMarket) || 1)); }
     getListState(listName) {
@@ -219,7 +233,7 @@ class ShoppingRoute extends utils.Adapter {
             const state = await this.getForeignStateAsync(this.listStateId(list.name));
             const parsed = this.parseListState(state?.val);
             if (!parsed) {
-                this.log.warn(`Alexa-Liste nicht gefunden: ${this.listStateId(list.name)}`);
+                this.log.warn(`Alexa list not found: ${this.listStateId(list.name)}`);
                 continue;
             }
             stateConnected = true;
@@ -230,7 +244,7 @@ class ShoppingRoute extends utils.Adapter {
         }
         await this.updateActiveItemCount();
         if (!stateConnected) {
-            await this.setError(`Keine der konfigurierten Alexa-Listen ist lesbar: ${this.listConfigs.map(item => item.name).join(', ')}`);
+            await this.setError(`None of the configured Alexa lists can be read: ${this.listConfigs.map(item => item.name).join(', ')}`);
             return;
         }
         try {
@@ -238,19 +252,17 @@ class ShoppingRoute extends utils.Adapter {
             await this.setStateAsync('info.connection', true, true);
         }
         catch (error) {
-            await this.setError(`Direkte Alexa-Verbindung fehlgeschlagen: ${error instanceof Error ? error.message : String(error)}`);
+            await this.setError(`Direct Alexa connection failed: ${error instanceof Error ? error.message : String(error)}`);
             return;
         }
         if (!(await this.recoverDirectApplyJournal()))
             return;
         await this.setStateAsync('info.lastError', '', true);
         await this.refreshExports();
-        await this.checkNpmVersion();
         await this.updateFeedbackReport();
-        this.versionTimer = this.setInterval(() => void this.checkNpmVersion(), 6 * 60 * 60 * 1000);
-        this.log.warn(`ShoppingRoute ${VERSION}: Dry-Run ist für Ersttests ausdrücklich empfohlen.`);
-        this.log.info('WICHTIG: Die Alexa-App muss für jede verwaltete Liste auf alphabetische Sortierung A–Z gestellt sein.');
-        this.log.debug('Direkt-Sortierung: sichtbare Präfixe 00>–99>; Alexa2-Listenstates dienen nur noch als externe Triggerquelle.');
+        this.log.warn(`ShoppingRoute ${VERSION}: Dry Run is strongly recommended for initial testing.`);
+        this.log.info('IMPORTANT: Set every managed list in the Alexa app to alphabetical sorting (A–Z).');
+        this.log.debug('Direct sorting uses visible prefixes 00>–99>; Alexa2 list states are used only as an external trigger source.');
         this.scheduleAll(COLLECT_WINDOW_MS);
     }
     async discoverAlexaLists(instanceName = this.alexaInstance) {
@@ -269,7 +281,7 @@ class ShoppingRoute extends utils.Adapter {
             }
         }
         catch (error) {
-            this.log.debug(`Alexa-Listen konnten für ${instance} nicht gelesen werden: ${String(error)}`);
+            this.log.debug(`Alexa lists could not be read for ${instance}: ${String(error)}`);
         }
         for (const list of this.listConfigs)
             if (list.name)
@@ -396,7 +408,7 @@ class ShoppingRoute extends utils.Adapter {
             }
             catch (error) {
                 await this.setStateAsync('control.importConfigJson', '', true);
-                await this.setError(`Konfigurationsimport fehlgeschlagen: ${error instanceof Error ? error.message : String(error)}`);
+                await this.setError(`Configuration import failed: ${error instanceof Error ? error.message : String(error)}`);
             }
             return;
         }
@@ -408,7 +420,7 @@ class ShoppingRoute extends utils.Adapter {
             }
             catch (error) {
                 await this.setStateAsync('control.marketProfileImport', '', true);
-                await this.setError(`Marktprofil-Import fehlgeschlagen: ${error instanceof Error ? error.message : String(error)}`);
+                await this.setError(`Market profile import failed: ${error instanceof Error ? error.message : String(error)}`);
             }
             return;
         }
@@ -420,6 +432,8 @@ class ShoppingRoute extends utils.Adapter {
         }
         const list = this.listConfigs.find(entry => id === this.listStateId(entry.name));
         if (list) {
+            if (!(0, state_change_1.isAcknowledgedForeignState)(state))
+                return;
             await this.setStateAsync('info.connection', true, true);
             if (!this.compatibilityTesting)
                 this.observeListState(list.name, state.val);
@@ -431,9 +445,6 @@ class ShoppingRoute extends utils.Adapter {
             if (state.timer)
                 this.clearTimeout(state.timer);
         this.listStates.clear();
-        if (this.versionTimer)
-            this.clearInterval(this.versionTimer);
-        this.versionTimer = null;
         this.directClient?.close();
         void this.setStateAsync('info.connection', false, true).catch(() => undefined).finally(callback);
     }
@@ -555,7 +566,7 @@ class ShoppingRoute extends utils.Adapter {
             await this.applyDirectSort(listName, state, runtime);
         }
         catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
+            const message = englishRuntimeError(error);
             await this.activateDirectSafetyStop(listName, message);
         }
         finally {
@@ -599,19 +610,19 @@ class ShoppingRoute extends utils.Adapter {
         this.directClientPromise = (async () => {
             const object = await this.getForeignObjectAsync(`system.adapter.${this.alexaInstance}`);
             if (!object)
-                throw new Error(`Alexa2-Instanzobjekt system.adapter.${this.alexaInstance} fehlt.`);
+                throw new Error(`Alexa2 instance object system.adapter.${this.alexaInstance} is missing.`);
             const native = (object.native || {});
             const version = object.common?.version;
-            this.alexa2Version = typeof version === 'string' || typeof version === 'number' ? String(version) : 'unbekannt';
+            this.alexa2Version = typeof version === 'string' || typeof version === 'number' ? String(version) : 'unknown';
             const client = await alexa_direct_1.AlexaDirectClient.connect(native);
             this.directClient = client;
-            this.compatibilityDetail = 'Direkte alexa-remote2-Session mit lokaler Alexa2-Authentifizierung ist bereit.';
+            this.compatibilityDetail = 'Direct alexa-remote2 session using local Alexa2 authentication is ready.';
             try {
                 const resolved = require.resolve('alexa-remote2');
                 this.alexaRemote2Version = this.findPackageVersion(resolved, 'alexa-remote2');
             }
             catch {
-                this.alexaRemote2Version = 'über Alexa2 bereitgestellt';
+                this.alexaRemote2Version = 'provided by Alexa2';
             }
             await this.refreshDirectListIds();
             await this.updateCompatibilityDiagnostics();
@@ -636,7 +647,7 @@ class ShoppingRoute extends utils.Adapter {
             listId = this.directListIds.get(listName.toLocaleLowerCase('de'));
         }
         if (!client || !listId)
-            throw new Error(`Amazon-Listen-ID für „${listName}“ wurde nicht gefunden.`);
+            throw new Error(`Amazon list ID for “${listName}” was not found.`);
         return listId;
     }
     async amazonCall(runtime, operation) {
@@ -663,7 +674,7 @@ class ShoppingRoute extends utils.Adapter {
         // A direct planning snapshot supplies the current Amazon versions; the Alexa2 state remains trigger-only.
         const snapshot = await this.readDirectItems(listId, runtime);
         if ((0, sorter_1.activeItems)(snapshot).length > MAX_ACTIVE_ITEMS)
-            throw new Error(`${listName}: mehr als 99 aktive Einträge.`);
+            throw new Error(`${listName}: more than 99 active entries.`);
         const logical = this.prefixFreeItems(snapshot);
         await this.recordNewItems(listName, logical);
         await this.updateLearningAndDiagnostics(listName, logical);
@@ -687,19 +698,19 @@ class ShoppingRoute extends utils.Adapter {
         }, null, 2), true);
         await this.setStateAsync('info.previewText', this.prefixPreviewText(listName, plan), true);
         if (!operationCount) {
-            await this.setStateAsync('info.lastSort', `${new Date().toISOString()} – ${listName}: bereits präfixsortiert (${desired.length} aktiv)`, true);
+            await this.setStateAsync('info.lastSort', `${new Date().toISOString()} – ${listName}: already prefix-sorted (${desired.length} active)`, true);
             await this.setStateAsync('info.lastError', '', true);
             state.lastSnapshot = itemSnapshot(snapshot);
             state.lastItems = snapshot.map(item => ({ ...item }));
             return;
         }
         if (this.dryRun) {
-            await this.setStateAsync('info.lastSort', `${new Date().toISOString()} – ${listName} Dry-Run: ${operationCount} Amazon-Request(s) geplant`, true);
+            await this.setStateAsync('info.lastSort', `${new Date().toISOString()} – ${listName} Dry Run: ${operationCount} Amazon request(s) planned`, true);
             await this.setStateAsync('info.lastError', '', true);
             return;
         }
         if (state.externalDirty) {
-            this.log.debug(`${listName}: Direkter Präfixplan wurde vor dem ersten Write durch externe Änderung verworfen.`);
+            this.log.debug(`${listName}: Direct prefix plan was discarded before the first write because of an external change.`);
             return;
         }
         this.traffic.sortRuns += 1;
@@ -748,14 +759,14 @@ class ShoppingRoute extends utils.Adapter {
         const verifiedItems = await this.readDirectItems(listId, runtime);
         const verification = (0, prefix_sort_1.verifyPrefixResult)(verifiedItems, plan, state.externalDirty);
         if (!verification.ok)
-            throw new Error(`${listName}: direkte Abschlussprüfung fehlgeschlagen: ${verification.reason}`);
+            throw new Error(`${listName}: direct final verification failed: ${englishRuntimeError(verification.reason || 'Unknown verification error.')}`);
         await this.clearDirectJournal();
         state.lastSnapshot = itemSnapshot(verifiedItems);
         state.lastItems = verifiedItems.map(item => ({ ...item }));
         state.ownObservation = this.buildOwnObservation(snapshot, plan);
         this.activeCountByList.set(listName, (0, market_plan_1.realActiveItems)(this.prefixFreeItems(verifiedItems), this.markets).length);
         await this.updateActiveItemCount();
-        await this.setStateAsync('info.lastSort', `${new Date().toISOString()} – ${listName}: Präfixsortierung direkt bestätigt`, true);
+        await this.setStateAsync('info.lastSort', `${new Date().toISOString()} – ${listName}: prefix sorting confirmed directly`, true);
         await this.setStateAsync('info.lastError', '', true);
     }
     buildOwnObservation(snapshot, plan) {
@@ -772,15 +783,15 @@ class ShoppingRoute extends utils.Adapter {
     }
     prefixPreviewText(listName, plan) {
         return [
-            `Liste: ${listName}`,
-            `Direkte Präfixsortierung: ${plan.fallback ? `Fallback ab Position ${(plan.rebuildFrom || 0) + 1}` : 'inkrementell'}`,
+            `List: ${listName}`,
+            `Direct prefix sorting: ${plan.fallback ? `fallback from position ${(plan.rebuildFrom || 0) + 1}` : 'incremental'}`,
             `PUT: ${plan.updates.length}, DELETE: ${plan.deletes.length}, Batch-CREATE: ${plan.creates.length}`,
             ...(0, prefix_sort_1.expectedValues)(plan).map((value, index) => `${String(index + 1).padStart(2, '0')}. ${value}`),
         ].join('\n');
     }
     async beforeDirectWrite() {
         if (this.isUnloading)
-            throw new Error('Direkter Alexa-Write wegen Adapter-Shutdown abgebrochen.');
+            throw new Error('Direct Alexa write aborted because the adapter is shutting down.');
         if (!this.apiSafeMode)
             return;
         while (true) {
@@ -789,10 +800,10 @@ class ShoppingRoute extends utils.Adapter {
             if (this.writeTimestamps.length < this.maxWritesPerMinute)
                 return;
             const waitMs = Math.max(500, 60000 - (now - this.writeTimestamps[0]) + 100);
-            this.log.debug(`API-Schonmodus: Request-Limit ${this.maxWritesPerMinute}/Minute erreicht, Pause ${waitMs} ms.`);
+            this.log.debug(`API Safe Mode: request limit of ${this.maxWritesPerMinute} per minute reached; waiting ${waitMs} ms.`);
             await this.wait(waitMs);
             if (this.isUnloading)
-                throw new Error('Direkter Alexa-Write während API-Pause abgebrochen.');
+                throw new Error('Direct Alexa write aborted during the API wait period.');
         }
     }
     async recordDirectWrite() {
@@ -816,7 +827,7 @@ class ShoppingRoute extends utils.Adapter {
         }
         catch { /* preserve the last journal payload */ }
         await this.setStateAsync('control.enabled', false, true);
-        const message = `${listName}: ${reason} SICHERHEITSSTOPP: weitere direkte Writes sind deaktiviert; kein automatischer Retry.`;
+        const message = `${listName}: ${reason} SAFETY STOP: further direct writes are disabled; no automatic retry.`;
         await this.setError(message);
         this.log.error(message);
     }
@@ -838,11 +849,11 @@ class ShoppingRoute extends utils.Adapter {
             journal = JSON.parse(raw);
         }
         catch {
-            await this.activateDirectSafetyStop('unbekannt', 'Persistentes Apply-Journal ist nicht lesbar.');
+            await this.activateDirectSafetyStop('unknown', 'Persistent apply journal cannot be read.');
             return false;
         }
         if (journal.version !== 2) {
-            await this.activateDirectSafetyStop(journal.listName || 'unbekannt', 'Alte unterbrochene Marker-Transaktion gefunden; automatische Präfixmigration bleibt gesperrt.');
+            await this.activateDirectSafetyStop(journal.listName || 'unknown', 'Old interrupted marker transaction found; automatic prefix migration remains blocked.');
             return false;
         }
         try {
@@ -854,27 +865,27 @@ class ShoppingRoute extends utils.Adapter {
             const deletedGone = journal.deletedIds.every(id => !ids.has(id));
             if (exact && deletedGone) {
                 await this.clearDirectJournal();
-                this.log.debug(`${journal.listName}: unterbrochener Direkt-Apply war remote vollständig abgeschlossen; Journal bereinigt.`);
+                this.log.debug(`${journal.listName}: interrupted direct apply was fully completed remotely; journal cleared.`);
                 return true;
             }
-            await this.activateDirectSafetyStop(journal.listName, 'Unterbrochener Direkt-Apply ist remote nicht vollständig; Journal bleibt erhalten.');
+            await this.activateDirectSafetyStop(journal.listName, 'Interrupted direct apply is not complete remotely; journal is retained.');
             return false;
         }
         catch (error) {
-            await this.activateDirectSafetyStop(journal.listName, `Recovery-Kontrollabruf fehlgeschlagen: ${error instanceof Error ? error.message : String(error)}`);
+            await this.activateDirectSafetyStop(journal.listName, `Recovery verification read failed: ${error instanceof Error ? error.message : String(error)}`);
             return false;
         }
     }
     logDirectRuntime(runtime) {
         const totalMs = Date.now() - runtime.startedAt;
         const waitedMs = Math.max(0, runtime.startedAt - runtime.requestedAt);
-        this.log.debug(`${runtime.listName} SHOP Direkt-Sortierung: externe neue Artikel ${runtime.externalNewItems} | ` +
+        this.log.debug(`${runtime.listName} SHOP direct sorting: external new items ${runtime.externalNewItems} | ` +
             `Debounce ${waitedMs} ms | PUTs ${runtime.putRequests} | DELETEs ${runtime.deleteRequests} | ` +
             `Batch-CREATE-Items ${runtime.batchCreateItems} | Amazon-Requests ${runtime.amazonRequests} | ` +
-            `Amazon ${runtime.amazonMs} ms | gesamt ${totalMs} ms | Fallback ${runtime.fallback ? 'ja' : 'nein'} | ` +
-            `Rebuild ab ${runtime.rebuildFrom === null ? '–' : runtime.rebuildFrom + 1}`);
+            `Amazon ${runtime.amazonMs} ms | total ${totalMs} ms | Fallback ${runtime.fallback ? 'yes' : 'no'} | ` +
+            `Rebuild from ${runtime.rebuildFrom === null ? '–' : runtime.rebuildFrom + 1}`);
         if (this.logSortSummary) {
-            this.log.info(`${runtime.listName}: Sortierlauf nach ${totalMs} ms abgeschlossen.`);
+            this.log.info(`${runtime.listName}: sorting run completed after ${totalMs} ms.`);
         }
     }
     async updateLearningAndDiagnostics(listName, list) {
@@ -956,7 +967,7 @@ class ShoppingRoute extends utils.Adapter {
                 break;
             current = parent;
         }
-        return 'unbekannt';
+        return 'unknown';
     }
     async runLiveCompatibilityTest() {
         if (this.isUnloading || this.compatibilityTesting || this.applyingListName)
@@ -965,16 +976,16 @@ class ShoppingRoute extends utils.Adapter {
         try {
             const listName = this.listConfigs[0]?.name;
             if (!listName)
-                throw new Error('Keine aktive Alexa-Liste konfiguriert.');
+                throw new Error('No active Alexa list is configured.');
             const listId = await this.directListId(listName);
             const items = await this.readDirectItems(listId);
-            this.compatibilityDetail = 'Direkter Kontrollabruf über die lokale Alexa2-Authentifizierung war erfolgreich; kein Test-Write nötig.';
-            this.lastCompatibilityTest = `${new Date().toISOString()} – ERFOLG, ${items.length} Items gelesen`;
+            this.compatibilityDetail = 'Direct verification read using local Alexa2 authentication succeeded; no test write was needed.';
+            this.lastCompatibilityTest = `${new Date().toISOString()} – SUCCESS, ${items.length} items read`;
             await this.setStateAsync('info.lastError', '', true);
         }
         catch (error) {
-            this.compatibilityDetail = `Direkter Kontrollabruf fehlgeschlagen: ${error instanceof Error ? error.message : String(error)}`;
-            this.lastCompatibilityTest = `${new Date().toISOString()} – FEHLER`;
+            this.compatibilityDetail = `Direct verification read failed: ${error instanceof Error ? error.message : String(error)}`;
+            this.lastCompatibilityTest = `${new Date().toISOString()} – ERROR`;
             await this.setError(this.compatibilityDetail);
         }
         finally {
@@ -988,7 +999,6 @@ class ShoppingRoute extends utils.Adapter {
         await this.setStateAsync('info.lastCompatibilityTest', this.lastCompatibilityTest, true);
         await this.setStateAsync('info.compatibility', JSON.stringify({
             shoppingrouteVersion: VERSION,
-            beta: true,
             alexaInstance: this.alexaInstance,
             alexa2Version: this.alexa2Version,
             alexaRemote2Version: this.alexaRemote2Version,
@@ -997,19 +1007,19 @@ class ShoppingRoute extends utils.Adapter {
             writeCapability: ready ? 'direct-ok' : 'direct-unavailable',
             detail: this.compatibilityDetail,
             lastCompatibilityTest: this.lastCompatibilityTest,
-            requiredAlexaAppSorting: 'Alphabetisch A–Z',
+            requiredAlexaAppSorting: 'Alphabetical A–Z',
             checkedAt: new Date().toISOString(),
         }, null, 2), true);
     }
     async updateTemporaryMarketStateOptions() {
         try {
-            const states = { __none__: '— Kein Markt —' };
+            const states = { __none__: '— No market —' };
             for (const market of [...this.markets].sort((a, b) => a.name.localeCompare(b.name, 'de', { sensitivity: 'base' })))
                 states[market.name] = market.name;
             await this.extendObjectAsync('control.temporaryPriorityMarket', { common: { states } });
         }
         catch (error) {
-            this.log.warn(`Temporäre Markt-Auswahlliste konnte nicht aktualisiert werden: ${String(error)}`);
+            this.log.warn(`Temporary market selection list could not be updated: ${String(error)}`);
         }
     }
     async ensureProductGroupsConfig() {
@@ -1019,7 +1029,7 @@ class ShoppingRoute extends utils.Adapter {
             await this.updateConfig({ productGroups: DEFAULT_CATEGORIES.map(name => ({ name })) });
         }
         catch (error) {
-            this.log.warn(`Produktgruppen konnten nicht initialisiert werden: ${String(error)}`);
+            this.log.warn(`Product groups could not be initialized: ${String(error)}`);
         }
     }
     async persistRuntimeConfig() {
@@ -1029,7 +1039,7 @@ class ShoppingRoute extends utils.Adapter {
             const instanceId = `system.adapter.${this.namespace}`;
             const object = await this.getForeignObjectAsync(instanceId);
             if (!object)
-                throw new Error(`Instanzobjekt nicht gefunden: ${instanceId}`);
+                throw new Error(`Instance object not found: ${instanceId}`);
             object.native = {
                 ...(object.native || {}),
                 ...(this.productsDirty ? { products: this.runtimeProducts.map(product => ({ ...product })) } : {}),
@@ -1042,7 +1052,7 @@ class ShoppingRoute extends utils.Adapter {
             this.routesDirty = false;
         }
         catch (error) {
-            await this.setError(`Lern-/Konfigurationsdaten konnten nicht gespeichert werden: ${String(error)}`);
+            await this.setError(`Learning/configuration data could not be saved: ${String(error)}`);
         }
     }
     async refreshExports() {
@@ -1075,7 +1085,7 @@ class ShoppingRoute extends utils.Adapter {
         await this.setStateAsync('info.alexaWritesToday', this.traffic.alexaWrites, true);
         await this.setStateAsync('info.compatibilityWritesToday', this.traffic.compatibilityWrites, true);
         await this.setStateAsync('info.abortedRunsToday', this.traffic.abortedRuns, true);
-        await this.setStateAsync('info.traffic', JSON.stringify({ ...this.traffic, note: 'Zählt Operationen, keine Netzwerk-Bytes.' }, null, 2), true);
+        await this.setStateAsync('info.traffic', JSON.stringify({ ...this.traffic, note: 'Counts operations, not network bytes.' }, null, 2), true);
     }
     async loadStatistics() {
         try {
@@ -1090,46 +1100,6 @@ class ShoppingRoute extends utils.Adapter {
     async persistStatistics() {
         this.statistics.lastUpdated = new Date().toISOString();
         await this.setStateAsync('info.statistics', JSON.stringify(this.statistics, null, 2), true);
-    }
-    async checkNpmVersion() {
-        try {
-            const data = await this.httpJson('https://registry.npmjs.org/iobroker.shoppingroute');
-            const tags = (data['dist-tags'] || {});
-            this.latestBetaVersion = typeof tags.beta === 'string' ? tags.beta : typeof tags.latest === 'string' ? tags.latest : '';
-            this.lastVersionCheck = new Date().toISOString();
-            await this.setStateAsync('info.versionBeta', this.latestBetaVersion || 'unbekannt', true);
-            await this.setStateAsync('info.updateAvailable', Boolean(this.latestBetaVersion && this.latestBetaVersion !== VERSION), true);
-            await this.setStateAsync('info.versionCheck', `${this.lastVersionCheck} – npm beta: ${this.latestBetaVersion || 'unbekannt'}`, true);
-        }
-        catch (error) {
-            this.lastVersionCheck = new Date().toISOString();
-            await this.setStateAsync('info.versionCheck', `${this.lastVersionCheck} – npm-Abfrage fehlgeschlagen: ${String(error)}`, true);
-        }
-        await this.updateFeedbackReport();
-    }
-    httpJson(url) {
-        return new Promise((resolve, reject) => {
-            const request = https.get(url, { headers: { 'User-Agent': `ioBroker.shoppingroute/${VERSION}` } }, (response) => {
-                if ((response.statusCode || 500) >= 400) {
-                    response.resume();
-                    reject(new Error(`HTTP ${response.statusCode}`));
-                    return;
-                }
-                let data = '';
-                response.setEncoding('utf8');
-                response.on('data', (chunk) => { data += chunk; });
-                response.on('end', () => {
-                    try {
-                        resolve(JSON.parse(data));
-                    }
-                    catch (error) {
-                        reject(error instanceof Error ? error : new Error('Ungültige JSON-Antwort'));
-                    }
-                });
-            });
-            request.setTimeout(8000, () => request.destroy(new Error('Timeout')));
-            request.on('error', reject);
-        });
     }
     async updateFeedbackReport() {
         const report = {
@@ -1147,8 +1117,7 @@ class ShoppingRoute extends utils.Adapter {
             lastCompatibilityTest: this.lastCompatibilityTest,
             lastError: String((await this.getStateAsync('info.lastError'))?.val || ''),
             traffic: this.traffic,
-            update: { installed: VERSION, npmBeta: this.latestBetaVersion || 'unbekannt', checkedAt: this.lastVersionCheck || 'noch nicht' },
-            privacy: 'Produktnamen, Einkaufslistentexte, Aliase, Cookies und komplette Konfiguration sind nicht enthalten.',
+            privacy: 'Product names, shopping-list texts, aliases, cookies and the complete configuration are not included.',
         };
         await this.setStateAsync('info.feedbackReport', JSON.stringify(report, null, 2), true);
     }

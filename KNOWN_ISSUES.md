@@ -25,11 +25,3 @@ The list in the Alexa app must be configured to **A–Z**. ShoppingRoute deliber
 ## Direct-session guard
 
 ShoppingRoute does not patch foreign modules. It reuses the locally stored Alexa2 authentication to initialize alexa-remote2 and performs direct item requests. `control.compatibilityTest` is read-only and reports `direct-ok` or `direct-unavailable`.
-
-
-
-## GitHub URL vs npm beta
-
-Installing from the GitHub repository URL installs the version committed to the repository branch/commit. Publishing a newer beta to npm does not update GitHub automatically. Therefore the GitHub URL can legitimately install an older build until the newer source is committed and pushed.
-
-The ioBroker Admin card can also show a generic “not maintained”/“nicht gewartet” value while ShoppingRoute is not part of an official ioBroker repository. ShoppingRoute exposes its own installed/beta version status in the Diagnostics tab; it cannot overwrite that repository-level Admin card field.

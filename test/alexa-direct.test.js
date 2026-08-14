@@ -46,7 +46,7 @@ test('batch CREATE sends every suffix item in one POST and validates failures', 
     const failed = new AlexaDirectClient(fakeRemote((_path, _flags, callback) => {
         callback(null, { itemInfoList: [], failures: [{ reason: 'bad' }] });
     }));
-    await assert.rejects(failed.batchCreate('list-1', ['30> Milch']), /Batch-CREATE unvollständig/);
+    await assert.rejects(failed.batchCreate('list-1', ['30> Milch']), /Batch CREATE incomplete/);
 });
 
 test('DELETE is item-specific and version conflicts are never retried by the client', async () => {

@@ -28,11 +28,10 @@ ShoppingRoute sorts Alexa shopping-list entries by market, product group and eac
 - sorting preview before writes
 - incremental `00>`–`99>` prefix sorting with gap-preserving inserts and suffix-only rebuilds
 - direct Amazon responses plus one final list read as write confirmation
-- API safe mode with write-rate limiting, batches and retry backoff
+- API Safe Mode with configurable write-rate limiting
 - local-only shopping statistics
 - configuration backup/restore
 - shareable market-route profiles
-- npm beta version check
 - privacy-safe diagnostic/feedback report
 - Alexa2/alexa-remote2 direct-session diagnostics
 - Dry Run safety mode
@@ -72,7 +71,7 @@ See `README_DE.md` for the detailed German documentation.
 
 - First stable release of ShoppingRoute.
 - Completed Admin translations for all supported ioBroker languages and fixed the walking-route market help text.
-- Added protected stable publishing through GitHub Actions, npm Trusted Publishing/OIDC and an obfuscated runtime build.
+- Added protected stable publishing through GitHub Actions and npm Trusted Publishing/OIDC.
 - Verified `updateListItem` compatibility with Alexa2 3.28.3 and alexa-remote2 8.1.0 without local modifications to foreign modules.
 
 ### 0.2.0-beta.12 (2026-08-09)

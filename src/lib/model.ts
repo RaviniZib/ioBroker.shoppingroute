@@ -69,10 +69,6 @@ export interface AdapterConfigShape {
     logSortSummary?: boolean;
     apiSafeMode?: boolean;
     maxWritesPerMinute?: number;
-    batchSize?: number;
-    batchPauseMs?: number;
-    maxWriteRetries?: number;
-    retryBaseMs?: number;
     marketHeaders?: boolean;
     minItemsPerMarket?: number;
     fallbackMarket?: string;
