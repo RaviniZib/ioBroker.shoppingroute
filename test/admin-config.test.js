@@ -111,9 +111,9 @@ test('phase-one styling preserves the functional JSON config outside the migrate
   ]));
   const hash=crypto.createHash('sha256').update(JSON.stringify(projection)).digest('hex');
 
-  assert.equal(hash,'6551636e5c7299250f1569cba17d6152d83919c2660fc8cc695087a122f7af4e');
+  assert.equal(hash,'680e8df1017745e036da57315e0e10850dd3ddf18cf54cd11c81d19fa4352213');
   const routeHash=crypto.createHash('sha256').update(JSON.stringify(jsonConfig.items.routesTab)).digest('hex');
-  assert.equal(routeHash,'23228bada006eac4b1d8193a56d4978e64371e4886d8ad6bfe851ddc93fd58be');
+  assert.equal(routeHash,'8bb35e144be68a1953ee81a22aa94a445162715354c73eb99e4119747c18c518');
 });
 
 test('known instances, lists, markets and product groups use dropdown controls',()=>{
@@ -139,7 +139,8 @@ test('product groups use a dedicated draft editor with the original native struc
     productGroups.productGroupsEditor.name,
     'ShoppingRouteProductGroupsSet/Components/ProductGroupsEditor',
   );
-  assert.equal(productGroups.productGroupsEditor.bundlerType,'module');
+  assert.equal(productGroups.productGroupsEditor.guiApi,2);
+  assert.equal('bundlerType' in productGroups.productGroupsEditor,false);
   assert.equal(productGroups.productGroups.type,'table');
   assert.equal(productGroups.productGroups.hidden,'true');
   assert.deepEqual(productGroups.productGroups.items,[{
@@ -157,7 +158,8 @@ test('markets use a dedicated draft editor with the original native structure',(
   assert.equal(markets.marketsEditor.type,'custom');
   assert.equal(markets.marketsEditor.url,'custom/markets/marketsEditor.js');
   assert.equal(markets.marketsEditor.name,'ShoppingRouteMarketsSet/Components/MarketsEditor');
-  assert.equal(markets.marketsEditor.bundlerType,'module');
+  assert.equal(markets.marketsEditor.guiApi,2);
+  assert.equal('bundlerType' in markets.marketsEditor,false);
   assert.equal(markets.markets.type,'table');
   assert.equal(markets.markets.hidden,'true');
   assert.deepEqual(markets.markets.items,[
@@ -236,7 +238,8 @@ test('walking routes use a dedicated editor with routes as the only persisted so
   assert.equal(route.routeEditor.type,'custom');
   assert.equal(route.routeEditor.url,'custom/routeEditor.js');
   assert.equal(route.routeEditor.name,'ShoppingRouteAdminSet/Components/RouteEditor');
-  assert.equal(route.routeEditor.bundlerType,'module');
+  assert.equal(route.routeEditor.guiApi,2);
+  assert.equal('bundlerType' in route.routeEditor,false);
   assert.equal(route.routes.type,'table');
   assert.equal(route.routes.hidden,'true');
   assert.equal(route.routes.onChange,undefined);
@@ -247,7 +250,7 @@ test('walking routes use a dedicated editor with routes as the only persisted so
   const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
   assert.equal(
     pkg.scripts['build:admin'],
-    'vite build && vite build --config vite.product-groups.config.mjs && vite build --config vite.markets.config.mjs',
+    'node scripts/build-admin.js',
   );
   assert.equal(pkg.devDependencies.browserify,undefined);
   assert.equal(pkg.devDependencies['@module-federation/vite'],'^1.4.1');

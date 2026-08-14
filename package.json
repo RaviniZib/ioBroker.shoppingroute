@@ -35,7 +35,7 @@
   ],
   "scripts": {
     "build": "npm run build:admin && tsc -p tsconfig.json",
-    "build:admin": "vite build && vite build --config vite.product-groups.config.mjs && vite build --config vite.markets.config.mjs",
+    "build:admin": "node scripts/build-admin.js",
     "check": "tsc -p tsconfig.json --noEmit",
     "test": "npm run build && node --test test/*.test.js",
     "test:unit": "node --test test/*.test.js",
