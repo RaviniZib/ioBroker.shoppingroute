@@ -1,6 +1,6 @@
 # ShoppingRoute – User Guide
 
-**Applies to: ioBroker.shoppingroute 0.3.3 (Stable)**
+**Applies to: ioBroker.shoppingroute 0.3.4**
 
 ShoppingRoute sorts active Alexa shopping-list entries by market, product group and your individual walking route. Visible two-digit prefixes from `00>` through `99>` are the sort keys. Market headings appear as `═════ MARKET ═════`. Individual entries are updated directly; when a numeric gap is exhausted, only the necessary list suffix is deleted and recreated in one batch. ShoppingRoute never marks items as completed automatically.
 
@@ -8,10 +8,10 @@ ShoppingRoute sorts active Alexa shopping-list entries by market, product group 
 
 ## 1. Requirements
 
-- ioBroker with Admin 7.6.20 or newer
+- ioBroker with Admin 8.0.0 or newer
 - an installed and enabled Alexa2 instance
 - at least one Alexa shopping list
-- ShoppingRoute 0.3.3 or newer
+- ShoppingRoute 0.3.4 or newer
 
 ## 2. Basic principle
 
@@ -377,7 +377,7 @@ Check API Safe Mode, the configured write limit, `info.traffic`, `info.compatibi
 
 ## 24. Version note
 
-This guide describes **ShoppingRoute 0.3.3 Stable** with automatic market headings, cross-market optimisation and direct `00>`–`99>` prefix sorting. Every managed Alexa list must be set to **A–Z** in the Alexa app.
+This guide describes **ShoppingRoute 0.3.4** with automatic market headings, cross-market optimisation and direct `00>`–`99>` prefix sorting. Every managed Alexa list must be set to **A–Z** in the Alexa app.
 
 ## License
 

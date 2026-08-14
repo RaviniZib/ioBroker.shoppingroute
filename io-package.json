@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "shoppingroute",
-    "version": "0.3.3",
+    "version": "0.3.4",
     "titleLang": {
       "en": "ShoppingRoute",
       "de": "ShoppingRoute",
@@ -60,6 +60,19 @@
     "icon": "shoppingroute.png",
     "tier": 3,
     "news": {
+      "0.3.4": {
+        "en": "Added Admin 8 compatibility for custom Admin components, clearer optional sort-summary logging and market headings, fixed the review queue “Accept all” action, required acknowledged foreign Alexa2 states, and removed obsolete configuration, internal npm checks and code obfuscation for improved repository compatibility.",
+        "de": "Admin-8-Kompatibilität für benutzerdefinierte Admin-Komponenten ergänzt, optionales Abschluss-Logging und Marktüberschriften verständlicher gestaltet, „Alle auf Übernehmen stellen“ repariert, bestätigte Werte für fremde Alexa2-States vorausgesetzt sowie veraltete Konfiguration, interne npm-Prüfung und Code-Obfuscation für bessere Repository-Kompatibilität entfernt.",
+        "ru": "Добавлена совместимость пользовательских компонентов Admin с Admin 8, улучшены необязательное итоговое журналирование сортировки и заголовки магазинов, исправлено действие «Принять все» в списке проверки, для внешних состояний Alexa2 теперь требуются подтверждённые значения, а устаревшие настройки, внутренняя проверка npm и обфускация кода удалены для лучшей совместимости с репозиторием.",
+        "pt": "Foi adicionada compatibilidade com o Admin 8 aos componentes personalizados, melhorados o registo final opcional da ordenação e os cabeçalhos dos mercados, corrigida a ação “Aceitar tudo” da fila de revisão, exigidos valores confirmados para estados Alexa2 externos e removidas configurações obsoletas, verificações npm internas e ofuscação de código para melhorar a compatibilidade com o repositório.",
+        "nl": "Admin 8-compatibiliteit voor aangepaste Admin-componenten is toegevoegd, de optionele afsluitende sorteerlog en winkelkoppen zijn verduidelijkt, de actie ‘Alles accepteren’ in de controlelijst is hersteld, externe Alexa2-states vereisen nu bevestigde waarden en verouderde configuratie, interne npm-controles en code-obfuscatie zijn verwijderd voor betere repositorycompatibiliteit.",
+        "fr": "Ajout de la compatibilité Admin 8 pour les composants Admin personnalisés, amélioration du journal récapitulatif de tri facultatif et des en-têtes de magasins, correction de l’action « Tout accepter » de la file de vérification, exigence de valeurs acquittées pour les états Alexa2 externes et suppression des réglages obsolètes, des contrôles npm internes et de l’obscurcissement du code pour améliorer la compatibilité du dépôt.",
+        "it": "Aggiunta la compatibilità con Admin 8 per i componenti Admin personalizzati, resi più chiari il log riepilogativo opzionale dell’ordinamento e le intestazioni dei negozi, corretta l’azione “Accetta tutto” della coda di revisione, richiesti valori confermati per gli stati Alexa2 esterni e rimossi configurazioni obsolete, controlli npm interni e offuscamento del codice per migliorare la compatibilità del repository.",
+        "es": "Se añadió compatibilidad con Admin 8 para los componentes personalizados, se aclararon el registro final opcional de ordenación y los encabezados de tiendas, se corrigió la acción «Aceptar todo» de la cola de revisión, se exigieron valores confirmados para estados Alexa2 externos y se eliminaron configuraciones obsoletas, comprobaciones npm internas y ofuscación de código para mejorar la compatibilidad del repositorio.",
+        "pl": "Dodano zgodność niestandardowych komponentów panelu z Admin 8, poprawiono opcjonalny dziennik podsumowania sortowania i nagłówki sklepów, naprawiono akcję „Zaakceptuj wszystko” w kolejce weryfikacji, wprowadzono wymóg potwierdzonych wartości dla zewnętrznych stanów Alexa2 oraz usunięto przestarzałą konfigurację, wewnętrzne sprawdzanie npm i zaciemnianie kodu dla lepszej zgodności z repozytorium.",
+        "uk": "Додано сумісність користувацьких компонентів Admin з Admin 8, покращено необов’язковий підсумковий журнал сортування та заголовки магазинів, виправлено дію «Прийняти все» в черзі перевірки, для зовнішніх станів Alexa2 тепер потрібні підтверджені значення, а застарілі налаштування, внутрішню перевірку npm і обфускацію коду видалено для кращої сумісності з репозиторієм.",
+        "zh-cn": "新增自定义管理组件的 Admin 8 兼容性，改进可选排序摘要日志和商店标题，修复审核队列的“全部接受”操作，要求外部 Alexa2 状态使用已确认值，并移除过时配置、内部 npm 检查和代码混淆，以提高仓库兼容性。"
+      },
       "0.3.3": {
         "en": "New direct 00>–99> prefix sorting for Alexa lists in A–Z, with very fast incremental insertion into free number gaps, suffix rebuilds only when a gap is exhausted, direct Amazon confirmation and final verification.",
         "de": "Neue direkte 00>–99>-Präfixsortierung für Alexa-Listen in A–Z mit sehr schnellen inkrementellen Einfügungen in freie Nummernlücken, Suffix-Rebuild nur bei ausgeschöpfter Lücke, direkter Amazon-Bestätigung und abschließender Verifikation.",
