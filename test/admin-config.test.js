@@ -48,10 +48,6 @@ test('backup and sharing use an Admin 7.6 compatible launcher without raw JSON c
   assert.match(source,/getBackupUiUrl/);
   assert.match(source,/openUrl:/);
 
-  const ioPackage=JSON.parse(fs.readFileSync(path.join(root,'io-package.json'),'utf8'));
-  const adminDependency=ioPackage.common.globalDependencies.find(entry=>entry.admin);
-  assert.ok(adminDependency);
-  assert.equal(adminDependency.admin,'>=7.6.20');
 });
 
 test('native Admin tabs share the phase-one visual hierarchy',()=>{

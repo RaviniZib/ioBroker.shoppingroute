@@ -130,7 +130,7 @@
     "type": "logic",
     "globalDependencies": [
       {
-        "admin": ">=7.6.20"
+        "admin": ">=8.0.0"
       }
     ],
     "readme": "https://github.com/RaviniZib/ioBroker.shoppingroute/blob/main/README.md"
