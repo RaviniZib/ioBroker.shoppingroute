@@ -33,7 +33,8 @@ test('delivered route editor satisfies the ioBroker module federation contract',
   assert.equal(manifest.metaData.remoteEntry.name, 'routeEditor.js');
   assert.equal(manifest.metaData.remoteEntry.type, 'module');
   assert.equal(exposedComponents && exposedComponents.name, 'Components');
-  assert.equal(editorConfig.bundlerType, 'module');
+  assert.equal(editorConfig.guiApi, 2);
+  assert.equal('bundlerType' in editorConfig, false);
   assert.equal(editorConfig.name, 'ShoppingRouteAdminSet/Components/RouteEditor');
 
   const temporaryRoot = mkdtempSync(join(tmpdir(), 'shoppingroute-route-editor-'));
