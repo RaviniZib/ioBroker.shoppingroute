@@ -37,6 +37,7 @@ import {
 } from './lib/prefix-sort';
 import { buildMarketProfiles, exportConfig, importMarketProfile, normalizeRoutesForAdmin, parseConfigImport } from './lib/config-tools';
 import { emptyUsageStatistics, normalizeUsageStatistics, recordAddedItem, type UsageStatistics } from './lib/statistics';
+import { markAllReviewItemsAccept } from './lib/review-tools';
 import {
     beginDirectApply,
     collectDirectInput,
@@ -209,6 +210,7 @@ export class ShoppingRoute extends utils.Adapter {
         return this.cfg.autoLearnProducts === false ? 'off' : 'automatic';
     }
     private get dryRun(): boolean { return this.cfg.dryRun !== false; }
+    private get logSortSummary(): boolean { return this.cfg.logSortSummary !== false; }
     private get apiSafeMode(): boolean { return this.cfg.apiSafeMode !== false; }
     private get maxWritesPerMinute(): number { return Math.max(1, Number(this.cfg.maxWritesPerMinute) || 20); }
     private get marketHeadersEnabled(): boolean { return this.cfg.marketHeaders === true; }
@@ -292,9 +294,9 @@ export class ShoppingRoute extends utils.Adapter {
         await this.checkNpmVersion();
         await this.updateFeedbackReport();
         this.versionTimer = this.setInterval(() => void this.checkNpmVersion(), 6 * 60 * 60 * 1000);
-        this.log.warn(`ShoppingRoute ${VERSION} BETA: Dry-Run ist für Ersttests ausdrücklich empfohlen.`);
+        this.log.warn(`ShoppingRoute ${VERSION}: Dry-Run ist für Ersttests ausdrücklich empfohlen.`);
         this.log.info('WICHTIG: Die Alexa-App muss für jede verwaltete Liste auf alphabetische Sortierung A–Z gestellt sein.');
-        this.log.info('Direkt-Sortierung: sichtbare Präfixe 00>–99>; Alexa2-Listenstates dienen nur noch als externe Triggerquelle.');
+        this.log.debug('Direkt-Sortierung: sichtbare Präfixe 00>–99>; Alexa2-Listenstates dienen nur noch als externe Triggerquelle.');
         this.scheduleAll(COLLECT_WINDOW_MS);
     }
 
@@ -324,14 +326,8 @@ export class ShoppingRoute extends utils.Adapter {
                 ? { ...(obj.message.native as Record<string, unknown>) }
                 : { ...(this.cfg as unknown as Record<string, unknown>) };
             const rows = Array.isArray((supplied as any).reviewItems) ? (supplied as any).reviewItems : this.runtimeReviews;
-            const updatedReviewItems = rows.map((item: any) => ({
-                ...item,
-                availableMarkets: Array.isArray(item?.availableMarkets)
-                    ? item.availableMarkets.map((value: unknown) => typeof value === 'string' ? value.trim() : '').filter(Boolean).join(',')
-                    : String(item?.availableMarkets || ''),
-                action: 'accept',
-            }));
-            this.sendTo(obj.from, obj.command, { native: { reviewItems: updatedReviewItems } }, obj.callback);
+            const updatedReviewItems = markAllReviewItemsAccept(rows);
+            this.sendTo(obj.from, obj.command, { native: { ...supplied, reviewItems: updatedReviewItems } }, obj.callback);
             return;
         }
         if (obj.command === 'normalizeMarketSelection') {
@@ -725,7 +721,7 @@ export class ShoppingRoute extends utils.Adapter {
             return;
         }
         if (state.externalDirty) {
-            this.log.info(`${listName}: Direkter Präfixplan wurde vor dem ersten Write durch externe Änderung verworfen.`);
+            this.log.debug(`${listName}: Direkter Präfixplan wurde vor dem ersten Write durch externe Änderung verworfen.`);
             return;
         }
 
@@ -817,7 +813,7 @@ export class ShoppingRoute extends utils.Adapter {
             this.writeTimestamps = this.writeTimestamps.filter(timestamp => now - timestamp < 60000);
             if (this.writeTimestamps.length < this.maxWritesPerMinute) return;
             const waitMs = Math.max(500, 60000 - (now - this.writeTimestamps[0]) + 100);
-            this.log.info(`API-Schonmodus: Request-Limit ${this.maxWritesPerMinute}/Minute erreicht, Pause ${waitMs} ms.`);
+            this.log.debug(`API-Schonmodus: Request-Limit ${this.maxWritesPerMinute}/Minute erreicht, Pause ${waitMs} ms.`);
             await this.wait(waitMs);
             if (this.isUnloading) throw new Error('Direkter Alexa-Write während API-Pause abgebrochen.');
         }
@@ -880,7 +876,7 @@ export class ShoppingRoute extends utils.Adapter {
             const deletedGone = journal.deletedIds.every(id => !ids.has(id));
             if (exact && deletedGone) {
                 await this.clearDirectJournal();
-                this.log.info(`${journal.listName}: unterbrochener Direkt-Apply war remote vollständig abgeschlossen; Journal bereinigt.`);
+                this.log.debug(`${journal.listName}: unterbrochener Direkt-Apply war remote vollständig abgeschlossen; Journal bereinigt.`);
                 return true;
             }
             await this.activateDirectSafetyStop(journal.listName, 'Unterbrochener Direkt-Apply ist remote nicht vollständig; Journal bleibt erhalten.');
@@ -894,13 +890,16 @@ export class ShoppingRoute extends utils.Adapter {
     private logDirectRuntime(runtime: DirectApplyRuntime): void {
         const totalMs = Date.now() - runtime.startedAt;
         const waitedMs = Math.max(0, runtime.startedAt - runtime.requestedAt);
-        this.log.info(
+        this.log.debug(
             `${runtime.listName} SHOP Direkt-Sortierung: externe neue Artikel ${runtime.externalNewItems} | ` +
             `Debounce ${waitedMs} ms | PUTs ${runtime.putRequests} | DELETEs ${runtime.deleteRequests} | ` +
             `Batch-CREATE-Items ${runtime.batchCreateItems} | Amazon-Requests ${runtime.amazonRequests} | ` +
             `Amazon ${runtime.amazonMs} ms | gesamt ${totalMs} ms | Fallback ${runtime.fallback ? 'ja' : 'nein'} | ` +
             `Rebuild ab ${runtime.rebuildFrom === null ? '–' : runtime.rebuildFrom + 1}`,
         );
+        if (this.logSortSummary) {
+            this.log.info(`${runtime.listName}: Sortierlauf nach ${totalMs} ms abgeschlossen.`);
+        }
     }
 
     private async updateLearningAndDiagnostics(listName: string, list: AlexaListItem[]): Promise<void> {

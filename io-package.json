@@ -140,8 +140,7 @@
     "listName": "SHOP",
     "dryRun": true,
     "autoLearnProducts": true,
-    "debounceMs": 5000,
-    "writePauseMs": 1000,
+    "logSortSummary": true,
     "fallbackMarket": "Ohne Markt",
     "priorityMarket": "",
     "markets": [

@@ -75,12 +75,14 @@ test('native Admin tabs share the phase-one visual hierarchy',()=>{
   const general=jsonConfig.items.general.items;
   assert.equal(general.betaWarning.type,'infoBox');
   assert.equal(general.betaWarning.boxType,'warning');
-  assert.equal(general.betaWarning.closeable,false);
-  for(const key of ['basicSectionTitle','marketSectionTitle','timingSectionTitle','apiSectionTitle']) {
+  assert.equal('closeable' in general.betaWarning,false);
+  for(const key of ['basicSectionTitle','marketSectionTitle','apiSectionTitle']) {
     assert.equal(general[key].type,'header',key);
     assert.equal(general[key].size,3,key);
   }
-  for(const key of ['marketSectionDivider','timingSectionDivider','apiDivider']) assert.equal(general[key].type,'divider',key);
+  for(const key of ['marketSectionDivider','apiDivider']) assert.equal(general[key].type,'divider',key);
+  assert.equal(general.apiWarning.type,'infoBox');
+  assert.equal(general.apiWarning.boxType,'warning');
   assert.equal(jsonConfig.items.reviewTab.items.reviewAcceptAll.variant,'outlined');
   assert.equal(jsonConfig.items.transferTab.items.backupTransfer.variant,'contained');
   assert.equal(jsonConfig.items.transferTab.items.backupTransfer.md,6);
@@ -109,7 +111,7 @@ test('phase-one styling preserves the functional JSON config outside the migrate
   ]));
   const hash=crypto.createHash('sha256').update(JSON.stringify(projection)).digest('hex');
 
-  assert.equal(hash,'67b566d6d90e5605680cdfed51c073872a0b1cb479e7f00f801bd0e5e88bb89e');
+  assert.equal(hash,'6551636e5c7299250f1569cba17d6152d83919c2660fc8cc695087a122f7af4e');
   const routeHash=crypto.createHash('sha256').update(JSON.stringify(jsonConfig.items.routesTab)).digest('hex');
   assert.equal(routeHash,'23228bada006eac4b1d8193a56d4978e64371e4886d8ad6bfe851ddc93fd58be');
 });
@@ -248,7 +250,7 @@ test('walking routes use a dedicated editor with routes as the only persisted so
     'vite build && vite build --config vite.product-groups.config.mjs && vite build --config vite.markets.config.mjs',
   );
   assert.equal(pkg.devDependencies.browserify,undefined);
-  assert.equal(pkg.devDependencies['@module-federation/vite'],'1.4.1');
+  assert.equal(pkg.devDependencies['@module-federation/vite'],'^1.4.1');
   assert.match(pkg.scripts.build,/build:admin/);
 });
 
@@ -339,6 +341,30 @@ test('ioBroker checker metadata is present',()=>{
   for(const lang of ['en','de','ru','pt','nl','fr','it','es','pl','uk','zh-cn']) {
     assert.ok(ioPackage.common.titleLang[lang],`titleLang ${lang}`);
     assert.ok(ioPackage.common.desc[lang],`desc ${lang}`);
+  }
+});
+
+test('obsolete processing timing settings are removed and sort summary logging defaults on',()=>{
+  const general=jsonConfig.items.general.items;
+  for(const key of ['timingSectionDivider','timingSectionTitle','debounceMs','writePauseMs']) assert.equal(general[key],undefined,key);
+  assert.equal(general.logSortSummary.type,'checkbox');
+  assert.equal(ioPackage.native.logSortSummary,true);
+  assert.equal('debounceMs' in ioPackage.native,false);
+  assert.equal('writePauseMs' in ioPackage.native,false);
+});
+
+test('jsonConfig avoids checker-invalid compatibility properties',()=>{
+  const source=fs.readFileSync(path.join(root,'admin','jsonConfig.json'),'utf8');
+  assert.doesNotMatch(source,/"closeable"\s*:/);
+  assert.doesNotMatch(source,/"showAllValues"\s*:/);
+});
+
+test('formerly pinned build devDependencies use compatible ranges without changing resolved versions',()=>{
+  const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
+  const lock=JSON.parse(fs.readFileSync(path.join(root,'package-lock.json'),'utf8'));
+  for(const dependency of ['@module-federation/vite','react','vite','vite-plugin-commonjs']) {
+    assert.match(pkg.devDependencies[dependency],/^\^/i,dependency);
+    assert.equal(lock.packages[''].devDependencies[dependency],pkg.devDependencies[dependency],dependency);
   }
 });
 

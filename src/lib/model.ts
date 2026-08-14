@@ -66,8 +66,7 @@ export interface AdapterConfigShape {
     autoLearnProducts?: boolean;
     learningMode?: LearningMode;
     autoAliasSuggestions?: boolean;
-    debounceMs?: number;
-    writePauseMs?: number;
+    logSortSummary?: boolean;
     apiSafeMode?: boolean;
     maxWritesPerMinute?: number;
     batchSize?: number;

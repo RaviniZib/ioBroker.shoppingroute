@@ -11,11 +11,17 @@ const {
 } = require('../build/lib/config-tools');
 
 test('configuration can be exported and imported with format marker', () => {
-  const exported = exportConfig({ priorityMarket:'LIDL', products:[{name:'Milch',category:'Milchprodukte'}] }, '0.2.0-beta.7', new Date('2026-08-08T00:00:00Z'));
+  const exported = exportConfig({ priorityMarket:'LIDL', logSortSummary:false, products:[{name:'Milch',category:'Milchprodukte'}] }, '0.2.0-beta.7', new Date('2026-08-08T00:00:00Z'));
   assert.equal(exported.format, 'shoppingroute-config-v1');
   const imported = parseConfigImport(JSON.stringify(exported));
   assert.equal(imported.priorityMarket, 'LIDL');
+  assert.equal(imported.logSortSummary, false);
   assert.equal(imported.products[0].name, 'Milch');
+});
+
+test('obsolete timing settings are ignored when importing old backups', () => {
+  const imported=parseConfigImport(JSON.stringify({priorityMarket:'ALDI',debounceMs:5000,writePauseMs:1000}));
+  assert.deepEqual(imported,{priorityMarket:'ALDI'});
 });
 
 test('market profiles are shareable independently', () => {

@@ -4,7 +4,7 @@
 
 **Aktuelle Version: 0.3.3**
 
-ShoppingRoute sortiert Alexa-Einkaufslisteneinträge nach Markt, Produktgruppe und dem individuellen Laufweg durch den jeweiligen Markt. Dazu vergibt es sichtbare zweistellige Schlüssel wie `20> Bananen` und `40> **** ALDI ****`; verwaltete Listen müssen deshalb in der Alexa-App auf **A–Z** stehen. ShoppingRoute übernimmt lokal die Alexa2-Authentifizierung für direkte Updates, Deletes und Batch-Creates; Alexa2-Listenstates bleiben die Triggerquelle für externe Änderungen.
+ShoppingRoute sortiert Alexa-Einkaufslisteneinträge nach Markt, Produktgruppe und dem individuellen Laufweg durch den jeweiligen Markt. Dazu vergibt es sichtbare zweistellige Schlüssel wie `20> Bananen` und `40> ═════ ALDI ═════`; verwaltete Listen müssen deshalb in der Alexa-App auf **A–Z** stehen. ShoppingRoute übernimmt lokal die Alexa2-Authentifizierung für direkte Updates, Deletes und Batch-Creates; Alexa2-Listenstates bleiben die Triggerquelle für externe Änderungen.
 
 ## Bedienungsanleitung / User guide
 
@@ -16,7 +16,7 @@ ShoppingRoute sortiert Alexa-Einkaufslisteneinträge nach Markt, Produktgruppe u
 - mehrere Alexa-Einkaufslisten mit eigenem Prioritätsmarkt
 - globale, listenbezogene und temporäre Marktpriorität
 - Markt-Aliase und automatische Erkennung häufiger Marktvarianten
-- optionale, automatisch verwaltete Marktüberschriften wie `**** ALDI ****`
+- optionale, automatisch verwaltete Marktüberschriften wie `═════ ALDI ═════`
 - optionale marktübergreifende Zusammenlegung anhand einer Mindestanzahl von Artikeln pro zusätzlichem Markt; explizite Marktangaben bleiben unverändert
 - frei pflegbare Produktgruppen und marktbezogene Laufwege
 - Laufweg nach Tabellenreihenfolge; Reihenfolgen werden automatisch neu nummeriert
@@ -99,7 +99,7 @@ ShoppingRoute wird ab dieser Version unter der **MIT-Lizenz** veröffentlicht. F
 
 ### 0.3.0 (2026-08-10)
 
-- Optionale Marktüberschriften ergänzt (jetziges Format: `**** MARKT ****`).
+- Optionale Marktüberschriften ergänzt (jetziges Format: `═════ MARKT ═════`).
 - Überschriften bleiben aktiv, solange mindestens ein echter Artikel des Marktes offen ist, und werden danach vollständig gelöscht statt unter erledigten Artikeln stehen zu bleiben.
 - Marktübergreifende Zusammenlegung anhand einer konfigurierbaren Mindestanzahl ergänzt.
 - Explizite Marktangaben bleiben von der Zusammenlegung ausnahmslos unberührt.

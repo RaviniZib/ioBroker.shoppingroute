@@ -4,7 +4,7 @@
 
 **Current version: 0.3.3**
 
-ShoppingRoute sorts Alexa shopping-list entries by market, product group and each store's individual walking route. It assigns visible two-digit keys such as `20> Bananas` and `40> **** ALDI ****`; managed lists must therefore be set to **A–Z** in the Alexa app. ShoppingRoute reuses the local Alexa2 authentication for direct item updates, deletes and batch creates, while Alexa2 list states remain the external change trigger.
+ShoppingRoute sorts Alexa shopping-list entries by market, product group and each store's individual walking route. It assigns visible two-digit keys such as `20> Bananas` and `40> ═════ ALDI ═════`; managed lists must therefore be set to **A–Z** in the Alexa app. ShoppingRoute reuses the local Alexa2 authentication for direct item updates, deletes and batch creates, while Alexa2 list states remain the external change trigger.
 
 ## User guide / Bedienungsanleitung
 
@@ -16,7 +16,7 @@ ShoppingRoute sorts Alexa shopping-list entries by market, product group and eac
 - multiple Alexa lists with per-list priority markets
 - global, per-list and temporary market priorities
 - market aliases and common market-name variants
-- optional automatically managed market headings such as `**** ALDI ****`
+- optional automatically managed market headings such as `═════ ALDI ═════`
 - optional cross-market consolidation using a minimum-item threshold; explicit market requests are never moved
 - configurable product groups and store-specific routes
 - product catalogue with aliases, preferred and available markets
@@ -62,7 +62,7 @@ See `README_DE.md` for the detailed German documentation.
 
 ### 0.3.0 (2026-08-10)
 
-- Added optional market headings (now formatted as `**** MARKET ****`).
+- Added optional market headings (now formatted as `═════ MARKET ═════`).
 - A heading stays active until the last real item for that market is completed and is then deleted completely instead of remaining among completed items.
 - Added configurable minimum-items-per-market consolidation for flexible articles.
 - Explicit market phrases always remain assigned to the requested market.

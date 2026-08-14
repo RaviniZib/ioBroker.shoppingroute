@@ -64,9 +64,14 @@ test('legacy transaction markers are not recovered by the new architecture', () 
     assert.doesNotMatch(main, /rollbackBufferedTransaction|recoverInterruptedSortTransaction/);
 });
 
-test('compact runtime log contains every requested direct metric', () => {
-    assert.match(main, /SHOP Direkt-Sortierung/);
+test('technical runtime metrics use debug and the compact info summary is configurable', () => {
+    const runtimeLogger = main.slice(main.indexOf('private logDirectRuntime'), main.indexOf('private async updateLearningAndDiagnostics'));
+    assert.match(runtimeLogger, /this\.log\.debug/);
+    assert.match(runtimeLogger, /if \(this\.logSortSummary\)/);
+    assert.match(runtimeLogger, /this\.log\.info\(`\$\{runtime\.listName\}: Sortierlauf/);
     for (const label of ['externe neue Artikel', 'Debounce', 'PUTs', 'DELETEs', 'Batch-CREATE-Items', 'Amazon-Requests', 'Amazon', 'gesamt', 'Fallback', 'Rebuild ab']) {
-        assert.ok(main.includes(label), label);
+        assert.ok(runtimeLogger.includes(label), label);
     }
+    assert.match(main, /private get logSortSummary\(\): boolean \{ return this\.cfg\.logSortSummary !== false; \}/);
+    assert.doesNotMatch(main, /ShoppingRoute \$\{VERSION\} BETA/);
 });
