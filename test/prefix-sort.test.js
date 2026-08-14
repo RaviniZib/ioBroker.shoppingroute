@@ -11,6 +11,7 @@ const {
     stripSortPrefix,
     verifyPrefixResult,
 } = require('../build/lib/prefix-sort');
+const { formatMarketHeader, marketNameFromHeader } = require('../build/lib/market-plan');
 
 const markets = [
     { name: 'LIDL', order: 1 },
@@ -37,14 +38,21 @@ function item(id, value, version = 1, completed = false) {
 
 test('prefix helpers accept exactly NN> plus a space, including 00>, and preserve original text', () => {
     assert.deepEqual(parseSortPrefix('25> Tomaten'), { number: 25, originalText: 'Tomaten' });
-    assert.deepEqual(parseSortPrefix('00> **** ALDI ****'), { number: 0, originalText: '**** ALDI ****' });
+    assert.deepEqual(parseSortPrefix('00> ═════ ALDI ═════'), { number: 0, originalText: '═════ ALDI ═════' });
     assert.equal(parseSortPrefix('5> Tomaten'), undefined);
     assert.equal(parseSortPrefix('25 Tomaten'), undefined);
     assert.equal(parseSortPrefix('100> Tomaten'), undefined);
     assert.equal(stripSortPrefix('25> Tomaten'), 'Tomaten');
     assert.equal(stripSortPrefix('Tomaten'), 'Tomaten');
     assert.equal(formatSortPrefix(7, '25> Tomaten'), '07> Tomaten');
-    assert.equal(formatSortPrefix(0, '**** ALDI ****'), '00> **** ALDI ****');
+    assert.equal(formatSortPrefix(0, '═════ ALDI ═════'), '00> ═════ ALDI ═════');
+});
+
+test('market headings use the double-line format and recognize both legacy formats', () => {
+    assert.equal(formatMarketHeader('Aldi'), '═════ ALDI ═════');
+    assert.equal(marketNameFromHeader('═════ ALDI ═════', markets), 'ALDI');
+    assert.equal(marketNameFromHeader('**** ALDI ****', markets), 'ALDI');
+    assert.equal(marketNameFromHeader('---- ALDI ----', markets), 'ALDI');
 });
 
 test('the immediately preceding bracket format is stripped and migrated without losing its number', () => {
@@ -55,12 +63,12 @@ test('the immediately preceding bracket format is stripped and migrated without 
     assert.equal(plan.fallback, false);
 });
 
-test('a legacy market heading is reused and renamed to the star format', () => {
+test('a legacy market heading is reused and renamed to the double-line format', () => {
     const list = [item('h', '[10] ---- LIDL ----', 3), item('a', '[20] Bananen', 4)];
     const desired = buildPrefixTargets(list, markets, routes, products, 'Ohne Markt', '', 1, true);
     const plan = createPrefixSortPlan(list, desired);
     assert.deepEqual(plan.updates, [
-        { id: 'h', version: 3, from: '[10] ---- LIDL ----', to: '10> **** LIDL ****' },
+        { id: 'h', version: 3, from: '[10] ---- LIDL ----', to: '10> ═════ LIDL ═════' },
         { id: 'a', version: 4, from: '[20] Bananen', to: '20> Bananen' },
     ]);
     assert.deepEqual(plan.deletes, []);
@@ -83,13 +91,13 @@ test('A: legacy list with 10 items and 3 markets becomes one evenly spaced total
     assert.equal(new Set(numbers).size, 13);
     assert.ok(numbers[0] >= 0 && numbers.at(-1) <= 99);
     assert.deepEqual(values.map(stripSortPrefix).slice(0, 4), [
-        '**** LIDL ****', 'Bananen', 'Bananen', 'Tomaten',
+        '═════ LIDL ═════', 'Bananen', 'Bananen', 'Tomaten',
     ]);
 });
 
 test('completely empty list with planned targets uses one evenly spaced batch create', () => {
     const desired = [
-        { key: 'h', originalText: '**** LIDL ****', market: 'LIDL', category: '', product: 'header' },
+        { key: 'h', originalText: '═════ LIDL ═════', market: 'LIDL', category: '', product: 'header' },
         { key: 'a', originalText: 'Bananen', market: 'LIDL', category: 'Obst/Gemüse', product: 'Bananen' },
         { key: 'b', originalText: 'Milch', market: 'LIDL', category: 'Milchprodukte', product: 'Milch' },
     ];
@@ -98,7 +106,7 @@ test('completely empty list with planned targets uses one evenly spaced batch cr
     assert.equal(plan.updates.length, 0);
     assert.equal(plan.deletes.length, 0);
     assert.equal(plan.creates.length, 3);
-    assert.deepEqual(plan.creates.map(create => create.value), ['24> **** LIDL ****', '49> Bananen', '74> Milch']);
+    assert.deepEqual(plan.creates.map(create => create.value), ['24> ═════ LIDL ═════', '49> Bananen', '74> Milch']);
 });
 
 test('B: one new item between 20> and 30> needs exactly one PUT and uses 25>', () => {

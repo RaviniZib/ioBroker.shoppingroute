@@ -6,11 +6,12 @@ export interface ParsedShoppingItem {
     parsed: ParsedItem;
 }
 
-const HEADER_PATTERN = /^\*\*\*\*\s+(.+?)\s+\*\*\*\*$/;
-const LEGACY_HEADER_PATTERN = /^----\s+(.+?)\s+----$/;
+const HEADER_PATTERN = /^═{5}\s+(.+?)\s+═{5}$/;
+const STAR_HEADER_PATTERN = /^\*\*\*\*\s+(.+?)\s+\*\*\*\*$/;
+const DASH_HEADER_PATTERN = /^----\s+(.+?)\s+----$/;
 
 export function formatMarketHeader(market: string): string {
-    return `**** ${String(market || '').trim().toLocaleUpperCase('de-DE')} ****`;
+    return `═════ ${String(market || '').trim().toLocaleUpperCase('de-DE')} ═════`;
 }
 
 /**
@@ -21,7 +22,7 @@ export function formatMarketHeader(market: string): string {
  */
 export function marketNameFromHeader(value: string, markets: MarketConfig[]): string | undefined {
     const text = String(value || '').trim();
-    const match = text.match(HEADER_PATTERN) || text.match(LEGACY_HEADER_PATTERN);
+    const match = text.match(HEADER_PATTERN) || text.match(STAR_HEADER_PATTERN) || text.match(DASH_HEADER_PATTERN);
     if (!match?.[1]) return undefined;
     const wanted = normalize(match[1]);
     return markets.find(market => market.enabled !== false && normalize(market.name) === wanted)?.name;

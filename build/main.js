@@ -46,6 +46,7 @@ const market_plan_1 = require("./lib/market-plan");
 const prefix_sort_1 = require("./lib/prefix-sort");
 const config_tools_1 = require("./lib/config-tools");
 const statistics_1 = require("./lib/statistics");
+const review_tools_1 = require("./lib/review-tools");
 const direct_sort_lifecycle_1 = require("./lib/direct-sort-lifecycle");
 const VERSION = '0.3.3';
 const COLLECT_WINDOW_MS = 5000;
@@ -164,6 +165,7 @@ class ShoppingRoute extends utils.Adapter {
         return this.cfg.autoLearnProducts === false ? 'off' : 'automatic';
     }
     get dryRun() { return this.cfg.dryRun !== false; }
+    get logSortSummary() { return this.cfg.logSortSummary !== false; }
     get apiSafeMode() { return this.cfg.apiSafeMode !== false; }
     get maxWritesPerMinute() { return Math.max(1, Number(this.cfg.maxWritesPerMinute) || 20); }
     get marketHeadersEnabled() { return this.cfg.marketHeaders === true; }
@@ -246,9 +248,9 @@ class ShoppingRoute extends utils.Adapter {
         await this.checkNpmVersion();
         await this.updateFeedbackReport();
         this.versionTimer = this.setInterval(() => void this.checkNpmVersion(), 6 * 60 * 60 * 1000);
-        this.log.warn(`ShoppingRoute ${VERSION} BETA: Dry-Run ist für Ersttests ausdrücklich empfohlen.`);
+        this.log.warn(`ShoppingRoute ${VERSION}: Dry-Run ist für Ersttests ausdrücklich empfohlen.`);
         this.log.info('WICHTIG: Die Alexa-App muss für jede verwaltete Liste auf alphabetische Sortierung A–Z gestellt sein.');
-        this.log.info('Direkt-Sortierung: sichtbare Präfixe 00>–99>; Alexa2-Listenstates dienen nur noch als externe Triggerquelle.');
+        this.log.debug('Direkt-Sortierung: sichtbare Präfixe 00>–99>; Alexa2-Listenstates dienen nur noch als externe Triggerquelle.');
         this.scheduleAll(COLLECT_WINDOW_MS);
     }
     async discoverAlexaLists(instanceName = this.alexaInstance) {
@@ -282,14 +284,8 @@ class ShoppingRoute extends utils.Adapter {
                 ? { ...obj.message.native }
                 : { ...this.cfg };
             const rows = Array.isArray(supplied.reviewItems) ? supplied.reviewItems : this.runtimeReviews;
-            const updatedReviewItems = rows.map((item) => ({
-                ...item,
-                availableMarkets: Array.isArray(item?.availableMarkets)
-                    ? item.availableMarkets.map((value) => typeof value === 'string' ? value.trim() : '').filter(Boolean).join(',')
-                    : String(item?.availableMarkets || ''),
-                action: 'accept',
-            }));
-            this.sendTo(obj.from, obj.command, { native: { reviewItems: updatedReviewItems } }, obj.callback);
+            const updatedReviewItems = (0, review_tools_1.markAllReviewItemsAccept)(rows);
+            this.sendTo(obj.from, obj.command, { native: { ...supplied, reviewItems: updatedReviewItems } }, obj.callback);
             return;
         }
         if (obj.command === 'normalizeMarketSelection') {
@@ -703,7 +699,7 @@ class ShoppingRoute extends utils.Adapter {
             return;
         }
         if (state.externalDirty) {
-            this.log.info(`${listName}: Direkter Präfixplan wurde vor dem ersten Write durch externe Änderung verworfen.`);
+            this.log.debug(`${listName}: Direkter Präfixplan wurde vor dem ersten Write durch externe Änderung verworfen.`);
             return;
         }
         this.traffic.sortRuns += 1;
@@ -793,7 +789,7 @@ class ShoppingRoute extends utils.Adapter {
             if (this.writeTimestamps.length < this.maxWritesPerMinute)
                 return;
             const waitMs = Math.max(500, 60000 - (now - this.writeTimestamps[0]) + 100);
-            this.log.info(`API-Schonmodus: Request-Limit ${this.maxWritesPerMinute}/Minute erreicht, Pause ${waitMs} ms.`);
+            this.log.debug(`API-Schonmodus: Request-Limit ${this.maxWritesPerMinute}/Minute erreicht, Pause ${waitMs} ms.`);
             await this.wait(waitMs);
             if (this.isUnloading)
                 throw new Error('Direkter Alexa-Write während API-Pause abgebrochen.');
@@ -858,7 +854,7 @@ class ShoppingRoute extends utils.Adapter {
             const deletedGone = journal.deletedIds.every(id => !ids.has(id));
             if (exact && deletedGone) {
                 await this.clearDirectJournal();
-                this.log.info(`${journal.listName}: unterbrochener Direkt-Apply war remote vollständig abgeschlossen; Journal bereinigt.`);
+                this.log.debug(`${journal.listName}: unterbrochener Direkt-Apply war remote vollständig abgeschlossen; Journal bereinigt.`);
                 return true;
             }
             await this.activateDirectSafetyStop(journal.listName, 'Unterbrochener Direkt-Apply ist remote nicht vollständig; Journal bleibt erhalten.');
@@ -872,11 +868,14 @@ class ShoppingRoute extends utils.Adapter {
     logDirectRuntime(runtime) {
         const totalMs = Date.now() - runtime.startedAt;
         const waitedMs = Math.max(0, runtime.startedAt - runtime.requestedAt);
-        this.log.info(`${runtime.listName} SHOP Direkt-Sortierung: externe neue Artikel ${runtime.externalNewItems} | ` +
+        this.log.debug(`${runtime.listName} SHOP Direkt-Sortierung: externe neue Artikel ${runtime.externalNewItems} | ` +
             `Debounce ${waitedMs} ms | PUTs ${runtime.putRequests} | DELETEs ${runtime.deleteRequests} | ` +
             `Batch-CREATE-Items ${runtime.batchCreateItems} | Amazon-Requests ${runtime.amazonRequests} | ` +
             `Amazon ${runtime.amazonMs} ms | gesamt ${totalMs} ms | Fallback ${runtime.fallback ? 'ja' : 'nein'} | ` +
             `Rebuild ab ${runtime.rebuildFrom === null ? '–' : runtime.rebuildFrom + 1}`);
+        if (this.logSortSummary) {
+            this.log.info(`${runtime.listName}: Sortierlauf nach ${totalMs} ms abgeschlossen.`);
+        }
     }
     async updateLearningAndDiagnostics(listName, list) {
         const priority = this.priorityMarketForList(listName);

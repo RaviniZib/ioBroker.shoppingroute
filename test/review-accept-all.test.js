@@ -8,6 +8,7 @@ const path = require('node:path');
 const root = path.join(__dirname, '..');
 const config = JSON.parse(fs.readFileSync(path.join(root, 'admin/jsonConfig.json'), 'utf8'));
 const main = fs.readFileSync(path.join(root, 'src/main.ts'), 'utf8');
+const { markAllReviewItemsAccept } = require('../build/lib/review-tools');
 
 test('Review accept-all updates only reviewItems in the unsaved Admin draft via useNative', () => {
     const button = config.items.reviewTab.items.reviewAcceptAll;
@@ -19,12 +20,11 @@ test('Review accept-all updates only reviewItems in the unsaved Admin draft via 
         main.indexOf("if (obj.command === 'markAllReviewItemsAccept')"),
         main.indexOf("if (obj.command === 'normalizeMarketSelection')"),
     );
-    assert.match(handler, /const updatedReviewItems = rows\.map/);
-    assert.match(handler, /\.\.\.item,[\s\S]*action:\s*'accept'/);
-    assert.match(handler, /native:\s*{\s*reviewItems:\s*updatedReviewItems/);
+    assert.match(handler, /markAllReviewItemsAccept\(rows\)/);
+    assert.match(handler, /native:\s*{\s*\.\.\.supplied,\s*reviewItems:\s*updatedReviewItems/);
     assert.doesNotMatch(handler, /command:\s*'refresh'/);
     assert.doesNotMatch(handler, /fullRefresh/);
-    assert.doesNotMatch(handler, /native:\s*supplied/);
+    assert.match(handler, /\.\.\.supplied/);
 });
 
 test('Review accept-all preserves every row field and sets all returned actions to accept', () => {
@@ -50,13 +50,7 @@ test('Review accept-all preserves every row field and sets all returned actions 
         },
     ];
 
-    const updatedReviewItems = rows.map(item => ({
-        ...item,
-        availableMarkets: Array.isArray(item.availableMarkets)
-            ? item.availableMarkets.map(value => typeof value === 'string' ? value.trim() : '').filter(Boolean).join(',')
-            : String(item.availableMarkets || ''),
-        action: 'accept',
-    }));
+    const updatedReviewItems = markAllReviewItemsAccept(rows);
 
     assert.deepEqual(updatedReviewItems, [
         { ...rows[0], availableMarkets: 'ALDI,LIDL', action: 'accept' },

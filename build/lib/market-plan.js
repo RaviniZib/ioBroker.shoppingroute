@@ -6,10 +6,11 @@ exports.isMarketHeader = isMarketHeader;
 exports.realActiveItems = realActiveItems;
 exports.optimizeMarketAssignments = optimizeMarketAssignments;
 const parser_1 = require("./parser");
-const HEADER_PATTERN = /^\*\*\*\*\s+(.+?)\s+\*\*\*\*$/;
-const LEGACY_HEADER_PATTERN = /^----\s+(.+?)\s+----$/;
+const HEADER_PATTERN = /^═{5}\s+(.+?)\s+═{5}$/;
+const STAR_HEADER_PATTERN = /^\*\*\*\*\s+(.+?)\s+\*\*\*\*$/;
+const DASH_HEADER_PATTERN = /^----\s+(.+?)\s+----$/;
 function formatMarketHeader(market) {
-    return `**** ${String(market || '').trim().toLocaleUpperCase('de-DE')} ****`;
+    return `═════ ${String(market || '').trim().toLocaleUpperCase('de-DE')} ═════`;
 }
 /**
  * Recognize current and legacy managed headers so an upgrade reuses the existing Alexa item.
@@ -19,7 +20,7 @@ function formatMarketHeader(market) {
  */
 function marketNameFromHeader(value, markets) {
     const text = String(value || '').trim();
-    const match = text.match(HEADER_PATTERN) || text.match(LEGACY_HEADER_PATTERN);
+    const match = text.match(HEADER_PATTERN) || text.match(STAR_HEADER_PATTERN) || text.match(DASH_HEADER_PATTERN);
     if (!match?.[1])
         return undefined;
     const wanted = (0, parser_1.normalize)(match[1]);

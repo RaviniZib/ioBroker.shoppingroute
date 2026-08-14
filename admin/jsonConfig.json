@@ -9,7 +9,6 @@
           "type": "infoBox",
           "text": "ui.items.general.items.betawarning.text",
           "boxType": "warning",
-          "closeable": false,
           "iconPosition": "middle",
           "xs": 12,
           "sm": 12,
@@ -77,6 +76,16 @@
         "autoAliasSuggestions": {
           "type": "checkbox",
           "label": "ui.items.general.items.autoaliassuggestions.label",
+          "xs": 12,
+          "sm": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        },
+        "logSortSummary": {
+          "type": "checkbox",
+          "label": "ui.items.general.items.logsortsummary.label",
+          "newLine": true,
           "xs": 12,
           "sm": 12,
           "md": 6,
@@ -189,49 +198,6 @@
           "lg": 6,
           "xl": 6
         },
-        "timingSectionDivider": {
-          "type": "divider",
-          "newLine": true,
-          "xs": 12,
-          "sm": 12,
-          "md": 12,
-          "lg": 12,
-          "xl": 12
-        },
-        "timingSectionTitle": {
-          "type": "header",
-          "text": "ui.items.general.items.timingsectiontitle.text",
-          "size": 3,
-          "newLine": true,
-          "xs": 12,
-          "sm": 12,
-          "md": 12,
-          "lg": 12,
-          "xl": 12
-        },
-        "debounceMs": {
-          "type": "number",
-          "label": "ui.items.general.items.debouncems.label",
-          "min": 250,
-          "max": 60000,
-          "newLine": true,
-          "xs": 12,
-          "sm": 12,
-          "md": 6,
-          "lg": 6,
-          "xl": 6
-        },
-        "writePauseMs": {
-          "type": "number",
-          "label": "ui.items.general.items.writepausems.label",
-          "min": 250,
-          "max": 10000,
-          "xs": 12,
-          "sm": 12,
-          "md": 6,
-          "lg": 6,
-          "xl": 6
-        },
         "apiDivider": {
           "type": "divider",
           "newLine": true,
@@ -245,6 +211,18 @@
           "type": "header",
           "text": "ui.items.general.items.apisectiontitle.text",
           "size": 3,
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
+        },
+        "apiWarning": {
+          "type": "infoBox",
+          "text": "ui.items.general.items.apiwarning.text",
+          "boxType": "warning",
+          "iconPosition": "middle",
           "newLine": true,
           "xs": 12,
           "sm": 12,
@@ -630,7 +608,6 @@
               "defaultSendTo": "normalizeMarketSelection",
               "manual": false,
               "multiple": true,
-              "showAllValues": true,
               "noTranslation": true,
               "jsonData": "{\"markets\":${JSON.stringify(globalData.markets || [])},\"value\":${JSON.stringify(data.availableMarkets == null ? '' : data.availableMarkets)}}",
               "title": "ui.items.productstab.items.products.items.4.title",
@@ -740,7 +717,6 @@
               "defaultSendTo": "normalizeMarketSelection",
               "manual": false,
               "multiple": true,
-              "showAllValues": true,
               "noTranslation": true,
               "jsonData": "{\"markets\":${JSON.stringify(globalData.markets || [])},\"value\":${JSON.stringify(data.availableMarkets == null ? '' : data.availableMarkets)}}",
               "title": "ui.items.productstab.items.products.items.4.title",
@@ -859,17 +835,17 @@
       "zh-cn": "常规"
     },
     "ui.items.general.items.betawarning.text": {
-      "en": "Safety notice: Start with Dry Run enabled. Normal shopping items are still sorted only by redistributing their visible texts. If market headings are enabled, ShoppingRoute creates and deletes only its own ---- MARKET ---- heading entries through Alexa2.",
-      "de": "Sicherheitshinweis: Zuerst mit Dry-Run testen. Normale Einkaufsartikel werden weiterhin nur durch Umverteilen ihrer sichtbaren Texte sortiert. Bei aktivierten Marktüberschriften legt und löscht ShoppingRoute über Alexa2 ausschließlich eigene Einträge im Format ---- MARKT ----.",
-      "ru": "Примечание по безопасности: сначала используйте пробный режим. Обычные товары по-прежнему сортируются только перераспределением видимых текстов. При включённых заголовках ShoppingRoute через Alexa2 создаёт и удаляет только собственные строки ---- МАГАЗИН ----.",
-      "pt": "Aviso de segurança: comece com o modo de simulação. Os itens normais continuam sendo ordenados apenas redistribuindo seus textos visíveis. Com cabeçalhos ativados, o ShoppingRoute cria e exclui via Alexa2 apenas suas próprias entradas ---- MERCADO ----.",
-      "nl": "Veiligheidsadvies: begin met de proefmodus. Normale boodschappen worden nog steeds alleen gesorteerd door zichtbare teksten te herverdelen. Met winkelkoppen ingeschakeld maakt en verwijdert ShoppingRoute via Alexa2 uitsluitend eigen ---- WINKEL ---- regels.",
-      "fr": "Consigne de sécurité : commencez en mode simulation. Les articles normaux restent triés uniquement par redistribution de leurs textes visibles. Si les en-têtes sont activés, ShoppingRoute crée et supprime via Alexa2 uniquement ses propres entrées ---- MAGASIN ----.",
-      "it": "Avviso di sicurezza: iniziare con Dry Run. Gli articoli normali vengono ancora ordinati solo ridistribuendo i testi visibili. Con le intestazioni attive, ShoppingRoute crea ed elimina tramite Alexa2 esclusivamente le proprie voci ---- NEGOZIO ----.",
-      "es": "Aviso de seguridad: comience con Dry Run. Los artículos normales siguen ordenándose solo redistribuyendo sus textos visibles. Con encabezados activados, ShoppingRoute crea y elimina mediante Alexa2 únicamente sus propias entradas ---- TIENDA ----.",
-      "pl": "Informacja bezpieczeństwa: zacznij od trybu testowego. Zwykłe artykuły nadal są sortowane wyłącznie przez rozdzielanie widocznych tekstów. Po włączeniu nagłówków ShoppingRoute przez Alexa2 tworzy i usuwa wyłącznie własne wpisy ---- SKLEP ----.",
-      "uk": "Примітка з безпеки: спочатку використовуйте Dry Run. Звичайні товари й надалі сортуються лише перерозподілом видимих текстів. Якщо заголовки ввімкнено, ShoppingRoute через Alexa2 створює та видаляє лише власні записи ---- МАГАЗИН ----.",
-      "zh-cn": "安全提示：请先使用试运行。普通购物项仍只通过重新分配可见文本来排序。启用商店标题后，ShoppingRoute 仅通过 Alexa2 创建和删除自己的 ---- 商店 ---- 标题条目。"
+      "en": "Safety notice: Start with Dry Run enabled. Normal shopping items are still sorted only by redistributing their visible texts. If market headings are enabled, ShoppingRoute creates and deletes only its own ═════ MARKET ═════ heading entries through Alexa2.",
+      "de": "Sicherheitshinweis: Zuerst mit Dry-Run testen. Normale Einkaufsartikel werden weiterhin nur durch Umverteilen ihrer sichtbaren Texte sortiert. Bei aktivierten Marktüberschriften legt und löscht ShoppingRoute über Alexa2 ausschließlich eigene Einträge im Format ═════ MARKT ═════.",
+      "ru": "Примечание по безопасности: сначала используйте пробный режим. Обычные товары по-прежнему сортируются только перераспределением видимых текстов. При включённых заголовках ShoppingRoute через Alexa2 создаёт и удаляет только собственные строки ═════ МАГАЗИН ═════.",
+      "pt": "Aviso de segurança: comece com o modo de simulação. Os itens normais continuam sendo ordenados apenas redistribuindo seus textos visíveis. Com cabeçalhos ativados, o ShoppingRoute cria e exclui via Alexa2 apenas suas próprias entradas ═════ MERCADO ═════.",
+      "nl": "Veiligheidsadvies: begin met de proefmodus. Normale boodschappen worden nog steeds alleen gesorteerd door zichtbare teksten te herverdelen. Met winkelkoppen ingeschakeld maakt en verwijdert ShoppingRoute via Alexa2 uitsluitend eigen ═════ WINKEL ═════ regels.",
+      "fr": "Consigne de sécurité : commencez en mode simulation. Les articles normaux restent triés uniquement par redistribution de leurs textes visibles. Si les en-têtes sont activés, ShoppingRoute crée et supprime via Alexa2 uniquement ses propres entrées ═════ MAGASIN ═════.",
+      "it": "Avviso di sicurezza: iniziare con Dry Run. Gli articoli normali vengono ancora ordinati solo ridistribuendo i testi visibili. Con le intestazioni attive, ShoppingRoute crea ed elimina tramite Alexa2 esclusivamente le proprie voci ═════ NEGOZIO ═════.",
+      "es": "Aviso de seguridad: comience con Dry Run. Los artículos normales siguen ordenándose solo redistribuyendo sus textos visibles. Con encabezados activados, ShoppingRoute crea y elimina mediante Alexa2 únicamente sus propias entradas ═════ TIENDA ═════.",
+      "pl": "Informacja bezpieczeństwa: zacznij od trybu testowego. Zwykłe artykuły nadal są sortowane wyłącznie przez rozdzielanie widocznych tekstów. Po włączeniu nagłówków ShoppingRoute przez Alexa2 tworzy i usuwa wyłącznie własne wpisy ═════ SKLEP ═════.",
+      "uk": "Примітка з безпеки: спочатку використовуйте Dry Run. Звичайні товари й надалі сортуються лише перерозподілом видимих текстів. Якщо заголовки ввімкнено, ShoppingRoute через Alexa2 створює та видаляє лише власні записи ═════ МАГАЗИН ═════.",
+      "zh-cn": "安全提示：请先使用试运行。普通购物项仍只通过重新分配可见文本来排序。启用商店标题后，ShoppingRoute 仅通过 Alexa2 创建和删除自己的 ═════ 商店 ═════ 标题条目。"
     },
     "ui.items.general.items.basicsectiontitle.text": {
       "en": "Basic settings",
@@ -896,19 +872,6 @@
       "pl": "Przypisanie sklepów",
       "uk": "Призначення магазинів",
       "zh-cn": "商店分配"
-    },
-    "ui.items.general.items.timingsectiontitle.text": {
-      "en": "Processing timing",
-      "de": "Verarbeitungszeiten",
-      "ru": "Временные параметры обработки",
-      "pt": "Tempos de processamento",
-      "nl": "Verwerkingstijden",
-      "fr": "Temporisation du traitement",
-      "it": "Tempi di elaborazione",
-      "es": "Tiempos de procesamiento",
-      "pl": "Czasy przetwarzania",
-      "uk": "Часові параметри обробки",
-      "zh-cn": "处理时序"
     },
     "ui.items.general.items.alexainstance.label": {
       "en": "Alexa2 instance",
@@ -1014,6 +977,19 @@
       "uk": "Автоматично пропонувати псевдоніми",
       "zh-cn": "自动建议别名"
     },
+    "ui.items.general.items.logsortsummary.label": {
+      "en": "Show completion message after a sorting run in the log",
+      "de": "Abschlussmeldung nach Sortierlauf im Log anzeigen",
+      "ru": "Показывать в журнале сообщение о завершении сортировки",
+      "pt": "Mostrar no log a mensagem de conclusão após uma ordenação",
+      "nl": "Voltooiingsmelding na een sorteerrun in het logboek tonen",
+      "fr": "Afficher dans le journal le message de fin après un tri",
+      "it": "Mostra nel log il messaggio di completamento dopo un ordinamento",
+      "es": "Mostrar en el registro el mensaje de finalización tras una ordenación",
+      "pl": "Pokazuj w dzienniku komunikat o zakończeniu sortowania",
+      "uk": "Показувати в журналі повідомлення про завершення сортування",
+      "zh-cn": "排序运行后在日志中显示完成消息"
+    },
     "ui.items.general.items.fallbackmarket.label": {
       "en": "Fallback market",
       "de": "Fallback-Markt",
@@ -1079,32 +1055,6 @@
       "uk": "Магазин для поточної покупки",
       "zh-cn": "当前购物商店"
     },
-    "ui.items.general.items.debouncems.label": {
-      "en": "Collect list changes for (ms)",
-      "de": "Listenänderungen sammeln für (ms)",
-      "ru": "Собирать изменения списка в течение (мс)",
-      "pt": "Agrupar alterações da lista por (ms)",
-      "nl": "Lijstwijzigingen verzamelen gedurende (ms)",
-      "fr": "Regrouper les modifications de liste pendant (ms)",
-      "it": "Raccogli le modifiche della lista per (ms)",
-      "es": "Agrupar cambios de la lista durante (ms)",
-      "pl": "Zbieraj zmiany listy przez (ms)",
-      "uk": "Збирати зміни списку протягом (мс)",
-      "zh-cn": "收集列表更改时长（毫秒）"
-    },
-    "ui.items.general.items.writepausems.label": {
-      "en": "Pause between Alexa value writes (ms)",
-      "de": "Pause zwischen Alexa-value-Schreibzugriffen (ms)",
-      "ru": "Пауза между записями значений Alexa (мс)",
-      "pt": "Pausa entre gravações de valores Alexa (ms)",
-      "nl": "Pauze tussen Alexa-value-schrijfbewerkingen (ms)",
-      "fr": "Pause entre les écritures de valeurs Alexa (ms)",
-      "it": "Pausa tra le scritture dei valori Alexa (ms)",
-      "es": "Pausa entre escrituras de valores de Alexa (ms)",
-      "pl": "Przerwa między zapisami wartości Alexa (ms)",
-      "uk": "Пауза між записами значень Alexa (мс)",
-      "zh-cn": "Alexa 值写入之间的暂停（毫秒）"
-    },
     "ui.items.general.items.apisectiontitle.text": {
       "en": "API protection",
       "de": "API-Schutz",
@@ -1117,6 +1067,19 @@
       "pl": "Ochrona API",
       "uk": "Захист API",
       "zh-cn": "API 保护"
+    },
+    "ui.items.general.items.apiwarning.text": {
+      "en": "Only change these settings if you know what you are doing.",
+      "de": "Änderungen nur vornehmen, wenn Sie wissen, was Sie tun.",
+      "ru": "Изменяйте эти настройки только в том случае, если понимаете последствия.",
+      "pt": "Altere estas configurações apenas se souber o que está fazendo.",
+      "nl": "Wijzig deze instellingen alleen als u weet wat u doet.",
+      "fr": "Ne modifiez ces paramètres que si vous savez ce que vous faites.",
+      "it": "Modificare queste impostazioni solo se si sa cosa si sta facendo.",
+      "es": "Cambie estos ajustes únicamente si sabe lo que está haciendo.",
+      "pl": "Zmieniaj te ustawienia tylko wtedy, gdy wiesz, co robisz.",
+      "uk": "Змінюйте ці налаштування лише тоді, коли розумієте наслідки.",
+      "zh-cn": "仅在您清楚自己所做操作时更改这些设置。"
     },
     "ui.items.general.items.apihelp.text": {
       "en": "API Safe Mode limits Alexa write frequency, groups large sorts into batches and retries temporary write errors with exponential backoff. It protects against unnecessary bursts; it does not poll Amazon.",
@@ -1691,17 +1654,17 @@
       "zh-cn": "Alexa 列表中的商店标题"
     },
     "ui.items.general.items.marketheaders.help": {
-      "en": "Adds entries such as ---- ALDI ----. A heading remains active while at least one real item for that market is open and is deleted completely when the market is no longer needed.",
-      "de": "Fügt Einträge wie ---- ALDI ---- ein. Eine Überschrift bleibt aktiv, solange mindestens ein echter Artikel dieses Marktes offen ist, und wird vollständig gelöscht, sobald der Markt nicht mehr benötigt wird.",
-      "ru": "Добавляет строки вида ---- ALDI ----. Заголовок остаётся активным, пока открыт хотя бы один настоящий товар этого магазина, и полностью удаляется, когда магазин больше не нужен.",
-      "pt": "Adiciona entradas como ---- ALDI ----. O cabeçalho permanece ativo enquanto houver pelo menos um item real aberto nesse mercado e é excluído por completo quando o mercado deixa de ser necessário.",
-      "nl": "Voegt regels zoals ---- ALDI ---- toe. De kop blijft actief zolang minstens één echt artikel voor die winkel openstaat en wordt volledig verwijderd zodra de winkel niet meer nodig is.",
-      "fr": "Ajoute des entrées comme ---- ALDI ----. L’en-tête reste actif tant qu’au moins un article réel de ce magasin est ouvert et est entièrement supprimé lorsque le magasin n’est plus nécessaire.",
-      "it": "Aggiunge voci come ---- ALDI ----. L’intestazione resta attiva finché almeno un articolo reale del negozio è aperto e viene eliminata completamente quando il negozio non serve più.",
-      "es": "Añade entradas como ---- ALDI ----. El encabezado permanece activo mientras quede al menos un artículo real abierto de esa tienda y se elimina por completo cuando la tienda ya no es necesaria.",
-      "pl": "Dodaje wpisy takie jak ---- ALDI ----. Nagłówek pozostaje aktywny, dopóki co najmniej jeden rzeczywisty artykuł tego sklepu jest otwarty, a gdy sklep nie jest już potrzebny, zostaje całkowicie usunięty.",
-      "uk": "Додає записи на кшталт ---- ALDI ----. Заголовок залишається активним, доки відкритий хоча б один справжній товар цього магазину, і повністю видаляється, коли магазин більше не потрібен.",
-      "zh-cn": "添加类似 ---- ALDI ---- 的条目。只要该商店还有至少一个真实商品未完成，标题就保持有效；不再需要该商店时，标题会被彻底删除。"
+      "en": "Adds entries such as ═════ ALDI ═════. A heading remains active while at least one real item for that market is open and is deleted completely when the market is no longer needed.",
+      "de": "Fügt Einträge wie ═════ ALDI ═════ ein. Eine Überschrift bleibt aktiv, solange mindestens ein echter Artikel dieses Marktes offen ist, und wird vollständig gelöscht, sobald der Markt nicht mehr benötigt wird.",
+      "ru": "Добавляет строки вида ═════ ALDI ═════. Заголовок остаётся активным, пока открыт хотя бы один настоящий товар этого магазина, и полностью удаляется, когда магазин больше не нужен.",
+      "pt": "Adiciona entradas como ═════ ALDI ═════. O cabeçalho permanece ativo enquanto houver pelo menos um item real aberto nesse mercado e é excluído por completo quando o mercado deixa de ser necessário.",
+      "nl": "Voegt regels zoals ═════ ALDI ═════ toe. De kop blijft actief zolang minstens één echt artikel voor die winkel openstaat en wordt volledig verwijderd zodra de winkel niet meer nodig is.",
+      "fr": "Ajoute des entrées comme ═════ ALDI ═════. L’en-tête reste actif tant qu’au moins un article réel de ce magasin est ouvert et est entièrement supprimé lorsque le magasin n’est plus nécessaire.",
+      "it": "Aggiunge voci come ═════ ALDI ═════. L’intestazione resta attiva finché almeno un articolo reale del negozio è aperto e viene eliminata completamente quando il negozio non serve più.",
+      "es": "Añade entradas como ═════ ALDI ═════. El encabezado permanece activo mientras quede al menos un artículo real abierto de esa tienda y se elimina por completo cuando la tienda ya no es necesaria.",
+      "pl": "Dodaje wpisy takie jak ═════ ALDI ═════. Nagłówek pozostaje aktywny, dopóki co najmniej jeden rzeczywisty artykuł tego sklepu jest otwarty, a gdy sklep nie jest już potrzebny, zostaje całkowicie usunięty.",
+      "uk": "Додає записи на кшталт ═════ ALDI ═════. Заголовок залишається активним, доки відкритий хоча б один справжній товар цього магазину, і повністю видаляється, коли магазин більше не потрібен.",
+      "zh-cn": "添加类似 ═════ ALDI ═════ 的条目。只要该商店还有至少一个真实商品未完成，标题就保持有效；不再需要该商店时，标题会被彻底删除。"
     },
     "ui.items.general.items.minitemspermarket.label": {
       "en": "Minimum items per additional market",

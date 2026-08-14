@@ -9,7 +9,7 @@ exports.reindexRoutes = reindexRoutes;
 exports.normalizeRoutesForAdmin = normalizeRoutesForAdmin;
 const EXPORT_KEYS = [
     'alexaInstance', 'listName', 'lists', 'dryRun', 'autoLearnProducts', 'learningMode',
-    'autoAliasSuggestions', 'debounceMs', 'writePauseMs', 'apiSafeMode', 'maxWritesPerMinute',
+    'autoAliasSuggestions', 'logSortSummary', 'apiSafeMode', 'maxWritesPerMinute',
     'batchSize', 'batchPauseMs', 'maxWriteRetries', 'retryBaseMs', 'fallbackMarket', 'priorityMarket',
     'temporaryPriorityMarket', 'productGroups', 'markets', 'routes', 'products', 'reviewItems',
 ];

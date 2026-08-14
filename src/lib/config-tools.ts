@@ -2,7 +2,7 @@ import type { AdapterConfigShape, ConfigExport, MarketConfig, MarketProfile, Rou
 
 const EXPORT_KEYS: Array<keyof AdapterConfigShape> = [
     'alexaInstance', 'listName', 'lists', 'dryRun', 'autoLearnProducts', 'learningMode',
-    'autoAliasSuggestions', 'debounceMs', 'writePauseMs', 'apiSafeMode', 'maxWritesPerMinute',
+    'autoAliasSuggestions', 'logSortSummary', 'apiSafeMode', 'maxWritesPerMinute',
     'batchSize', 'batchPauseMs', 'maxWriteRetries', 'retryBaseMs', 'fallbackMarket', 'priorityMarket',
     'temporaryPriorityMarket', 'productGroups', 'markets', 'routes', 'products', 'reviewItems',
 ];
