@@ -42,8 +42,7 @@
     "lint": "eslint src src-admin test scripts && npm run check",
     "prepublishOnly": "node scripts/block-root-publish.js",
     "test:integration": "mocha test/integration.js --exit",
-    "test:package": "mocha test/package.js --exit",
-    "stable:build": "npm run build && node scripts/prepare-stable-build.js"
+    "test:package": "mocha test/package.js --exit"
   },
   "dependencies": {
     "@iobroker/adapter-core": "^3.4.1"
