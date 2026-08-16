@@ -48,7 +48,7 @@ export function normalizeUsageStatistics(value: unknown, now = new Date()): Usag
 }
 
 function increment(map: Record<string, number>, key: string): void {
-    const safe = String(key || '').trim() || 'Unbekannt';
+    const safe = String(key || '').trim() || 'Unknown';
     map[safe] = (Number(map[safe]) || 0) + 1;
 }
 

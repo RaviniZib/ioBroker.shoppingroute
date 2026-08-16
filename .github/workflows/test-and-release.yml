@@ -55,5 +55,5 @@ jobs:
         with:
           node-version: '24.x'
           build: 'true'
-          build-command: 'npm run stable:build'
+          build-command: 'npm run build'
           github-token: ${{ secrets.GITHUB_TOKEN }}

@@ -220,19 +220,17 @@ test('dynamic dropdown handlers sort alphabetically',()=>{
   assert.match(source,/getMarkets[\s\S]*localeCompare\(b\.label/);
 });
 
-test('stable publishing is protected and release builds remain readable',()=>{
+test('publishing is protected and obsolete packaging paths remain removed',()=>{
   const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
   assert.equal('private' in pkg,false);
   assert.equal(pkg.license,'MIT');
   assert.equal(pkg.scripts.prepublishOnly,'node scripts/block-root-publish.js');
   assert.ok(fs.existsSync(path.join(root,'scripts','block-root-publish.js')));
-  assert.ok(fs.existsSync(path.join(root,'scripts','prepare-stable-build.js')));
+  assert.equal(pkg.scripts['stable:build'],undefined);
+  assert.equal(fs.existsSync(path.join(root,'scripts','prepare-stable-build.js')),false);
   assert.equal(fs.existsSync(path.join(root,'scripts','make-beta-package.js')),false);
   assert.equal(pkg.scripts['beta:package'],undefined);
   assert.equal(pkg.devDependencies['javascript-obfuscator'],undefined);
-  const stableBuild=fs.readFileSync(path.join(root,'scripts','prepare-stable-build.js'),'utf8');
-  assert.doesNotMatch(stableBuild,/obfuscat|javascript-obfuscator/i);
-  assert.match(stableBuild,/endsWith\('\.map'\)/);
 });
 
 test('walking routes use a dedicated editor with routes as the only persisted source',()=>{
