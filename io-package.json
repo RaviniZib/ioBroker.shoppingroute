@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "shoppingroute",
-    "version": "0.3.4",
+    "version": "0.3.5",
     "titleLang": {
       "en": "ShoppingRoute",
       "de": "ShoppingRoute",
@@ -60,6 +60,19 @@
     "icon": "shoppingroute.png",
     "tier": 3,
     "news": {
+      "0.3.5": {
+        "en": "Changed the remaining statistics fallback to English, aligned release deployment with the tested `npm run build` path, removed the obsolete `stable:build` and `prepare-stable-build.js` source-map cleanup path, and updated regression protection; sorting behavior is unchanged.",
+        "de": "Den verbleibenden Statistik-Fallback auf Englisch umgestellt, Release-Deploy mit dem getesteten `npm run build`-Pfad vereinheitlicht, den veralteten `stable:build`-/`prepare-stable-build.js`-Source-Map-Bereinigungspfad entfernt und die Regression-Prüfung angepasst; das Sortierverhalten bleibt unverändert.",
+        "ru": "Оставшийся резервный текст статистики переведён на английский, развёртывание релиза приведено к протестированному пути `npm run build`, устаревший путь очистки карт исходного кода `stable:build` / `prepare-stable-build.js` удалён, а регрессионная проверка обновлена; поведение сортировки не изменилось.",
+        "pt": "O texto de recurso restante das estatísticas foi alterado para inglês, a implementação da versão foi alinhada com o caminho testado `npm run build`, o caminho obsoleto de limpeza de mapas de origem `stable:build` / `prepare-stable-build.js` foi removido e a proteção contra regressões foi atualizada; o comportamento da ordenação não mudou.",
+        "nl": "De resterende statistiekfallback is Engels gemaakt, de release-implementatie is afgestemd op het geteste `npm run build`-pad, het verouderde bronkaartopschoonpad `stable:build` / `prepare-stable-build.js` is verwijderd en de regressiecontrole is bijgewerkt; het sorteergedrag is ongewijzigd.",
+        "fr": "Le dernier texte de repli des statistiques est passé en anglais, le déploiement de version a été aligné sur le chemin testé `npm run build`, l’ancien nettoyage des sources maps via `stable:build` / `prepare-stable-build.js` a été supprimé et la protection contre les régressions mise à jour ; le comportement de tri est inchangé.",
+        "it": "Il fallback rimanente delle statistiche è stato reso inglese, il deploy della release è stato allineato al percorso testato `npm run build`, il percorso obsoleto di pulizia delle source map `stable:build` / `prepare-stable-build.js` è stato rimosso e la protezione dalle regressioni aggiornata; il comportamento di ordinamento non è cambiato.",
+        "es": "El texto de reserva restante de las estadísticas se cambió a inglés, el despliegue de la versión se alineó con la ruta probada `npm run build`, se eliminó la ruta obsoleta de limpieza de mapas de origen `stable:build` / `prepare-stable-build.js` y se actualizó la protección contra regresiones; el comportamiento de ordenación no cambió.",
+        "pl": "Pozostały tekst zastępczy statystyk zmieniono na angielski, wdrażanie wydania ujednolicono z testowaną ścieżką `npm run build`, usunięto przestarzałą ścieżkę czyszczenia map źródłowych `stable:build` / `prepare-stable-build.js` i zaktualizowano ochronę regresyjną; zachowanie sortowania nie uległo zmianie.",
+        "uk": "Залишковий резервний текст статистики змінено на англійський, розгортання випуску узгоджено з протестованим шляхом `npm run build`, застарілий шлях очищення карт вихідного коду `stable:build` / `prepare-stable-build.js` видалено, а регресійний захист оновлено; поведінку сортування не змінено.",
+        "zh-cn": "将剩余的统计回退文本改为英文，使发布部署使用经过测试的 `npm run build` 路径，移除过时的 `stable:build` / `prepare-stable-build.js` 源映射清理流程，并更新相应的回归保护；排序行为未改变。"
+      },
       "0.3.4": {
         "en": "Added Admin 8 compatibility for custom Admin components, clearer optional sort-summary logging and market headings, fixed the review queue “Accept all” action, required acknowledged foreign Alexa2 states, and removed obsolete configuration, internal npm checks and code obfuscation for improved repository compatibility.",
         "de": "Admin-8-Kompatibilität für benutzerdefinierte Admin-Komponenten ergänzt, optionales Abschluss-Logging und Marktüberschriften verständlicher gestaltet, „Alle auf Übernehmen stellen“ repariert, bestätigte Werte für fremde Alexa2-States vorausgesetzt sowie veraltete Konfiguration, interne npm-Prüfung und Code-Obfuscation für bessere Repository-Kompatibilität entfernt.",

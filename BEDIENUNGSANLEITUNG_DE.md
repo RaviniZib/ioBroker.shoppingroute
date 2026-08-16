@@ -1,6 +1,6 @@
 # ShoppingRoute – Bedienungsanleitung
 
-**Stand: ioBroker.shoppingroute 0.3.4**
+**Stand: ioBroker.shoppingroute 0.3.5**
 
 ShoppingRoute sortiert aktive Alexa-Einkaufslisteneinträge nach Markt, Produktgruppe und deinem individuellen Laufweg. Sichtbare zweistellige Präfixe von `00>` bis `99>` bilden den Sortierschlüssel. Marktüberschriften erscheinen als `═════ MARKT ═════`. Einzelne Einträge werden direkt aktualisiert; bei ausgeschöpften Nummernlücken wird nur das notwendige Listensuffix gelöscht und in einem Batch neu angelegt. ShoppingRoute hakt keine Artikel automatisch ab.
 
@@ -11,7 +11,7 @@ ShoppingRoute sortiert aktive Alexa-Einkaufslisteneinträge nach Markt, Produktg
 - ioBroker mit Admin ab 8.0.0
 - installierte und aktivierte Alexa2-Instanz
 - mindestens eine Alexa-Einkaufsliste
-- ShoppingRoute 0.3.4 oder neuer
+- ShoppingRoute 0.3.5 oder neuer
 
 ## 2. Grundprinzip
 
