@@ -2,7 +2,7 @@
 
 ![ShoppingRoute](admin/shoppingroute.png)
 
-**Current version: 0.3.4**
+**Current version: 0.3.5**
 
 ShoppingRoute sorts Alexa shopping-list entries by market, product group and each store's individual walking route. It assigns visible two-digit keys such as `20> Bananas` and `40> ═════ ALDI ═════`; managed lists must therefore be set to **A–Z** in the Alexa app. ShoppingRoute reuses the local Alexa2 authentication for direct item updates, deletes and batch creates, while Alexa2 list states remain the external change trigger.
 
@@ -39,6 +39,13 @@ ShoppingRoute sorts Alexa shopping-list entries by market, product group and eac
 See `README_DE.md` for the detailed German documentation.
 
 ## Changelog
+
+### 0.3.5 (2026-08-17)
+
+- Completed the remaining repository re-review cleanup with an English statistics fallback.
+- Aligned release deployment with the regular tested `npm run build` path.
+- Removed the obsolete `stable:build` / source-map cleanup path and updated its regression protection.
+- No sorting behavior or adapter functionality was changed.
 
 ### 0.3.4 (2026-08-14)
 

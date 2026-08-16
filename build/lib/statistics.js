@@ -37,7 +37,7 @@ function normalizeUsageStatistics(value, now = new Date()) {
     };
 }
 function increment(map, key) {
-    const safe = String(key || '').trim() || 'Unbekannt';
+    const safe = String(key || '').trim() || 'Unknown';
     map[safe] = (Number(map[safe]) || 0) + 1;
 }
 function recordAddedItem(stats, listName, parsed) {
