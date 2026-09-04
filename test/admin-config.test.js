@@ -8,7 +8,7 @@ const root=path.join(__dirname,'..');
 const ioPackage=JSON.parse(fs.readFileSync(path.join(root,'io-package.json'),'utf8'));
 const jsonConfig=JSON.parse(fs.readFileSync(path.join(root,'admin','jsonConfig.json'),'utf8'));
 const germanAdminTranslations=JSON.parse(
-  fs.readFileSync(path.join(root,'admin','i18n','de','translations.json'),'utf8'),
+  fs.readFileSync(path.join(root,'admin','i18n','de.json'),'utf8'),
 );
 
 test('version and branding are consistent',()=>{
@@ -43,7 +43,7 @@ test('JSON Config uses explicit file-based i18n with complete translations',()=>
   const languages=['en','de','ru','pt','nl','fr','it','es','pl','uk','zh-cn'];
   let expectedKeys;
   for(const language of languages) {
-    const translationPath=path.join(root,'admin','i18n',language,'translations.json');
+    const translationPath=path.join(root,'admin','i18n',`${language}.json`);
     assert.ok(fs.existsSync(translationPath),language);
     const translations=JSON.parse(fs.readFileSync(translationPath,'utf8'));
     const keys=Object.keys(translations).sort();
