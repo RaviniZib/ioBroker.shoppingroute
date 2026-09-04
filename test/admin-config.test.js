@@ -7,6 +7,9 @@ const path=require('node:path');
 const root=path.join(__dirname,'..');
 const ioPackage=JSON.parse(fs.readFileSync(path.join(root,'io-package.json'),'utf8'));
 const jsonConfig=JSON.parse(fs.readFileSync(path.join(root,'admin','jsonConfig.json'),'utf8'));
+const germanAdminTranslations=JSON.parse(
+  fs.readFileSync(path.join(root,'admin','i18n','de','translations.json'),'utf8'),
+);
 
 test('version and branding are consistent',()=>{
   const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
@@ -18,6 +21,40 @@ test('version and branding are consistent',()=>{
   assert.equal(ioPackage.common.titleLang.de,'ShoppingRoute');
   assert.equal(ioPackage.common.icon,'shoppingroute.png');
   assert.ok(fs.existsSync(path.join(root,'admin',ioPackage.common.icon)));
+});
+
+test('JSON Config uses explicit file-based i18n with complete translations',()=>{
+  assert.equal(jsonConfig.i18n,true);
+
+  const translationKeys=new Set();
+  const collectTranslationKeys=value=>{
+    if(Array.isArray(value)) {
+      value.forEach(collectTranslationKeys);
+      return;
+    }
+    if(!value||typeof value!=='object') return;
+    for(const item of Object.values(value)) {
+      if(typeof item==='string'&&item.startsWith('ui.')) translationKeys.add(item);
+      else collectTranslationKeys(item);
+    }
+  };
+  collectTranslationKeys(jsonConfig.items);
+
+  const languages=['en','de','ru','pt','nl','fr','it','es','pl','uk','zh-cn'];
+  let expectedKeys;
+  for(const language of languages) {
+    const translationPath=path.join(root,'admin','i18n',language,'translations.json');
+    assert.ok(fs.existsSync(translationPath),language);
+    const translations=JSON.parse(fs.readFileSync(translationPath,'utf8'));
+    const keys=Object.keys(translations).sort();
+    expectedKeys??=keys;
+    assert.deepEqual(keys,expectedKeys,`${language} translation key set`);
+    assert.deepEqual(
+      [...translationKeys].filter(key=>!translations[key]),
+      [],
+      `${language} missing or empty JSON Config translations`,
+    );
+  }
 });
 
 test('user-facing admin areas are present and diagnostics tab is hidden',()=>{
@@ -224,8 +261,12 @@ test('publishing is protected and obsolete packaging paths remain removed',()=>{
   const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
   assert.equal('private' in pkg,false);
   assert.equal(pkg.license,'MIT');
-  assert.equal(pkg.scripts.prepublishOnly,'node scripts/block-root-publish.js');
-  assert.ok(fs.existsSync(path.join(root,'scripts','block-root-publish.js')));
+  assert.equal(pkg.scripts.prepublishOnly,undefined);
+  assert.equal(fs.existsSync(path.join(root,'scripts','block-root-publish.js')),false);
+  const releaseWorkflow=fs.readFileSync(path.join(root,'.github','workflows','test-and-release.yml'),'utf8');
+  assert.match(releaseWorkflow,/startsWith\(github\.ref, 'refs\/tags\/v'\)/);
+  assert.match(releaseWorkflow,/id-token: write/);
+  assert.match(releaseWorkflow,/ioBroker\/testing-action-deploy@v1/);
   assert.equal(pkg.scripts['stable:build'],undefined);
   assert.equal(fs.existsSync(path.join(root,'scripts','prepare-stable-build.js')),false);
   assert.equal(fs.existsSync(path.join(root,'scripts','make-beta-package.js')),false);
@@ -313,8 +354,8 @@ test('API protection is integrated into General and no longer has its own tab',(
 
 test('market terminology distinguishes normal default from current-shopping override',()=>{
   const general=jsonConfig.items.general.items;
-  assert.equal(jsonConfig.i18n[general.priorityMarket.label].de,'Standardmarkt für Einkäufe');
-  assert.equal(jsonConfig.i18n[general.temporaryMarketState.label].de,'Markt für aktuellen Einkauf');
+  assert.equal(germanAdminTranslations[general.priorityMarket.label],'Standardmarkt für Einkäufe');
+  assert.equal(germanAdminTranslations[general.temporaryMarketState.label],'Markt für aktuellen Einkauf');
 });
 
 
@@ -341,11 +382,8 @@ test('ioBroker checker metadata is present',()=>{
   assert.equal(ioPackage.common.tier,3);
   assert.ok(ioPackage.common.extIcon);
   assert.ok(Array.isArray(ioPackage.common.globalDependencies));
-  assert.equal(typeof jsonConfig.i18n,'object');
-  assert.ok(Object.keys(jsonConfig.i18n).length > 20);
-  for(const entry of Object.values(jsonConfig.i18n)) {
-    for(const lang of ['en','de','ru','pt','nl','fr','it','es','pl','uk','zh-cn']) assert.ok(entry[lang] !== undefined,`admin i18n ${lang}`);
-  }
+  assert.equal(jsonConfig.i18n,true);
+  assert.ok(Object.keys(germanAdminTranslations).length > 20);
   assert.equal('main' in ioPackage.common,false);
   for(const lang of ['en','de','ru','pt','nl','fr','it','es','pl','uk','zh-cn']) {
     assert.ok(ioPackage.common.titleLang[lang],`titleLang ${lang}`);

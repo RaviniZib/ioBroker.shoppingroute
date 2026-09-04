@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "shoppingroute",
-    "version": "0.3.5",
+    "version": "0.3.6",
     "titleLang": {
       "en": "ShoppingRoute",
       "de": "ShoppingRoute",
@@ -60,6 +60,19 @@
     "icon": "shoppingroute.png",
     "tier": 3,
     "news": {
+      "0.3.6": {
+        "en": "Repository checker cleanup: explicit JSON Config i18n mode and translation files, obsolete prepublish protection removed, and older changelog entries archived. Sorting and runtime behavior are unchanged.",
+        "de": "Repository-Checker-Bereinigung: expliziter JSON-Config-i18n-Modus mit Übersetzungsdateien, veralteter Prepublish-Schutz entfernt und ältere Changelog-Einträge archiviert. Sortier- und Laufzeitverhalten bleiben unverändert.",
+        "ru": "Очистка для проверки репозитория: явный режим i18n JSON Config и файлы переводов, удалена устаревшая защита prepublish, старые записи журнала изменений архивированы. Сортировка и поведение во время выполнения не изменены.",
+        "pt": "Limpeza do verificador do repositório: modo i18n explícito do JSON Config e ficheiros de tradução, proteção prepublish obsoleta removida e entradas antigas do changelog arquivadas. A ordenação e o comportamento em execução não mudaram.",
+        "nl": "Opschoning voor de repositorychecker: expliciete JSON Config-i18n-modus en vertaalbestanden, verouderde prepublish-beveiliging verwijderd en oudere changelog-items gearchiveerd. Sorteer- en runtimegedrag zijn ongewijzigd.",
+        "fr": "Nettoyage pour le vérificateur du dépôt : mode i18n JSON Config explicite et fichiers de traduction, ancienne protection prepublish supprimée et anciennes entrées du changelog archivées. Le tri et le comportement à l’exécution sont inchangés.",
+        "it": "Pulizia per il controllo del repository: modalità i18n JSON Config esplicita e file di traduzione, protezione prepublish obsoleta rimossa e voci meno recenti del changelog archiviate. Ordinamento e comportamento runtime invariati.",
+        "es": "Limpieza para el verificador del repositorio: modo i18n explícito de JSON Config y archivos de traducción, protección prepublish obsoleta eliminada y entradas antiguas del changelog archivadas. La ordenación y el comportamiento en ejecución no cambiaron.",
+        "pl": "Porządki dla kontrolera repozytorium: jawny tryb i18n JSON Config i pliki tłumaczeń, usunięta przestarzała ochrona prepublish oraz zarchiwizowane starsze wpisy changeloga. Sortowanie i działanie w czasie wykonywania pozostają bez zmian.",
+        "uk": "Очищення для перевірки репозиторію: явний режим i18n JSON Config і файли перекладів, застарілий захист prepublish видалено, старі записи журналу змін заархівовано. Сортування й поведінка під час виконання не змінилися.",
+        "zh-cn": "仓库检查器清理：明确启用 JSON Config i18n 模式并使用翻译文件，移除过时的 prepublish 保护，归档旧版更新日志。排序和运行时行为均未改变。"
+      },
       "0.3.5": {
         "en": "Changed the remaining statistics fallback to English, aligned release deployment with the tested `npm run build` path, removed the obsolete `stable:build` and `prepare-stable-build.js` source-map cleanup path, and updated regression protection; sorting behavior is unchanged.",
         "de": "Den verbleibenden Statistik-Fallback auf Englisch umgestellt, Release-Deploy mit dem getesteten `npm run build`-Pfad vereinheitlicht, den veralteten `stable:build`-/`prepare-stable-build.js`-Source-Map-Bereinigungspfad entfernt und die Regression-Prüfung angepasst; das Sortierverhalten bleibt unverändert.",
@@ -124,19 +137,6 @@
         "pl": "Pierwsze stabilne wydanie ShoppingRoute z pełnymi tłumaczeniami panelu administracyjnego, ulepszoną pomocą dla tras, zabezpieczonym publikowaniem npm i zweryfikowaną zgodnością Alexa2/alexa-remote2.",
         "uk": "Перший стабільний випуск ShoppingRoute з повними перекладами інтерфейсу Admin, покращеною довідкою для маршрутів, захищеною публікацією npm та перевіреною сумісністю Alexa2/alexa-remote2.",
         "zh-cn": "ShoppingRoute 首个稳定版本，包含完整的 Admin 翻译、改进的行走路线帮助、安全的 npm 发布流程以及经过验证的 Alexa2/alexa-remote2 兼容性。"
-      },
-      "0.1.0-beta.3": {
-        "en": "First public beta npm package with safe value-only Alexa list sorting and fixed-slot ordering.",
-        "de": "Erstes öffentliches npm-Betapaket mit sicherer Alexa-Listensortierung nur über value-Texte und feste Positions-IDs.",
-        "ru": "Первый общедоступный бета-пакет npm с безопасной сортировкой списка Alexa только по значениям и фиксированными позиционными ID.",
-        "pt": "Primeiro pacote beta público no npm com ordenação segura da lista Alexa apenas pelos valores e IDs de posição fixos.",
-        "nl": "Eerste openbare npm-bèta met veilige Alexa-lijstsortering alleen via waardeteksten en vaste positie-ID’s.",
-        "fr": "Premier paquet bêta public npm avec tri sûr de la liste Alexa uniquement via les valeurs et des ID de position fixes.",
-        "it": "Primo pacchetto beta pubblico npm con ordinamento sicuro della lista Alexa solo tramite valori e ID di posizione fissi.",
-        "es": "Primer paquete beta público de npm con ordenación segura de la lista Alexa solo mediante valores e ID de posición fijos.",
-        "pl": "Pierwszy publiczny pakiet beta npm z bezpiecznym sortowaniem listy Alexa wyłącznie przez wartości i stałe identyfikatory pozycji.",
-        "uk": "Перший загальнодоступний бета-пакет npm із безпечним сортуванням списку Alexa лише через значення та фіксовані ID позицій.",
-        "zh-cn": "首个公开测试版 npm 包，仅通过 value 文本安全排序 Alexa 列表，并使用固定位置 ID。"
       },
       "0.3.1": {
         "en": "Fixed a restart loop in review learning mode.",

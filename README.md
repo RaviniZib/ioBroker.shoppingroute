@@ -2,7 +2,7 @@
 
 ![ShoppingRoute](admin/shoppingroute.png)
 
-**Current version: 0.3.5**
+**Current version: 0.3.6**
 
 ShoppingRoute sorts Alexa shopping-list entries by market, product group and each store's individual walking route. It assigns visible two-digit keys such as `20> Bananas` and `40> ═════ ALDI ═════`; managed lists must therefore be set to **A–Z** in the Alexa app. ShoppingRoute reuses the local Alexa2 authentication for direct item updates, deletes and batch creates, while Alexa2 list states remain the external change trigger.
 
@@ -39,6 +39,13 @@ ShoppingRoute sorts Alexa shopping-list entries by market, product group and eac
 See `README_DE.md` for the detailed German documentation.
 
 ## Changelog
+
+### 0.3.6 (2026-09-04)
+
+- Cleaned up avoidable repository-checker warnings.
+- Made the JSON Config i18n mode explicit and moved all existing translations into the standard language-file structure.
+- Removed obsolete prepublish protection and archived older changelog entries.
+- No sorting or runtime behavior was changed.
 
 ### 0.3.5 (2026-08-17)
 
@@ -83,75 +90,7 @@ See `README_DE.md` for the detailed German documentation.
 - Explicit market phrases always remain assigned to the requested market.
 - Header management uses Alexa2 states (`#New`, `#delete`) and does not create a second Amazon session; normal shopping items are never automatically deleted or completed.
 
-### 0.2.0 (2026-08-09)
-
-- First stable release of ShoppingRoute.
-- Completed Admin translations for all supported ioBroker languages and fixed the walking-route market help text.
-- Added protected stable publishing through GitHub Actions and npm Trusted Publishing/OIDC.
-- Verified `updateListItem` compatibility with Alexa2 3.28.3 and alexa-remote2 8.1.0 without local modifications to foreign modules.
-
-### 0.2.0-beta.12 (2026-08-09)
-
-- Added an official stable-release deployment path while keeping public-beta packaging separate.
-- Added the shared ioBroker ESLint configuration and resolved type-safety/lint findings without functional changes.
-- Updated the resolved `@iobroker/testing` version to 5.3.0 and revalidated the test suite.
-
-### 0.2.0-beta.11 (2026-08-09)
-
-- Added official ioBroker package and integration tests and completed further workflow and JSON Config compatibility fixes.
-- Switched ShoppingRoute to the MIT License.
-- Updated public-beta documentation, release history and version information.
-
-### 0.2.0-beta.10 (2026-08-09)
-
-- Added an Admin 7.6 compatible backup and sharing interface for configuration backups and market profiles.
-- Added JSON validation for configuration and market-profile imports.
-- Fixed the runtime version consistency check and improved automated compatibility tests.
-
-### 0.2.0-beta.9 (2026-08-09)
-
-- Renamed closed-beta references to public beta across packaging, workflow and documentation.
-
-### 0.2.0-beta.8 (2026-08-09)
-
-- Version update only; no functional changes.
-
-### 0.2.0-beta.7 (2026-08-08)
-
-- Added a real standalone market dropdown for the walking-route editor; only the selected market route is shown while the complete route list remains stored internally.
-- Centralized Admin translations in reusable JSON Config i18n variables for all required ioBroker languages.
-- Added further repository-checker compliance fixes for responsive tables, CI, Dependabot, button roles and VS Code schemas.
-
-
-### 0.2.0-beta.6 (2026-08-08)
-
-- Alexa2 instance is now selected from installed/enabled Alexa2 instances instead of free text.
-- Alexa lists are offered as dynamically detected dropdown values.
-- Walking routes use native ioBroker JSON Config controls again; the faulty custom Module Federation editor has been removed.
-- The current-shopping market can be visibly reset to “— No market —” directly in its dropdown; the separate clear button has been removed.
-- Renamed the permanent and one-off market settings to make their purpose clearer.
-- API protection settings moved into General so they are not overlooked.
-
-### 0.2.0-beta.4 (2026-08-08)
-
-- Added a market filter to the walking-route table so one market can be edited at a time.
-- Walking-route rows are grouped alphabetically by market while preserving the configured route order inside each market.
-- Added ioBroker repository-checker metadata, responsive JSON Config sizing and explicit JSON Config i18n mode.
-- Updated ioBroker adapter dependencies and development testing metadata.
-- Replaced plain Node.js timers with adapter-managed timers.
-- Added standard GitHub test workflow and Dependabot configuration.
-
-### 0.2.0-beta.2 (2026-08-08)
-
-- New active markets and new product groups automatically receive missing walking-route rows.
-
-### 0.2.0-beta.1 (2026-08-08)
-
-- Added review queue, improved parser and aliases, API safe mode, multi-list support, statistics, transfer tools and beta diagnostics.
-
-### 0.1.0-beta.3 (2026-08-08)
-
-- First public beta npm package with safe value-only Alexa list sorting and fixed-slot ordering.
+Older releases: [CHANGELOG_OLD.md](CHANGELOG_OLD.md).
 
 ## License
 
