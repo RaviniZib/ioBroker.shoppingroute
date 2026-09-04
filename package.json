@@ -41,7 +41,9 @@
     "test:unit": "node --test test/*.test.js",
     "lint": "eslint src src-admin test scripts && npm run check",
     "test:integration": "mocha test/integration.js --exit",
-    "test:package": "mocha test/package.js --exit"
+    "test:package": "mocha test/package.js --exit",
+    "translate": "translate-adapter",
+    "release": "release-script"
   },
   "dependencies": {
     "@iobroker/adapter-core": "^3.4.1"
@@ -55,6 +57,11 @@
     "react": "^18.3.1",
     "typescript": "^5.8.3",
     "vite": "^6.3.5",
-    "vite-plugin-commonjs": "^0.10.4"
+    "vite-plugin-commonjs": "^0.10.4",
+    "@alcalzone/release-script": "^5.2.1",
+    "@alcalzone/release-script-plugin-iobroker": "^5.2.0",
+    "@alcalzone/release-script-plugin-license": "^5.2.2",
+    "@alcalzone/release-script-plugin-manual-review": "^5.2.0",
+    "@iobroker/adapter-dev": "^1.5.0"
   }
 }
