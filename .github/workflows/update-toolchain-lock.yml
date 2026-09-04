@@ -1,0 +1,35 @@
+name: Update toolchain lockfile
+
+on:
+  push:
+    branches:
+      - toolchain-w0062
+
+permissions:
+  contents: write
+
+jobs:
+  update-lockfile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: toolchain-w0062
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+      - name: Regenerate lockfile
+        run: npm install --package-lock-only --ignore-scripts
+      - name: Remove temporary workflow and commit lockfile
+        shell: bash
+        run: |
+          rm .github/workflows/update-toolchain-lock.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json .github/workflows/update-toolchain-lock.yml
+          if git diff --cached --quiet; then
+            echo "Nothing to commit"
+            exit 0
+          fi
+          git commit -m "Update toolchain lockfile"
+          git push origin HEAD:toolchain-w0062
