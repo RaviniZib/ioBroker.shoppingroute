@@ -46,7 +46,7 @@
     "release": "release-script"
   },
   "dependencies": {
-    "@iobroker/adapter-core": "^3.4.1"
+    "@iobroker/adapter-core": "^3.4.3"
   },
   "devDependencies": {
     "@iobroker/eslint-config": "^2.3.4",
