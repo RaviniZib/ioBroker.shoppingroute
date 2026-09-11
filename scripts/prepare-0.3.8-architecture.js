@@ -1,5 +1,6 @@
 'use strict';
 
+const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 
@@ -78,11 +79,54 @@ write(
 }
 
 {
+    const file = 'test/admin8-custom-components.test.js';
+    let source = read(file);
+    source = replaceOnce(
+        source,
+        `            'custom/productGroups/productGroupsEditor.js',\n            'custom/routeEditor.js',`,
+        `            'custom/productGroups/productGroupsEditor.js',\n            'custom/review/reviewEditor.js',\n            'custom/routeEditor.js',`,
+        'custom component URL list',
+    );
+    source = replaceOnce(
+        source,
+        `        ['vite.product-groups.config.mjs', 'admin/custom/productGroups'],\n        ['vite.shopping-list.config.mjs', 'admin/custom/shoppingList'],`,
+        `        ['vite.product-groups.config.mjs', 'admin/custom/productGroups'],\n        ['vite.review.config.mjs', 'admin/custom/review'],\n        ['vite.shopping-list.config.mjs', 'admin/custom/shoppingList'],`,
+        'custom component Vite configs',
+    );
+    write(file, source);
+}
+
+{
     const file = 'test/admin-config.test.js';
     let source = read(file);
     source = source
         .replace("assert.equal(review.reviewEditor.url,'custom/routeEditor.js');", "assert.equal(review.reviewEditor.url,'custom/review/reviewEditor.js');")
         .replace("assert.equal(review.reviewEditor.name,'ShoppingRouteAdminSet/Components/ReviewEditor');", "assert.equal(review.reviewEditor.name,'ShoppingRouteReviewSet/Components/ReviewEditor');");
+
+    // The functional configuration hash must be computed after the final review-remote URL/name are in place.
+    const config = JSON.parse(read('admin/jsonConfig.json'));
+    const visualProperties = new Set([
+        'label','text','title','width','style','darkStyle','innerStyle','controlStyle',
+        'xs','sm','md','lg','xl','newLine','variant','icon','iconPosition','boxType',
+        'closeable','size','help','tooltip','placeholder',
+    ]);
+    const presentationTypes = new Set(['header','staticText','infoBox','divider']);
+    const stripVisualProperties = value => {
+        if (Array.isArray(value)) return value.map(stripVisualProperties);
+        if (!value || typeof value !== 'object') return value;
+        return Object.fromEntries(Object.entries(value)
+            .filter(([key]) => !visualProperties.has(key))
+            .map(([key, item]) => [key, stripVisualProperties(item)]));
+    };
+    const panels = ['general','listsTab','routesTab','productsTab','reviewTab','transferTab'];
+    const projection = Object.fromEntries(panels.map(panel => [
+        panel,
+        Object.fromEntries(Object.entries(config.items[panel].items)
+            .filter(([, item]) => !presentationTypes.has(item.type))
+            .map(([key, item]) => [key, stripVisualProperties(item)])),
+    ]));
+    const hash = crypto.createHash('sha256').update(JSON.stringify(projection)).digest('hex');
+    source = source.replace(/assert\.equal\(hash,'[a-f0-9]{64}'\);/, `assert.equal(hash,'${hash}');`);
     write(file, source);
 }
 
@@ -93,4 +137,4 @@ write(
     write(file, source);
 }
 
-console.log('Dedicated review Admin remote prepared.');
+console.log('Dedicated review Admin remote and final protection pins prepared.');
