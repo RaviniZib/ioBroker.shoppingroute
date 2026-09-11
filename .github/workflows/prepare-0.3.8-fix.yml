@@ -30,6 +30,9 @@ jobs:
       - name: Apply deterministic fixes
         run: node scripts/prepare-0.3.8-fix.js
 
+      - name: Format new Admin components with project ESLint
+        run: npx eslint src-admin/review-editor.js src-admin/shopping-list-editor.js --fix
+
       - name: Lint and typecheck
         run: npm run lint
 
