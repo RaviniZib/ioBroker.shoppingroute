@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "shoppingroute",
-    "version": "0.3.8",
+    "version": "0.3.9",
     "titleLang": {
       "en": "ShoppingRoute",
       "de": "ShoppingRoute",
@@ -60,6 +60,19 @@
     "icon": "shoppingroute.png",
     "tier": 3,
     "news": {
+      "0.3.9": {
+        "en": "Replaces incomplete GitHub-installed 0.3.8 snapshots. Normalizes available-market selections, removes accepted review rows and orphaned market headings, and delivers the corrected single-column shopping-list view.",
+        "de": "Ersetzt unvollständige, direkt von GitHub installierte 0.3.8-Zwischenstände. Vereinheitlicht verfügbare Märkte, entfernt übernommene Prüflistenzeilen und verwaiste Marktüberschriften und liefert die korrigierte einspaltige Einkaufslistenansicht.",
+        "ru": "Заменяет неполные сборки 0.3.8, установленные напрямую с GitHub. Нормализует выбор доступных магазинов, удаляет принятые строки проверки и пустые заголовки магазинов и исправляет одноколоночный список покупок.",
+        "pt": "Substitui versões incompletas 0.3.8 instaladas diretamente do GitHub. Normaliza mercados disponíveis, remove linhas de revisão aceites e cabeçalhos de mercado órfãos e corrige a lista de compras numa coluna.",
+        "nl": "Vervangt onvolledige 0.3.8-versies die rechtstreeks van GitHub zijn geïnstalleerd. Normaliseert beschikbare winkels, verwijdert geaccepteerde controleregels en verweesde winkelkoppen en levert de gecorrigeerde boodschappenlijst in één kolom.",
+        "fr": "Remplace les versions 0.3.8 incomplètes installées directement depuis GitHub. Normalise les magasins disponibles, supprime les lignes de vérification acceptées et les en-têtes orphelins, et corrige la liste de courses sur une colonne.",
+        "it": "Sostituisce le versioni 0.3.8 incomplete installate direttamente da GitHub. Normalizza i negozi disponibili, rimuove le righe di revisione accettate e le intestazioni orfane e corregge la lista della spesa a colonna singola.",
+        "es": "Sustituye versiones 0.3.8 incompletas instaladas directamente desde GitHub. Normaliza los mercados disponibles, elimina filas de revisión aceptadas y encabezados huérfanos y corrige la lista de compra en una sola columna.",
+        "pl": "Zastępuje niepełne wersje 0.3.8 instalowane bezpośrednio z GitHub. Normalizuje dostępne sklepy, usuwa zaakceptowane wiersze weryfikacji i osierocone nagłówki oraz poprawia jednokolumnową listę zakupów.",
+        "uk": "Замінює неповні версії 0.3.8, установлені безпосередньо з GitHub. Нормалізує доступні магазини, видаляє прийняті рядки перевірки й осиротілі заголовки та виправляє одноколонковий список покупок.",
+        "zh-cn": "替换直接从 GitHub 安装的不完整 0.3.8 版本。统一可用商店选择，删除已接受的审核行和孤立商店标题，并修正单列购物清单视图。"
+      },
       "0.3.8": {
         "en": "Fixes the review queue so accepted items immediately update the article catalogue and remain “Accepted”, filters legacy market headers and nested sort prefixes, simplifies the current shopping-list Admin view, and updates CI/checker compatibility.",
         "de": "Behebt die Prüfliste: Übernommene Einträge aktualisieren den Artikelstamm sofort und bleiben „Übernommen“. Außerdem werden alte Marktüberschriften und verschachtelte Sortierpräfixe gefiltert, die aktuelle Einkaufsliste im Admin vereinfacht und CI/Checker-Kompatibilität aktualisiert.",
@@ -137,19 +150,6 @@
         "pl": "Nowe bezpośrednie sortowanie prefiksami 00>–99> dla list Alexa w trybie A–Z, z bardzo szybkim wstawianiem przyrostowym w wolne luki numeracji, przebudową sufiksu tylko po wyczerpaniu luki, bezpośrednim potwierdzeniem Amazon i końcową weryfikacją.",
         "uk": "Нове пряме сортування за префіксами 00>–99> для списків Alexa в режимі A–Z: дуже швидке інкрементне вставлення у вільні числові проміжки, перебудова суфікса лише за відсутності місця, пряме підтвердження Amazon і фінальна перевірка.",
         "zh-cn": "全新的 Alexa A–Z 列表直接 00>–99> 前缀排序：可快速增量插入空闲编号间隙，仅在间隙耗尽时重建后缀，并使用 Amazon 直接确认和最终校验。"
-      },
-      "0.3.0": {
-        "en": "Development preview for automatic market headings and minimum-items-per-market route consolidation. Explicit market requests always remain unchanged.",
-        "de": "Entwicklungsvorschau mit automatischen Marktüberschriften und marktübergreifender Zusammenlegung anhand einer Mindestartikelzahl. Explizite Marktangaben bleiben immer unverändert.",
-        "ru": "Предварительная версия с автоматическими заголовками магазинов и объединением маршрута по минимальному количеству товаров. Явно указанные магазины никогда не изменяются.",
-        "pt": "Prévia com cabeçalhos automáticos de mercados e consolidação de rota por quantidade mínima de itens. Mercados indicados explicitamente nunca são alterados.",
-        "nl": "Ontwikkelversie met automatische winkelkoppen en routeconsolidatie op basis van een minimumaantal artikelen. Expliciet opgegeven winkels blijven altijd ongewijzigd.",
-        "fr": "Aperçu de développement avec en-têtes automatiques de magasins et consolidation selon un nombre minimum d’articles. Les magasins explicitement indiqués ne sont jamais modifiés.",
-        "it": "Anteprima di sviluppo con intestazioni automatiche dei negozi e consolidamento in base a un numero minimo di articoli. I negozi indicati esplicitamente non vengono mai modificati.",
-        "es": "Vista previa con encabezados automáticos de tiendas y consolidación según un número mínimo de artículos. Las tiendas indicadas explícitamente nunca se modifican.",
-        "pl": "Wersja rozwojowa z automatycznymi nagłówkami sklepów i konsolidacją na podstawie minimalnej liczby artykułów. Jawnie wskazane sklepy nigdy nie są zmieniane.",
-        "uk": "Попередня версія з автоматичними заголовками магазинів і об’єднанням маршруту за мінімальною кількістю товарів. Явно вказані магазини ніколи не змінюються.",
-        "zh-cn": "开发预览版：自动商店标题，并按每个商店的最少商品数量合并路线。明确指定的商店永远不会被更改。"
       }
     },
     "extIcon": "https://raw.githubusercontent.com/RaviniZib/ioBroker.shoppingroute/main/admin/shoppingroute.png",
