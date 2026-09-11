@@ -1,0 +1,108 @@
+name: Prepare 0.3.8 Fix
+
+on:
+  push:
+    branches:
+      - fix-0.3.8-review-shopping-ui
+
+permissions:
+  contents: write
+
+jobs:
+  prepare-and-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v7
+        with:
+          ref: fix-0.3.8-review-shopping-ui
+          fetch-depth: 0
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24.x
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Apply deterministic fixes
+        run: node scripts/prepare-0.3.8-fix.js
+
+      - name: Lint and typecheck
+        run: npm run lint
+
+      - name: Build Admin and runtime
+        run: npm run build
+
+      - name: Update intentional bundle hashes
+        run: node scripts/update-0.3.8-build-hashes.js
+
+      - name: Run full regression suite
+        run: node --test test/*.test.js
+
+      - name: Verify no ioBroker object definitions changed
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const { execFileSync } = require('node:child_process');
+          const before = JSON.parse(execFileSync('git', ['show', 'v0.3.7:io-package.json'], { encoding: 'utf8' }));
+          const after = JSON.parse(fs.readFileSync('io-package.json', 'utf8'));
+          const keys = ['instanceObjects'];
+          for (const key of keys) {
+            if (JSON.stringify(before[key]) !== JSON.stringify(after[key])) {
+              throw new Error(`${key} changed unexpectedly compared with v0.3.7`);
+            }
+          }
+          console.log('io-package instanceObjects unchanged from v0.3.7.');
+          NODE
+
+      - name: Production dependency audit
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Package dry run
+        run: npm pack --dry-run
+
+      - name: Remove one-off preparation files before checker
+        run: |
+          git rm scripts/prepare-0.3.8-fix.js
+          git rm scripts/update-0.3.8-build-hashes.js
+          git rm .github/workflows/prepare-0.3.8-fix.yml
+
+      - name: Run current official ioBroker repository checker locally
+        shell: bash
+        run: |
+          set -o pipefail
+          npx --yes @iobroker/repochecker@latest https://github.com/RaviniZib/ioBroker.shoppingroute --local 2>&1 | tee repochecker.log
+          node <<'NODE'
+          const fs = require('node:fs');
+          const text = fs.readFileSync('repochecker.log', 'utf8');
+          const codes = [...new Set([...text.matchAll(/\b([EWS]\d{4})\b/g)].map(match => match[1]))].sort();
+          const allowed = new Set(['W4001']);
+          const unexpected = codes.filter(code => !allowed.has(code));
+          console.log(`Repository checker codes: ${codes.join(', ') || 'none'}`);
+          if (unexpected.length) {
+            throw new Error(`Unexpected repository checker findings: ${unexpected.join(', ')}`);
+          }
+          NODE
+          rm repochecker.log
+
+      - name: Verify working tree
+        run: |
+          git diff --check
+          git status --short
+
+      - name: Commit verified fix
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git commit -m "Fix review status and shopping list presentation"
+          git push origin HEAD:fix-0.3.8-review-shopping-ui
