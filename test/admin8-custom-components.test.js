@@ -47,6 +47,7 @@ test('every jsonConfig custom component declares GUI API 2 without deprecated bu
         [
             'custom/markets/marketsEditor.js',
             'custom/productGroups/productGroupsEditor.js',
+            'custom/review/reviewEditor.js',
             'custom/routeEditor.js',
             'custom/shoppingList/shoppingListEditor.js',
         ],
@@ -68,6 +69,7 @@ test('every custom component Vite build enables a Module Federation manifest wit
         ['vite.config.mjs', 'admin/custom'],
         ['vite.markets.config.mjs', 'admin/custom/markets'],
         ['vite.product-groups.config.mjs', 'admin/custom/productGroups'],
+        ['vite.review.config.mjs', 'admin/custom/review'],
         ['vite.shopping-list.config.mjs', 'admin/custom/shoppingList'],
     ];
 

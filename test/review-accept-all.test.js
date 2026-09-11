@@ -7,66 +7,55 @@ const path = require('node:path');
 
 const root = path.join(__dirname, '..');
 const config = JSON.parse(fs.readFileSync(path.join(root, 'admin/jsonConfig.json'), 'utf8'));
-const main = fs.readFileSync(path.join(root, 'src/main.ts'), 'utf8');
-const { markAllReviewItemsAccept } = require('../build/lib/review-tools');
+const { ReviewEditorModel: model } = require('../src-admin/review-editor');
 
-test('Review accept-all updates only reviewItems in the unsaved Admin draft via useNative', () => {
-    const button = config.items.reviewTab.items.reviewAcceptAll;
-    assert.equal(button.command, 'markAllReviewItemsAccept');
-    assert.match(button.jsonData, /JSON\.stringify\(data\)/);
-    assert.equal(button.useNative, true);
-    const actionColumn = config.items.reviewTab.items.reviewItems.items.find(item => item.attr === 'action');
-    assert.ok(actionColumn.options.some(option => option.value === 'accepted'));
-
-    const handler = main.slice(
-        main.indexOf("if (obj.command === 'markAllReviewItemsAccept')"),
-        main.indexOf("if (obj.command === 'normalizeMarketSelection')"),
-    );
-    assert.match(handler, /markAllReviewItemsAccept\(rows\)/);
-    assert.match(handler, /native:\s*{\s*\.\.\.supplied,\s*reviewItems:\s*updatedReviewItems/);
-    assert.doesNotMatch(handler, /command:\s*'refresh'/);
-    assert.doesNotMatch(handler, /fullRefresh/);
-    assert.match(handler, /\.\.\.supplied/);
+test('review uses a direct Admin draft editor instead of sendTo/useNative', () => {
+    const review = config.items.reviewTab.items;
+    assert.equal(review.reviewAcceptAll, undefined);
+    assert.equal(review.reviewEditor.type, 'custom');
+    assert.equal(review.reviewEditor.url, 'custom/review/reviewEditor.js');
+    assert.equal(review.reviewEditor.name, 'ShoppingRouteReviewSet/Components/ReviewEditor');
+    assert.equal(review.reviewEditor.guiApi, 2);
+    assert.equal(review.reviewItems.hidden, 'true');
 });
 
-test('Review accept-all preserves every row field and sets all returned actions to accept', () => {
-    const rows = [
-        {
-            product: 'Milch',
-            text: '2 Milch ALDI',
+test('accept immediately updates the catalogue and visible status in the same Admin draft', () => {
+    const data = {
+        products: [],
+        reviewItems: [{
+            key: 'schmelzkaese',
+            product: 'Schmelzkäse',
+            text: 'Schmelzkäse',
+            guessedCategory: 'Milchprodukte',
             category: 'Milchprodukte',
-            defaultMarket: 'ALDI',
-            availableMarkets: ['ALDI', 'LIDL'],
-            aliases: 'Vollmilch',
-            action: 'pending',
-            customField: 'bleibt erhalten',
-        },
-        {
-            product: 'Hammer',
-            text: 'Hammer BAUMARKT',
-            category: 'Werkzeug',
-            defaultMarket: 'BAUMARKT',
-            availableMarkets: 'BAUMARKT',
+            defaultMarket: 'LIDL',
+            availableMarkets: ['LIDL', 'REWE'],
             aliases: '',
-            action: 'ignore',
-        },
-    ];
-
-    const updatedReviewItems = markAllReviewItemsAccept(rows);
-
-    assert.deepEqual(updatedReviewItems, [
-        { ...rows[0], availableMarkets: 'ALDI,LIDL', action: 'accept' },
-        { ...rows[1], availableMarkets: 'BAUMARKT', action: 'accept' },
-    ]);
-    assert.ok(updatedReviewItems.every(item => item.action === 'accept'));
-    assert.equal(updatedReviewItems[0].customField, 'bleibt erhalten');
+            action: 'pending',
+        }],
+    };
+    const result = model.acceptReviewRows(data, [0]);
+    assert.equal(result.reviewItems[0].action, 'accepted');
+    assert.equal(result.reviewItems[0].availableMarkets, 'LIDL,REWE');
+    assert.deepEqual(result.products, [{
+        name: 'Schmelzkäse',
+        aliases: '',
+        category: 'Milchprodukte',
+        defaultMarket: 'LIDL',
+        availableMarkets: 'LIDL,REWE',
+    }]);
+    assert.equal(data.reviewItems[0].action, 'pending', 'source draft remains immutable');
 });
 
-test('direct apply journal is persistent and old buffered rollback is gone', () => {
-    const ioPackage = JSON.parse(fs.readFileSync(path.join(root, 'io-package.json'), 'utf8'));
-    assert.ok(ioPackage.instanceObjects.some(obj => obj._id === 'info.sortTransaction'));
-    assert.match(main, /applyDirectSort/);
-    assert.match(main, /persistDirectJournal/);
-    assert.match(main, /recoverDirectApplyJournal/);
-    assert.doesNotMatch(main, /createBufferedSortProgram|rollbackBufferedTransaction/);
+test('accepting an already-known article updates it without creating a duplicate', () => {
+    const data = {
+        products: [{ name: 'Zucchini', aliases: '', category: 'Sonstiges', defaultMarket: '', availableMarkets: '' }],
+        reviewItems: [{ product: 'Zucchini', category: 'Obst/Gemüse', defaultMarket: 'LIDL', availableMarkets: 'LIDL', aliases: 'Zucchino', action: 'pending' }],
+    };
+    const result = model.acceptReviewRows(data, [0]);
+    assert.equal(result.products.length, 1);
+    assert.equal(result.products[0].category, 'Obst/Gemüse');
+    assert.equal(result.products[0].defaultMarket, 'LIDL');
+    assert.equal(result.products[0].aliases, 'Zucchino');
+    assert.equal(result.reviewItems[0].action, 'accepted');
 });

@@ -24,7 +24,14 @@ function parseSortPrefix(text) {
     return { number, originalText };
 }
 function stripSortPrefix(text) {
-    return parseSortPrefix(text)?.originalText ?? String(text || '').trim();
+    let value = String(text || '').trim();
+    for (let depth = 0; depth < 16; depth++) {
+        const parsed = parseSortPrefix(value);
+        if (!parsed)
+            break;
+        value = parsed.originalText;
+    }
+    return value;
 }
 function formatSortPrefix(number, originalText) {
     if (!Number.isInteger(number) || number < 0 || number > 99) {

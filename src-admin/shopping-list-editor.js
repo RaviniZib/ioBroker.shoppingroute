@@ -10,77 +10,74 @@ const text = (de, en) => {
     return language.startsWith('de') ? de : en;
 };
 
+const keyOf = value =>
+    String(value || '')
+        .trim()
+        .toLocaleLowerCase('de');
+
+function stripVisiblePrefix(value) {
+    let result = String(value || '').trim();
+    for (let depth = 0; depth < 16; depth++) {
+        const match = result.match(/^(?:\d{2}>|\[\d{2}\])\s+(.+)$/s);
+        if (!match?.[1]) {
+            break;
+        }
+        result = String(match[1]).trim();
+    }
+    return result;
+}
+
+function headerMarket(value, markets) {
+    const visible = stripVisiblePrefix(value);
+    const patterns = [/^═{5}\s+(.+?)\s+═{5}$/, /^\*\*\*\*\s+(.+?)\s+\*\*\*\*$/, /^[—–-]{1,5}\s+(.+?)\s+[—–-]{1,5}$/];
+    let candidate = '';
+    for (const pattern of patterns) {
+        const match = visible.match(pattern);
+        if (match?.[1]) {
+            candidate = String(match[1]).trim();
+            break;
+        }
+    }
+    if (!candidate) {
+        return '';
+    }
+    return (Array.isArray(markets) ? markets : []).find(market => keyOf(market) === keyOf(candidate)) || '';
+}
+
+function visibleItems(view) {
+    const markets = Array.isArray(view?.markets) ? view.markets : [];
+    return (Array.isArray(view?.items) ? view.items : [])
+        .filter(item => item?.id && !headerMarket(item.text, markets))
+        .map(item => ({ ...item, text: stripVisiblePrefix(item.text) }));
+}
+
 const responsiveStyles = `
-    .shoppingroute-list-toolbar {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        align-items: center;
-        margin-bottom: 14px;
-    }
-    .shoppingroute-list-toolbar select,
-    .shoppingroute-list-toolbar button,
-    .shoppingroute-card select {
-        min-height: 38px;
-        box-sizing: border-box;
-    }
-    .shoppingroute-market-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        gap: 12px;
-        align-items: start;
-    }
-    .shoppingroute-market-column {
-        min-width: 0;
-        border: 1px solid currentColor;
-        border-radius: 8px;
-        padding: 10px;
-        opacity: 0.94;
-    }
-    .shoppingroute-card {
-        border: 1px solid currentColor;
-        border-radius: 6px;
-        padding: 9px;
-        margin: 8px 0;
-        background: rgba(127, 127, 127, 0.08);
-        cursor: grab;
-    }
-    .shoppingroute-card-controls {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-        margin-top: 8px;
-        align-items: center;
-    }
-    .shoppingroute-card-controls select {
-        min-width: 0;
-        flex: 1 1 130px;
-    }
-    .shoppingroute-list-button {
-        min-width: 38px;
-        min-height: 34px;
-        border: 1px solid currentColor;
-        border-radius: 4px;
-        background: transparent;
-        color: inherit;
-        cursor: pointer;
-    }
-    .shoppingroute-list-button:disabled {
-        cursor: default;
-        opacity: 0.4;
-    }
-    @media (max-width: 600px) {
-        .shoppingroute-market-grid {
-            grid-template-columns: 1fr;
-        }
-        .shoppingroute-list-toolbar > * {
-            width: 100%;
-            max-width: none;
-        }
-        .shoppingroute-card {
-            cursor: default;
-        }
-    }
+.shoppingroute-list-toolbar{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin-bottom:14px}
+.shoppingroute-list-toolbar select,.shoppingroute-list-toolbar button{min-height:36px;box-sizing:border-box}
+.shoppingroute-list-toolbar select{min-width:150px;padding:5px 8px}
+.shoppingroute-market-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;align-items:start}
+.shoppingroute-market-column{min-width:0;border:1px solid currentColor;border-radius:8px;overflow:hidden}
+.shoppingroute-market-title{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:9px 11px;font-weight:700;border-bottom:1px solid currentColor}
+.shoppingroute-market-count{font-size:.82rem;opacity:.65;font-weight:500}
+.shoppingroute-item-list{display:flex;flex-direction:column}
+.shoppingroute-item-row{display:grid;grid-template-columns:20px minmax(0,1fr) auto;gap:8px;align-items:center;padding:7px 9px;border-bottom:1px solid currentColor}
+.shoppingroute-item-row:last-child{border-bottom:0}
+.shoppingroute-drag-handle{font-size:16px;opacity:.5;cursor:grab;user-select:none;text-align:center}
+.shoppingroute-item-name{font-weight:600;word-break:break-word}
+.shoppingroute-item-meta{font-size:.78rem;opacity:.62;margin-top:2px}
+.shoppingroute-item-actions{display:flex;gap:4px;align-items:center;justify-content:flex-end}
+.shoppingroute-list-button{min-width:30px;min-height:30px;padding:4px 8px;border:1px solid currentColor;border-radius:4px;background:transparent;color:inherit;cursor:pointer}
+.shoppingroute-list-button:disabled{cursor:default;opacity:.35}
+.shoppingroute-item-actions select{min-width:92px;max-width:125px;min-height:30px;border:1px solid currentColor;border-radius:4px;background:transparent;color:inherit;padding:3px 5px}
+.shoppingroute-empty{opacity:.58;padding:18px 11px;text-align:center}
+@media (max-width: 600px) {
+ .shoppingroute-market-grid{grid-template-columns:1fr}
+ .shoppingroute-list-toolbar>*{width:100%;max-width:none}
+ .shoppingroute-item-row{grid-template-columns:18px minmax(0,1fr)}
+ .shoppingroute-item-actions{grid-column:2;justify-content:flex-start;flex-wrap:wrap;margin-top:3px}
+ .shoppingroute-item-actions select{flex:1 1 120px;max-width:none}
+ .shoppingroute-drag-handle{cursor:default}
+}
 `;
 
 class ShoppingListEditor extends React.Component {
@@ -179,28 +176,39 @@ class ShoppingListEditor extends React.Component {
         }
     }
 
-    renderCard(item, marketItems, index, view) {
+    renderRow(item, marketItems, index, view, allItems) {
         const busy = Boolean(this.state.busy);
         return h(
             'div',
             {
                 key: item.id,
-                className: 'shoppingroute-card',
+                className: 'shoppingroute-item-row',
                 draggable: !busy,
                 onDragStart: event => this.onDragStart(event, item.id),
                 onDragOver: event => event.preventDefault(),
                 onDrop: event => this.onDrop(event, item.market, index),
-                title: text('Ziehen oder die Schaltflächen benutzen', 'Drag or use the buttons'),
             },
             [
-                h('div', { key: 'text', style: { fontWeight: 600, wordBreak: 'break-word' } }, item.text),
                 h(
                     'div',
-                    { key: 'meta', style: { fontSize: '0.82rem', opacity: 0.72, marginTop: '3px' } },
-                    (item.category || text('Ohne Produktgruppe', 'No product group')) +
-                        (item.manual ? ` · ${text('manuell', 'manual')}` : ''),
+                    {
+                        key: 'drag',
+                        className: 'shoppingroute-drag-handle',
+                        title: text('Ziehen', 'Drag'),
+                        'aria-hidden': true,
+                    },
+                    '⋮⋮',
                 ),
-                h('div', { key: 'controls', className: 'shoppingroute-card-controls' }, [
+                h('div', { key: 'main' }, [
+                    h('div', { key: 'name', className: 'shoppingroute-item-name' }, stripVisiblePrefix(item.text)),
+                    item.category || item.manual
+                        ? h('div', { key: 'meta', className: 'shoppingroute-item-meta' }, [
+                              item.category || text('Ohne Produktgruppe', 'No product group'),
+                              item.manual ? ` · ${text('manuell', 'manual')}` : '',
+                          ])
+                        : null,
+                ]),
+                h('div', { key: 'actions', className: 'shoppingroute-item-actions' }, [
                     h(
                         'button',
                         {
@@ -231,10 +239,11 @@ class ShoppingListEditor extends React.Component {
                             key: 'market',
                             value: item.market,
                             disabled: busy,
+                            title: text('Markt wechseln', 'Change market'),
                             'aria-label': text('In einen anderen Markt verschieben', 'Move to another market'),
                             onChange: event => {
                                 const target = event.target.value;
-                                const count = view.items.filter(
+                                const count = allItems.filter(
                                     entry => entry.market === target && entry.id !== item.id,
                                 ).length;
                                 void this.move(item.id, target, count);
@@ -252,14 +261,14 @@ class ShoppingListEditor extends React.Component {
         const busy = Boolean(this.state.busy);
         const children = [h('style', { key: 'styles' }, responsiveStyles)];
         children.push(
-            h('div', { key: 'intro', style: { marginBottom: '12px', lineHeight: 1.45 } }, [
+            h('div', { key: 'intro', style: { marginBottom: '12px', lineHeight: 1.4 } }, [
                 h('strong', { key: 'title' }, text('Aktuelle Einkaufsliste', 'Current shopping list')),
                 h(
                     'div',
-                    { key: 'hint', style: { opacity: 0.75, marginTop: '3px' } },
+                    { key: 'hint', style: { opacity: 0.7, marginTop: '3px' } },
                     text(
-                        'Artikel können gezogen oder mit Pfeilen und Marktauswahl verschoben werden. Änderungen werden direkt in Alexa bestätigt.',
-                        'Items can be dragged or moved with the arrows and market selector. Changes are confirmed directly in Alexa.',
+                        'Ziehen verschiebt Artikel direkt. Pfeile und Marktauswahl sind die einfache Alternative für Maus und Handy.',
+                        'Drag items directly. Arrows and the market selector are the simple alternative for mouse and phone.',
                     ),
                 ),
             ]),
@@ -285,6 +294,8 @@ class ShoppingListEditor extends React.Component {
             children.push(h('div', { key: 'loading' }, text('Liste wird geladen …', 'Loading list …')));
             return h('div', { style: { width: '100%' } }, children);
         }
+
+        const items = visibleItems(view);
         children.push(
             h('div', { key: 'toolbar', className: 'shoppingroute-list-toolbar' }, [
                 h(
@@ -329,23 +340,46 @@ class ShoppingListEditor extends React.Component {
                     : null,
             ]),
         );
-        const columns = view.markets.map(market => {
-            const items = view.items.filter(item => item.market === market);
+
+        const visibleMarkets = view.markets.filter(market => items.some(item => item.market === market));
+        if (!visibleMarkets.length) {
+            children.push(
+                h(
+                    'div',
+                    { key: 'empty-list', style: { opacity: 0.7, padding: '16px 0' } },
+                    text('Die Einkaufsliste ist leer.', 'The shopping list is empty.'),
+                ),
+            );
+            return h('div', { style: { width: '100%' } }, children);
+        }
+        const columns = visibleMarkets.map(market => {
+            const marketItems = items.filter(item => item.market === market);
             return h(
                 'section',
                 {
                     key: market,
                     className: 'shoppingroute-market-column',
                     onDragOver: event => event.preventDefault(),
-                    onDrop: event => this.onDrop(event, market, items.length),
+                    onDrop: event => this.onDrop(event, market, marketItems.length),
                 },
                 [
-                    h('h3', { key: 'title', style: { margin: '0 0 6px' } }, `${market} (${items.length})`),
-                    items.length
-                        ? items.map((item, index) => this.renderCard(item, items, index, view))
+                    h('div', { key: 'title', className: 'shoppingroute-market-title' }, [
+                        h('span', { key: 'name' }, market),
+                        h(
+                            'span',
+                            { key: 'count', className: 'shoppingroute-market-count' },
+                            String(marketItems.length),
+                        ),
+                    ]),
+                    marketItems.length
+                        ? h(
+                              'div',
+                              { key: 'items', className: 'shoppingroute-item-list' },
+                              marketItems.map((item, index) => this.renderRow(item, marketItems, index, view, items)),
+                          )
                         : h(
                               'div',
-                              { key: 'empty', style: { opacity: 0.62, padding: '12px 0' } },
+                              { key: 'empty', className: 'shoppingroute-empty' },
                               text('Hierher ziehen', 'Drop here'),
                           ),
                 ],
@@ -356,4 +390,8 @@ class ShoppingListEditor extends React.Component {
     }
 }
 
-module.exports = { Components: { ShoppingListEditor }, ShoppingListEditor };
+module.exports = {
+    Components: { ShoppingListEditor },
+    ShoppingListEditorModel: { stripVisiblePrefix, headerMarket, visibleItems },
+    ShoppingListEditor,
+};

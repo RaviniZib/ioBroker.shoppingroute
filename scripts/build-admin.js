@@ -29,6 +29,12 @@ const builds = [
         remoteEntry: 'marketsEditor.js',
     },
     {
+        config: 'vite.review.config.mjs',
+        directory: 'review',
+        name: 'ShoppingRouteReviewSet',
+        remoteEntry: 'reviewEditor.js',
+    },
+    {
         config: 'vite.shopping-list.config.mjs',
         directory: 'shoppingList',
         name: 'ShoppingRouteShoppingListSet',

@@ -116,7 +116,7 @@ test('native Admin tabs share the phase-one visual hierarchy',()=>{
   for(const key of ['marketSectionDivider','apiDivider']) assert.equal(general[key].type,'divider',key);
   assert.equal(general.apiWarning.type,'infoBox');
   assert.equal(general.apiWarning.boxType,'warning');
-  assert.equal(jsonConfig.items.reviewTab.items.reviewAcceptAll.variant,'outlined');
+  assert.equal(jsonConfig.items.reviewTab.items.reviewEditor.type,'custom');
   assert.equal(jsonConfig.items.transferTab.items.backupTransfer.variant,'contained');
   assert.equal(jsonConfig.items.transferTab.items.backupTransfer.md,6);
 });
@@ -144,7 +144,7 @@ test('phase-one styling preserves the functional JSON config outside the migrate
   ]));
   const hash=crypto.createHash('sha256').update(JSON.stringify(projection)).digest('hex');
 
-  assert.equal(hash,'cd07bb3ff1c703b45024eaf754da5264d2b6c0541c6a24f3156688478dc3d795');
+  assert.equal(hash,'c1f8de63c70abc927790b0ecfeb4ad26a978c329a21757c5e68293ce80ac3fb4');
   const routeHash=crypto.createHash('sha256').update(JSON.stringify(jsonConfig.items.routesTab)).digest('hex');
   assert.equal(routeHash,'8bb35e144be68a1953ee81a22aa94a445162715354c73eb99e4119747c18c518');
 });
@@ -325,19 +325,20 @@ test('unsaved markets and product groups are fed into the real product and revie
 
   const review=jsonConfig.items.reviewTab.items;
   assert.equal(review._reviewEditorRows,undefined);
-  assert.notEqual(review.reviewItems.hidden,'true');
+  assert.equal(review.reviewEditor.type,'custom');
+  assert.equal(review.reviewEditor.url,'custom/review/reviewEditor.js');
+  assert.equal(review.reviewEditor.name,'ShoppingRouteReviewSet/Components/ReviewEditor');
+  assert.equal(review.reviewEditor.guiApi,2);
+  assert.equal(review.reviewItems.hidden,'true');
   const rAlternatives=review.reviewItems.items.find(x=>x.attr==='availableMarkets');
   assert.equal(rAlternatives.multiple,true);
   assert.equal(rAlternatives.defaultSendTo,'normalizeMarketSelection');
   assert.match(rAlternatives.jsonData,/globalData\.markets/);
+  assert.ok(fs.existsSync(path.join(root,'src-admin','review-editor.js')));
+  const reviewSource=fs.readFileSync(path.join(root,'src-admin','review-editor.js'),'utf8');
+  assert.match(reviewSource,/acceptReviewRows/);
+  assert.match(reviewSource,/action: 'accepted'/);
 
-  const reviewCalc=new Function('data',`return ${review.reviewItems.onChange.calculateFunc}`);
-  const serializedReviews=reviewCalc({
-    reviewItems:[{product:'Milch',availableMarkets:['REWE','LIDL']}],
-  });
-  assert.equal(serializedReviews[0].availableMarkets,'REWE,LIDL');
-
-  assert.match(review.reviewAcceptAll.jsonData,/JSON\.stringify\(data\)/);
   const source=fs.readFileSync(path.join(root,'src','main.ts'),'utf8');
   assert.match(source,/normalizeMarketSelection/);
 });
@@ -377,7 +378,7 @@ test('Alexa list discovery scans actual list objects instead of configured names
 test('ioBroker checker metadata is present',()=>{
   const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
   assert.ok(pkg.keywords.includes('ioBroker'));
-  assert.equal(pkg.devDependencies['@iobroker/testing'],'^5.2.2');
+  assert.equal(pkg.devDependencies['@iobroker/testing'],'^6.1.0');
   assert.equal(ioPackage.common.type,'logic');
   assert.equal(ioPackage.common.tier,3);
   assert.ok(ioPackage.common.extIcon);
