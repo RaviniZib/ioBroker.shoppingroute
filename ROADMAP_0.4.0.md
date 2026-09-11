@@ -12,7 +12,7 @@ Diese Datei sammelt verbindlich vorgesehene Änderungen für Version 0.4.0. Ein 
 
 In der Prüfliste werden die verfügbaren Märkte als Mehrfachauswahl angezeigt. Zusätzlich ausgewählte Märkte werden jedoch nicht zuverlässig übernommen beziehungsweise gespeichert. Dadurch landet ein übernommener Artikel nicht mit allen ausgewählten Märkten im Artikelstamm.
 
-### Vermutete Ursache
+### Bestätigte Ursache
 
 Die Admin-Konfiguration wandelt `availableMarkets` während einer Tabellenänderung von einem Array in einen kommagetrennten String um. Die Mehrfachauswahl arbeitet dagegen mit einem Array. Diese Typänderung während der Bedienung kann bereits gewählte Märkte verwerfen. Auch die Funktion „Alle übernehmen“ serialisiert Arrays derzeit zu Strings.
 
@@ -46,3 +46,48 @@ Die Admin-Konfiguration wandelt `availableMarkets` während einer Tabellenänder
 - `markAllReviewItemsAccept` erhält Arrays und normalisiert Legacy-Strings zu Arrays.
 - `applyReviewActions` übernimmt alle Märkte ohne Typwechsel.
 - Artikelliste und Prüfliste verwenden denselben Normalisierungspfad.
+
+## Offener Fehler: Übernommene Prüflistenzeile bleibt nach dem Speichern stehen
+
+**Status:** offen, Release-Blocker für 0.4.0  
+**Gemeldet:** 2026-09-12  
+**Betroffen:** Prüfliste und Verarbeitung beim Adapterstart
+
+### Bestätigtes Fehlerbild
+
+Der neue Prüflisten-Editor übernimmt den Artikel sofort in den Artikelstamm und zeigt danach den Status „Übernommen“. Nach dem Speichern und Adapterneustart bleibt dieselbe Zeile jedoch weiterhin in der Prüfliste.
+
+### Bestätigte Ursache
+
+Der Admin-Editor setzt den Status auf `accepted`. Die Startverarbeitung `applyReviewActions` verarbeitet und entfernt ausschließlich Zeilen mit `action === "accept"`. Deshalb wird der bereits übernommene Eintrag nach dem Neustart nicht aus `reviewItems` entfernt.
+
+### Ziel für 0.4.0
+
+- Für den gesamten Ablauf gilt ein eindeutiges Statusmodell.
+- `accept` löst die Übernahme aus.
+- `accepted` darf höchstens ein kurzfristiger UI-Bestätigungsstatus sein und muss beim Speichern zuverlässig entfernt oder serverseitig als bereits übernommen bereinigt werden.
+- Eine Zeile darf nach erfolgreicher Übernahme weder erneut verarbeitet noch nach einem Neustart wieder angezeigt werden.
+- Der Artikel darf im Artikelstamm nur einmal vorhanden sein.
+
+### Verbindliche Release-Sperre
+
+Version 0.4.0 darf erst veröffentlicht werden, wenn der vollständige reale Ablauf nachweislich funktioniert:
+
+1. Unbekannten Artikel in der Prüfliste bearbeiten.
+2. Mehrere verfügbare Märkte auswählen.
+3. „Übernehmen“ wählen.
+4. Prüfen, dass der Artikel sofort korrekt im Artikelstamm erscheint.
+5. Speichern.
+6. Vollständigen Adapterneustart abwarten.
+7. Admin-Seite neu laden.
+8. Prüfen, dass die Zeile aus der Prüfliste verschwunden ist.
+9. Prüfen, dass der Artikel exakt einmal und mit allen ausgewählten Märkten im Artikelstamm steht.
+10. Adapterkonfiguration direkt kontrollieren: kein zurückgebliebener `accepted`-Eintrag in `reviewItems`.
+
+### Automatische Regressionstests
+
+- `accept` wird verarbeitet, in den Artikelstamm übernommen und aus der Prüfliste entfernt.
+- Ein vom Editor erzeugtes `accepted` bleibt nach Speichern und Neustart nicht in der Prüfliste.
+- Bereits übernommene Artikel werden nicht dupliziert.
+- Der Test bildet den vollständigen Zyklus Editor → Speichern → Adapterstart → persistierte Konfiguration ab.
+- Der Release-Prozess muss bei einem Fehlschlag dieses Zyklustests abbrechen.
