@@ -25,6 +25,18 @@ const write = (file, content) => fs.writeFileSync(path.join(root, file), content
     write(file, `${JSON.stringify(pkg, null, 2)}\n`);
 }
 
+// Keep the metadata regression test aligned with the checker-required dependency.
+{
+    const file = 'test/admin-config.test.js';
+    let source = read(file);
+    const oldValue = "assert.equal(pkg.devDependencies['@iobroker/testing'],'^5.2.2');";
+    if (!source.includes(oldValue)) {
+        throw new Error('Old @iobroker/testing regression pin not found');
+    }
+    source = source.replace(oldValue, "assert.equal(pkg.devDependencies['@iobroker/testing'],'^6.1.0');");
+    write(file, source);
+}
+
 // Adopt current check action and recommended Node matrix, including Node 26.
 {
     const file = '.github/workflows/test-and-release.yml';
