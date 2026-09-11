@@ -1,0 +1,52 @@
+name: Validate 0.3.7 development
+
+on:
+  push:
+    branches:
+      - develop-0.3.7
+  workflow_dispatch:
+
+concurrency:
+  group: validate-037-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  local-build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - name: Ensure Module Federation diagnostics are not generated
+        shell: bash
+        run: test ! -d .mf
+
+  iobroker-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ioBroker/testing-action-check@v1
+        with:
+          node-version: '22.x'
+          lint: true
+
+  adapter-tests:
+    needs: [local-build-test, iobroker-check]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [22.x, 24.x]
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: ioBroker/testing-action-adapter@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+          os: ${{ matrix.os }}
