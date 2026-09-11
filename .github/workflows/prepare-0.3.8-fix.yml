@@ -28,10 +28,12 @@ jobs:
         run: npm ci
 
       - name: Apply deterministic fixes
-        run: node scripts/prepare-0.3.8-fix.js
+        run: |
+          node scripts/prepare-0.3.8-fix.js
+          node scripts/prepare-0.3.8-architecture.js
 
       - name: Format new Admin components with project ESLint
-        run: npx eslint src-admin/review-editor.js src-admin/shopping-list-editor.js --fix
+        run: npx eslint src-admin/review-editor.js src-admin/shopping-list-editor.js scripts/prepare-0.3.8-architecture.js --fix
 
       - name: Lint and typecheck
         run: npm run lint
@@ -71,6 +73,7 @@ jobs:
       - name: Remove one-off preparation files before checker
         run: |
           git rm scripts/prepare-0.3.8-fix.js
+          git rm scripts/prepare-0.3.8-architecture.js
           git rm scripts/update-0.3.8-build-hashes.js
           git rm .github/workflows/prepare-0.3.8-fix.yml
 
