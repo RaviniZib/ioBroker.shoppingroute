@@ -137,7 +137,7 @@ Optional preferred market for this product. A product-specific default market ha
 
 ### Available markets
 
-Multiple possible markets can be entered, separated by commas or semicolons, for example:
+Multiple possible markets are selected through the multi-select control. ShoppingRoute stores the selection as an array. Older comma- or semicolon-separated configuration strings are accepted and normalised at startup, for example:
 
 ```text
 ALDI, REWE, LIDL
@@ -223,6 +223,16 @@ Available actions are:
 - **Ignore**
 
 When an item is accepted, it is added to the product catalogue or an already known product is updated.
+
+After a normal save, an accepted entry disappears from the review queue and is available on the **Products** tab. **Ignore** removes the entry without adding it to the catalogue.
+
+### Current shopping list in Admin
+
+The current shopping list is shown as a single-column sequence of market sections. Items can be moved by drag and drop, with the arrow buttons, or with the market selector. **Reset manual order** removes these manual overrides.
+
+Entries formatted as `═════ MARKET ═════` and supported legacy heading formats are hidden from the item list. Recognition is structural, so an unknown or misspelled label such as `═════ DROGERIEMART ═════` is filtered as well.
+
+If a market no longer contains active items, its managed heading is removed from the Alexa shopping list during the next sorting run. Use **Sort now** to trigger that run when needed.
 
 ## 14. Alias suggestions
 

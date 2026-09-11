@@ -41,7 +41,7 @@ function headerMarket(value, markets) {
     if (!candidate) {
         return '';
     }
-    return (Array.isArray(markets) ? markets : []).find(market => keyOf(market) === keyOf(candidate)) || '';
+    return (Array.isArray(markets) ? markets : []).find(market => keyOf(market) === keyOf(candidate)) || candidate;
 }
 
 function visibleItems(view) {
@@ -55,7 +55,7 @@ const responsiveStyles = `
 .shoppingroute-list-toolbar{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin-bottom:14px}
 .shoppingroute-list-toolbar select,.shoppingroute-list-toolbar button{min-height:36px;box-sizing:border-box}
 .shoppingroute-list-toolbar select{min-width:150px;padding:5px 8px}
-.shoppingroute-market-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;align-items:start}
+.shoppingroute-market-grid{display:flex;flex-direction:column;gap:0}
 .shoppingroute-market-column{min-width:0;border:1px solid currentColor;border-radius:8px;overflow:hidden}
 .shoppingroute-market-title{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:9px 11px;font-weight:700;border-bottom:1px solid currentColor}
 .shoppingroute-market-count{font-size:.82rem;opacity:.65;font-weight:500}
@@ -71,7 +71,6 @@ const responsiveStyles = `
 .shoppingroute-item-actions select{min-width:92px;max-width:125px;min-height:30px;border:1px solid currentColor;border-radius:4px;background:transparent;color:inherit;padding:3px 5px}
 .shoppingroute-empty{opacity:.58;padding:18px 11px;text-align:center}
 @media (max-width: 600px) {
- .shoppingroute-market-grid{grid-template-columns:1fr}
  .shoppingroute-list-toolbar>*{width:100%;max-width:none}
  .shoppingroute-item-row{grid-template-columns:18px minmax(0,1fr)}
  .shoppingroute-item-actions{grid-column:2;justify-content:flex-start;flex-wrap:wrap;margin-top:3px}

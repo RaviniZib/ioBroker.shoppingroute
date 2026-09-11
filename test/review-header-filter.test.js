@@ -16,3 +16,12 @@ test('legacy short market headings never enter the review queue', () => {
     ], markets, [], 'LIDL');
     assert.deepEqual(unknown.map(entry => entry.product), ['Schmelzkäse']);
 });
+
+test('structural market headings are filtered even when their label is not configured', () => {
+    const unknown = collectUnknownItems([
+        item('h1', '15> ═════ DROGERIEMART ═════'),
+        item('h2', '49> ═════ DROGERIEMARKT ═════'),
+        item('a', 'Weggummis'),
+    ], markets, [], 'LIDL');
+    assert.deepEqual(unknown.map(entry => entry.product), ['Weggummis']);
+});

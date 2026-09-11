@@ -91,6 +91,8 @@ function buildPrefixTargets(items, markets, routes, products, fallbackMarket, pr
             }
             continue;
         }
+        if ((0, market_plan_1.isMarketHeader)(text, markets))
+            continue;
         real.push({ ...item, value: text });
     }
     const manualById = new Map((0, manual_order_1.overridesForList)(manualOverrides, listName).map(entry => [entry.itemId, entry]));

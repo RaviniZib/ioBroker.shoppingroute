@@ -40,7 +40,14 @@ export function marketNameFromHeader(value: string, markets: MarketConfig[]): st
 }
 
 export function isMarketHeader(value: string, markets: MarketConfig[]): boolean {
-    return Boolean(marketNameFromHeader(value, markets));
+    const text = stripManagedPrefixes(value);
+    return Boolean(
+        text.match(HEADER_PATTERN) ||
+        text.match(STAR_HEADER_PATTERN) ||
+        text.match(DASH_HEADER_PATTERN) ||
+        text.match(SHORT_DASH_HEADER_PATTERN) ||
+        marketNameFromHeader(value, markets),
+    );
 }
 
 export function realActiveItems(list: AlexaListItem[], markets: MarketConfig[]): AlexaListItem[] {

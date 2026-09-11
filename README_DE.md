@@ -75,6 +75,11 @@ ShoppingRoute wird unter der **MIT-Lizenz** veröffentlicht. Frühere bereits ve
 
 ### 0.3.8 (2026-09-11)
 
+- „Verfügbare Märkte“ wird einheitlich als Mehrfachauswahl gespeichert; ältere Komma-/Semikolon-Strings werden weiterhin gelesen und beim Start in Arrays überführt.
+- Übernommene Prüflisteneinträge werden nach dem Speichern entfernt, nachdem der Artikelstamm aktualisiert wurde.
+- Die aktuelle Einkaufsliste wird als übersichtliche einspaltige Folge von Marktabschnitten dargestellt.
+- Formatierte Marktüberschriften werden anhand ihrer Struktur ausgefiltert, auch wenn der Marktname unbekannt oder vertippt ist (zum Beispiel `═════ DROGERIEMART ═════`).
+- Marktüberschriften ohne zugehörige aktive Artikel werden beim nächsten Sortierlauf aus der Alexa-Einkaufsliste gelöscht.
 - Prüfliste korrigiert: „Übernehmen“ aktualisiert Artikelstamm und sichtbaren Status jetzt sofort im selben Admin-Entwurf.
 - Alte Marktüberschriften wie `— LIDL —` werden sicher als Überschriften erkannt und können nicht mehr als Artikel oder Prüflisteneintrag erscheinen.
 - Verschachtelte interne Sortierpräfixe werden beim Parsen und in der Admin-Einkaufslistenanzeige rekursiv entfernt.
