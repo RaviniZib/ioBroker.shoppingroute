@@ -38,7 +38,12 @@ function marketNameFromHeader(value, markets) {
     return markets.find(market => market.enabled !== false && (0, parser_1.normalize)(market.name) === wanted)?.name;
 }
 function isMarketHeader(value, markets) {
-    return Boolean(marketNameFromHeader(value, markets));
+    const text = stripManagedPrefixes(value);
+    return Boolean(text.match(HEADER_PATTERN) ||
+        text.match(STAR_HEADER_PATTERN) ||
+        text.match(DASH_HEADER_PATTERN) ||
+        text.match(SHORT_DASH_HEADER_PATTERN) ||
+        marketNameFromHeader(value, markets));
 }
 function realActiveItems(list, markets) {
     return list.filter(item => item &&

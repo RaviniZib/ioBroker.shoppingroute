@@ -1,20 +1,21 @@
-# ShoppingRoute test report
+# ShoppingRoute 0.3.8 bug-fix and test report
 
-Version: **0.2.0**
+Date: **2026-09-11**
 
-Local source/unit verification in the build environment:
+## Corrected regressions
 
-- 38 source/unit tests passed
-- 46 official ioBroker package-file tests passed
-- 0 failed
-- JSON files parse successfully
-- Alexa2 selection is restricted to installed/enabled Alexa2 instances
-- Alexa-list dropdowns are populated from detected `Lists.*.json` objects
-- walking routes use a standalone native market dropdown plus a calculated one-market table; no custom Module Federation component is required
-- API protection is integrated into General settings
-- route synchronization still adds missing rows for new markets/product groups
-- Alexa safety test finds no Alexa2 item-state or automatic `completed` write path
-- ioBroker checker metadata tests cover type/tier/extIcon/testing dependency and centralized reusable Admin i18n variables
-- adapter-managed timers are used instead of plain global timers
+- Product catalogue: `availableMarkets` is normalised from legacy comma/semicolon strings to arrays so the market filter and multi-select values work consistently.
+- Review queue: accepting an entry updates the product catalogue and removes the processed review row after saving.
+- Current shopping list: market sections use a readable single-column layout instead of a responsive card grid.
+- Header filtering: current and legacy decorated headings are recognised structurally. A misspelled or no-longer-configured label such as `15> ═════ DROGERIEMART ═════` therefore cannot appear as a product or review entry.
+- Empty markets: orphaned known, legacy, unknown, or misspelled market headings are planned as deletes and removed from the Alexa shopping list on the next sorting run.
+- Build verification: TypeScript runs before the final Admin build so temporary Vite metadata cannot invalidate the package-output test.
 
-The full `npm test` and `npm run test:package` checks were executed successfully on the ioBroker development host. No custom Admin bundle is built; the Admin UI uses native JSON Config controls only.
+## Verification
+
+- `npm test`: **123 passed, 0 failed**
+- `npm run lint`: **passed**, including TypeScript `--noEmit`
+- `git diff --check`: **passed**
+- Dedicated regressions cover unknown/misspelled decorated headers in both runtime review collection and the Admin shopping-list view.
+- The generated runtime and Admin bundles were rebuilt from the changed sources.
+- Manual ioBroker verification confirmed the article catalogue and review queue fixes and the revised shopping-list presentation before repository integration.

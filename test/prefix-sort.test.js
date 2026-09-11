@@ -80,6 +80,22 @@ test('a legacy market heading is reused and renamed to the double-line format', 
     assert.deepEqual(plan.creates, []);
 });
 
+test('empty and unknown market headings are deleted instead of becoming shopping items', () => {
+    const list = [
+        item('h1', '15> ═════ LIDL ═════', 3),
+        item('h2', '49> ═════ DROGERIEMART ═════', 4),
+    ];
+    const desired = buildPrefixTargets(list, markets, routes, products, 'Ohne Markt', '', 1, true);
+    const plan = createPrefixSortPlan(list, desired);
+    assert.deepEqual(desired, []);
+    assert.deepEqual(plan.updates, []);
+    assert.deepEqual(plan.creates, []);
+    assert.deepEqual(plan.deletes, [
+        { id: 'h1', version: 3, value: '15> ═════ LIDL ═════' },
+        { id: 'h2', version: 4, value: '49> ═════ DROGERIEMART ═════' },
+    ]);
+});
+
 test('A: legacy list with 10 items and 3 markets becomes one evenly spaced total plan', () => {
     const list = [
         item('b', 'Bananen'), item('t', 'Tomaten'), item('m', 'Milch'), item('e', 'Eier'), item('c', 'Cola'),

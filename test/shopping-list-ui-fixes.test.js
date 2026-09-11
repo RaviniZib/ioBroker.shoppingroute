@@ -20,3 +20,15 @@ test('legacy short market headers never appear as shopping items', () => {
     assert.equal(model.headerMarket('14> — LIDL —', view.markets), 'LIDL');
     assert.deepEqual(model.visibleItems(view).map(item => item.text), ['Weggummis']);
 });
+
+test('structural market headers never appear when their label is misspelled or unknown', () => {
+    const view = {
+        markets: ['LIDL', 'REWE'],
+        items: [
+            { id: 'h', text: '15> ═════ DROGERIEMART ═════', market: 'LIDL' },
+            { id: 'a', text: '20> Veganes Hack', market: 'REWE' },
+        ],
+    };
+    assert.equal(model.headerMarket('15> ═════ DROGERIEMART ═════', view.markets), 'DROGERIEMART');
+    assert.deepEqual(model.visibleItems(view).map(item => item.text), ['Veganes Hack']);
+});

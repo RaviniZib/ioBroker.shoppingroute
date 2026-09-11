@@ -34,7 +34,7 @@
     "README_DE.md"
   ],
   "scripts": {
-    "build": "npm run build:admin && tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && npm run build:admin",
     "build:admin": "node scripts/build-admin.js",
     "check": "tsc -p tsconfig.json --noEmit",
     "test": "npm run build && node --test test/*.test.js",

@@ -135,7 +135,7 @@ Optionaler bevorzugter Markt dieses Artikels. Ein Artikel-Standardmarkt hat Vorr
 
 ### Verfügbare Märkte
 
-Mehrere mögliche Märkte können durch Komma oder Semikolon angegeben werden, zum Beispiel:
+Mehrere mögliche Märkte werden über die Mehrfachauswahl gewählt. Intern speichert ShoppingRoute diese Auswahl als Array. Ältere Konfigurationen mit Komma- oder Semikolon-Strings werden beim Start automatisch übernommen und vereinheitlicht, zum Beispiel:
 
 ```text
 ALDI, REWE, LIDL
@@ -211,6 +211,16 @@ Mögliche Aktionen:
 - **Ignorieren**
 
 Beim Übernehmen wird der Artikel in den Artikelstamm aufgenommen beziehungsweise ein bereits bekannter Artikel ergänzt.
+
+Nach dem normalen Speichern verschwindet ein übernommener Eintrag aus der Prüfliste. Er ist anschließend im Reiter **Artikel** zu finden. **Ignorieren** entfernt den Eintrag, ohne ihn in den Artikelstamm aufzunehmen.
+
+### Aktuelle Einkaufsliste im Admin
+
+Die aktuelle Einkaufsliste erscheint als einspaltige Folge von Marktabschnitten. Artikel lassen sich per Drag&Drop, mit den Pfeiltasten oder über die Marktauswahl verschieben. **Manuelle Reihenfolge zurücksetzen** entfernt diese manuellen Vorgaben.
+
+Einträge im Format `═════ MARKT ═════` und unterstützte ältere Überschriftenformate werden nicht als Artikel angezeigt. Entscheidend ist die Überschriftenstruktur; auch ein unbekannter oder vertippter Name wie `═════ DROGERIEMART ═════` wird ausgefiltert.
+
+Enthält ein Markt keine aktiven Artikel mehr, wird seine verwaltete Überschrift beim nächsten Sortierlauf auch aus der Alexa-Einkaufsliste entfernt. Der Lauf kann bei Bedarf über **Jetzt sortieren** ausgelöst werden.
 
 ## 14. Alias-Vorschläge
 

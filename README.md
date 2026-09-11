@@ -42,6 +42,11 @@ See `README_DE.md` for the detailed German documentation.
 
 ### 0.3.8 (2026-09-11)
 
+- “Available markets” is stored consistently as a multi-select array; legacy comma/semicolon strings remain readable and are migrated to arrays at startup.
+- Accepted review entries are removed after saving once the product catalogue has been updated.
+- The current shopping list is presented as a clear single-column sequence of market sections.
+- Structurally formatted market headings are filtered even when their label is unknown or misspelled (for example `═════ DROGERIEMART ═════`).
+- Market headings without associated active items are deleted from the Alexa shopping list during the next sorting run.
 - Fixed the review queue so accepting an item updates the article catalogue and visible status immediately in the same Admin draft.
 - Legacy market headings such as `— LIDL —` are recognized as headings and can no longer enter the shopping items or review queue.
 - Nested internal sort prefixes are stripped recursively from parsing and the Admin shopping-list display.

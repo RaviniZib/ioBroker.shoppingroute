@@ -4,7 +4,7 @@ import type {
     ProductConfig,
     RouteConfig,
 } from './model';
-import { formatMarketHeader, marketNameFromHeader, optimizeMarketAssignments } from './market-plan';
+import { formatMarketHeader, isMarketHeader, marketNameFromHeader, optimizeMarketAssignments } from './market-plan';
 import { overridesForList, type ManualItemOverride } from './manual-order';
 import { normalize } from './parser';
 
@@ -150,6 +150,7 @@ export function buildPrefixTargets(
             }
             continue;
         }
+        if (isMarketHeader(text, markets)) continue;
         real.push({ ...item, value: text });
     }
 
