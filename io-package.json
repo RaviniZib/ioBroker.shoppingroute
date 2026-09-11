@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "shoppingroute",
-    "version": "0.3.7",
+    "version": "0.3.8",
     "titleLang": {
       "en": "ShoppingRoute",
       "de": "ShoppingRoute",
@@ -60,6 +60,19 @@
     "icon": "shoppingroute.png",
     "tier": 3,
     "news": {
+      "0.3.8": {
+        "en": "Fixes the review queue so accepted items immediately update the article catalogue and remain “Accepted”, filters legacy market headers and nested sort prefixes, simplifies the current shopping-list Admin view, and updates CI/checker compatibility.",
+        "de": "Behebt die Prüfliste: Übernommene Einträge aktualisieren den Artikelstamm sofort und bleiben „Übernommen“. Außerdem werden alte Marktüberschriften und verschachtelte Sortierpräfixe gefiltert, die aktuelle Einkaufsliste im Admin vereinfacht und CI/Checker-Kompatibilität aktualisiert.",
+        "ru": "Исправлена очередь проверки: принятые позиции сразу обновляют каталог товаров и сохраняют статус «Принято». Также фильтруются старые заголовки магазинов и вложенные префиксы сортировки, упрощено отображение текущего списка покупок в Admin и обновлена совместимость CI/проверок.",
+        "pt": "Corrige a fila de revisão: os itens aceites atualizam imediatamente o catálogo de artigos e mantêm o estado “Aceite”. Também filtra cabeçalhos de mercado antigos e prefixos de ordenação aninhados, simplifica a lista de compras atual no Admin e atualiza a compatibilidade de CI/verificador.",
+        "nl": "Verbetert de controlelijst: geaccepteerde items werken de artikelcatalogus direct bij en blijven op “Overgenomen”. Ook worden oude winkelkoppen en geneste sorteerprefixen gefilterd, de actuele boodschappenlijst in Admin vereenvoudigd en de CI/checker-compatibiliteit bijgewerkt.",
+        "fr": "Corrige la file de vérification : les éléments acceptés mettent immédiatement à jour le catalogue et conservent l’état « Accepté ». Filtre aussi les anciens en-têtes de magasin et les préfixes de tri imbriqués, simplifie la liste de courses actuelle dans Admin et met à jour la compatibilité CI/vérificateur.",
+        "it": "Corregge la coda di revisione: gli elementi accettati aggiornano subito il catalogo e mantengono lo stato “Accettato”. Filtra inoltre le vecchie intestazioni dei negozi e i prefissi di ordinamento annidati, semplifica la lista della spesa corrente in Admin e aggiorna la compatibilità CI/checker.",
+        "es": "Corrige la cola de revisión: los elementos aceptados actualizan inmediatamente el catálogo y conservan el estado «Aceptado». También filtra encabezados antiguos de tiendas y prefijos de ordenación anidados, simplifica la lista de compra actual en Admin y actualiza la compatibilidad de CI/verificador.",
+        "pl": "Naprawia kolejkę weryfikacji: zaakceptowane pozycje natychmiast aktualizują katalog artykułów i zachowują status „Zaakceptowano”. Filtruje też stare nagłówki sklepów i zagnieżdżone prefiksy sortowania, upraszcza bieżącą listę zakupów w Adminie oraz aktualizuje zgodność CI/checkera.",
+        "uk": "Виправлено чергу перевірки: прийняті позиції одразу оновлюють каталог товарів і зберігають статус «Прийнято». Також фільтруються старі заголовки магазинів і вкладені префікси сортування, спрощено поточний список покупок в Admin та оновлено сумісність CI/перевірок.",
+        "zh-cn": "修复审核队列：已接受的条目会立即更新商品目录并保持“已接受”状态。同时过滤旧版商店标题和嵌套排序前缀，简化 Admin 中的当前购物清单视图，并更新 CI/检查器兼容性。"
+      },
       "0.3.7": {
         "en": "Adds an interactive Admin shopping list with drag-and-drop/manual movement between markets, persistent per-item manual overrides, responsive Admin improvements, and a retained “accepted” review status after normal Save.",
         "de": "Ergänzt eine interaktive Einkaufsliste im Admin mit Drag&Drop/manuellem Verschieben zwischen Märkten, dauerhaften manuellen Artikel-Overrides, Responsive-Verbesserungen und einem erhaltenen Status „Übernommen“ nach normalem Speichern.",
@@ -137,19 +150,6 @@
         "pl": "Wersja rozwojowa z automatycznymi nagłówkami sklepów i konsolidacją na podstawie minimalnej liczby artykułów. Jawnie wskazane sklepy nigdy nie są zmieniane.",
         "uk": "Попередня версія з автоматичними заголовками магазинів і об’єднанням маршруту за мінімальною кількістю товарів. Явно вказані магазини ніколи не змінюються.",
         "zh-cn": "开发预览版：自动商店标题，并按每个商店的最少商品数量合并路线。明确指定的商店永远不会被更改。"
-      },
-      "0.2.0": {
-        "en": "First stable release of ShoppingRoute with complete Admin translations, improved walking-route help, protected npm publishing and verified Alexa2/alexa-remote2 compatibility.",
-        "de": "Erste stabile Veröffentlichung von ShoppingRoute mit vollständigen Admin-Übersetzungen, korrigiertem Laufwege-Hilfetext, geschützter npm-Veröffentlichung und geprüfter Alexa2/alexa-remote2-Kompatibilität.",
-        "ru": "Первый стабильный выпуск ShoppingRoute с полными переводами интерфейса администратора, улучшенной справкой по маршрутам, защищённой публикацией npm и проверенной совместимостью Alexa2/alexa-remote2.",
-        "pt": "Primeira versão estável do ShoppingRoute com traduções completas da interface de administração, ajuda aprimorada para percursos, publicação npm protegida e compatibilidade Alexa2/alexa-remote2 verificada.",
-        "nl": "Eerste stabiele release van ShoppingRoute met volledige Admin-vertalingen, verbeterde hulp voor looproutes, beveiligde npm-publicatie en gecontroleerde Alexa2/alexa-remote2-compatibiliteit.",
-        "fr": "Première version stable de ShoppingRoute avec traductions complètes de l’interface Admin, aide améliorée pour les parcours, publication npm sécurisée et compatibilité Alexa2/alexa-remote2 vérifiée.",
-        "it": "Prima versione stabile di ShoppingRoute con traduzioni complete dell'interfaccia Admin, guida migliorata per i percorsi, pubblicazione npm protetta e compatibilità Alexa2/alexa-remote2 verificata.",
-        "es": "Primera versión estable de ShoppingRoute con traducciones completas de la interfaz de administración, ayuda mejorada para los recorridos, publicación npm protegida y compatibilidad Alexa2/alexa-remote2 verificada.",
-        "pl": "Pierwsze stabilne wydanie ShoppingRoute z pełnymi tłumaczeniami panelu administracyjnego, ulepszoną pomocą dla tras, zabezpieczonym publikowaniem npm i zweryfikowaną zgodnością Alexa2/alexa-remote2.",
-        "uk": "Перший стабільний випуск ShoppingRoute з повними перекладами інтерфейсу Admin, покращеною довідкою для маршрутів, захищеною публікацією npm та перевіреною сумісністю Alexa2/alexa-remote2.",
-        "zh-cn": "ShoppingRoute 首个稳定版本，包含完整的 Admin 翻译、改进的行走路线帮助、安全的 npm 发布流程以及经过验证的 Alexa2/alexa-remote2 兼容性。"
       }
     },
     "extIcon": "https://raw.githubusercontent.com/RaviniZib/ioBroker.shoppingroute/main/admin/shoppingroute.png",

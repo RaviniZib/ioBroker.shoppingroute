@@ -2,7 +2,7 @@
 
 ![ShoppingRoute](admin/shoppingroute.png)
 
-**Current version: 0.3.7**
+**Current version: 0.3.8**
 
 ShoppingRoute sorts Alexa shopping-list entries by market, product group and each store's individual walking route. It assigns visible two-digit keys such as `20> Bananas` and `40> ═════ ALDI ═════`; managed lists must therefore be set to **A–Z** in the Alexa app. ShoppingRoute reuses the local Alexa2 authentication for direct item updates, deletes and batch creates, while Alexa2 list states remain the external change trigger.
 
@@ -39,6 +39,14 @@ ShoppingRoute sorts Alexa shopping-list entries by market, product group and eac
 See `README_DE.md` for the detailed German documentation.
 
 ## Changelog
+
+### 0.3.8 (2026-09-11)
+
+- Fixed the review queue so accepting an item updates the article catalogue and visible status immediately in the same Admin draft.
+- Legacy market headings such as `— LIDL —` are recognized as headings and can no longer enter the shopping items or review queue.
+- Nested internal sort prefixes are stripped recursively from parsing and the Admin shopping-list display.
+- Simplified the current shopping-list view by hiding empty market columns while retaining drag, arrow and market-selector controls.
+- Updated current ioBroker CI/checker compatibility: testing-action-check v2, Node.js 26 matrix coverage, current @iobroker/testing and bounded common.news history.
 
 ### 0.3.7 (2026-09-11)
 

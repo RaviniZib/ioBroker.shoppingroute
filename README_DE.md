@@ -2,7 +2,7 @@
 
 ![ShoppingRoute](admin/shoppingroute.png)
 
-**Aktuelle Version: 0.3.7**
+**Aktuelle Version: 0.3.8**
 
 ShoppingRoute sortiert Alexa-Einkaufslisteneinträge nach Markt, Produktgruppe und dem individuellen Laufweg durch den jeweiligen Markt. Dazu vergibt es sichtbare zweistellige Schlüssel wie `20> Bananen` und `40> ═════ ALDI ═════`; verwaltete Listen müssen deshalb in der Alexa-App auf **A–Z** stehen. ShoppingRoute übernimmt lokal die Alexa2-Authentifizierung für direkte Updates, Deletes und Batch-Creates; Alexa2-Listenstates bleiben die Triggerquelle für externe Änderungen.
 
@@ -72,6 +72,14 @@ Anschließend kann 0.3.0 flexible Artikel marktübergreifend zusammenlegen, wenn
 ShoppingRoute wird unter der **MIT-Lizenz** veröffentlicht. Frühere bereits veröffentlichte Versionen bleiben unter der jeweils damals gültigen Lizenz.
 
 ## Changelog
+
+### 0.3.8 (2026-09-11)
+
+- Prüfliste korrigiert: „Übernehmen“ aktualisiert Artikelstamm und sichtbaren Status jetzt sofort im selben Admin-Entwurf.
+- Alte Marktüberschriften wie `— LIDL —` werden sicher als Überschriften erkannt und können nicht mehr als Artikel oder Prüflisteneintrag erscheinen.
+- Verschachtelte interne Sortierpräfixe werden beim Parsen und in der Admin-Einkaufslistenanzeige rekursiv entfernt.
+- Ansicht der aktuellen Einkaufsliste vereinfacht: leere Marktspalten bleiben verborgen; Drag&Drop, Pfeile und Marktauswahl bleiben parallel verfügbar.
+- Aktuelle ioBroker-CI-/Checker-Anforderungen übernommen: testing-action-check v2, Node.js 26 in der Matrix, aktuelles @iobroker/testing und auf sieben Einträge begrenzte common.news-Historie.
 
 ### 0.3.7 (2026-09-11)
 
