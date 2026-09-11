@@ -63,7 +63,7 @@ test('GUI API 2 custom components require Admin 8', () => {
     assert.deepEqual(adminDependencies, [{ admin: '>=8.0.0' }]);
 });
 
-test('every custom component Vite build enables a Module Federation manifest', () => {
+test('every custom component Vite build enables a Module Federation manifest without DTS generation', () => {
     const configs = [
         ['vite.config.mjs', 'admin/custom'],
         ['vite.markets.config.mjs', 'admin/custom/markets'],
@@ -74,6 +74,7 @@ test('every custom component Vite build enables a Module Federation manifest', (
     for (const [file, outputDirectory] of configs) {
         const source = fs.readFileSync(path.join(root, file), 'utf8');
         assert.match(source, /federation\(\{[\s\S]*?manifest:\s*true/, file);
+        assert.match(source, /dts:\s*false/, file);
         assert.match(source, new RegExp(`outDir:\\s*["']${outputDirectory}["']`), file);
         assert.match(source, /emptyOutDir:\s*true/, file);
     }
@@ -109,6 +110,7 @@ test('every delivered custom entry has its own matching manifest beside its remo
     verifyBuildOutputs(customRoot);
     assert.deepEqual(findViteMetadata(customRoot), []);
     assert.equal(fs.existsSync(path.join(root, '.__mf__temp')), false);
+    assert.equal(fs.existsSync(path.join(root, '.mf')), false);
 });
 
 test('admin build cleanup removes stale manifests and generated cache metadata before packaging', () => {
