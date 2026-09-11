@@ -46,9 +46,10 @@ const prefix_sort_1 = require("./lib/prefix-sort");
 const config_tools_1 = require("./lib/config-tools");
 const statistics_1 = require("./lib/statistics");
 const review_tools_1 = require("./lib/review-tools");
+const manual_order_1 = require("./lib/manual-order");
 const state_change_1 = require("./lib/state-change");
 const direct_sort_lifecycle_1 = require("./lib/direct-sort-lifecycle");
-const VERSION = '0.3.6';
+const VERSION = '0.3.7';
 const COLLECT_WINDOW_MS = 5000;
 const MAX_ACTIVE_ITEMS = 99;
 const OWN_REFRESH_MAX_MS = 30000;
@@ -112,6 +113,7 @@ class ShoppingRoute extends utils.Adapter {
     runtimeProducts = [];
     runtimeReviews = [];
     runtimeRoutes = [];
+    manualOverrides = [];
     productsDirty = false;
     reviewsDirty = false;
     routesDirty = false;
@@ -201,6 +203,7 @@ class ShoppingRoute extends utils.Adapter {
         this.routesDirty = JSON.stringify(this.runtimeRoutes) !== JSON.stringify(Array.isArray(this.cfg.routes) ? this.cfg.routes : []);
         await this.loadTrafficMetrics();
         await this.loadStatistics();
+        await this.loadManualOverrides();
         const reviewResult = (0, sorter_1.applyReviewActions)(this.runtimeProducts, this.runtimeReviews);
         if (reviewResult.accepted.length) {
             this.runtimeProducts = reviewResult.products;
@@ -288,9 +291,169 @@ class ShoppingRoute extends utils.Adapter {
                 names.add(String(list.name).trim());
         return [...names].filter(Boolean).sort((a, b) => a.localeCompare(b, 'de', { sensitivity: 'base' }));
     }
+    configuredListName(requested) {
+        const value = typeof requested === 'string' ? requested.trim() : '';
+        const matched = this.listConfigs.find(list => list.name === value);
+        return matched?.name || this.listConfigs[0]?.name || '';
+    }
+    async buildShoppingListView(listName, confirmedOrder = false) {
+        const resolvedList = this.configuredListName(listName);
+        if (!resolvedList)
+            throw new Error('No managed Alexa shopping list is configured.');
+        const listId = await this.directListId(resolvedList);
+        const snapshot = await this.readDirectItems(listId);
+        const reconciled = (0, manual_order_1.reconcileManualOverrides)(this.manualOverrides, resolvedList, snapshot);
+        if (JSON.stringify(reconciled) !== JSON.stringify(this.manualOverrides)) {
+            this.manualOverrides = reconciled;
+            await this.persistManualOverrides();
+        }
+        const desired = (0, prefix_sort_1.buildPrefixTargets)(snapshot, this.markets, this.routes, this.products, this.fallbackMarket, this.priorityMarketForList(resolvedList), this.minimumItemsPerMarket, this.marketHeadersEnabled, this.manualOverrides, resolvedList);
+        let visible = desired.filter(target => target.id && !(0, market_plan_1.isMarketHeader)(target.originalText, this.markets));
+        if (confirmedOrder) {
+            visible = [...visible].sort((a, b) => {
+                const left = a.currentPrefix ?? (0, prefix_sort_1.parseSortPrefix)(a.currentValue || '')?.number ?? 999;
+                const right = b.currentPrefix ?? (0, prefix_sort_1.parseSortPrefix)(b.currentValue || '')?.number ?? 999;
+                return left - right || String(a.id).localeCompare(String(b.id));
+            });
+        }
+        const manualIds = new Set((0, manual_order_1.overridesForList)(this.manualOverrides, resolvedList).map(entry => entry.itemId));
+        const positions = new Map();
+        const items = visible.map(target => {
+            const market = target.market || this.fallbackMarket;
+            const key = market.toLocaleLowerCase('de');
+            const position = positions.get(key) || 0;
+            positions.set(key, position + 1);
+            return {
+                id: String(target.id),
+                text: (0, prefix_sort_1.stripSortPrefix)(target.originalText),
+                market,
+                category: target.category,
+                position,
+                manual: manualIds.has(String(target.id)),
+            };
+        });
+        const markets = this.markets.map(market => market.name);
+        if (!markets.some(market => market.toLocaleLowerCase('de') === this.fallbackMarket.toLocaleLowerCase('de'))) {
+            markets.push(this.fallbackMarket);
+        }
+        return {
+            listName: resolvedList,
+            lists: this.listConfigs.map(list => list.name),
+            markets,
+            items,
+            dryRun: this.dryRun,
+        };
+    }
+    prepareImmediateApply(listName) {
+        const state = this.getListState(listName);
+        if (state.timer) {
+            this.clearTimeout(state.timer);
+            state.timer = undefined;
+        }
+        const now = Date.now();
+        state.phase = 'COLLECTING';
+        state.firstEventAt = now;
+        state.lastExternalAt = now;
+        state.requestedAt = now;
+        state.externalDirty = false;
+        state.newIds.clear();
+    }
+    async applyManualMove(message) {
+        const listName = this.configuredListName(message?.listName);
+        const before = await this.buildShoppingListView(listName);
+        if (this.dryRun)
+            return { ok: false, error: 'Dry Run is active. Disable Dry Run before changing the Alexa list.', view: before };
+        if (!(await this.isEnabled()))
+            return { ok: false, error: 'ShoppingRoute is disabled.', view: before };
+        if (this.applyingListName)
+            return { ok: false, error: 'A shopping-list update is already running. Please try again.', view: before };
+        const itemId = String(message?.itemId || '').trim();
+        const item = before.items.find(entry => entry.id === itemId);
+        if (!item)
+            return { ok: false, error: 'The selected shopping-list item no longer exists.', view: before };
+        const targetMarket = String(message?.targetMarket || '').trim();
+        if (!before.markets.some(market => market.toLocaleLowerCase('de') === targetMarket.toLocaleLowerCase('de'))) {
+            return { ok: false, error: 'The selected target market is not available.', view: before };
+        }
+        const targetCount = before.items.filter(entry => entry.market === targetMarket && entry.id !== itemId).length;
+        const targetPosition = Math.max(0, Math.min(targetCount, Math.floor(Number(message?.targetPosition) || 0)));
+        const previous = this.manualOverrides.map(entry => ({ ...entry }));
+        this.manualOverrides = (0, manual_order_1.moveManualOverride)(this.manualOverrides, {
+            listName,
+            itemId,
+            originalText: item.text,
+            fromMarket: item.market,
+            fromPosition: item.position,
+            toMarket: targetMarket,
+            toPosition: targetPosition,
+        });
+        await this.persistManualOverrides();
+        await this.setStateAsync('info.lastError', '', true);
+        this.prepareImmediateApply(listName);
+        await this.startApply(listName);
+        const error = String((await this.getStateAsync('info.lastError'))?.val || '');
+        if (error) {
+            this.manualOverrides = previous;
+            await this.persistManualOverrides();
+            return { ok: false, error, view: await this.buildShoppingListView(listName, true) };
+        }
+        return { ok: true, view: await this.buildShoppingListView(listName) };
+    }
+    async clearManualShoppingOrder(message) {
+        const listName = this.configuredListName(message?.listName);
+        const before = await this.buildShoppingListView(listName);
+        if (this.dryRun)
+            return { ok: false, error: 'Dry Run is active. Disable Dry Run before changing the Alexa list.', view: before };
+        if (!(await this.isEnabled()))
+            return { ok: false, error: 'ShoppingRoute is disabled.', view: before };
+        if (this.applyingListName)
+            return { ok: false, error: 'A shopping-list update is already running. Please try again.', view: before };
+        const previous = this.manualOverrides.map(entry => ({ ...entry }));
+        this.manualOverrides = (0, manual_order_1.clearManualOverridesForList)(this.manualOverrides, listName);
+        await this.persistManualOverrides();
+        await this.setStateAsync('info.lastError', '', true);
+        this.prepareImmediateApply(listName);
+        await this.startApply(listName);
+        const error = String((await this.getStateAsync('info.lastError'))?.val || '');
+        if (error) {
+            this.manualOverrides = previous;
+            await this.persistManualOverrides();
+            return { ok: false, error, view: await this.buildShoppingListView(listName, true) };
+        }
+        return { ok: true, view: await this.buildShoppingListView(listName) };
+    }
     async onMessage(obj) {
         if (!obj?.callback)
             return;
+        if (obj.command === 'getShoppingList') {
+            try {
+                this.sendTo(obj.from, obj.command, await this.buildShoppingListView(this.configuredListName(obj.message?.listName)), obj.callback);
+            }
+            catch (error) {
+                this.sendTo(obj.from, obj.command, { error: error instanceof Error ? error.message : String(error) }, obj.callback);
+            }
+            return;
+        }
+        if (obj.command === 'moveShoppingItem') {
+            try {
+                this.sendTo(obj.from, obj.command, await this.applyManualMove(obj.message), obj.callback);
+            }
+            catch (error) {
+                const message = error instanceof Error ? error.message : String(error);
+                this.sendTo(obj.from, obj.command, { ok: false, error: message, view: await this.buildShoppingListView(this.configuredListName(obj.message?.listName), true) }, obj.callback);
+            }
+            return;
+        }
+        if (obj.command === 'clearManualShoppingOrder') {
+            try {
+                this.sendTo(obj.from, obj.command, await this.clearManualShoppingOrder(obj.message), obj.callback);
+            }
+            catch (error) {
+                const message = error instanceof Error ? error.message : String(error);
+                this.sendTo(obj.from, obj.command, { ok: false, error: message, view: await this.buildShoppingListView(this.configuredListName(obj.message?.listName), true) }, obj.callback);
+            }
+            return;
+        }
         if (obj.command === 'markAllReviewItemsAccept') {
             const supplied = obj.message?.native && typeof obj.message.native === 'object'
                 ? { ...obj.message.native }
@@ -679,7 +842,12 @@ class ShoppingRoute extends utils.Adapter {
         await this.recordNewItems(listName, logical);
         await this.updateLearningAndDiagnostics(listName, logical);
         const priority = this.priorityMarketForList(listName);
-        const desired = (0, prefix_sort_1.buildPrefixTargets)(snapshot, this.markets, this.routes, this.products, this.fallbackMarket, priority, this.minimumItemsPerMarket, this.marketHeadersEnabled);
+        const reconciledOverrides = (0, manual_order_1.reconcileManualOverrides)(this.manualOverrides, listName, snapshot);
+        if (JSON.stringify(reconciledOverrides) !== JSON.stringify(this.manualOverrides)) {
+            this.manualOverrides = reconciledOverrides;
+            await this.persistManualOverrides();
+        }
+        const desired = (0, prefix_sort_1.buildPrefixTargets)(snapshot, this.markets, this.routes, this.products, this.fallbackMarket, priority, this.minimumItemsPerMarket, this.marketHeadersEnabled, this.manualOverrides, listName);
         const plan = (0, prefix_sort_1.createPrefixSortPlan)(snapshot, desired);
         runtime.fallback = plan.fallback;
         runtime.rebuildFrom = plan.rebuildFrom;
@@ -760,6 +928,11 @@ class ShoppingRoute extends utils.Adapter {
         const verification = (0, prefix_sort_1.verifyPrefixResult)(verifiedItems, plan, state.externalDirty);
         if (!verification.ok)
             throw new Error(`${listName}: direct final verification failed: ${englishRuntimeError(verification.reason || 'Unknown verification error.')}`);
+        const reboundOverrides = (0, manual_order_1.reconcileManualOverrides)(this.manualOverrides, listName, verifiedItems);
+        if (JSON.stringify(reboundOverrides) !== JSON.stringify(this.manualOverrides)) {
+            this.manualOverrides = reboundOverrides;
+            await this.persistManualOverrides();
+        }
         await this.clearDirectJournal();
         state.lastSnapshot = itemSnapshot(verifiedItems);
         state.lastItems = verifiedItems.map(item => ({ ...item }));
@@ -1059,6 +1232,21 @@ class ShoppingRoute extends utils.Adapter {
         const cfg = { ...this.cfg, products: this.runtimeProducts, routes: this.routes, reviewItems: this.runtimeReviews };
         await this.setStateAsync('info.configExport', JSON.stringify((0, config_tools_1.exportConfig)(cfg, VERSION), null, 2), true);
         await this.setStateAsync('info.marketProfiles', JSON.stringify((0, config_tools_1.buildMarketProfiles)(this.markets, this.routes), null, 2), true);
+    }
+    async loadManualOverrides() {
+        try {
+            const state = await this.getStateAsync('info.manualOverrides');
+            const raw = state && typeof state.val === 'string' && state.val.trim() ? JSON.parse(state.val) : [];
+            this.manualOverrides = (0, manual_order_1.normalizeManualOverrides)(raw);
+        }
+        catch {
+            this.manualOverrides = [];
+        }
+        await this.persistManualOverrides();
+    }
+    async persistManualOverrides() {
+        this.manualOverrides = (0, manual_order_1.normalizeManualOverrides)(this.manualOverrides);
+        await this.setStateAsync('info.manualOverrides', JSON.stringify(this.manualOverrides, null, 2), true);
     }
     async loadTrafficMetrics() {
         try {

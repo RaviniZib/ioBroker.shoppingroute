@@ -61,5 +61,7 @@
   "ui.items.general.items.marketheaders.label": "Winkelkoppen in de Alexa-lijst",
   "ui.items.general.items.marketheaders.help": "Voegt regels zoals ═════ ALDI ═════ toe. De kop blijft actief zolang minstens één echt artikel voor die winkel openstaat en wordt volledig verwijderd zodra de winkel niet meer nodig is.",
   "ui.items.general.items.minitemspermarket.label": "Minimum aantal artikelen per extra winkel",
-  "ui.items.general.items.minitemspermarket.help": "1 schakelt samenvoegen uit. Onder de grens worden alleen artikelen met ingestelde alternatieve winkels verplaatst. Expliciete winkelvermeldingen worden nooit verplaatst."
+  "ui.items.general.items.minitemspermarket.help": "1 schakelt samenvoegen uit. Onder de grens worden alleen artikelen met ingestelde alternatieve winkels verplaatst. Expliciete winkelvermeldingen worden nooit verplaatst.",
+  "ui.items.shoppinglisttab.label": "Boodschappenlijst",
+  "ui.items.reviewtab.items.reviewitems.items.5.options.3.label": "Overgenomen"
 }

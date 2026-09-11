@@ -61,5 +61,7 @@
   "ui.items.general.items.marketheaders.label": "Marktüberschriften in der Alexa-Liste",
   "ui.items.general.items.marketheaders.help": "Fügt Einträge wie ═════ ALDI ═════ ein. Eine Überschrift bleibt aktiv, solange mindestens ein echter Artikel dieses Marktes offen ist, und wird vollständig gelöscht, sobald der Markt nicht mehr benötigt wird.",
   "ui.items.general.items.minitemspermarket.label": "Mindestanzahl Artikel pro zusätzlichem Markt",
-  "ui.items.general.items.minitemspermarket.help": "1 deaktiviert die Zusammenlegung. Unterhalb der Mindestzahl werden nur Artikel verschoben, für die alternative verfügbare Märkte hinterlegt sind. Explizite Angaben wie „von LIDL“ oder „bei ALDI“ werden niemals verschoben."
+  "ui.items.general.items.minitemspermarket.help": "1 deaktiviert die Zusammenlegung. Unterhalb der Mindestzahl werden nur Artikel verschoben, für die alternative verfügbare Märkte hinterlegt sind. Explizite Angaben wie „von LIDL“ oder „bei ALDI“ werden niemals verschoben.",
+  "ui.items.shoppinglisttab.label": "Einkaufsliste",
+  "ui.items.reviewtab.items.reviewitems.items.5.options.3.label": "Übernommen"
 }

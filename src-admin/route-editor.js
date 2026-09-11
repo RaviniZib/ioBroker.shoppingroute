@@ -5,6 +5,27 @@
 const React = require('react');
 
 const h = React.createElement;
+const routeResponsiveStyles = `
+    .shoppingroute-route-row {
+        display: grid;
+        grid-template-columns: 48px minmax(160px, 1fr) 144px;
+    }
+    .shoppingroute-route-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 6px;
+    }
+    @media (max-width: 600px) {
+        .shoppingroute-route-row {
+            grid-template-columns: 32px minmax(0, 1fr);
+        }
+        .shoppingroute-route-actions {
+            grid-column: 2;
+            justify-content: flex-start;
+            flex-wrap: wrap;
+        }
+    }
+`;
 const text = (de, en) => {
     const language = typeof navigator !== 'undefined' ? String(navigator.language || '').toLowerCase() : 'de';
     return language.startsWith('de') ? de : en;
@@ -183,7 +204,10 @@ class RouteEditor extends React.Component {
         const muted = dark ? '#bbb' : '#666';
         const buttonBackground = dark ? '#3b3b3b' : '#f4f4f4';
         const controlStyle = {
-            minWidth: '240px',
+            minWidth: 0,
+            width: '100%',
+            maxWidth: '320px',
+            boxSizing: 'border-box',
             padding: '9px 12px',
             borderRadius: '4px',
             border: `1px solid ${border}`,
@@ -192,6 +216,7 @@ class RouteEditor extends React.Component {
         };
 
         const children = [
+            h('style', { key: 'responsive-styles' }, routeResponsiveStyles),
             h(
                 'div',
                 {
@@ -285,9 +310,8 @@ class RouteEditor extends React.Component {
                             'div',
                             {
                                 key: `${route.market}-${route.category}-${index}`,
+                                className: 'shoppingroute-route-row',
                                 style: {
-                                    display: 'grid',
-                                    gridTemplateColumns: '48px minmax(160px, 1fr) 144px',
                                     alignItems: 'center',
                                     gap: '8px',
                                     padding: '9px 12px',
@@ -324,7 +348,7 @@ class RouteEditor extends React.Component {
                                     'div',
                                     {
                                         key: 'buttons',
-                                        style: { display: 'flex', justifyContent: 'flex-end', gap: '6px' },
+                                        className: 'shoppingroute-route-actions',
                                     },
                                     [
                                         h(

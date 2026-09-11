@@ -61,5 +61,7 @@
   "ui.items.general.items.marketheaders.label": "Cabeçalhos de mercados na lista Alexa",
   "ui.items.general.items.marketheaders.help": "Adiciona entradas como ═════ ALDI ═════. O cabeçalho permanece ativo enquanto houver pelo menos um item real aberto nesse mercado e é excluído por completo quando o mercado deixa de ser necessário.",
   "ui.items.general.items.minitemspermarket.label": "Mínimo de itens por mercado adicional",
-  "ui.items.general.items.minitemspermarket.help": "1 desativa a consolidação. Abaixo do limite, somente itens com mercados alternativos configurados podem ser movidos. Indicações explícitas de mercado nunca são alteradas."
+  "ui.items.general.items.minitemspermarket.help": "1 desativa a consolidação. Abaixo do limite, somente itens com mercados alternativos configurados podem ser movidos. Indicações explícitas de mercado nunca são alteradas.",
+  "ui.items.shoppinglisttab.label": "Lista de compras",
+  "ui.items.reviewtab.items.reviewitems.items.5.options.3.label": "Aceite"
 }

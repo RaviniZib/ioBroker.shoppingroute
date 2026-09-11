@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "shoppingroute",
-    "version": "0.3.6",
+    "version": "0.3.7",
     "titleLang": {
       "en": "ShoppingRoute",
       "de": "ShoppingRoute",
@@ -60,6 +60,19 @@
     "icon": "shoppingroute.png",
     "tier": 3,
     "news": {
+      "0.3.7": {
+        "en": "Adds an interactive Admin shopping list with drag-and-drop/manual movement between markets, persistent per-item manual overrides, responsive Admin improvements, and a retained “accepted” review status after normal Save.",
+        "de": "Ergänzt eine interaktive Einkaufsliste im Admin mit Drag&Drop/manuellem Verschieben zwischen Märkten, dauerhaften manuellen Artikel-Overrides, Responsive-Verbesserungen und einem erhaltenen Status „Übernommen“ nach normalem Speichern.",
+        "ru": "Добавлен интерактивный список покупок в Admin с перетаскиванием и ручным перемещением между магазинами, постоянными ручными настройками элементов, улучшенной адаптивностью и сохранением статуса «принято» после обычного сохранения.",
+        "pt": "Adiciona uma lista de compras interativa no Admin com arrastar e soltar/movimento manual entre mercados, substituições manuais persistentes por item, melhorias responsivas e estado “aceite” mantido após guardar normalmente.",
+        "nl": "Voegt een interactieve boodschappenlijst in Admin toe met slepen/handmatig verplaatsen tussen winkels, blijvende handmatige overrides per artikel, responsieve verbeteringen en een behouden status “overgenomen” na normaal opslaan.",
+        "fr": "Ajoute une liste de courses interactive dans Admin avec glisser-déposer/déplacement manuel entre magasins, des priorités manuelles persistantes par article, des améliorations responsive et un statut « accepté » conservé après un enregistrement normal.",
+        "it": "Aggiunge una lista della spesa interattiva in Admin con drag&drop/spostamento manuale tra negozi, override manuali persistenti per articolo, miglioramenti responsive e stato “accettato” mantenuto dopo il normale salvataggio.",
+        "es": "Añade una lista de compra interactiva en Admin con arrastrar y soltar/movimiento manual entre tiendas, ajustes manuales persistentes por artículo, mejoras responsivas y un estado «aceptado» conservado tras guardar normalmente.",
+        "pl": "Dodaje interaktywną listę zakupów w Adminie z przeciąganiem/ręcznym przenoszeniem między sklepami, trwałymi ręcznymi nadpisaniami pozycji, poprawkami responsywności oraz zachowanym statusem „zaakceptowano” po zwykłym zapisie.",
+        "uk": "Додано інтерактивний список покупок в Admin із перетягуванням і ручним переміщенням між магазинами, постійними ручними налаштуваннями елементів, покращеною адаптивністю та збереженням статусу «прийнято» після звичайного збереження.",
+        "zh-cn": "新增 Admin 交互式购物清单，可拖放/手动在商店之间移动商品，保存逐项手动覆盖，改进响应式布局，并在普通保存后保留“已接受”状态。"
+      },
       "0.3.6": {
         "en": "Repository checker cleanup: explicit JSON Config i18n mode and translation files, obsolete prepublish protection removed, and older changelog entries archived. Sorting and runtime behavior are unchanged.",
         "de": "Repository-Checker-Bereinigung: expliziter JSON-Config-i18n-Modus mit Übersetzungsdateien, veralteter Prepublish-Schutz entfernt und ältere Changelog-Einträge archiviert. Sortier- und Laufzeitverhalten bleiben unverändert.",
@@ -1200,6 +1213,19 @@
         "read": true,
         "write": true,
         "def": ""
+      },
+      "native": {}
+    },
+    {
+      "_id": "info.manualOverrides",
+      "type": "state",
+      "common": {
+        "name": "Manual shopping-list item overrides",
+        "type": "string",
+        "role": "json",
+        "read": true,
+        "write": false,
+        "def": "[]"
       },
       "native": {}
     }

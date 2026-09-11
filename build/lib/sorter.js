@@ -109,6 +109,10 @@ function applyReviewActions(products, reviewItems) {
     const accepted = [];
     const remaining = [];
     for (const review of reviewItems) {
+        if (review.action === 'accepted') {
+            remaining.push({ ...review });
+            continue;
+        }
         if (review.action !== 'accept') {
             remaining.push({ ...review });
             continue;
@@ -134,6 +138,7 @@ function applyReviewActions(products, reviewItems) {
                 existing.aliases = [...aliases].join(',');
             }
             accepted.push({ ...existing });
+            remaining.push({ ...review, action: 'accepted' });
             continue;
         }
         const product = {
@@ -147,6 +152,7 @@ function applyReviewActions(products, reviewItems) {
         };
         merged.push(product);
         accepted.push(product);
+        remaining.push({ ...review, action: 'accepted' });
     }
     return {
         products: merged.sort((a, b) => a.name.localeCompare(b.name, 'de', { sensitivity: 'base' })),

@@ -61,5 +61,7 @@
   "ui.items.general.items.marketheaders.label": "Заголовки магазинов в списке Alexa",
   "ui.items.general.items.marketheaders.help": "Добавляет строки вида ═════ ALDI ═════. Заголовок остаётся активным, пока открыт хотя бы один настоящий товар этого магазина, и полностью удаляется, когда магазин больше не нужен.",
   "ui.items.general.items.minitemspermarket.label": "Минимум товаров для дополнительного магазина",
-  "ui.items.general.items.minitemspermarket.help": "1 отключает объединение. Ниже порога перемещаются только товары с настроенными альтернативными магазинами. Явные указания магазина никогда не изменяются."
+  "ui.items.general.items.minitemspermarket.help": "1 отключает объединение. Ниже порога перемещаются только товары с настроенными альтернативными магазинами. Явные указания магазина никогда не изменяются.",
+  "ui.items.shoppinglisttab.label": "Список покупок",
+  "ui.items.reviewtab.items.reviewitems.items.5.options.3.label": "Принято"
 }

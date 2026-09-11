@@ -61,5 +61,7 @@
   "ui.items.general.items.marketheaders.label": "Market headings in Alexa list",
   "ui.items.general.items.marketheaders.help": "Adds entries such as ═════ ALDI ═════. A heading remains active while at least one real item for that market is open and is deleted completely when the market is no longer needed.",
   "ui.items.general.items.minitemspermarket.label": "Minimum items per additional market",
-  "ui.items.general.items.minitemspermarket.help": "1 disables consolidation. Below the threshold, only articles with configured alternative available markets may be moved. Explicit phrases such as “from LIDL” or “at ALDI” are never moved."
+  "ui.items.general.items.minitemspermarket.help": "1 disables consolidation. Below the threshold, only articles with configured alternative available markets may be moved. Explicit phrases such as “from LIDL” or “at ALDI” are never moved.",
+  "ui.items.shoppinglisttab.label": "Shopping list",
+  "ui.items.reviewtab.items.reviewitems.items.5.options.3.label": "Accepted"
 }

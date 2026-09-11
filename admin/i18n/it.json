@@ -61,5 +61,7 @@
   "ui.items.general.items.marketheaders.label": "Intestazioni dei negozi nell’elenco Alexa",
   "ui.items.general.items.marketheaders.help": "Aggiunge voci come ═════ ALDI ═════. L’intestazione resta attiva finché almeno un articolo reale del negozio è aperto e viene eliminata completamente quando il negozio non serve più.",
   "ui.items.general.items.minitemspermarket.label": "Numero minimo di articoli per negozio aggiuntivo",
-  "ui.items.general.items.minitemspermarket.help": "1 disattiva il consolidamento. Sotto la soglia vengono spostati solo gli articoli con negozi alternativi configurati. Le indicazioni esplicite non vengono mai modificate."
+  "ui.items.general.items.minitemspermarket.help": "1 disattiva il consolidamento. Sotto la soglia vengono spostati solo gli articoli con negozi alternativi configurati. Le indicazioni esplicite non vengono mai modificate.",
+  "ui.items.shoppinglisttab.label": "Lista della spesa",
+  "ui.items.reviewtab.items.reviewitems.items.5.options.3.label": "Accettato"
 }

@@ -31,7 +31,7 @@ export interface ShoppingListConfig {
     priorityMarket?: string;
 }
 
-export type ReviewAction = 'pending' | 'accept' | 'ignore';
+export type ReviewAction = 'pending' | 'accept' | 'accepted' | 'ignore';
 
 export interface ReviewItemConfig {
     key: string;

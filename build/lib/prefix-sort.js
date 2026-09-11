@@ -8,6 +8,7 @@ exports.createPrefixSortPlan = createPrefixSortPlan;
 exports.expectedValues = expectedValues;
 exports.verifyPrefixResult = verifyPrefixResult;
 const market_plan_1 = require("./market-plan");
+const manual_order_1 = require("./manual-order");
 const parser_1 = require("./parser");
 const SORT_PREFIX = /^(\d{2})>\s+(.+)$/s;
 const LEGACY_SORT_PREFIX = /^\[(\d{2})\]\s+(.+)$/s;
@@ -64,8 +65,10 @@ function usableVersion(item) {
  * @param priorityMarket Current market priority.
  * @param minimumItemsPerMarket Consolidation threshold.
  * @param marketHeaders Whether market headers belong in the route.
+ * @param manualOverrides Current per-item manual Admin overrides.
+ * @param listName Managed list name used to scope overrides.
  */
-function buildPrefixTargets(items, markets, routes, products, fallbackMarket, priorityMarket = '', minimumItemsPerMarket = 1, marketHeaders = false) {
+function buildPrefixTargets(items, markets, routes, products, fallbackMarket, priorityMarket = '', minimumItemsPerMarket = 1, marketHeaders = false, manualOverrides = [], listName = '') {
     const current = active(items);
     const headersByMarket = new Map();
     const real = [];
@@ -83,11 +86,18 @@ function buildPrefixTargets(items, markets, routes, products, fallbackMarket, pr
         }
         real.push({ ...item, value: text });
     }
-    const assigned = (0, market_plan_1.optimizeMarketAssignments)(real, markets, products, fallbackMarket, priorityMarket, minimumItemsPerMarket).map(entry => ({
-        ...entry,
-        marketOrder: marketOrder(markets, entry.parsed.market),
-        categoryOrder: categoryOrder(routes, entry.parsed.market, entry.parsed.category),
-    })).sort((left, right) => {
+    const manualById = new Map((0, manual_order_1.overridesForList)(manualOverrides, listName).map(entry => [entry.itemId, entry]));
+    const automaticallyAssigned = (0, market_plan_1.optimizeMarketAssignments)(real, markets, products, fallbackMarket, priorityMarket, minimumItemsPerMarket).map(entry => {
+        const manual = manualById.get(String(entry.source.id));
+        const parsed = manual?.market ? { ...entry.parsed, market: manual.market } : entry.parsed;
+        return {
+            ...entry,
+            parsed,
+            manualPosition: manual?.position,
+            marketOrder: marketOrder(markets, parsed.market),
+            categoryOrder: categoryOrder(routes, parsed.market, parsed.category),
+        };
+    }).sort((left, right) => {
         if (left.marketOrder !== right.marketOrder)
             return left.marketOrder - right.marketOrder;
         if (left.categoryOrder !== right.categoryOrder)
@@ -99,6 +109,28 @@ function buildPrefixTargets(items, markets, routes, products, fallbackMarket, pr
         if (product !== 0)
             return product;
         return String(left.source.id).localeCompare(String(right.source.id));
+    });
+    const marketKeys = [];
+    const grouped = new Map();
+    for (const entry of automaticallyAssigned) {
+        const key = (0, parser_1.normalize)(entry.parsed.market);
+        if (!grouped.has(key))
+            marketKeys.push(key);
+        const group = grouped.get(key) || [];
+        group.push(entry);
+        grouped.set(key, group);
+    }
+    const assigned = marketKeys.flatMap(key => {
+        const group = grouped.get(key) || [];
+        const manual = group
+            .filter(entry => Number.isInteger(entry.manualPosition))
+            .sort((a, b) => Number(a.manualPosition) - Number(b.manualPosition) || String(a.source.id).localeCompare(String(b.source.id)));
+        const ordered = group.filter(entry => !Number.isInteger(entry.manualPosition));
+        for (const entry of manual) {
+            const position = Math.max(0, Math.min(ordered.length, Number(entry.manualPosition)));
+            ordered.splice(position, 0, entry);
+        }
+        return ordered;
     });
     const targets = [];
     let lastMarket = '';

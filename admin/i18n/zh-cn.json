@@ -61,5 +61,7 @@
   "ui.items.general.items.marketheaders.label": "Alexa 列表中的商店标题",
   "ui.items.general.items.marketheaders.help": "添加类似 ═════ ALDI ═════ 的条目。只要该商店还有至少一个真实商品未完成，标题就保持有效；不再需要该商店时，标题会被彻底删除。",
   "ui.items.general.items.minitemspermarket.label": "每个额外商店的最少商品数",
-  "ui.items.general.items.minitemspermarket.help": "设为 1 将关闭合并。低于阈值时，只有配置了其他可用商店的商品才会移动。明确指定商店的说法永远不会更改。"
+  "ui.items.general.items.minitemspermarket.help": "设为 1 将关闭合并。低于阈值时，只有配置了其他可用商店的商品才会移动。明确指定商店的说法永远不会更改。",
+  "ui.items.shoppinglisttab.label": "购物清单",
+  "ui.items.reviewtab.items.reviewitems.items.5.options.3.label": "已接受"
 }

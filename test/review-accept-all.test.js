@@ -15,6 +15,8 @@ test('Review accept-all updates only reviewItems in the unsaved Admin draft via 
     assert.equal(button.command, 'markAllReviewItemsAccept');
     assert.match(button.jsonData, /JSON\.stringify\(data\)/);
     assert.equal(button.useNative, true);
+    const actionColumn = config.items.reviewTab.items.reviewItems.items.find(item => item.attr === 'action');
+    assert.ok(actionColumn.options.some(option => option.value === 'accepted'));
 
     const handler = main.slice(
         main.indexOf("if (obj.command === 'markAllReviewItemsAccept')"),

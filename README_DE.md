@@ -2,7 +2,7 @@
 
 ![ShoppingRoute](admin/shoppingroute.png)
 
-**Aktuelle Version: 0.3.6**
+**Aktuelle Version: 0.3.7**
 
 ShoppingRoute sortiert Alexa-Einkaufslisteneinträge nach Markt, Produktgruppe und dem individuellen Laufweg durch den jeweiligen Markt. Dazu vergibt es sichtbare zweistellige Schlüssel wie `20> Bananen` und `40> ═════ ALDI ═════`; verwaltete Listen müssen deshalb in der Alexa-App auf **A–Z** stehen. ShoppingRoute übernimmt lokal die Alexa2-Authentifizierung für direkte Updates, Deletes und Batch-Creates; Alexa2-Listenstates bleiben die Triggerquelle für externe Änderungen.
 
@@ -72,6 +72,14 @@ Anschließend kann 0.3.0 flexible Artikel marktübergreifend zusammenlegen, wenn
 ShoppingRoute wird unter der **MIT-Lizenz** veröffentlicht. Frühere bereits veröffentlichte Versionen bleiben unter der jeweils damals gültigen Lizenz.
 
 ## Changelog
+
+### 0.3.7 (2026-09-11)
+
+- Interaktive aktuelle Einkaufsliste im Admin ergänzt: Drag&Drop sowie touch-taugliche Pfeil- und Marktauswahl stehen parallel zur Verfügung.
+- Manuelle Artikelpositionen und Marktverschiebungen werden lokal gespeichert und haben Vorrang vor der automatischen Sortierung, solange der aktive Listeneintrag existiert.
+- Alexa-Schreibzugriffe erfolgen ausschließlich im Adapter; der Browser erhält keine Alexa-/Amazon-Zugangsdaten. Bei Fehlern wird die bestätigte Liste neu geladen.
+- Responsive Admin-Darstellung für xs/sm verbessert und die empfohlene Tab-Breite der Responsive Design Initiative ergänzt.
+- Prüflisteneinträge behalten nach normalem Speichern nun den idempotenten Status „Übernommen“, statt wieder auf „Offen“ zurückzufallen.
 
 ### 0.3.6 (2026-09-04)
 

@@ -13,6 +13,7 @@ export default {
                 './Components': './src-admin/product-groups-editor-components.mjs',
             },
             remotes: {},
+            dts: false,
             shared: {
                 react: {
                     singleton: true,

@@ -697,6 +697,10 @@
                   "label": "ui.items.reviewtab.items.reviewitems.items.5.options.1.label"
                 },
                 {
+                  "value": "accepted",
+                  "label": "ui.items.reviewtab.items.reviewitems.items.5.options.3.label"
+                },
+                {
                   "value": "ignore",
                   "label": "ui.items.reviewtab.items.reviewitems.items.5.options.2.label"
                 }
@@ -772,7 +776,28 @@
           "xl": 3
         }
       }
+    },
+    "shoppingListTab": {
+      "type": "panel",
+      "label": "ui.items.shoppinglisttab.label",
+      "items": {
+        "shoppingListEditor": {
+          "type": "custom",
+          "url": "custom/shoppingList/shoppingListEditor.js",
+          "name": "ShoppingRouteShoppingListSet/Components/ShoppingListEditor",
+          "guiApi": 2,
+          "i18n": false,
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
+        }
+      }
     }
   },
-  "i18n": true
+  "i18n": true,
+  "tabsStyle": {
+    "width": "calc(100% - 100px)"
+  }
 }
