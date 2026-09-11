@@ -1,0 +1,252 @@
+name: Apply local UI and review fixes
+
+on:
+  push:
+    branches:
+      - local-fix-ui-data
+    paths:
+      - '.github/workflows/apply-local-ui-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: local-fix-ui-data
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24.x
+          cache: npm
+
+      - name: Apply deterministic local fixes
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const crypto = require('node:crypto');
+
+          const read = file => fs.readFileSync(file, 'utf8');
+          const write = (file, value) => fs.writeFileSync(file, value);
+          const replaceOnce = (file, from, to, label) => {
+            const source = read(file);
+            if (!source.includes(from)) throw new Error(`${label}: source marker not found in ${file}`);
+            write(file, source.replace(from, to));
+          };
+          const replaceSection = (file, startMarker, endMarker, replacement, label) => {
+            const source = read(file);
+            const start = source.indexOf(startMarker);
+            if (start < 0) throw new Error(`${label}: start marker not found in ${file}`);
+            const end = source.indexOf(endMarker, start);
+            if (end < 0) throw new Error(`${label}: end marker not found in ${file}`);
+            write(file, source.slice(0, start) + replacement + source.slice(end));
+          };
+
+          // One canonical representation for availableMarkets everywhere: string[].
+          replaceOnce(
+            'src/lib/config-tools.ts',
+            `export function exportConfig(config: AdapterConfigShape, version: string, now = new Date()): ConfigExport {`,
+            `export function normalizeMarketSelectionValue(value: unknown): string[] {\n    const source = Array.isArray(value)\n        ? value.flatMap(entry => String(entry ?? '').split(/[;,]/))\n        : String(value ?? '').split(/[;,]/);\n    const result: string[] = [];\n    const seen = new Set<string>();\n    for (const entry of source) {\n        const trimmed = entry.trim();\n        const key = trimmed.toLocaleLowerCase('de');\n        if (!trimmed || seen.has(key)) continue;\n        seen.add(key);\n        result.push(trimmed);\n    }\n    return result;\n}\n\nexport function exportConfig(config: AdapterConfigShape, version: string, now = new Date()): ConfigExport {`,
+            'add market-array normalizer',
+          );
+
+          replaceOnce(
+            'src/main.ts',
+            `    normalizeMaxWritesPerMinute,\n    normalizeRoutesForAdmin,`,
+            `    normalizeMaxWritesPerMinute,\n    normalizeMarketSelectionValue,\n    normalizeRoutesForAdmin,`,
+            'import market-array normalizer',
+          );
+
+          replaceOnce(
+            'src/main.ts',
+            `        this.runtimeProducts = (Array.isArray(this.cfg.products) ? this.cfg.products : [])\n            .filter(product => product?.name).map(product => ({ ...product }))\n            .sort((a, b) => a.name.localeCompare(b.name, 'de', { sensitivity: 'base' }));\n        this.runtimeReviews = (Array.isArray(this.cfg.reviewItems) ? this.cfg.reviewItems : []).map(item => ({ ...item }));`,
+            `        const configuredProducts = Array.isArray(this.cfg.products) ? this.cfg.products : [];\n        this.runtimeProducts = configuredProducts\n            .filter(product => product?.name)\n            .map(product => ({ ...product, availableMarkets: normalizeMarketSelectionValue(product.availableMarkets) }))\n            .sort((a, b) => a.name.localeCompare(b.name, 'de', { sensitivity: 'base' }));\n        this.productsDirty = configuredProducts.some(product =>\n            JSON.stringify(product.availableMarkets ?? []) !== JSON.stringify(normalizeMarketSelectionValue(product.availableMarkets)),\n        );\n        const configuredReviews = Array.isArray(this.cfg.reviewItems) ? this.cfg.reviewItems : [];\n        this.runtimeReviews = configuredReviews.map(item => ({\n            ...item,\n            availableMarkets: normalizeMarketSelectionValue(item.availableMarkets),\n        }));\n        this.reviewsDirty = configuredReviews.some(item =>\n            JSON.stringify(item.availableMarkets ?? []) !== JSON.stringify(normalizeMarketSelectionValue(item.availableMarkets)),\n        );`,
+            'normalize startup product and review markets',
+          );
+
+          replaceSection(
+            'src/main.ts',
+            `        const reviewResult = applyReviewActions(this.runtimeProducts, this.runtimeReviews);`,
+            `        await this.ensureProductGroupsConfig();`,
+            `        const productsBeforeReview = JSON.stringify(this.runtimeProducts);\n        const reviewsBeforeReview = JSON.stringify(this.runtimeReviews);\n        const reviewResult = applyReviewActions(this.runtimeProducts, this.runtimeReviews);\n        if (JSON.stringify(reviewResult.products) !== productsBeforeReview) {\n            this.runtimeProducts = reviewResult.products;\n            this.productsDirty = true;\n        }\n        if (JSON.stringify(reviewResult.remainingReviews) !== reviewsBeforeReview) {\n            this.runtimeReviews = reviewResult.remainingReviews;\n            this.reviewsDirty = true;\n        }\n        if (reviewResult.accepted.length) {\n            this.statistics.reviewAccepted += reviewResult.accepted.length;\n            await this.persistStatistics();\n        }\n`,
+            'clean applied review rows on startup',
+          );
+
+          replaceOnce(
+            'src/lib/sorter.ts',
+            `import { isMarketHeader } from './market-plan';`,
+            `import { isMarketHeader } from './market-plan';\nimport { normalizeMarketSelectionValue } from './config-tools';`,
+            'sorter market-array import',
+          );
+          replaceOnce('src/lib/sorter.ts', `            availableMarkets: '',`, `            availableMarkets: [],`, 'new product array default');
+          replaceOnce(
+            'src/lib/sorter.ts',
+            `            availableMarkets: previous?.availableMarkets ?? '',`,
+            `            availableMarkets: normalizeMarketSelectionValue(previous?.availableMarkets ?? []),`,
+            'review queue array normalization',
+          );
+          replaceSection(
+            'src/lib/sorter.ts',
+            `export function applyReviewActions(`,
+            `\n}`,
+            `export function applyReviewActions(\n    products: ProductConfig[],\n    reviewItems: ReviewItemConfig[],\n): { products: ProductConfig[]; remainingReviews: ReviewItemConfig[]; accepted: ProductConfig[] } {\n    const merged = products.map(product => ({\n        ...product,\n        availableMarkets: normalizeMarketSelectionValue(product.availableMarkets),\n    }));\n    const accepted: ProductConfig[] = [];\n    const remaining: ReviewItemConfig[] = [];\n\n    for (const review of reviewItems) {\n        if (review.action === 'accepted') continue;\n        if (review.action !== 'accept') {\n            remaining.push({\n                ...review,\n                availableMarkets: normalizeMarketSelectionValue(review.availableMarkets),\n            });\n            continue;\n        }\n\n        const name = String(review.product || '').trim();\n        if (!name) {\n            remaining.push({ ...review, availableMarkets: normalizeMarketSelectionValue(review.availableMarkets) });\n            continue;\n        }\n        const existing = findProduct(name, merged);\n        if (existing) {\n            if (review.category) existing.category = review.category;\n            if (review.defaultMarket !== undefined) existing.defaultMarket = review.defaultMarket;\n            existing.availableMarkets = normalizeMarketSelectionValue(review.availableMarkets);\n            if (review.aliases) {\n                const aliases = new Set(String(existing.aliases || '').split(/[;,]/).map(value => value.trim()).filter(Boolean));\n                for (const alias of review.aliases.split(/[;,]/).map(value => value.trim()).filter(Boolean)) aliases.add(alias);\n                existing.aliases = [...aliases].join(',');\n            }\n            accepted.push({ ...existing });\n            continue;\n        }\n\n        const product: ProductConfig = {\n            name,\n            aliases: String(review.aliases || ''),\n            category: String(review.category || review.guessedCategory || 'Sonstiges'),\n            defaultMarket: String(review.defaultMarket || ''),\n            availableMarkets: normalizeMarketSelectionValue(review.availableMarkets),\n        };\n        merged.push(product);\n        accepted.push(product);\n    }\n\n    return {\n        products: merged.sort((a, b) => a.name.localeCompare(b.name, 'de', { sensitivity: 'base' })),\n        remainingReviews: remaining,\n        accepted,\n    };\n}\n`,
+            'replace review apply semantics',
+          );
+
+          write('src/lib/review-tools.ts', `import type { ReviewItemConfig } from './model';\nimport { normalizeMarketSelectionValue } from './config-tools';\n\n/**\n * Mark every review row for acceptance while keeping market selections canonical.\n *\n * @param rows Current unsaved review rows from the Admin draft.\n */\nexport function markAllReviewItemsAccept(rows: ReviewItemConfig[]): ReviewItemConfig[] {\n    return rows.map(item => ({\n        ...item,\n        availableMarkets: normalizeMarketSelectionValue(item.availableMarkets),\n        action: 'accept',\n    }));\n}\n`);
+
+          // Review editor: keep arrays and remove accepted rows immediately.
+          replaceSection(
+            'src-admin/review-editor.js',
+            `function normalizeMarketCsv(value) {`,
+            `function activeMarkets(data) {`,
+            `function normalizeMarketArray(value) {\n    const source = Array.isArray(value)\n        ? value.flatMap(entry => String(entry || '').split(/[;,]/))\n        : String(value || '').split(/[;,]/);\n    const seen = new Set();\n    return source\n        .map(entry => String(entry || '').trim())\n        .filter(entry => {\n            const key = keyOf(entry);\n            if (!key || seen.has(key)) return false;\n            seen.add(key);\n            return true;\n        });\n}\n\nfunction activeMarkets(data) {`,
+            'review editor market normalizer',
+          );
+          {
+            let source = read('src-admin/review-editor.js');
+            source = source.replaceAll('normalizeMarketCsv', 'normalizeMarketArray');
+            write('src-admin/review-editor.js', source);
+          }
+          replaceSection(
+            'src-admin/review-editor.js',
+            `function acceptReviewRows(data, indexes) {`,
+            `const styles =`,
+            `function acceptReviewRows(data, indexes) {\n    const wanted = new Set(indexes);\n    const acceptedIndexes = new Set();\n    const products = (Array.isArray(data?.products) ? data.products : []).map(product => ({\n        ...product,\n        availableMarkets: normalizeMarketArray(product.availableMarkets),\n    }));\n    const reviewItems = (Array.isArray(data?.reviewItems) ? data.reviewItems : []).map(row => ({ ...row }));\n\n    for (let index = 0; index < reviewItems.length; index++) {\n        if (!wanted.has(index)) continue;\n        const review = reviewItems[index];\n        const name = String(review.product || '').trim();\n        if (!name) continue;\n\n        const found = findProductIndex(products, name);\n        if (found >= 0) {\n            const existing = { ...products[found] };\n            if (review.category) existing.category = String(review.category);\n            if (review.defaultMarket !== undefined) existing.defaultMarket = String(review.defaultMarket || '');\n            existing.availableMarkets = normalizeMarketArray(review.availableMarkets);\n            if (review.aliases) existing.aliases = mergeAliases(existing.aliases, review.aliases);\n            products[found] = existing;\n        } else {\n            products.push({\n                name,\n                aliases: String(review.aliases || ''),\n                category: String(review.category || review.guessedCategory || 'Sonstiges'),\n                defaultMarket: String(review.defaultMarket || ''),\n                availableMarkets: normalizeMarketArray(review.availableMarkets),\n            });\n        }\n        acceptedIndexes.add(index);\n    }\n\n    products.sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'de', { sensitivity: 'base' }));\n    const remainingReviews = reviewItems\n        .filter((_, index) => !acceptedIndexes.has(index))\n        .map(row => ({ ...row, availableMarkets: normalizeMarketArray(row.availableMarkets) }));\n    return { ...(data || {}), products, reviewItems: remainingReviews };\n}\n\nconst styles =`,
+            'review editor acceptance removal',
+          );
+          replaceOnce(
+            'src-admin/review-editor.js',
+            `        const available = new Set(\n            String(row.availableMarkets || '')\n                .split(/[;,]/)\n                .map(value => keyOf(value))\n                .filter(Boolean),\n        );`,
+            `        const available = new Set(normalizeMarketArray(row.availableMarkets).map(value => keyOf(value)));`,
+            'review editor selected markets',
+          );
+          replaceOnce(
+            'src-admin/review-editor.js',
+            `                                availableMarkets: values.join(','),`,
+            `                                availableMarkets: values,`,
+            'review editor keep market array',
+          );
+          replaceOnce(
+            'src-admin/review-editor.js',
+            `        normalizeMarketArray,`,
+            `        normalizeMarketArray,`,
+            'noop export guard',
+          );
+
+          // Native JSON Config table must never turn an array back into CSV.
+          const jsonConfig = JSON.parse(read('admin/jsonConfig.json'));
+          const canonicalExpression = source => `(data.${source} || []).map(row => ({...row,availableMarkets:[...new Set((Array.isArray(row.availableMarkets)?row.availableMarkets:[row.availableMarkets]).flatMap(v=>String(v || '').split(/[;,]/)).map(v=>v.trim()).filter(Boolean))]}))`;
+          jsonConfig.items.productsTab.items.products.onChange.calculateFunc = canonicalExpression('products');
+          jsonConfig.items.reviewTab.items.reviewItems.onChange.calculateFunc = canonicalExpression('reviewItems');
+          write('admin/jsonConfig.json', `${JSON.stringify(jsonConfig, null, 2)}\n`);
+
+          // Current shopping list: one simple vertical list, grouped only by slim market headers.
+          replaceSection(
+            'src-admin/shopping-list-editor.js',
+            `const responsiveStyles = \``,
+            `\`;\n\nclass ShoppingListEditor`,
+            `const responsiveStyles = \`\n.shoppingroute-list-toolbar{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin-bottom:14px}\n.shoppingroute-list-toolbar select,.shoppingroute-list-toolbar button{min-height:36px;box-sizing:border-box}\n.shoppingroute-list-toolbar select{min-width:150px;padding:5px 8px}\n.shoppingroute-flat-list{display:flex;flex-direction:column;border:1px solid currentColor;border-radius:8px;overflow:hidden}\n.shoppingroute-flat-market-header{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:8px 11px;font-weight:700;background:rgba(127,127,127,.08);border-bottom:1px solid currentColor}\n.shoppingroute-market-count{font-size:.82rem;opacity:.65;font-weight:500}\n.shoppingroute-item-row{display:grid;grid-template-columns:20px minmax(0,1fr) auto;gap:8px;align-items:center;padding:9px 11px;border-bottom:1px solid currentColor}\n.shoppingroute-item-row:last-child{border-bottom:0}\n.shoppingroute-drag-handle{font-size:16px;opacity:.5;cursor:grab;user-select:none;text-align:center}\n.shoppingroute-item-name{font-weight:600;word-break:break-word}\n.shoppingroute-item-meta{font-size:.78rem;opacity:.62;margin-top:2px}\n.shoppingroute-item-actions{display:flex;gap:4px;align-items:center;justify-content:flex-end}\n.shoppingroute-list-button{min-width:30px;min-height:30px;padding:4px 8px;border:1px solid currentColor;border-radius:4px;background:transparent;color:inherit;cursor:pointer}\n.shoppingroute-list-button:disabled{cursor:default;opacity:.35}\n.shoppingroute-item-actions select{min-width:120px;max-width:180px;min-height:30px;border:1px solid currentColor;border-radius:4px;background:transparent;color:inherit;padding:3px 5px}\n@media (max-width: 600px) {\n .shoppingroute-list-toolbar>*{width:100%;max-width:none}\n .shoppingroute-item-row{grid-template-columns:18px minmax(0,1fr)}\n .shoppingroute-item-actions{grid-column:2;justify-content:flex-start;flex-wrap:wrap;margin-top:3px}\n .shoppingroute-item-actions select{flex:1 1 140px;max-width:none}\n .shoppingroute-drag-handle{cursor:default}\n}\n\`;\n\nclass ShoppingListEditor`,
+            'replace shopping list layout styles',
+          );
+          {
+            const file = 'src-admin/shopping-list-editor.js';
+            const source = read(file);
+            const startMarker = `        const visibleMarkets = view.markets.filter(market => items.some(item => item.market === market));`;
+            const endMarker = `\n    }\n}\n\nmodule.exports`;
+            const start = source.indexOf(startMarker);
+            const end = source.indexOf(endMarker, start);
+            if (start < 0 || end < 0) throw new Error('shopping list render tail markers not found');
+            const tail = `        const visibleMarkets = view.markets.filter(market => items.some(item => item.market === market));\n        if (!visibleMarkets.length) {\n            children.push(\n                h(\n                    'div',\n                    { key: 'empty-list', style: { opacity: 0.7, padding: '16px 0' } },\n                    text('Die Einkaufsliste ist leer.', 'The shopping list is empty.'),\n                ),\n            );\n            return h('div', { style: { width: '100%' } }, children);\n        }\n\n        const rows = [];\n        for (const market of visibleMarkets) {\n            const marketItems = items.filter(item => item.market === market);\n            rows.push(\n                h(\n                    'div',\n                    {\n                        key: \`market-\${market}\`,\n                        className: 'shoppingroute-flat-market-header',\n                        onDragOver: event => event.preventDefault(),\n                        onDrop: event => this.onDrop(event, market, marketItems.length),\n                    },\n                    [\n                        h('span', { key: 'name' }, market),\n                        h('span', { key: 'count', className: 'shoppingroute-market-count' }, String(marketItems.length)),\n                    ],\n                ),\n            );\n            marketItems.forEach((item, index) => {\n                rows.push(this.renderRow(item, marketItems, index, view, items));\n            });\n        }\n        children.push(h('div', { key: 'flat-list', className: 'shoppingroute-flat-list' }, rows));\n        return h('div', { style: { width: '100%' } }, children);`;
+            write(file, source.slice(0, start) + tail + source.slice(end));
+          }
+
+          // Tests follow the desired behavior, not the old broken behavior.
+          write('test/review-accept-all.test.js', `'use strict';\n\nconst test = require('node:test');\nconst assert = require('node:assert/strict');\nconst fs = require('node:fs');\nconst path = require('node:path');\n\nconst root = path.join(__dirname, '..');\nconst config = JSON.parse(fs.readFileSync(path.join(root, 'admin/jsonConfig.json'), 'utf8'));\nconst { ReviewEditorModel: model } = require('../src-admin/review-editor');\n\ntest('review uses a direct Admin draft editor instead of sendTo/useNative', () => {\n    const review = config.items.reviewTab.items;\n    assert.equal(review.reviewAcceptAll, undefined);\n    assert.equal(review.reviewEditor.type, 'custom');\n    assert.equal(review.reviewEditor.url, 'custom/review/reviewEditor.js');\n    assert.equal(review.reviewEditor.name, 'ShoppingRouteReviewSet/Components/ReviewEditor');\n    assert.equal(review.reviewEditor.guiApi, 2);\n    assert.equal(review.reviewItems.hidden, 'true');\n});\n\ntest('accept immediately updates the catalogue and removes the review row', () => {\n    const data = {\n        products: [],\n        reviewItems: [{\n            key: 'schmelzkaese', product: 'Schmelzkäse', text: 'Schmelzkäse', guessedCategory: 'Milchprodukte',\n            category: 'Milchprodukte', defaultMarket: 'LIDL', availableMarkets: ['LIDL', 'REWE'], aliases: '', action: 'pending',\n        }],\n    };\n    const result = model.acceptReviewRows(data, [0]);\n    assert.deepEqual(result.reviewItems, []);\n    assert.deepEqual(result.products, [{\n        name: 'Schmelzkäse', aliases: '', category: 'Milchprodukte', defaultMarket: 'LIDL', availableMarkets: ['LIDL', 'REWE'],\n    }]);\n    assert.equal(data.reviewItems[0].action, 'pending', 'source draft remains immutable');\n});\n\ntest('accepting an already-known article updates it without creating a duplicate', () => {\n    const data = {\n        products: [{ name: 'Zucchini', aliases: '', category: 'Sonstiges', defaultMarket: '', availableMarkets: 'LIDL,REWE' }],\n        reviewItems: [{ product: 'Zucchini', category: 'Obst/Gemüse', defaultMarket: 'LIDL', availableMarkets: ['LIDL'], aliases: 'Zucchino', action: 'pending' }],\n    };\n    const result = model.acceptReviewRows(data, [0]);\n    assert.equal(result.products.length, 1);\n    assert.equal(result.products[0].category, 'Obst/Gemüse');\n    assert.equal(result.products[0].defaultMarket, 'LIDL');\n    assert.deepEqual(result.products[0].availableMarkets, ['LIDL']);\n    assert.equal(result.products[0].aliases, 'Zucchino');\n    assert.deepEqual(result.reviewItems, []);\n});\n`);
+
+          write('test/review-accepted-status.test.js', `'use strict';\n\nconst test = require('node:test');\nconst assert = require('node:assert/strict');\n\nconst { applyReviewActions } = require('../build/lib/sorter');\n\ntest('accepted review rows are removed from the queue after applying', () => {\n    const review = {\n        key: 'milch', text: 'Milch', product: 'Milch', guessedCategory: 'Milchprodukte', market: 'ALDI',\n        category: 'Milchprodukte', defaultMarket: 'ALDI', availableMarkets: 'ALDI,LIDL', aliases: '', action: 'accept',\n    };\n    const first = applyReviewActions([], [review]);\n    assert.equal(first.accepted.length, 1);\n    assert.equal(first.remainingReviews.length, 0);\n    assert.deepEqual(first.products[0].availableMarkets, ['ALDI', 'LIDL']);\n\n    const legacyAccepted = applyReviewActions(first.products, [{ ...review, action: 'accepted' }]);\n    assert.equal(legacyAccepted.accepted.length, 0);\n    assert.equal(legacyAccepted.remainingReviews.length, 0);\n});\n\ntest('ignored review rows remain so the same unknown item stays ignored', () => {\n    const ignored = applyReviewActions([], [{ key: 'x', product: 'X', availableMarkets: 'LIDL,REWE', action: 'ignore' }]);\n    assert.equal(ignored.remainingReviews.length, 1);\n    assert.equal(ignored.remainingReviews[0].action, 'ignore');\n    assert.deepEqual(ignored.remainingReviews[0].availableMarkets, ['LIDL', 'REWE']);\n});\n`);
+
+          write('test/shopping-list-ui-fixes.test.js', `'use strict';\n\nconst test = require('node:test');\nconst assert = require('node:assert/strict');\nconst fs = require('node:fs');\nconst path = require('node:path');\nconst { ShoppingListEditorModel: model } = require('../src-admin/shopping-list-editor');\n\ntest('shopping list display strips nested internal prefixes', () => {\n    assert.equal(model.stripVisiblePrefix('14> 25> Weggummis'), 'Weggummis');\n    assert.equal(model.stripVisiblePrefix('[14] 25> Veganes Hack'), 'Veganes Hack');\n});\n\ntest('legacy short market headers never appear as shopping items', () => {\n    const view = {\n        markets: ['LIDL', 'REWE'],\n        items: [\n            { id: 'h', text: '14> — LIDL —', market: 'LIDL' },\n            { id: 'a', text: '20> Weggummis', market: 'LIDL' },\n        ],\n    };\n    assert.equal(model.headerMarket('14> — LIDL —', view.markets), 'LIDL');\n    assert.deepEqual(model.visibleItems(view).map(item => item.text), ['Weggummis']);\n});\n\ntest('shopping list Admin uses one vertical list instead of a market card grid', () => {\n    const source = fs.readFileSync(path.join(__dirname, '..', 'src-admin', 'shopping-list-editor.js'), 'utf8');\n    assert.match(source, /shoppingroute-flat-list/);\n    assert.match(source, /shoppingroute-flat-market-header/);\n    assert.doesNotMatch(source, /shoppingroute-market-grid/);\n    assert.doesNotMatch(source, /shoppingroute-market-column/);\n});\n`);
+
+          replaceOnce(
+            'test/config-tools.test.js',
+            `  normalizeMaxWritesPerMinute,\n} = require('../build/lib/config-tools');`,
+            `  normalizeMaxWritesPerMinute,\n  normalizeMarketSelectionValue,\n} = require('../build/lib/config-tools');`,
+            'config-tools test import',
+          );
+          replaceOnce(
+            'test/config-tools.test.js',
+            `test('market profiles are shareable independently', () => {`,
+            `test('available market selections are always normalized to arrays', () => {\n  assert.deepEqual(normalizeMarketSelectionValue('ALDI,LIDL, REWE'),['ALDI','LIDL','REWE']);\n  assert.deepEqual(normalizeMarketSelectionValue(['ALDI','LIDL,REWE','aldi']),['ALDI','LIDL','REWE']);\n  assert.deepEqual(normalizeMarketSelectionValue(undefined),[]);\n});\n\ntest('market profiles are shareable independently', () => {`,
+            'add market-array test',
+          );
+
+          // Update the intentional JSON Config projection hash after the deliberate config change.
+          const visualProperties = new Set([\n            'label','text','title','width','style','darkStyle','innerStyle','controlStyle',\n            'xs','sm','md','lg','xl','newLine','variant','icon','iconPosition','boxType',\n            'closeable','size','help','tooltip','placeholder',\n          ]);
+          const presentationTypes = new Set(['header','staticText','infoBox','divider']);
+          const stripVisualProperties = value => {
+            if (Array.isArray(value)) return value.map(stripVisualProperties);
+            if (!value || typeof value !== 'object') return value;
+            return Object.fromEntries(Object.entries(value)
+              .filter(([key]) => !visualProperties.has(key))
+              .map(([key,item]) => [key,stripVisualProperties(item)]));
+          };
+          const panels = ['general','listsTab','routesTab','productsTab','reviewTab','transferTab'];
+          const projection = Object.fromEntries(panels.map(panel => [
+            panel,
+            Object.fromEntries(Object.entries(jsonConfig.items[panel].items)
+              .filter(([,item]) => !presentationTypes.has(item.type))
+              .map(([key,item]) => [key,stripVisualProperties(item)])),
+          ]));
+          const hash = crypto.createHash('sha256').update(JSON.stringify(projection)).digest('hex');
+          {
+            const file = 'test/admin-config.test.js';
+            const source = read(file);
+            const next = source.replace(/assert\.equal\(hash,'[0-9a-f]{64}'\);/, `assert.equal(hash,'${hash}');`);
+            if (next === source) throw new Error('admin config hash pin not found');
+            write(file, next);
+          }
+          NODE
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Format changed sources and tests
+        run: >-
+          npx eslint
+          src/main.ts
+          src/lib/config-tools.ts
+          src/lib/sorter.ts
+          src/lib/review-tools.ts
+          src-admin/review-editor.js
+          src-admin/shopping-list-editor.js
+          test/review-accept-all.test.js
+          test/review-accepted-status.test.js
+          test/shopping-list-ui-fixes.test.js
+          test/config-tools.test.js
+          test/admin-config.test.js
+          --fix
+
+      - name: Lint, build and full tests
+        run: |
+          npm run lint
+          npm test
+
+      - name: Production dependency audit
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Commit tested local fix
+        shell: bash
+        run: |
+          git diff --check
+          git restore --source=HEAD -- .github/workflows/apply-local-ui-fix.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Fix market selections, review cleanup and shopping list UI"
+          git push origin HEAD:local-fix-ui-data
