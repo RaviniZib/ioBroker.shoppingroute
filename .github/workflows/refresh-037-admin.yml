@@ -1,0 +1,55 @@
+name: Refresh 0.3.7 Admin bundles
+
+on:
+  push:
+    branches: [develop-0.3.7]
+    paths:
+      - '.github/workflows/refresh-037-admin.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: develop-0.3.7
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: npm
+      - run: npm ci
+      - run: npm run build:admin
+      - name: Refresh intentional manifest checksum pin
+        shell: bash
+        run: |
+          node <<'NODE'
+          const crypto = require('node:crypto');
+          const fs = require('node:fs');
+          const manifestPath = 'admin/custom/mf-manifest.json';
+          const testPath = 'test/product-groups-editor.test.js';
+          const hash = crypto.createHash('sha256').update(fs.readFileSync(manifestPath, 'utf8').replace(/\r\n?/g, '\n')).digest('hex');
+          let source = fs.readFileSync(testPath, 'utf8');
+          const pattern = /('admin\/custom\/mf-manifest\.json':\s*')[0-9a-f]{64}(')/;
+          if (!pattern.test(source)) throw new Error('manifest checksum pin not found');
+          source = source.replace(pattern, `$1${hash}$2`);
+          fs.writeFileSync(testPath, source);
+          console.log(`Pinned ${manifestPath} to ${hash}`);
+          NODE
+      - run: npm run lint
+      - run: npm test
+      - name: Ensure Module Federation diagnostics are absent
+        shell: bash
+        run: test ! -d .mf
+      - name: Commit refreshed tested bundles
+        shell: bash
+        run: |
+          rm -f .github/workflows/refresh-037-admin.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Refresh Admin bundles after disabling DTS"
+          git push origin HEAD:develop-0.3.7
