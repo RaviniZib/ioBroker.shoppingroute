@@ -9,6 +9,17 @@ const parser_1 = require("./parser");
 const HEADER_PATTERN = /^═{5}\s+(.+?)\s+═{5}$/;
 const STAR_HEADER_PATTERN = /^\*\*\*\*\s+(.+?)\s+\*\*\*\*$/;
 const DASH_HEADER_PATTERN = /^----\s+(.+?)\s+----$/;
+const SHORT_DASH_HEADER_PATTERN = /^[—–-]{1,5}\s+(.+?)\s+[—–-]{1,5}$/;
+function stripManagedPrefixes(value) {
+    let text = String(value || '').trim();
+    for (let depth = 0; depth < 16; depth++) {
+        const match = text.match(/^(?:\d{2}>|\[\d{2}\])\s+(.+)$/s);
+        if (!match?.[1])
+            break;
+        text = String(match[1]).trim();
+    }
+    return text;
+}
 function formatMarketHeader(market) {
     return `═════ ${String(market || '').trim().toLocaleUpperCase('de-DE')} ═════`;
 }
@@ -19,8 +30,8 @@ function formatMarketHeader(market) {
  * @param markets Configured active markets.
  */
 function marketNameFromHeader(value, markets) {
-    const text = String(value || '').trim();
-    const match = text.match(HEADER_PATTERN) || text.match(STAR_HEADER_PATTERN) || text.match(DASH_HEADER_PATTERN);
+    const text = stripManagedPrefixes(value);
+    const match = text.match(HEADER_PATTERN) || text.match(STAR_HEADER_PATTERN) || text.match(DASH_HEADER_PATTERN) || text.match(SHORT_DASH_HEADER_PATTERN);
     if (!match?.[1])
         return undefined;
     const wanted = (0, parser_1.normalize)(match[1]);

@@ -27,8 +27,11 @@ const looseKey = value =>
 
 function canonicalProductKey(value) {
     let key = looseKey(value).replace(/\s+/g, '');
-    if (key.length > 6 && key.endsWith('en')) key = key.slice(0, -1);
-    else if (key.length > 6 && key.endsWith('n')) key = key.slice(0, -1);
+    if (key.length > 6 && key.endsWith('en')) {
+        key = key.slice(0, -1);
+    } else if (key.length > 6 && key.endsWith('n')) {
+        key = key.slice(0, -1);
+    }
     return key;
 }
 
@@ -39,7 +42,9 @@ function normalizeMarketCsv(value) {
         .map(entry => String(entry || '').trim())
         .filter(entry => {
             const key = keyOf(entry);
-            if (!key || seen.has(key)) return false;
+            if (!key || seen.has(key)) {
+                return false;
+            }
             seen.add(key);
             return true;
         })
@@ -50,10 +55,14 @@ function activeMarkets(data) {
     const result = [];
     const seen = new Set();
     for (const market of Array.isArray(data?.markets) ? data.markets : []) {
-        if (!market || market.enabled === false) continue;
+        if (!market || market.enabled === false) {
+            continue;
+        }
         const name = String(market.name || '').trim();
         const key = keyOf(name);
-        if (!name || seen.has(key)) continue;
+        if (!name || seen.has(key)) {
+            continue;
+        }
         seen.add(key);
         result.push(name);
     }
@@ -66,7 +75,9 @@ function productGroups(data) {
         .map(group => String(group?.name || '').trim())
         .filter(name => {
             const key = keyOf(name);
-            if (!key || seen.has(key)) return false;
+            if (!key || seen.has(key)) {
+                return false;
+            }
             seen.add(key);
             return true;
         })
@@ -74,14 +85,14 @@ function productGroups(data) {
 }
 
 function productKeys(product) {
-    return [product?.name, ...String(product?.aliases || '').split(/[;,]/)]
-        .map(canonicalProductKey)
-        .filter(Boolean);
+    return [product?.name, ...String(product?.aliases || '').split(/[;,]/)].map(canonicalProductKey).filter(Boolean);
 }
 
 function findProductIndex(products, name) {
     const wanted = canonicalProductKey(name);
-    if (!wanted) return -1;
+    if (!wanted) {
+        return -1;
+    }
     return products.findIndex(product => productKeys(product).includes(wanted));
 }
 
@@ -91,7 +102,9 @@ function mergeAliases(existing, incoming) {
     for (const value of `${existing || ''},${incoming || ''}`.split(/[;,]/)) {
         const alias = String(value || '').trim();
         const key = keyOf(alias);
-        if (!alias || seen.has(key)) continue;
+        if (!alias || seen.has(key)) {
+            continue;
+        }
         seen.add(key);
         result.push(alias);
     }
@@ -111,18 +124,30 @@ function acceptReviewRows(data, indexes) {
     const reviewItems = (Array.isArray(data?.reviewItems) ? data.reviewItems : []).map(row => ({ ...row }));
 
     for (let index = 0; index < reviewItems.length; index++) {
-        if (!wanted.has(index)) continue;
+        if (!wanted.has(index)) {
+            continue;
+        }
         const review = reviewItems[index];
         const name = String(review.product || '').trim();
-        if (!name) continue;
+        if (!name) {
+            continue;
+        }
 
         const found = findProductIndex(products, name);
         if (found >= 0) {
             const existing = { ...products[found] };
-            if (review.category) existing.category = String(review.category);
-            if (review.defaultMarket !== undefined) existing.defaultMarket = String(review.defaultMarket || '');
-            if (review.availableMarkets !== undefined) existing.availableMarkets = normalizeMarketCsv(review.availableMarkets);
-            if (review.aliases) existing.aliases = mergeAliases(existing.aliases, review.aliases);
+            if (review.category) {
+                existing.category = String(review.category);
+            }
+            if (review.defaultMarket !== undefined) {
+                existing.defaultMarket = String(review.defaultMarket || '');
+            }
+            if (review.availableMarkets !== undefined) {
+                existing.availableMarkets = normalizeMarketCsv(review.availableMarkets);
+            }
+            if (review.aliases) {
+                existing.aliases = mergeAliases(existing.aliases, review.aliases);
+            }
             products[found] = existing;
         } else {
             products.push({
@@ -187,7 +212,9 @@ class ReviewEditor extends React.Component {
     acceptAll() {
         const rows = Array.isArray(this.props.data?.reviewItems) ? this.props.data.reviewItems : [];
         const indexes = rows.map((_, index) => index).filter(index => rows[index]?.action !== 'accepted');
-        if (indexes.length) this.change(acceptReviewRows(this.props.data || {}, indexes));
+        if (indexes.length) {
+            this.change(acceptReviewRows(this.props.data || {}, indexes));
+        }
     }
 
     remove(index) {
@@ -199,7 +226,12 @@ class ReviewEditor extends React.Component {
     }
 
     renderRow(row, index, groups, markets) {
-        const available = new Set(String(row.availableMarkets || '').split(/[;,]/).map(value => keyOf(value)).filter(Boolean));
+        const available = new Set(
+            String(row.availableMarkets || '')
+                .split(/[;,]/)
+                .map(value => keyOf(value))
+                .filter(Boolean),
+        );
         const accepted = row.action === 'accepted';
         const statusOptions = [
             h('option', { key: 'pending', value: 'pending' }, text('Offen', 'Pending')),
@@ -208,62 +240,114 @@ class ReviewEditor extends React.Component {
             h('option', { key: 'ignore', value: 'ignore' }, text('Ignorieren', 'Ignore')),
         ].filter(Boolean);
         const rowStyle = accepted ? { opacity: 0.78 } : undefined;
-        return h('div', { key: `${row.key || row.product || 'review'}-${index}`, className: 'shoppingroute-review-row', style: rowStyle }, [
-            h('div', { key: 'product', className: 'shoppingroute-review-product' }, [
+        return h(
+            'div',
+            {
+                key: `${row.key || row.product || 'review'}-${index}`,
+                className: 'shoppingroute-review-row',
+                style: rowStyle,
+            },
+            [
+                h('div', { key: 'product', className: 'shoppingroute-review-product' }, [
+                    h('input', {
+                        key: 'input',
+                        value: String(row.product || ''),
+                        'aria-label': text('Artikel', 'Product'),
+                        onChange: event =>
+                            this.update(index, {
+                                product: event.target.value,
+                                action: accepted ? 'pending' : row.action,
+                            }),
+                    }),
+                    h('small', { key: 'source' }, String(row.text || '')),
+                ]),
+                h(
+                    'select',
+                    {
+                        key: 'category',
+                        value: String(row.category || row.guessedCategory || ''),
+                        'aria-label': text('Produktgruppe', 'Product group'),
+                        onChange: event =>
+                            this.update(index, {
+                                category: event.target.value,
+                                action: accepted ? 'pending' : row.action,
+                            }),
+                    },
+                    [...new Set([String(row.category || row.guessedCategory || ''), ...groups].filter(Boolean))].map(
+                        group => h('option', { key: group, value: group }, group),
+                    ),
+                ),
+                h(
+                    'select',
+                    {
+                        key: 'defaultMarket',
+                        value: String(row.defaultMarket || ''),
+                        'aria-label': text('Standardmarkt', 'Default market'),
+                        onChange: event =>
+                            this.update(index, {
+                                defaultMarket: event.target.value,
+                                action: accepted ? 'pending' : row.action,
+                            }),
+                    },
+                    [
+                        h('option', { key: '__none__', value: '' }, '—'),
+                        ...markets.map(market => h('option', { key: market, value: market }, market)),
+                    ],
+                ),
+                h(
+                    'select',
+                    {
+                        key: 'availableMarkets',
+                        multiple: true,
+                        value: markets.filter(market => available.has(keyOf(market))),
+                        'aria-label': text('Verfügbare Märkte', 'Available markets'),
+                        onChange: event => {
+                            const values = [...event.target.selectedOptions].map(option => option.value);
+                            this.update(index, {
+                                availableMarkets: values.join(','),
+                                action: accepted ? 'pending' : row.action,
+                            });
+                        },
+                    },
+                    markets.map(market => h('option', { key: market, value: market }, market)),
+                ),
                 h('input', {
-                    key: 'input',
-                    value: String(row.product || ''),
-                    'aria-label': text('Artikel', 'Product'),
-                    onChange: event => this.update(index, { product: event.target.value, action: accepted ? 'pending' : row.action }),
+                    key: 'aliases',
+                    value: String(row.aliases || ''),
+                    placeholder: text('Aliase', 'Aliases'),
+                    'aria-label': text('Aliase', 'Aliases'),
+                    onChange: event =>
+                        this.update(index, { aliases: event.target.value, action: accepted ? 'pending' : row.action }),
                 }),
-                h('small', { key: 'source' }, String(row.text || '')),
-            ]),
-            h('select', {
-                key: 'category',
-                value: String(row.category || row.guessedCategory || ''),
-                'aria-label': text('Produktgruppe', 'Product group'),
-                onChange: event => this.update(index, { category: event.target.value, action: accepted ? 'pending' : row.action }),
-            }, [...new Set([String(row.category || row.guessedCategory || ''), ...groups].filter(Boolean))].map(group => h('option', { key: group, value: group }, group))),
-            h('select', {
-                key: 'defaultMarket',
-                value: String(row.defaultMarket || ''),
-                'aria-label': text('Standardmarkt', 'Default market'),
-                onChange: event => this.update(index, { defaultMarket: event.target.value, action: accepted ? 'pending' : row.action }),
-            }, [h('option', { key: '__none__', value: '' }, '—'), ...markets.map(market => h('option', { key: market, value: market }, market))]),
-            h('select', {
-                key: 'availableMarkets',
-                multiple: true,
-                value: markets.filter(market => available.has(keyOf(market))),
-                'aria-label': text('Verfügbare Märkte', 'Available markets'),
-                onChange: event => {
-                    const values = [...event.target.selectedOptions].map(option => option.value);
-                    this.update(index, { availableMarkets: values.join(','), action: accepted ? 'pending' : row.action });
-                },
-            }, markets.map(market => h('option', { key: market, value: market }, market))),
-            h('input', {
-                key: 'aliases',
-                value: String(row.aliases || ''),
-                placeholder: text('Aliase', 'Aliases'),
-                'aria-label': text('Aliase', 'Aliases'),
-                onChange: event => this.update(index, { aliases: event.target.value, action: accepted ? 'pending' : row.action }),
-            }),
-            h('select', {
-                key: 'action',
-                value: String(row.action || 'pending'),
-                'aria-label': text('Aktion', 'Action'),
-                onChange: event => {
-                    if (event.target.value === 'accept') this.accept(index);
-                    else this.update(index, { action: event.target.value });
-                },
-            }, statusOptions),
-            h('button', {
-                key: 'delete',
-                type: 'button',
-                className: 'shoppingroute-review-delete',
-                title: text('Aus Prüfliste entfernen', 'Remove from review list'),
-                onClick: () => this.remove(index),
-            }, '×'),
-        ]);
+                h(
+                    'select',
+                    {
+                        key: 'action',
+                        value: String(row.action || 'pending'),
+                        'aria-label': text('Aktion', 'Action'),
+                        onChange: event => {
+                            if (event.target.value === 'accept') {
+                                this.accept(index);
+                            } else {
+                                this.update(index, { action: event.target.value });
+                            }
+                        },
+                    },
+                    statusOptions,
+                ),
+                h(
+                    'button',
+                    {
+                        key: 'delete',
+                        type: 'button',
+                        className: 'shoppingroute-review-delete',
+                        title: text('Aus Prüfliste entfernen', 'Remove from review list'),
+                        onClick: () => this.remove(index),
+                    },
+                    '×',
+                ),
+            ],
+        );
     }
 
     render() {
@@ -273,32 +357,55 @@ class ReviewEditor extends React.Component {
         const markets = activeMarkets(data);
         const pendingCount = rows.filter(row => row?.action !== 'accepted').length;
         const children = [h('style', { key: 'styles' }, styles)];
-        children.push(h('div', { key: 'toolbar', className: 'shoppingroute-review-toolbar' }, [
-            h('button', {
-                key: 'acceptAll',
-                type: 'button',
-                className: 'shoppingroute-review-button',
-                disabled: pendingCount === 0,
-                onClick: () => this.acceptAll(),
-            }, pendingCount ? text(`Alle übernehmen (${pendingCount})`, `Accept all (${pendingCount})`) : text('Alles übernommen', 'All accepted')),
-            h('span', { key: 'hint', style: { opacity: 0.7 } }, text('„Übernehmen“ aktualisiert Artikelstamm und Status sofort; danach normal speichern.', '“Accept” updates catalogue and status immediately; then save normally.')),
-        ]));
+        children.push(
+            h('div', { key: 'toolbar', className: 'shoppingroute-review-toolbar' }, [
+                h(
+                    'button',
+                    {
+                        key: 'acceptAll',
+                        type: 'button',
+                        className: 'shoppingroute-review-button',
+                        disabled: pendingCount === 0,
+                        onClick: () => this.acceptAll(),
+                    },
+                    pendingCount
+                        ? text(`Alle übernehmen (${pendingCount})`, `Accept all (${pendingCount})`)
+                        : text('Alles übernommen', 'All accepted'),
+                ),
+                h(
+                    'span',
+                    { key: 'hint', style: { opacity: 0.7 } },
+                    text(
+                        '„Übernehmen“ aktualisiert Artikelstamm und Status sofort; danach normal speichern.',
+                        '“Accept” updates catalogue and status immediately; then save normally.',
+                    ),
+                ),
+            ]),
+        );
         if (!rows.length) {
-            children.push(h('div', { key: 'empty', style: { opacity: 0.7, padding: '12px 0' } }, text('Keine unbekannten Artikel vorhanden.', 'No unknown products.')));
+            children.push(
+                h(
+                    'div',
+                    { key: 'empty', style: { opacity: 0.7, padding: '12px 0' } },
+                    text('Keine unbekannten Artikel vorhanden.', 'No unknown products.'),
+                ),
+            );
             return h('div', { style: { width: '100%' } }, children);
         }
-        children.push(h('div', { key: 'list', className: 'shoppingroute-review-list' }, [
-            h('div', { key: 'head', className: 'shoppingroute-review-row shoppingroute-review-head' }, [
-                h('div', { key: 'product' }, text('Artikel / Alexa-Text', 'Product / Alexa text')),
-                h('div', { key: 'group' }, text('Produktgruppe', 'Product group')),
-                h('div', { key: 'default' }, text('Standardmarkt', 'Default market')),
-                h('div', { key: 'available' }, text('Verfügbare Märkte', 'Available markets')),
-                h('div', { key: 'aliases' }, text('Aliase', 'Aliases')),
-                h('div', { key: 'action' }, text('Status', 'Status')),
-                h('div', { key: 'delete' }, ''),
+        children.push(
+            h('div', { key: 'list', className: 'shoppingroute-review-list' }, [
+                h('div', { key: 'head', className: 'shoppingroute-review-row shoppingroute-review-head' }, [
+                    h('div', { key: 'product' }, text('Artikel / Alexa-Text', 'Product / Alexa text')),
+                    h('div', { key: 'group' }, text('Produktgruppe', 'Product group')),
+                    h('div', { key: 'default' }, text('Standardmarkt', 'Default market')),
+                    h('div', { key: 'available' }, text('Verfügbare Märkte', 'Available markets')),
+                    h('div', { key: 'aliases' }, text('Aliase', 'Aliases')),
+                    h('div', { key: 'action' }, text('Status', 'Status')),
+                    h('div', { key: 'delete' }, ''),
+                ]),
+                ...rows.map((row, index) => this.renderRow(row || {}, index, groups, markets)),
             ]),
-            ...rows.map((row, index) => this.renderRow(row || {}, index, groups, markets)),
-        ]));
+        );
         return h('div', { style: { width: '100%' } }, children);
     }
 }

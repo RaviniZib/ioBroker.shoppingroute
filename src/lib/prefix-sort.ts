@@ -67,7 +67,13 @@ export function parseSortPrefix(text: string): SortPrefix | undefined {
 }
 
 export function stripSortPrefix(text: string): string {
-    return parseSortPrefix(text)?.originalText ?? String(text || '').trim();
+    let value = String(text || '').trim();
+    for (let depth = 0; depth < 16; depth++) {
+        const parsed = parseSortPrefix(value);
+        if (!parsed) break;
+        value = parsed.originalText;
+    }
+    return value;
 }
 
 export function formatSortPrefix(number: number, originalText: string): string {

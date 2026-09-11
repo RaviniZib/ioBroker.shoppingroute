@@ -608,23 +608,17 @@
             "marginBottom": "4px"
           }
         },
-        "reviewAcceptAll": {
-          "type": "sendTo",
-          "command": "markAllReviewItemsAccept",
-          "label": {
-            "en": "Set all to accept",
-            "de": "Alle auf Übernehmen stellen"
-          },
-          "variant": "outlined",
-          "showProcess": true,
-          "useNative": true,
-          "newLine": true,
+        "reviewEditor": {
+          "type": "custom",
+          "url": "custom/review/reviewEditor.js",
+          "name": "ShoppingRouteReviewSet/Components/ReviewEditor",
+          "guiApi": 2,
+          "i18n": false,
           "xs": 12,
           "sm": 12,
-          "md": 6,
-          "lg": 4,
-          "xl": 3,
-          "jsonData": "{\"native\":${JSON.stringify(data)}}"
+          "md": 12,
+          "lg": 12,
+          "xl": 12
         },
         "reviewItems": {
           "type": "table",
@@ -714,7 +708,8 @@
           "xl": 12,
           "onChange": {
             "calculateFunc": "(data.reviewItems || []).map(row => ({...row,availableMarkets:Array.isArray(row.availableMarkets)?row.availableMarkets.map(v=>typeof v==='string'?v.trim():'').filter(Boolean).join(','):String(row.availableMarkets || '')}))"
-          }
+          },
+          "hidden": "true"
         }
       }
     },

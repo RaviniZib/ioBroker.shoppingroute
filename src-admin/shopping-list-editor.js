@@ -19,7 +19,9 @@ function stripVisiblePrefix(value) {
     let result = String(value || '').trim();
     for (let depth = 0; depth < 16; depth++) {
         const match = result.match(/^(?:\d{2}>|\[\d{2}\])\s+(.+)$/s);
-        if (!match?.[1]) break;
+        if (!match?.[1]) {
+            break;
+        }
         result = String(match[1]).trim();
     }
     return result;
@@ -27,11 +29,7 @@ function stripVisiblePrefix(value) {
 
 function headerMarket(value, markets) {
     const visible = stripVisiblePrefix(value);
-    const patterns = [
-        /^═{5}\s+(.+?)\s+═{5}$/,
-        /^\*\*\*\*\s+(.+?)\s+\*\*\*\*$/,
-        /^[—–-]{1,5}\s+(.+?)\s+[—–-]{1,5}$/,
-    ];
+    const patterns = [/^═{5}\s+(.+?)\s+═{5}$/, /^\*\*\*\*\s+(.+?)\s+\*\*\*\*$/, /^[—–-]{1,5}\s+(.+?)\s+[—–-]{1,5}$/];
     let candidate = '';
     for (const pattern of patterns) {
         const match = visible.match(pattern);
@@ -40,7 +38,9 @@ function headerMarket(value, markets) {
             break;
         }
     }
-    if (!candidate) return '';
+    if (!candidate) {
+        return '';
+    }
     return (Array.isArray(markets) ? markets : []).find(market => keyOf(market) === keyOf(candidate)) || '';
 }
 
@@ -70,7 +70,7 @@ const responsiveStyles = `
 .shoppingroute-list-button:disabled{cursor:default;opacity:.35}
 .shoppingroute-item-actions select{min-width:92px;max-width:125px;min-height:30px;border:1px solid currentColor;border-radius:4px;background:transparent;color:inherit;padding:3px 5px}
 .shoppingroute-empty{opacity:.58;padding:18px 11px;text-align:center}
-@media(max-width:700px){
+@media (max-width: 600px) {
  .shoppingroute-market-grid{grid-template-columns:1fr}
  .shoppingroute-list-toolbar>*{width:100%;max-width:none}
  .shoppingroute-item-row{grid-template-columns:18px minmax(0,1fr)}
@@ -97,7 +97,9 @@ class ShoppingListEditor extends React.Component {
     }
 
     async send(command, message) {
-        if (!this.props.socket?.sendTo) throw new Error('Admin socket is unavailable.');
+        if (!this.props.socket?.sendTo) {
+            throw new Error('Admin socket is unavailable.');
+        }
         return this.props.socket.sendTo(this.instanceName(), command, message || {});
     }
 
@@ -105,7 +107,9 @@ class ShoppingListEditor extends React.Component {
         this.setState({ loading: true, error: '' });
         try {
             const result = await this.send('getShoppingList', { listName });
-            if (!result || result.error) throw new Error(result?.error || 'Shopping list could not be loaded.');
+            if (!result || result.error) {
+                throw new Error(result?.error || 'Shopping list could not be loaded.');
+            }
             this.setState({ view: result, loading: false, busy: '' });
         } catch (error) {
             this.setState({ loading: false, busy: '', error: error instanceof Error ? error.message : String(error) });
@@ -114,7 +118,9 @@ class ShoppingListEditor extends React.Component {
 
     async move(itemId, targetMarket, targetPosition) {
         const view = this.state.view;
-        if (!view || this.state.busy) return;
+        if (!view || this.state.busy) {
+            return;
+        }
         this.setState({ busy: itemId, error: '' });
         try {
             const result = await this.send('moveShoppingItem', {
@@ -123,8 +129,12 @@ class ShoppingListEditor extends React.Component {
                 targetMarket,
                 targetPosition,
             });
-            if (result?.view) this.setState({ view: result.view });
-            if (!result?.ok) throw new Error(result?.error || 'The item could not be moved.');
+            if (result?.view) {
+                this.setState({ view: result.view });
+            }
+            if (!result?.ok) {
+                throw new Error(result?.error || 'The item could not be moved.');
+            }
             this.setState({ busy: '' });
         } catch (error) {
             this.setState({ busy: '', error: error instanceof Error ? error.message : String(error) });
@@ -134,12 +144,18 @@ class ShoppingListEditor extends React.Component {
 
     async clearManual() {
         const view = this.state.view;
-        if (!view || this.state.busy) return;
+        if (!view || this.state.busy) {
+            return;
+        }
         this.setState({ busy: '__clear__', error: '' });
         try {
             const result = await this.send('clearManualShoppingOrder', { listName: view.listName });
-            if (result?.view) this.setState({ view: result.view });
-            if (!result?.ok) throw new Error(result?.error || 'Manual order could not be cleared.');
+            if (result?.view) {
+                this.setState({ view: result.view });
+            }
+            if (!result?.ok) {
+                throw new Error(result?.error || 'Manual order could not be cleared.');
+            }
             this.setState({ busy: '' });
         } catch (error) {
             this.setState({ busy: '', error: error instanceof Error ? error.message : String(error) });
@@ -155,83 +171,124 @@ class ShoppingListEditor extends React.Component {
     onDrop(event, market, position) {
         event.preventDefault();
         const itemId = event.dataTransfer.getData('text/plain');
-        if (itemId) void this.move(itemId, market, position);
+        if (itemId) {
+            void this.move(itemId, market, position);
+        }
     }
 
     renderRow(item, marketItems, index, view, allItems) {
         const busy = Boolean(this.state.busy);
-        return h('div', {
-            key: item.id,
-            className: 'shoppingroute-item-row',
-            draggable: !busy,
-            onDragStart: event => this.onDragStart(event, item.id),
-            onDragOver: event => event.preventDefault(),
-            onDrop: event => this.onDrop(event, item.market, index),
-        }, [
-            h('div', {
-                key: 'drag',
-                className: 'shoppingroute-drag-handle',
-                title: text('Ziehen', 'Drag'),
-                'aria-hidden': true,
-            }, '⋮⋮'),
-            h('div', { key: 'main' }, [
-                h('div', { key: 'name', className: 'shoppingroute-item-name' }, stripVisiblePrefix(item.text)),
-                item.category || item.manual
-                    ? h('div', { key: 'meta', className: 'shoppingroute-item-meta' }, [
-                          item.category || text('Ohne Produktgruppe', 'No product group'),
-                          item.manual ? ` · ${text('manuell', 'manual')}` : '',
-                      ])
-                    : null,
-            ]),
-            h('div', { key: 'actions', className: 'shoppingroute-item-actions' }, [
-                h('button', {
-                    key: 'up',
-                    type: 'button',
-                    className: 'shoppingroute-list-button',
-                    disabled: busy || index === 0,
-                    title: text('Nach oben', 'Move up'),
-                    onClick: () => void this.move(item.id, item.market, index - 1),
-                }, '↑'),
-                h('button', {
-                    key: 'down',
-                    type: 'button',
-                    className: 'shoppingroute-list-button',
-                    disabled: busy || index === marketItems.length - 1,
-                    title: text('Nach unten', 'Move down'),
-                    onClick: () => void this.move(item.id, item.market, index + 1),
-                }, '↓'),
-                h('select', {
-                    key: 'market',
-                    value: item.market,
-                    disabled: busy,
-                    title: text('Markt wechseln', 'Change market'),
-                    'aria-label': text('In einen anderen Markt verschieben', 'Move to another market'),
-                    onChange: event => {
-                        const target = event.target.value;
-                        const count = allItems.filter(entry => entry.market === target && entry.id !== item.id).length;
-                        void this.move(item.id, target, count);
+        return h(
+            'div',
+            {
+                key: item.id,
+                className: 'shoppingroute-item-row',
+                draggable: !busy,
+                onDragStart: event => this.onDragStart(event, item.id),
+                onDragOver: event => event.preventDefault(),
+                onDrop: event => this.onDrop(event, item.market, index),
+            },
+            [
+                h(
+                    'div',
+                    {
+                        key: 'drag',
+                        className: 'shoppingroute-drag-handle',
+                        title: text('Ziehen', 'Drag'),
+                        'aria-hidden': true,
                     },
-                }, view.markets.map(market => h('option', { key: market, value: market }, market))),
-            ]),
-        ]);
+                    '⋮⋮',
+                ),
+                h('div', { key: 'main' }, [
+                    h('div', { key: 'name', className: 'shoppingroute-item-name' }, stripVisiblePrefix(item.text)),
+                    item.category || item.manual
+                        ? h('div', { key: 'meta', className: 'shoppingroute-item-meta' }, [
+                              item.category || text('Ohne Produktgruppe', 'No product group'),
+                              item.manual ? ` · ${text('manuell', 'manual')}` : '',
+                          ])
+                        : null,
+                ]),
+                h('div', { key: 'actions', className: 'shoppingroute-item-actions' }, [
+                    h(
+                        'button',
+                        {
+                            key: 'up',
+                            type: 'button',
+                            className: 'shoppingroute-list-button',
+                            disabled: busy || index === 0,
+                            title: text('Nach oben', 'Move up'),
+                            onClick: () => void this.move(item.id, item.market, index - 1),
+                        },
+                        '↑',
+                    ),
+                    h(
+                        'button',
+                        {
+                            key: 'down',
+                            type: 'button',
+                            className: 'shoppingroute-list-button',
+                            disabled: busy || index === marketItems.length - 1,
+                            title: text('Nach unten', 'Move down'),
+                            onClick: () => void this.move(item.id, item.market, index + 1),
+                        },
+                        '↓',
+                    ),
+                    h(
+                        'select',
+                        {
+                            key: 'market',
+                            value: item.market,
+                            disabled: busy,
+                            title: text('Markt wechseln', 'Change market'),
+                            'aria-label': text('In einen anderen Markt verschieben', 'Move to another market'),
+                            onChange: event => {
+                                const target = event.target.value;
+                                const count = allItems.filter(
+                                    entry => entry.market === target && entry.id !== item.id,
+                                ).length;
+                                void this.move(item.id, target, count);
+                            },
+                        },
+                        view.markets.map(market => h('option', { key: market, value: market }, market)),
+                    ),
+                ]),
+            ],
+        );
     }
 
     render() {
         const view = this.state.view;
         const busy = Boolean(this.state.busy);
         const children = [h('style', { key: 'styles' }, responsiveStyles)];
-        children.push(h('div', { key: 'intro', style: { marginBottom: '12px', lineHeight: 1.4 } }, [
-            h('strong', { key: 'title' }, text('Aktuelle Einkaufsliste', 'Current shopping list')),
-            h('div', { key: 'hint', style: { opacity: 0.7, marginTop: '3px' } }, text(
-                'Ziehen verschiebt Artikel direkt. Pfeile und Marktauswahl sind die einfache Alternative für Maus und Handy.',
-                'Drag items directly. Arrows and the market selector are the simple alternative for mouse and phone.',
-            )),
-        ]));
+        children.push(
+            h('div', { key: 'intro', style: { marginBottom: '12px', lineHeight: 1.4 } }, [
+                h('strong', { key: 'title' }, text('Aktuelle Einkaufsliste', 'Current shopping list')),
+                h(
+                    'div',
+                    { key: 'hint', style: { opacity: 0.7, marginTop: '3px' } },
+                    text(
+                        'Ziehen verschiebt Artikel direkt. Pfeile und Marktauswahl sind die einfache Alternative für Maus und Handy.',
+                        'Drag items directly. Arrows and the market selector are the simple alternative for mouse and phone.',
+                    ),
+                ),
+            ]),
+        );
         if (this.state.error) {
-            children.push(h('div', {
-                key: 'error',
-                style: { padding: '9px', border: '1px solid currentColor', borderRadius: '6px', marginBottom: '10px' },
-            }, this.state.error));
+            children.push(
+                h(
+                    'div',
+                    {
+                        key: 'error',
+                        style: {
+                            padding: '9px',
+                            border: '1px solid currentColor',
+                            borderRadius: '6px',
+                            marginBottom: '10px',
+                        },
+                    },
+                    this.state.error,
+                ),
+            );
         }
         if (this.state.loading || !view) {
             children.push(h('div', { key: 'loading' }, text('Liste wird geladen …', 'Loading list …')));
@@ -239,49 +296,94 @@ class ShoppingListEditor extends React.Component {
         }
 
         const items = visibleItems(view);
-        children.push(h('div', { key: 'toolbar', className: 'shoppingroute-list-toolbar' }, [
-            h('select', {
-                key: 'list',
-                value: view.listName,
-                disabled: busy,
-                onChange: event => void this.load(event.target.value),
-                'aria-label': text('Einkaufsliste auswählen', 'Select shopping list'),
-            }, view.lists.map(list => h('option', { key: list, value: list }, list))),
-            h('button', {
-                key: 'refresh',
-                type: 'button',
-                className: 'shoppingroute-list-button',
-                disabled: busy,
-                onClick: () => void this.load(view.listName),
-            }, text('Aktualisieren', 'Refresh')),
-            h('button', {
-                key: 'clear',
-                type: 'button',
-                className: 'shoppingroute-list-button',
-                disabled: busy,
-                onClick: () => void this.clearManual(),
-            }, text('Manuelle Reihenfolge zurücksetzen', 'Reset manual order')),
-            view.dryRun
-                ? h('strong', { key: 'dry', style: { marginLeft: 'auto' } }, text('Dry Run aktiv – Verschieben gesperrt', 'Dry Run active – moving is disabled'))
-                : null,
-        ]));
+        children.push(
+            h('div', { key: 'toolbar', className: 'shoppingroute-list-toolbar' }, [
+                h(
+                    'select',
+                    {
+                        key: 'list',
+                        value: view.listName,
+                        disabled: busy,
+                        onChange: event => void this.load(event.target.value),
+                        'aria-label': text('Einkaufsliste auswählen', 'Select shopping list'),
+                    },
+                    view.lists.map(list => h('option', { key: list, value: list }, list)),
+                ),
+                h(
+                    'button',
+                    {
+                        key: 'refresh',
+                        type: 'button',
+                        className: 'shoppingroute-list-button',
+                        disabled: busy,
+                        onClick: () => void this.load(view.listName),
+                    },
+                    text('Aktualisieren', 'Refresh'),
+                ),
+                h(
+                    'button',
+                    {
+                        key: 'clear',
+                        type: 'button',
+                        className: 'shoppingroute-list-button',
+                        disabled: busy,
+                        onClick: () => void this.clearManual(),
+                    },
+                    text('Manuelle Reihenfolge zurücksetzen', 'Reset manual order'),
+                ),
+                view.dryRun
+                    ? h(
+                          'strong',
+                          { key: 'dry', style: { marginLeft: 'auto' } },
+                          text('Dry Run aktiv – Verschieben gesperrt', 'Dry Run active – moving is disabled'),
+                      )
+                    : null,
+            ]),
+        );
 
-        const columns = view.markets.map(market => {
+        const visibleMarkets = view.markets.filter(market => items.some(item => item.market === market));
+        if (!visibleMarkets.length) {
+            children.push(
+                h(
+                    'div',
+                    { key: 'empty-list', style: { opacity: 0.7, padding: '16px 0' } },
+                    text('Die Einkaufsliste ist leer.', 'The shopping list is empty.'),
+                ),
+            );
+            return h('div', { style: { width: '100%' } }, children);
+        }
+        const columns = visibleMarkets.map(market => {
             const marketItems = items.filter(item => item.market === market);
-            return h('section', {
-                key: market,
-                className: 'shoppingroute-market-column',
-                onDragOver: event => event.preventDefault(),
-                onDrop: event => this.onDrop(event, market, marketItems.length),
-            }, [
-                h('div', { key: 'title', className: 'shoppingroute-market-title' }, [
-                    h('span', { key: 'name' }, market),
-                    h('span', { key: 'count', className: 'shoppingroute-market-count' }, String(marketItems.length)),
-                ]),
-                marketItems.length
-                    ? h('div', { key: 'items', className: 'shoppingroute-item-list' }, marketItems.map((item, index) => this.renderRow(item, marketItems, index, view, items)))
-                    : h('div', { key: 'empty', className: 'shoppingroute-empty' }, text('Hierher ziehen', 'Drop here')),
-            ]);
+            return h(
+                'section',
+                {
+                    key: market,
+                    className: 'shoppingroute-market-column',
+                    onDragOver: event => event.preventDefault(),
+                    onDrop: event => this.onDrop(event, market, marketItems.length),
+                },
+                [
+                    h('div', { key: 'title', className: 'shoppingroute-market-title' }, [
+                        h('span', { key: 'name' }, market),
+                        h(
+                            'span',
+                            { key: 'count', className: 'shoppingroute-market-count' },
+                            String(marketItems.length),
+                        ),
+                    ]),
+                    marketItems.length
+                        ? h(
+                              'div',
+                              { key: 'items', className: 'shoppingroute-item-list' },
+                              marketItems.map((item, index) => this.renderRow(item, marketItems, index, view, items)),
+                          )
+                        : h(
+                              'div',
+                              { key: 'empty', className: 'shoppingroute-empty' },
+                              text('Hierher ziehen', 'Drop here'),
+                          ),
+                ],
+            );
         });
         children.push(h('div', { key: 'grid', className: 'shoppingroute-market-grid' }, columns));
         return h('div', { style: { width: '100%' } }, children);

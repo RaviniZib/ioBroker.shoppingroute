@@ -9,6 +9,17 @@ export interface ParsedShoppingItem {
 const HEADER_PATTERN = /^═{5}\s+(.+?)\s+═{5}$/;
 const STAR_HEADER_PATTERN = /^\*\*\*\*\s+(.+?)\s+\*\*\*\*$/;
 const DASH_HEADER_PATTERN = /^----\s+(.+?)\s+----$/;
+const SHORT_DASH_HEADER_PATTERN = /^[—–-]{1,5}\s+(.+?)\s+[—–-]{1,5}$/;
+
+function stripManagedPrefixes(value: string): string {
+    let text = String(value || '').trim();
+    for (let depth = 0; depth < 16; depth++) {
+        const match = text.match(/^(?:\d{2}>|\[\d{2}\])\s+(.+)$/s);
+        if (!match?.[1]) break;
+        text = String(match[1]).trim();
+    }
+    return text;
+}
 
 export function formatMarketHeader(market: string): string {
     return `═════ ${String(market || '').trim().toLocaleUpperCase('de-DE')} ═════`;
@@ -21,8 +32,8 @@ export function formatMarketHeader(market: string): string {
  * @param markets Configured active markets.
  */
 export function marketNameFromHeader(value: string, markets: MarketConfig[]): string | undefined {
-    const text = String(value || '').trim();
-    const match = text.match(HEADER_PATTERN) || text.match(STAR_HEADER_PATTERN) || text.match(DASH_HEADER_PATTERN);
+    const text = stripManagedPrefixes(value);
+    const match = text.match(HEADER_PATTERN) || text.match(STAR_HEADER_PATTERN) || text.match(DASH_HEADER_PATTERN) || text.match(SHORT_DASH_HEADER_PATTERN);
     if (!match?.[1]) return undefined;
     const wanted = normalize(match[1]);
     return markets.find(market => market.enabled !== false && normalize(market.name) === wanted)?.name;

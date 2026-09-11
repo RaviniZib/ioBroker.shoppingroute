@@ -43,6 +43,8 @@ test('prefix helpers accept exactly NN> plus a space, including 00>, and preserv
     assert.equal(parseSortPrefix('25 Tomaten'), undefined);
     assert.equal(parseSortPrefix('100> Tomaten'), undefined);
     assert.equal(stripSortPrefix('25> Tomaten'), 'Tomaten');
+    assert.equal(stripSortPrefix('14> 25> Tomaten'), 'Tomaten');
+    assert.equal(stripSortPrefix('[14] 25> Tomaten'), 'Tomaten');
     assert.equal(stripSortPrefix('Tomaten'), 'Tomaten');
     assert.equal(formatSortPrefix(7, '25> Tomaten'), '07> Tomaten');
     assert.equal(formatSortPrefix(0, '═════ ALDI ═════'), '00> ═════ ALDI ═════');
@@ -53,6 +55,9 @@ test('market headings use the double-line format and recognize both legacy forma
     assert.equal(marketNameFromHeader('═════ ALDI ═════', markets), 'ALDI');
     assert.equal(marketNameFromHeader('**** ALDI ****', markets), 'ALDI');
     assert.equal(marketNameFromHeader('---- ALDI ----', markets), 'ALDI');
+    assert.equal(marketNameFromHeader('— ALDI —', markets), 'ALDI');
+    assert.equal(marketNameFromHeader('25> — ALDI —', markets), 'ALDI');
+    assert.equal(marketNameFromHeader('14> 25> — ALDI —', markets), 'ALDI');
 });
 
 test('the immediately preceding bracket format is stripped and migrated without losing its number', () => {

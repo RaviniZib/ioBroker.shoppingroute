@@ -150,19 +150,6 @@
         "pl": "Pierwsze stabilne wydanie ShoppingRoute z pełnymi tłumaczeniami panelu administracyjnego, ulepszoną pomocą dla tras, zabezpieczonym publikowaniem npm i zweryfikowaną zgodnością Alexa2/alexa-remote2.",
         "uk": "Перший стабільний випуск ShoppingRoute з повними перекладами інтерфейсу Admin, покращеною довідкою для маршрутів, захищеною публікацією npm та перевіреною сумісністю Alexa2/alexa-remote2.",
         "zh-cn": "ShoppingRoute 首个稳定版本，包含完整的 Admin 翻译、改进的行走路线帮助、安全的 npm 发布流程以及经过验证的 Alexa2/alexa-remote2 兼容性。"
-      },
-      "0.3.1": {
-        "en": "Fixed a restart loop in review learning mode.",
-        "de": "Neustartschleife im Lernmodus Prüfliste behoben.",
-        "ru": "Исправлен цикл перезапуска в режиме проверки обучения.",
-        "pt": "Corrigido um ciclo de reinicialização no modo de revisão.",
-        "nl": "Herstartlus in de controle-leermodus opgelost.",
-        "fr": "Correction d'une boucle de redémarrage en mode de vérification.",
-        "it": "Risolto un ciclo di riavvio nella modalità di revisione.",
-        "es": "Corregido un bucle de reinicio en el modo de revisión.",
-        "pl": "Naprawiono pętlę restartów w trybie weryfikacji.",
-        "uk": "Виправлено цикл перезапуску в режимі перевірки.",
-        "zh-cn": "修复审核学习模式中的重启循环。"
       }
     },
     "extIcon": "https://raw.githubusercontent.com/RaviniZib/ioBroker.shoppingroute/main/admin/shoppingroute.png",
