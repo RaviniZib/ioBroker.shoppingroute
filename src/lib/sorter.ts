@@ -150,6 +150,10 @@ export function applyReviewActions(
     const remaining: ReviewItemConfig[] = [];
 
     for (const review of reviewItems) {
+        if (review.action === 'accepted') {
+            remaining.push({ ...review });
+            continue;
+        }
         if (review.action !== 'accept') {
             remaining.push({ ...review });
             continue;
@@ -172,6 +176,7 @@ export function applyReviewActions(
                 existing.aliases = [...aliases].join(',');
             }
             accepted.push({ ...existing });
+            remaining.push({ ...review, action: 'accepted' });
             continue;
         }
 
@@ -186,6 +191,7 @@ export function applyReviewActions(
         };
         merged.push(product);
         accepted.push(product);
+        remaining.push({ ...review, action: 'accepted' });
     }
 
     return {

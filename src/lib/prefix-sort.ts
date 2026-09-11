@@ -5,6 +5,7 @@ import type {
     RouteConfig,
 } from './model';
 import { formatMarketHeader, marketNameFromHeader, optimizeMarketAssignments } from './market-plan';
+import { overridesForList, type ManualItemOverride } from './manual-order';
 import { normalize } from './parser';
 
 const SORT_PREFIX = /^(\d{2})>\s+(.+)$/s;
@@ -113,6 +114,8 @@ function usableVersion(item: AlexaListItem): number | undefined {
  * @param priorityMarket Current market priority.
  * @param minimumItemsPerMarket Consolidation threshold.
  * @param marketHeaders Whether market headers belong in the route.
+ * @param manualOverrides Current per-item manual Admin overrides.
+ * @param listName Managed list name used to scope overrides.
  */
 export function buildPrefixTargets(
     items: AlexaListItem[],
@@ -123,6 +126,8 @@ export function buildPrefixTargets(
     priorityMarket = '',
     minimumItemsPerMarket = 1,
     marketHeaders = false,
+    manualOverrides: ManualItemOverride[] = [],
+    listName = '',
 ): PrefixTarget[] {
     const current = active(items);
     const headersByMarket = new Map<string, AlexaListItem[]>();
@@ -142,18 +147,25 @@ export function buildPrefixTargets(
         real.push({ ...item, value: text });
     }
 
-    const assigned = optimizeMarketAssignments(
+    const manualById = new Map(overridesForList(manualOverrides, listName).map(entry => [entry.itemId, entry]));
+    const automaticallyAssigned = optimizeMarketAssignments(
         real,
         markets,
         products,
         fallbackMarket,
         priorityMarket,
         minimumItemsPerMarket,
-    ).map(entry => ({
-        ...entry,
-        marketOrder: marketOrder(markets, entry.parsed.market),
-        categoryOrder: categoryOrder(routes, entry.parsed.market, entry.parsed.category),
-    })).sort((left, right) => {
+    ).map(entry => {
+        const manual = manualById.get(String(entry.source.id));
+        const parsed = manual?.market ? { ...entry.parsed, market: manual.market } : entry.parsed;
+        return {
+            ...entry,
+            parsed,
+            manualPosition: manual?.position,
+            marketOrder: marketOrder(markets, parsed.market),
+            categoryOrder: categoryOrder(routes, parsed.market, parsed.category),
+        };
+    }).sort((left, right) => {
         if (left.marketOrder !== right.marketOrder) return left.marketOrder - right.marketOrder;
         if (left.categoryOrder !== right.categoryOrder) return left.categoryOrder - right.categoryOrder;
         const category = left.parsed.category.localeCompare(right.parsed.category, 'de', { sensitivity: 'base' });
@@ -161,6 +173,28 @@ export function buildPrefixTargets(
         const product = left.parsed.productName.localeCompare(right.parsed.productName, 'de', { sensitivity: 'base' });
         if (product !== 0) return product;
         return String(left.source.id).localeCompare(String(right.source.id));
+    });
+
+    const marketKeys: string[] = [];
+    const grouped = new Map<string, typeof automaticallyAssigned>();
+    for (const entry of automaticallyAssigned) {
+        const key = normalize(entry.parsed.market);
+        if (!grouped.has(key)) marketKeys.push(key);
+        const group = grouped.get(key) || [];
+        group.push(entry);
+        grouped.set(key, group);
+    }
+    const assigned = marketKeys.flatMap(key => {
+        const group = grouped.get(key) || [];
+        const manual = group
+            .filter(entry => Number.isInteger(entry.manualPosition))
+            .sort((a, b) => Number(a.manualPosition) - Number(b.manualPosition) || String(a.source.id).localeCompare(String(b.source.id)));
+        const ordered = group.filter(entry => !Number.isInteger(entry.manualPosition));
+        for (const entry of manual) {
+            const position = Math.max(0, Math.min(ordered.length, Number(entry.manualPosition)));
+            ordered.splice(position, 0, entry);
+        }
+        return ordered;
     });
 
     const targets: PrefixTarget[] = [];

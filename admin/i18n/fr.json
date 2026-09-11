@@ -61,5 +61,7 @@
   "ui.items.general.items.marketheaders.label": "En-têtes de magasins dans la liste Alexa",
   "ui.items.general.items.marketheaders.help": "Ajoute des entrées comme ═════ ALDI ═════. L’en-tête reste actif tant qu’au moins un article réel de ce magasin est ouvert et est entièrement supprimé lorsque le magasin n’est plus nécessaire.",
   "ui.items.general.items.minitemspermarket.label": "Nombre minimum d’articles par magasin supplémentaire",
-  "ui.items.general.items.minitemspermarket.help": "1 désactive la consolidation. Sous le seuil, seuls les articles avec des magasins alternatifs configurés peuvent être déplacés. Les indications explicites ne sont jamais modifiées."
+  "ui.items.general.items.minitemspermarket.help": "1 désactive la consolidation. Sous le seuil, seuls les articles avec des magasins alternatifs configurés peuvent être déplacés. Les indications explicites ne sont jamais modifiées.",
+  "ui.items.shoppinglisttab.label": "Liste de courses",
+  "ui.items.reviewtab.items.reviewitems.items.5.options.3.label": "Accepté"
 }

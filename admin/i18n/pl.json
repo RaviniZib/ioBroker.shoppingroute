@@ -61,5 +61,7 @@
   "ui.items.general.items.marketheaders.label": "Nagłówki sklepów na liście Alexa",
   "ui.items.general.items.marketheaders.help": "Dodaje wpisy takie jak ═════ ALDI ═════. Nagłówek pozostaje aktywny, dopóki co najmniej jeden rzeczywisty artykuł tego sklepu jest otwarty, a gdy sklep nie jest już potrzebny, zostaje całkowicie usunięty.",
   "ui.items.general.items.minitemspermarket.label": "Minimalna liczba artykułów na dodatkowy sklep",
-  "ui.items.general.items.minitemspermarket.help": "1 wyłącza konsolidację. Poniżej progu przenoszone są tylko artykuły z skonfigurowanymi alternatywnymi sklepami. Jawne wskazania sklepu nigdy nie są zmieniane."
+  "ui.items.general.items.minitemspermarket.help": "1 wyłącza konsolidację. Poniżej progu przenoszone są tylko artykuły z skonfigurowanymi alternatywnymi sklepami. Jawne wskazania sklepu nigdy nie są zmieniane.",
+  "ui.items.shoppinglisttab.label": "Lista zakupów",
+  "ui.items.reviewtab.items.reviewitems.items.5.options.3.label": "Zaakceptowano"
 }

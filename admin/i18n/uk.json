@@ -61,5 +61,7 @@
   "ui.items.general.items.marketheaders.label": "Заголовки магазинів у списку Alexa",
   "ui.items.general.items.marketheaders.help": "Додає записи на кшталт ═════ ALDI ═════. Заголовок залишається активним, доки відкритий хоча б один справжній товар цього магазину, і повністю видаляється, коли магазин більше не потрібен.",
   "ui.items.general.items.minitemspermarket.label": "Мінімальна кількість товарів для додаткового магазину",
-  "ui.items.general.items.minitemspermarket.help": "1 вимикає об’єднання. Нижче порога переміщуються лише товари з налаштованими альтернативними магазинами. Явні вказівки магазину ніколи не змінюються."
+  "ui.items.general.items.minitemspermarket.help": "1 вимикає об’єднання. Нижче порога переміщуються лише товари з налаштованими альтернативними магазинами. Явні вказівки магазину ніколи не змінюються.",
+  "ui.items.shoppinglisttab.label": "Список покупок",
+  "ui.items.reviewtab.items.reviewitems.items.5.options.3.label": "Прийнято"
 }
