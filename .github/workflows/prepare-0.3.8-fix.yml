@@ -1,7 +1,9 @@
 name: Prepare 0.3.8 Fix
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - fix-0.3.8-review-shopping-ui
 
 permissions:
   contents: write
@@ -99,7 +101,7 @@ jobs:
           node <<'NODE'
           const fs = require('node:fs');
           const text = fs.readFileSync('repochecker.log', 'utf8');
-          const codes = [...new Set([...text.matchAll(/\b([EWS]\d{4})\b/g)].map(match => match[1]))].sort();
+          const codes = [...new Set([...text.matchAll(/^\[([EWS]\d{4})\]/gm)].map(match => match[1]))].sort();
           const allowed = new Set(['E3032', 'W4001']);
           const unexpected = codes.filter(code => !allowed.has(code));
           console.log(`Repository checker codes: ${codes.join(', ') || 'none'}`);
