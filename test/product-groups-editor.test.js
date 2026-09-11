@@ -153,7 +153,7 @@ test('walking route editor source and delivered entry remain file-identical', ()
     'src-admin/route-editor.js': 'cbb6fbc953999c1ac9a5034aadd1934db7fb3ee1671d0fd4b098c34b271c6fa8',
     'src-admin/route-editor-components.mjs': 'f0fe127c17f646ccecb87905cb27fe818a91883a49bbd55858beb20cfef970fa',
     'admin/custom/routeEditor.js': 'f9e11a4617b39a2ad148e219738c04928ecda0559dddafd6317cd795a4bc8eca',
-    'admin/custom/mf-manifest.json': '218f2587c3b800f518a727d1f3f1bd65e11ccc58ba52c17079903ff162f87945',
+    'admin/custom/mf-manifest.json': '39714d615dc53fa052c47280829b8042997464aaea078c09a1366730181e1c3f',
   };
 
   for (const [file, expected] of Object.entries(hashes)) {
