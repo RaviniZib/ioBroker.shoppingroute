@@ -1,9 +1,7 @@
 name: Prepare 0.3.8 Fix
 
 on:
-  push:
-    branches:
-      - fix-0.3.8-review-shopping-ui
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -102,8 +100,6 @@ jobs:
           const fs = require('node:fs');
           const text = fs.readFileSync('repochecker.log', 'utf8');
           const codes = [...new Set([...text.matchAll(/\b([EWS]\d{4})\b/g)].map(match => match[1]))].sort();
-          // E3032 is historical until 0.3.8 is released through the regular tag workflow.
-          // W4001 is expected while the admission PR itself is still adding shoppingroute to latest.
           const allowed = new Set(['E3032', 'W4001']);
           const unexpected = codes.filter(code => !allowed.has(code));
           console.log(`Repository checker codes: ${codes.join(', ') || 'none'}`);
