@@ -204,3 +204,9 @@ Das ursprüngliche Fehlerjournal ist gesichert; seine manuelle Auflösung berüc
 149 Tests bestanden, 0 fehlgeschlagen; Lint/TypeScript bestanden, jeweils lokal und auf dem Server. Ein zusätzlicher Lesetest verbindet den echten installierten Admin-WebSocket-Client mit dem Editor: vollständige Antwort mit drei Artikeln, drei gerenderte Artikelzeilen und drei Löschtasten. Das prüft den Komponentenbaum, nicht den Browser-DOM.
 
 Die korrigierten Admin-Dateien sind einzeln in den ioBroker-Dateispeicher geschrieben und zurückgelesen worden; SHA-256 stimmt mit dem Build überein. Adapter läuft, aktuelles Fehlerfeld leer. Kein Backend-Neustart und keine Änderung an Einkaufsdaten. History und Anleitungen ergänzt. Tatsächlicher Auslöser der historischen Antwort und Browser-Abnahme weiterhin offen.
+
+## Benutzerabnahme und Status von Issue #16 – 12.09.2026
+
+Frank bestätigt nach der letzten lokalen Installation: „bisher keine weiteren fehler. alte fehler alle behoben.“ Damit sind die bislang gemeldeten Bedienungsfehler durch seine Rückmeldung als behoben abgenommen. Frühere Hinweise auf ausstehende Benutzerabnahme beschreiben den damaligen Prüfstand. Die unbekannte ursprüngliche Antwort bei F10 bleibt historisch unaufgeklärt; daraus folgt keine offene Reproduktion im aktuell abgenommenen Stand.
+
+Issue #16 wurde erneut lesend geprüft: weiterhin offen, letzte Bot-Rückmeldung vom 12.09.2026, 09:25:55 UTC, unveränderte Beanstandungen E2004, E4048, E4050, E4051, E6034 und Vorschlag S0064. Alle sind im lokalen Quellstand korrigiert. Letzter lokaler Repository-Check: 0 Fehler, 1 Warnung W4001, 0 Vorschläge. Aufnahme-PR #6434 ist weiterhin offen. Die lokalen Korrekturen wurden noch nicht auf GitHub übertragen; daher kann der öffentliche Bot sie noch nicht bestätigen.

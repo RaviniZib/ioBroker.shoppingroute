@@ -92,3 +92,7 @@ The actual installed Admin WebSocket client was used for a read-only `getShoppin
 Final F10 verification: 149 tests passed, 0 failed, plus lint/TypeScript in both working copies. Live read through the installed Admin WebSocket client into the real editor produced three item rows and three Delete buttons. This checks the React component tree, not a mounted browser DOM. An attempted HTML render was unavailable because react-dom/server is not installed; it was not counted as passed.
 
 Admin entry SHA-256: f526b49316c5bec2c1bc6ca9dcc9474db589007aa038c9e0e6d757c68e185865. Component bundle: e27a775d3e879a245518ad8e9a6daeab4147e53b9fbf430d2fad33f62e243a75. Uploaded files were read back and matched. Instance alive, current error empty. Evidence retained in view-response-incident next to the server repository. No backend restart, shopping-data writes, GitHub writes or publication. Historical trigger and browser acceptance remain unconfirmed.
+
+## User acceptance – 2026-09-12
+
+Frank reports no further errors so far and confirms all previously reported errors are fixed. This supersedes earlier pending user-acceptance status for the reported UI problems; it does not claim exhaustive automated browser coverage. Read-only recheck of GitHub issue #16 confirms the same six bot findings remain on the public repository. Their corrections are local; the last local checker result remains 0 errors, 1 warning W4001, 0 suggestions. Repository-admission PR #6434 remains open. No push, bot recheck request, issue closure or publication was performed.
