@@ -104,3 +104,9 @@ Fix set F01-F10 and all six current email findings were reconciled in RELEASE_0.
 The first version-preparation run caught the runtime VERSION constant still at 0.4.0; it was updated to 0.4.1 before re-running all checks. No failing run is counted as a pass. Only versions and release documentation change after the user-accepted functional fixes. Existing immutable npm versions and release tags are retained.
 
 Final local 0.4.1 rerun: 149 unit/component tests passed, 0 failed; 70 package checks passed; ESLint and TypeScript passed. Build and diff whitespace checks passed. npm pack dry-run contains 83 files with required backend/Admin assets and no tests or node_modules. Published artifact verification remains a separate post-deploy check.
+
+## Published artifact and metadata follow-up
+
+Tag v0.4.1 at e51c8da passed all ten release checks and deploy. Downloaded npm 0.4.1: all 83 files byte-identical to the expected package; integrity, provenance subject, source commit and workflow match. npm latest is 0.4.1. Sentry was intentionally skipped.
+
+Post-publication remote checker found E1054 for nine missing news translations, despite returning exit code 0. These translations are added to the repository after the immutable release; the published package retains English/German release news. Runtime code is unchanged. The follow-up package checks pass (70). Final remote-check and main-CI evidence will be attached to the GitHub release.

@@ -34,3 +34,9 @@ Version 0.4.1 wird als eigenes Patch-Release veröffentlicht. Bestehende npm-Ver
 Vollständiger Remote-Repository-Check auf GitHub-SHA 9845243: **0 Fehler, 1 Warnung W4001, 0 Vorschläge**. Die fehlgeschlagenen kurzen Diagnoseaufrufe davor sind keine bestandenen Prüfungen. Der aktuelle vollständige Lauf ist protokolliert.
 
 Abschließende lokale Prüfung des vorbereiteten 0.4.1-Stands: 149 Unit-/Komponententests bestanden, 0 fehlgeschlagen; 70 Paketprüfungen bestanden; ESLint und TypeScript ohne Befund. Build und `git diff --check` erfolgreich. Pack-Vorschau: 83 Dateien, erforderliche Backend- und Admin-Dateien enthalten, keine Tests oder node_modules. Die endgültigen Tag-CI- und npm-Nachweise folgen bei der Veröffentlichung.
+
+## Nach Veröffentlichung geprüft
+
+0.4.1 ist auf GitHub und npm (`latest`) veröffentlicht. Alle zehn Tag-CI-Prüfungen und Deploy sind erfolgreich (Lauf 34696021627). Das tatsächlich heruntergeladene npm-Paket enthält dieselben 83 Dateien bytegenau wie das geprüfte Paket. Integrität, Herkunftsnachweis, Tag und Release-Commit e51c8da stimmen überein.
+
+Der abschließende Remote-Checker erkannte E1054: Beim neuen News-Eintrag fehlten neun Sprachfassungen. Diese werden ausschließlich im Repository ergänzt. Der veröffentlichte npm-Stand enthält alle Funktions- und E-Mail-Korrekturen; sein News-Eintrag bleibt unveränderlich auf Englisch/Deutsch. Dafür wird kein weiterer Funktionsrelease erstellt. Der Checker hatte trotz dieses Befunds Exitcode 0 gemeldet; maßgeblich ist seine Befundliste. Der erneute vollständige Check und die Main-CI werden separat bestätigt.

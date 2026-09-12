@@ -62,7 +62,16 @@
     "news": {
       "0.4.1": {
         "en": "Fixes review acceptance and market selection, prevents concurrent shopping-list writes and duplicates, adds verified item deletion, handles incomplete Admin responses, and resolves repository checker metadata findings.",
-        "de": "Korrigiert Prüflistenübernahme und Marktauswahl, verhindert parallele Schreibläufe und Duplikate, ergänzt geprüftes Löschen, behandelt unvollständige Admin-Antworten und behebt Metadaten-Beanstandungen des Repository-Checkers."
+        "de": "Korrigiert Prüflistenübernahme und Marktauswahl, verhindert parallele Schreibläufe und Duplikate, ergänzt geprüftes Löschen, behandelt unvollständige Admin-Antworten und behebt Metadaten-Beanstandungen des Repository-Checkers.",
+        "ru": "Исправлены принятие товаров из очереди проверки и выбор магазинов; предотвращены параллельные записи в список покупок и дубликаты; добавлено удаление с проверкой результата, обработка неполных ответов Admin и исправления метаданных по замечаниям проверки репозитория.",
+        "pt": "Corrige a aceitação de artigos na revisão e a seleção de lojas, impede escritas simultâneas na lista de compras e duplicados, acrescenta eliminação verificada, trata respostas incompletas do Admin e resolve os problemas de metadados detetados pelo verificador do repositório.",
+        "nl": "Herstelt het accepteren van artikelen en de winkelselectie in de controlelijst, voorkomt gelijktijdige schrijfacties en dubbele artikelen, voegt gecontroleerd verwijderen toe, verwerkt onvolledige Admin-antwoorden en verhelpt de metadatafouten van de repositorycontrole.",
+        "fr": "Corrige l’acceptation des articles à vérifier et la sélection des magasins, empêche les écritures simultanées et les doublons dans la liste de courses, ajoute une suppression vérifiée, gère les réponses Admin incomplètes et corrige les métadonnées signalées par le vérificateur du dépôt.",
+        "it": "Corregge l’accettazione degli articoli da verificare e la selezione dei negozi, impedisce scritture simultanee e duplicati nella lista della spesa, aggiunge l’eliminazione verificata, gestisce le risposte Admin incomplete e risolve i problemi di metadati segnalati dal controllo del repository.",
+        "es": "Corrige la aceptación de artículos en revisión y la selección de tiendas, evita escrituras simultáneas y duplicados en la lista de compras, añade la eliminación verificada, gestiona respuestas incompletas de Admin y corrige los metadatos señalados por el verificador del repositorio.",
+        "pl": "Naprawia zatwierdzanie produktów i wybór sklepów na liście do sprawdzenia, zapobiega równoczesnym zapisom i duplikatom na liście zakupów, dodaje usuwanie z weryfikacją, obsługuje niepełne odpowiedzi Admin i poprawia metadane wskazane przez kontrolę repozytorium.",
+        "uk": "Виправлено прийняття товарів із черги перевірки та вибір магазинів; усунено паралельні записи до списку покупок і дублікати; додано видалення з перевіркою результату, обробку неповних відповідей Admin та виправлення метаданих за зауваженнями перевірки репозиторію.",
+        "zh-cn": "修复审核列表中的商品接受和商店选择问题，防止购物清单并发写入和重复条目，新增经验证的商品删除，处理不完整的 Admin 响应，并修复仓库检查器指出的元数据问题。"
       },
       "0.4.0": {
         "en": "Persists startup review cleanup and normalizes market arrays. Correction: the complete Admin review workflow was not fixed; accepted rows could remain visible and multi-market selection still had UI defects.",
