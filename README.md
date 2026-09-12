@@ -40,12 +40,20 @@ See `README_DE.md` for the detailed German documentation.
 
 ## Changelog
 
+### **WORK IN PROGRESS**
+
+- Corrects checker #16 metadata: removes unpublished 0.3.8 from `common.news`, adds the existing npm maintainer email to author/copyright fields, links the MIT license and declares testing ^6.2.1. Local checker: no errors; repository admission remains pending in PR #6434.
+
+- Updates the catalogue and removes accepted review rows in one Admin draft change, avoiding stale accepted rows after saving. Discarding restores the original draft. UI acceptance is pending.
+- Replaces the review queue’s native multi-select with independently clickable market checkboxes and a visible selection summary. Desktop/mobile acceptance is still pending; this fix is not part of published 0.4.0.
+
 ### 0.4.0 (2026-09-12)
 
-- Fixes the complete review workflow: immediately accepted rows are reliably removed after saving and restarting the adapter without duplicating the product.
-- Keeps “Available markets” as an array throughout the review queue and product catalogue so multiple selections survive editing, accepting and saving.
-- Persists startup-only review cleanup and legacy product-market normalization even when no product needs to be accepted again.
-- Adds an end-to-end regression test covering edit, accept, save and startup cleanup.
+**Correction to the original acceptance claim:** The complete review workflow was not fixed. Accepted rows could remain visible in the Admin draft, and market selection still used a native multi-select. The original “end-to-end test” description was incorrect: tests covered editor/helper functions and serialization, not full Admin interaction.
+
+- Persists startup cleanup of previously accepted review rows even without accepting another product.
+- Normalizes legacy product-market strings to arrays at startup and preserves market arrays in acceptance functions.
+- The additional local UI correction is listed under “WORK IN PROGRESS”; it is not part of the published 0.4.0 package.
 
 ### 0.3.9 (2026-09-11)
 
@@ -128,6 +136,6 @@ Older releases: [CHANGELOG_OLD.md](CHANGELOG_OLD.md).
 
 ## License
 
-Licensed under the MIT License. See LICENSE for the complete terms.
+Licensed under the MIT License. See [LICENSE](LICENSE) for the complete terms.
 
-Copyright (c) 2026 RaviniZib
+Copyright (c) 2026 RaviniZib <zib@ravini.org>

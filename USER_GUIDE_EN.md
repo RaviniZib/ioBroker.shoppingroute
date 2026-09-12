@@ -206,7 +206,9 @@ For normal operation, **Review first** is a good starting point.
 
 ## 13. Review queue
 
-On the **Review** tab, unknown products can be checked before they are added. After accepting and saving, the adapter restart removes the processed row from the review queue. The product remains exactly once in the product catalogue and retains every market selected in the multi-select control.
+**Local correction, not yet released:** Open “Available markets” and click or tap each market checkbox independently. Clicking again removes only that market; other selections remain checked and visible in the summary. No Ctrl/Cmd key is needed. The default market is independent. Accepting individually or in bulk updates the catalogue and removes the corresponding review rows in the same draft. Save normally to persist both changes; discarding restores the original draft. Desktop/mobile acceptance of this change is still pending.
+
+On the **Review** tab, unknown products can be checked before they are added. Released 0.4.0 intended to remove accepted rows after saving and restarting, but Admin could still display them. The local correction described above removes rows in the draft; real UI acceptance remains pending.
 
 You can edit, among other things:
 
@@ -224,7 +226,7 @@ Available actions are:
 
 When an item is accepted, it is added to the product catalogue or an already known product is updated.
 
-After a normal save, an accepted entry disappears from the review queue and is available on the **Products** tab. **Ignore** removes the entry without adding it to the catalogue.
+Save to persist the updated product catalogue and review queue together. **Ignore** is the action for discarding an unknown item without adding it to the catalogue.
 
 ### Current shopping list in Admin
 

@@ -202,6 +202,8 @@ Für den normalen Betrieb empfiehlt sich zunächst **Erst prüfen**.
 
 ## 13. Prüfliste
 
+**Lokale Korrektur, noch nicht veröffentlicht:** „Verfügbare Märkte“ öffnet eine Liste mit Kästchen. Jeden gewünschten Markt einzeln anklicken oder antippen. Erneutes Anklicken entfernt nur diesen Markt; andere Häkchen bleiben bestehen. Die gewählten Namen bleiben in der Zusammenfassung sichtbar. Strg/Cmd ist nicht erforderlich. Der Standardmarkt wird unabhängig davon eingestellt. „Übernehmen“ bzw. „Alle übernehmen“ verschiebt die Artikel sofort in den Artikelstamm und entfernt die entsprechenden Prüfzeilen im selben Entwurf. Danach normal speichern. Verwerfen stellt den ursprünglichen Stand wieder her. Die Desktop-/Handy-Abnahme dieser Änderung steht noch aus.
+
 Im Reiter **Prüfliste** können unbekannte Artikel kontrolliert werden. Bearbeitbar sind unter anderem Produktname, Produktgruppe, Standardmarkt und Aliase.
 
 Mögliche Aktionen:
@@ -212,7 +214,7 @@ Mögliche Aktionen:
 
 Beim Übernehmen wird der Artikel in den Artikelstamm aufgenommen beziehungsweise ein bereits bekannter Artikel ergänzt.
 
-Nach dem normalen Speichern und dem dadurch ausgelösten Adapterneustart verschwindet ein übernommener Eintrag aus der Prüfliste. Er ist anschließend genau einmal im Reiter **Artikel** zu finden; alle über die Mehrfachauswahl gewählten Märkte bleiben erhalten. **Ignorieren** entfernt den Eintrag, ohne ihn in den Artikelstamm aufzunehmen.
+Für die veröffentlichte 0.4.0 war die Entfernung nach Speichern und Adapterneustart vorgesehen. Dieser Ablauf war in der Admin-Oberfläche nicht zuverlässig: Übernommene Zeilen konnten sichtbar bleiben. Die oben beschriebene lokale Korrektur entfernt sie bereits im Entwurf; ihre reale UI-Abnahme ist noch offen. **Ignorieren** ist die Aktion zum Verwerfen eines unbekannten Artikels ohne Aufnahme in den Artikelstamm.
 
 ### Aktuelle Einkaufsliste im Admin
 

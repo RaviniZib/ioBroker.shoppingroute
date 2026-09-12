@@ -49,7 +49,7 @@
   "ui.items.productstab.items.products.items.3.title": "Standardmarkt",
   "ui.items.productstab.items.products.items.4.title": "Verfügbare Märkte",
   "ui.items.reviewtab.label": "Prüfliste",
-  "ui.items.reviewtab.items.reviewhelp.text": "Im Prüfmodus erscheinen unbekannte Artikel hier. Artikelname, Produktgruppe, Standardmarkt oder Aliase korrigieren, dann Übernehmen oder Ignorieren wählen und speichern. Übernommene Einträge wandern nach dem Neustart in den Artikelstamm.",
+  "ui.items.reviewtab.items.reviewhelp.text": "Im Prüfmodus erscheinen unbekannte Artikel hier. Artikelname, Produktgruppe, Standardmarkt, verfügbare Märkte oder Aliase korrigieren. Übernehmen verschiebt den Artikel sofort in den Artikelstamm und entfernt die Prüfzeile im Entwurf. Danach normal speichern; Verwerfen macht ungespeicherte Änderungen rückgängig.",
   "ui.items.reviewtab.items.reviewitems.label": "Unbekannte Artikel prüfen",
   "ui.items.reviewtab.items.reviewitems.items.1.title": "Alexa-Text",
   "ui.items.reviewtab.items.reviewitems.items.5.title": "Aktion",

@@ -119,6 +119,7 @@ function updateReviewRow(data, index, patch) {
 
 function acceptReviewRows(data, indexes) {
     const wanted = new Set(indexes);
+    const processed = new Set();
     const products = (Array.isArray(data?.products) ? data.products : []).map(product => ({ ...product }));
     const reviewItems = (Array.isArray(data?.reviewItems) ? data.reviewItems : []).map(row => ({ ...row }));
 
@@ -157,15 +158,11 @@ function acceptReviewRows(data, indexes) {
                 availableMarkets: normalizeMarketSelection(review.availableMarkets),
             });
         }
-        reviewItems[index] = {
-            ...review,
-            availableMarkets: normalizeMarketSelection(review.availableMarkets),
-            action: 'accepted',
-        };
+        processed.add(index);
     }
 
     products.sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'de', { sensitivity: 'base' }));
-    return { ...(data || {}), products, reviewItems };
+    return { ...(data || {}), products, reviewItems: reviewItems.filter((_, index) => !processed.has(index)) };
 }
 
 const styles = `
@@ -176,7 +173,12 @@ const styles = `
 .shoppingroute-review-row{display:grid;grid-template-columns:minmax(190px,1.35fr) minmax(150px,1fr) minmax(125px,.8fr) minmax(155px,1fr) minmax(150px,1fr) minmax(130px,.8fr) 34px;gap:9px;align-items:center;padding:9px 10px;border-bottom:1px solid currentColor}
 .shoppingroute-review-row:last-child{border-bottom:0}
 .shoppingroute-review-row input,.shoppingroute-review-row select{width:100%;min-width:0;min-height:36px;box-sizing:border-box;border:1px solid currentColor;border-radius:4px;background:transparent;color:inherit;padding:6px 8px}
-.shoppingroute-review-row select[multiple]{min-height:58px}
+.shoppingroute-review-row> *{min-width:0}
+.shoppingroute-review-markets{min-width:0;border:1px solid currentColor;border-radius:4px}
+.shoppingroute-review-markets summary{min-height:44px;box-sizing:border-box;padding:10px 8px;cursor:pointer;overflow-wrap:anywhere}
+.shoppingroute-review-market-options{max-height:220px;overflow-y:auto;padding:0 8px 8px}
+.shoppingroute-review-market-option{display:flex;align-items:center;gap:8px;min-height:44px;cursor:pointer;overflow-wrap:anywhere}
+.shoppingroute-review-market-option input[type=checkbox]{width:20px;height:20px;min-height:20px;flex:0 0 20px;margin:0;padding:0;accent-color:#1976d2}
 .shoppingroute-review-product small{display:block;opacity:.65;margin-top:3px;word-break:break-word}
 .shoppingroute-review-delete{width:32px;height:32px;border:1px solid currentColor;border-radius:4px;background:transparent;color:inherit;cursor:pointer}
 .shoppingroute-review-head{font-size:.78rem;font-weight:700;opacity:.68;padding-top:6px;padding-bottom:6px}
@@ -225,12 +227,10 @@ class ReviewEditor extends React.Component {
     }
 
     renderRow(row, index, groups, markets) {
-        const available = new Set(
-            String(row.availableMarkets || '')
-                .split(/[;,]/)
-                .map(value => keyOf(value))
-                .filter(Boolean),
-        );
+        const selectedMarkets = normalizeMarketSelection(row.availableMarkets);
+        const available = new Set(selectedMarkets.map(keyOf));
+        // Keep saved selections visible, including markets that were renamed or disabled.
+        const marketOptions = normalizeMarketSelection([...markets, ...selectedMarkets]);
         const accepted = row.action === 'accepted';
         const statusOptions = [
             h('option', { key: 'pending', value: 'pending' }, text('Offen', 'Pending')),
@@ -294,21 +294,59 @@ class ReviewEditor extends React.Component {
                     ],
                 ),
                 h(
-                    'select',
+                    'details',
                     {
                         key: 'availableMarkets',
-                        multiple: true,
-                        value: markets.filter(market => available.has(keyOf(market))),
-                        'aria-label': text('Verfügbare Märkte', 'Available markets'),
-                        onChange: event => {
-                            const values = [...event.target.selectedOptions].map(option => option.value);
-                            this.update(index, {
-                                availableMarkets: values,
-                                action: accepted ? 'pending' : row.action,
-                            });
-                        },
+                        className: 'shoppingroute-review-markets',
                     },
-                    markets.map(market => h('option', { key: market, value: market }, market)),
+                    [
+                        h(
+                            'summary',
+                            { key: 'summary' },
+                            `${text('Verfügbare Märkte', 'Available markets')}: ${
+                                selectedMarkets.length
+                                    ? selectedMarkets.join(', ')
+                                    : text('Keine ausgewählt', 'None selected')
+                            }`,
+                        ),
+                        h(
+                            'div',
+                            {
+                                key: 'options',
+                                className: 'shoppingroute-review-market-options',
+                                role: 'group',
+                                'aria-label': text('Verfügbare Märkte', 'Available markets'),
+                            },
+                            marketOptions.map(market =>
+                                h(
+                                    'label',
+                                    {
+                                        key: keyOf(market),
+                                        className: 'shoppingroute-review-market-option',
+                                    },
+                                    [
+                                        h('input', {
+                                            key: 'checkbox',
+                                            type: 'checkbox',
+                                            checked: available.has(keyOf(market)),
+                                            onChange: event => {
+                                                const current = normalizeMarketSelection(
+                                                    this.props.data?.reviewItems?.[index]?.availableMarkets,
+                                                );
+                                                this.update(index, {
+                                                    availableMarkets: event.target.checked
+                                                        ? normalizeMarketSelection([...current, market])
+                                                        : current.filter(value => keyOf(value) !== keyOf(market)),
+                                                    action: accepted ? 'pending' : row.action,
+                                                });
+                                            },
+                                        }),
+                                        h('span', { key: 'name' }, market),
+                                    ],
+                                ),
+                            ),
+                        ),
+                    ],
                 ),
                 h('input', {
                     key: 'aliases',
@@ -375,8 +413,8 @@ class ReviewEditor extends React.Component {
                     'span',
                     { key: 'hint', style: { opacity: 0.7 } },
                     text(
-                        '„Übernehmen“ aktualisiert Artikelstamm und Status sofort; danach normal speichern.',
-                        '“Accept” updates catalogue and status immediately; then save normally.',
+                        '„Übernehmen“ verschiebt den Artikel in den Artikelstamm und entfernt die Prüfzeile. Danach speichern; Verwerfen macht die Änderung rückgängig.',
+                        '“Accept” moves the product into the catalogue and removes the review row. Then save; discarding undoes the change.',
                     ),
                 ),
             ]),
