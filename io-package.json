@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "shoppingroute",
-    "version": "0.3.9",
+    "version": "0.4.0",
     "titleLang": {
       "en": "ShoppingRoute",
       "de": "ShoppingRoute",
@@ -60,6 +60,19 @@
     "icon": "shoppingroute.png",
     "tier": 3,
     "news": {
+      "0.4.0": {
+        "en": "Fixes the complete review workflow: accepted rows are removed after saving and restart, products are not duplicated, and all selected available markets remain arrays.",
+        "de": "Behebt den vollständigen Prüflistenablauf: Übernommene Zeilen werden nach Speichern und Neustart entfernt, Artikel nicht dupliziert und alle ausgewählten verfügbaren Märkte bleiben Arrays.",
+        "ru": "Исправляет полный цикл проверки: принятые строки удаляются после сохранения и перезапуска, товары не дублируются, а выбранные доступные магазины остаются массивами.",
+        "pt": "Corrige o fluxo completo de revisão: as linhas aceites são removidas após guardar e reiniciar, os artigos não são duplicados e os mercados disponíveis selecionados permanecem arrays.",
+        "nl": "Herstelt de volledige controleworkflow: geaccepteerde regels verdwijnen na opslaan en herstarten, artikelen worden niet gedupliceerd en geselecteerde beschikbare winkels blijven arrays.",
+        "fr": "Corrige le flux complet de vérification : les lignes acceptées sont supprimées après enregistrement et redémarrage, les articles ne sont pas dupliqués et les magasins disponibles restent des tableaux.",
+        "it": "Corregge il flusso completo di revisione: le righe accettate vengono rimosse dopo salvataggio e riavvio, gli articoli non vengono duplicati e i negozi disponibili restano array.",
+        "es": "Corrige el flujo completo de revisión: las filas aceptadas se eliminan tras guardar y reiniciar, los artículos no se duplican y los mercados disponibles seleccionados permanecen como arrays.",
+        "pl": "Naprawia pełny proces weryfikacji: zaakceptowane wiersze są usuwane po zapisaniu i restarcie, artykuły nie są duplikowane, a wybrane dostępne sklepy pozostają tablicami.",
+        "uk": "Виправляє повний цикл перевірки: прийняті рядки видаляються після збереження й перезапуску, товари не дублюються, а вибрані доступні магазини залишаються масивами.",
+        "zh-cn": "修复完整审核流程：已接受的行会在保存和重启后移除，商品不会重复，所有选中的可用商店始终以数组保存。"
+      },
       "0.3.9": {
         "en": "Replaces incomplete GitHub-installed 0.3.8 snapshots. Normalizes available-market selections, removes accepted review rows and orphaned market headings, and delivers the corrected single-column shopping-list view.",
         "de": "Ersetzt unvollständige, direkt von GitHub installierte 0.3.8-Zwischenstände. Vereinheitlicht verfügbare Märkte, entfernt übernommene Prüflistenzeilen und verwaiste Marktüberschriften und liefert die korrigierte einspaltige Einkaufslistenansicht.",
@@ -137,19 +150,6 @@
         "pl": "Dodano zgodność niestandardowych komponentów panelu z Admin 8, poprawiono opcjonalny dziennik podsumowania sortowania i nagłówki sklepów, naprawiono akcję „Zaakceptuj wszystko” w kolejce weryfikacji, wprowadzono wymóg potwierdzonych wartości dla zewnętrznych stanów Alexa2 oraz usunięto przestarzałą konfigurację, wewnętrzne sprawdzanie npm i zaciemnianie kodu dla lepszej zgodności z repozytorium.",
         "uk": "Додано сумісність користувацьких компонентів Admin з Admin 8, покращено необов’язковий підсумковий журнал сортування та заголовки магазинів, виправлено дію «Прийняти все» в черзі перевірки, для зовнішніх станів Alexa2 тепер потрібні підтверджені значення, а застарілі налаштування, внутрішню перевірку npm і обфускацію коду видалено для кращої сумісності з репозиторієм.",
         "zh-cn": "新增自定义管理组件的 Admin 8 兼容性，改进可选排序摘要日志和商店标题，修复审核队列的“全部接受”操作，要求外部 Alexa2 状态使用已确认值，并移除过时配置、内部 npm 检查和代码混淆，以提高仓库兼容性。"
-      },
-      "0.3.3": {
-        "en": "New direct 00>–99> prefix sorting for Alexa lists in A–Z, with very fast incremental insertion into free number gaps, suffix rebuilds only when a gap is exhausted, direct Amazon confirmation and final verification.",
-        "de": "Neue direkte 00>–99>-Präfixsortierung für Alexa-Listen in A–Z mit sehr schnellen inkrementellen Einfügungen in freie Nummernlücken, Suffix-Rebuild nur bei ausgeschöpfter Lücke, direkter Amazon-Bestätigung und abschließender Verifikation.",
-        "ru": "Новая прямая сортировка по префиксам 00>–99> для списков Alexa в режиме A–Z: очень быстрая поэтапная вставка в свободные числовые промежутки, перестроение суффикса только при отсутствии места, прямое подтверждение Amazon и итоговая проверка.",
-        "pt": "Nova ordenação direta por prefixos 00>–99> para listas Alexa em A–Z, com inserções incrementais muito rápidas em intervalos numéricos livres, reconstrução do sufixo apenas quando o intervalo se esgota, confirmação direta da Amazon e verificação final.",
-        "nl": "Nieuwe directe 00>–99>-prefixsortering voor Alexa-lijsten in A–Z, met zeer snelle incrementele invoegingen in vrije nummergaten, alleen een suffix-rebuild als een gat vol is, directe Amazon-bevestiging en eindcontrole.",
-        "fr": "Nouveau tri direct par préfixes 00>–99> pour les listes Alexa en A–Z, avec insertions incrémentales très rapides dans les intervalles numériques libres, reconstruction du suffixe uniquement quand l’intervalle est épuisé, confirmation Amazon directe et vérification finale.",
-        "it": "Nuovo ordinamento diretto con prefissi 00>–99> per le liste Alexa in A–Z, con inserimenti incrementali molto rapidi negli intervalli numerici liberi, ricostruzione del suffisso solo quando lo spazio è esaurito, conferma Amazon diretta e verifica finale.",
-        "es": "Nueva ordenación directa por prefijos 00>–99> para listas Alexa en A–Z, con inserciones incrementales muy rápidas en huecos numéricos libres, reconstrucción del sufijo solo cuando se agota el hueco, confirmación directa de Amazon y verificación final.",
-        "pl": "Nowe bezpośrednie sortowanie prefiksami 00>–99> dla list Alexa w trybie A–Z, z bardzo szybkim wstawianiem przyrostowym w wolne luki numeracji, przebudową sufiksu tylko po wyczerpaniu luki, bezpośrednim potwierdzeniem Amazon i końcową weryfikacją.",
-        "uk": "Нове пряме сортування за префіксами 00>–99> для списків Alexa в режимі A–Z: дуже швидке інкрементне вставлення у вільні числові проміжки, перебудова суфікса лише за відсутності місця, пряме підтвердження Amazon і фінальна перевірка.",
-        "zh-cn": "全新的 Alexa A–Z 列表直接 00>–99> 前缀排序：可快速增量插入空闲编号间隙，仅在间隙耗尽时重建后缀，并使用 Amazon 直接确认和最终校验。"
       }
     },
     "extIcon": "https://raw.githubusercontent.com/RaviniZib/ioBroker.shoppingroute/main/admin/shoppingroute.png",

@@ -144,7 +144,7 @@ test('phase-one styling preserves the functional JSON config outside the migrate
   ]));
   const hash=crypto.createHash('sha256').update(JSON.stringify(projection)).digest('hex');
 
-  assert.equal(hash,'c1f8de63c70abc927790b0ecfeb4ad26a978c329a21757c5e68293ce80ac3fb4');
+  assert.equal(hash,'062194d274caf4a81d167bae60a58856ba861ade0f6e1ef30e9a8774580c114b');
   const routeHash=crypto.createHash('sha256').update(JSON.stringify(jsonConfig.items.routesTab)).digest('hex');
   assert.equal(routeHash,'8bb35e144be68a1953ee81a22aa94a445162715354c73eb99e4119747c18c518');
 });
@@ -315,13 +315,7 @@ test('unsaved markets and product groups are fed into the real product and revie
   assert.equal(alternatives.multiple,true);
   assert.equal(alternatives.defaultSendTo,'normalizeMarketSelection');
   assert.match(alternatives.jsonData,/globalData\.markets/);
-  assert.match(products.products.onChange.calculateFunc,/join\(','\)/);
-
-  const productCalc=new Function('data',`return ${products.products.onChange.calculateFunc}`);
-  const serializedProducts=productCalc({
-    products:[{name:'Milch',category:'Milchprodukte',availableMarkets:['ALDI','LIDL']}],
-  });
-  assert.equal(serializedProducts[0].availableMarkets,'ALDI,LIDL');
+  assert.equal(products.products.onChange,undefined);
 
   const review=jsonConfig.items.reviewTab.items;
   assert.equal(review._reviewEditorRows,undefined);
@@ -338,6 +332,8 @@ test('unsaved markets and product groups are fed into the real product and revie
   const reviewSource=fs.readFileSync(path.join(root,'src-admin','review-editor.js'),'utf8');
   assert.match(reviewSource,/acceptReviewRows/);
   assert.match(reviewSource,/action: 'accepted'/);
+  assert.match(reviewSource,/availableMarkets: values/);
+  assert.doesNotMatch(reviewSource,/availableMarkets: values\.join/);
 
   const source=fs.readFileSync(path.join(root,'src','main.ts'),'utf8');
   assert.match(source,/normalizeMarketSelection/);

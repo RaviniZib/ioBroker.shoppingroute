@@ -212,7 +212,7 @@ Mögliche Aktionen:
 
 Beim Übernehmen wird der Artikel in den Artikelstamm aufgenommen beziehungsweise ein bereits bekannter Artikel ergänzt.
 
-Nach dem normalen Speichern verschwindet ein übernommener Eintrag aus der Prüfliste. Er ist anschließend im Reiter **Artikel** zu finden. **Ignorieren** entfernt den Eintrag, ohne ihn in den Artikelstamm aufzunehmen.
+Nach dem normalen Speichern und dem dadurch ausgelösten Adapterneustart verschwindet ein übernommener Eintrag aus der Prüfliste. Er ist anschließend genau einmal im Reiter **Artikel** zu finden; alle über die Mehrfachauswahl gewählten Märkte bleiben erhalten. **Ignorieren** entfernt den Eintrag, ohne ihn in den Artikelstamm aufzunehmen.
 
 ### Aktuelle Einkaufsliste im Admin
 

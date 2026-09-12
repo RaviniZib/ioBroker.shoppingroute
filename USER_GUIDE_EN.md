@@ -206,7 +206,7 @@ For normal operation, **Review first** is a good starting point.
 
 ## 13. Review queue
 
-On the **Review** tab, unknown products can be checked before they are added.
+On the **Review** tab, unknown products can be checked before they are added. After accepting and saving, the adapter restart removes the processed row from the review queue. The product remains exactly once in the product catalogue and retains every market selected in the multi-select control.
 
 You can edit, among other things:
 

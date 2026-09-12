@@ -44,7 +44,7 @@ import {
     parseConfigImport,
 } from './lib/config-tools';
 import { emptyUsageStatistics, normalizeUsageStatistics, recordAddedItem, type UsageStatistics } from './lib/statistics';
-import { markAllReviewItemsAccept } from './lib/review-tools';
+import { markAllReviewItemsAccept, normalizeProductAvailableMarkets } from './lib/review-tools';
 import {
     clearManualOverridesForList,
     moveManualOverride,
@@ -62,7 +62,7 @@ import {
     type DirectSortPhase,
 } from './lib/direct-sort-lifecycle';
 
-const VERSION = '0.3.9';
+const VERSION = '0.4.0';
 const COLLECT_WINDOW_MS = 5000;
 const MAX_ACTIVE_ITEMS = 99;
 const OWN_REFRESH_MAX_MS = 30000;
@@ -275,9 +275,11 @@ export class ShoppingRoute extends utils.Adapter {
     }
 
     private async onReady(): Promise<void> {
-        this.runtimeProducts = (Array.isArray(this.cfg.products) ? this.cfg.products : [])
-            .filter(product => product?.name).map(product => ({ ...product }))
+        const configuredProducts = (Array.isArray(this.cfg.products) ? this.cfg.products : [])
+            .filter(product => product?.name).map(product => ({ ...product }));
+        this.runtimeProducts = normalizeProductAvailableMarkets(configuredProducts)
             .sort((a, b) => a.name.localeCompare(b.name, 'de', { sensitivity: 'base' }));
+        this.productsDirty = JSON.stringify(this.runtimeProducts) !== JSON.stringify(configuredProducts);
         this.runtimeReviews = (Array.isArray(this.cfg.reviewItems) ? this.cfg.reviewItems : []).map(item => ({ ...item }));
         this.runtimeRoutes = normalizeRoutesForAdmin(Array.isArray(this.cfg.routes) ? this.cfg.routes.filter(Boolean) : []);
         this.routesDirty = JSON.stringify(this.runtimeRoutes) !== JSON.stringify(Array.isArray(this.cfg.routes) ? this.cfg.routes : []);
@@ -286,13 +288,16 @@ export class ShoppingRoute extends utils.Adapter {
         await this.loadManualOverrides();
 
         const reviewResult = applyReviewActions(this.runtimeProducts, this.runtimeReviews);
-        if (reviewResult.accepted.length) {
+        const reviewQueueChanged = JSON.stringify(reviewResult.remainingReviews) !== JSON.stringify(this.runtimeReviews);
+        if (reviewResult.accepted.length || reviewQueueChanged) {
             this.runtimeProducts = reviewResult.products;
             this.runtimeReviews = reviewResult.remainingReviews;
-            this.productsDirty = true;
+            if (reviewResult.accepted.length) this.productsDirty = true;
             this.reviewsDirty = true;
-            this.statistics.reviewAccepted += reviewResult.accepted.length;
-            await this.persistStatistics();
+            if (reviewResult.accepted.length) {
+                this.statistics.reviewAccepted += reviewResult.accepted.length;
+                await this.persistStatistics();
+            }
         }
         await this.ensureProductGroupsConfig();
         await this.updateTemporaryMarketStateOptions();
