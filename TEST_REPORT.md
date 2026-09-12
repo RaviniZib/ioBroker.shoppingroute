@@ -96,3 +96,11 @@ Admin entry SHA-256: f526b49316c5bec2c1bc6ca9dcc9474db589007aa038c9e0e6d757c68e1
 ## User acceptance – 2026-09-12
 
 Frank reports no further errors so far and confirms all previously reported errors are fixed. This supersedes earlier pending user-acceptance status for the reported UI problems; it does not claim exhaustive automated browser coverage. Read-only recheck of GitHub issue #16 confirms the same six bot findings remain on the public repository. Their corrections are local; the last local checker result remains 0 errors, 1 warning W4001, 0 suggestions. Repository-admission PR #6434 remains open. No push, bot recheck request, issue closure or publication was performed.
+
+## Release 0.4.1 preparation
+
+Fix set F01-F10 and all six current email findings were reconciled in RELEASE_0.4.1.md. PR #40 and its merged main commit 9845243 passed all ten CI jobs, including the 149 unit/component tests and four isolated persistence tests. The full remote repository checker 5.22.2 on GitHub SHA 9845243 reports 0 errors, 1 warning W4001, 0 suggestions. Production npm audit: 0 vulnerabilities.
+
+The first version-preparation run caught the runtime VERSION constant still at 0.4.0; it was updated to 0.4.1 before re-running all checks. No failing run is counted as a pass. Only versions and release documentation change after the user-accepted functional fixes. Existing immutable npm versions and release tags are retained.
+
+Final local 0.4.1 rerun: 149 unit/component tests passed, 0 failed; 70 package checks passed; ESLint and TypeScript passed. Build and diff whitespace checks passed. npm pack dry-run contains 83 files with required backend/Admin assets and no tests or node_modules. Published artifact verification remains a separate post-deploy check.

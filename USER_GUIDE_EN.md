@@ -1,6 +1,6 @@
 # ShoppingRoute – User Guide
 
-**Applies to: ioBroker.shoppingroute 0.3.5**
+**Applies to: ioBroker.shoppingroute 0.4.1**
 
 ShoppingRoute sorts active Alexa shopping-list entries by market, product group and your individual walking route. Visible two-digit prefixes from `00>` through `99>` are the sort keys. Market headings appear as `═════ MARKET ═════`. Individual entries are updated directly; when a numeric gap is exhausted, only the necessary list suffix is deleted and recreated in one batch. ShoppingRoute never marks items as completed automatically.
 
@@ -11,7 +11,7 @@ ShoppingRoute sorts active Alexa shopping-list entries by market, product group 
 - ioBroker with Admin 8.0.0 or newer
 - an installed and enabled Alexa2 instance
 - at least one Alexa shopping list
-- ShoppingRoute 0.3.5 or newer
+- ShoppingRoute 0.4.1 or newer
 
 ## 2. Basic principle
 
@@ -206,9 +206,9 @@ For normal operation, **Review first** is a good starting point.
 
 ## 13. Review queue
 
-**Local correction, not yet released:** Open “Available markets” and click or tap each market checkbox independently. Clicking again removes only that market; other selections remain checked and visible in the summary. No Ctrl/Cmd key is needed. The default market is independent. Accepting individually or in bulk updates the catalogue and removes the corresponding review rows in the same draft. Save normally to persist both changes; discarding restores the original draft. Desktop/mobile acceptance of this change is still pending.
+**Since 0.4.1:** Open “Available markets” and click or tap each market checkbox independently. Clicking again removes only that market; other selections remain checked and visible in the summary. No Ctrl/Cmd key is needed. The default market is independent. Accepting individually or in bulk updates the catalogue and removes the corresponding review rows in the same draft. Save normally to persist both changes; discarding restores the original draft. The user confirmed the reported errors as fixed.
 
-On the **Review** tab, unknown products can be checked before they are added. Released 0.4.0 intended to remove accepted rows after saving and restarting, but Admin could still display them. The local correction described above removes rows in the draft; real UI acceptance remains pending.
+On the **Review** tab, unknown products can be checked before they are added. Released 0.4.0 intended to remove accepted rows after saving and restarting, but Admin could still display them. Version 0.4.1 removes these rows in the draft.
 
 You can edit, among other things:
 
@@ -232,7 +232,7 @@ Save to persist the updated product catalogue and review queue together. **Ignor
 
 If loading fails or the response is incomplete, an error is shown. Use **Reload** to retry an initial failed request. If a list was already loaded, its last valid view remains visible after a refresh failure; the error indicates that this view has not been freshly confirmed.
 
-**Local, unreleased correction:** Each move is handled once. Further moves and order resets are blocked while a change is in progress, then become available again. Errors remain visible after refreshing the list. A safety stop never triggers automatic write retries.
+**Since 0.4.1:** Each move is handled once. Further moves and order resets are blocked while a change is in progress, then become available again. Errors remain visible after refreshing the list. A safety stop never triggers automatic write retries.
 
 Use **Delete** on an item row to remove that specific entry immediately from the Alexa shopping list; the product catalogue is retained. No separate adapter-configuration save is required. Deleting a market's last article also removes its header. Further changes are blocked during processing, and Dry Run disables the Delete button. Success requires direct Amazon verification. On failure, inspect the displayed list; there is no automatic retry.
 

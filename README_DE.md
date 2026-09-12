@@ -73,7 +73,7 @@ ShoppingRoute wird unter der **[MIT-Lizenz](LICENSE)** veröffentlicht. Frühere
 
 ## Changelog
 
-### **WORK IN PROGRESS**
+### 0.4.1 (2026-09-12)
 
 - Prüft Einkaufslistenantworten vor Anzeige und Übernahme. Unvollständige Antworten zeigen einen Fehler und „Erneut laden“, statt mit einem `.map()`-Fehler abzustürzen.
 
@@ -83,8 +83,8 @@ ShoppingRoute wird unter der **[MIT-Lizenz](LICENSE)** veröffentlicht. Frühere
 
 - Korrigiert die Metadaten aus Checker-Issue #16: unveröffentlichte 0.3.8 aus `common.news` entfernt, öffentliche npm-Maintaineradresse bei Autor/Copyright ergänzt, MIT-Lizenz verlinkt und testing ^6.2.1 deklariert. Lokaler Checker ohne Fehler; Repository-Aufnahme über PR #6434 bleibt offen.
 
-- Übernahme und Entfernen der Prüfzeile erfolgen gemeinsam im Admin-Entwurf. Dadurch bleibt keine übernommene Zeile bis zur Server-Aktualisierung sichtbar. Speichern sichert die Änderung, Verwerfen stellt den ursprünglichen Entwurf wieder her. UI-Abnahme steht aus.
-- Ersetzt das native Mehrfachauswahlfeld der Prüfliste durch einzeln anklickbare Markt-Kästchen mit sichtbarer Auswahl. Desktop-/Handy-Abnahme steht aus; diese Korrektur ist nicht in der veröffentlichten 0.4.0 enthalten.
+- Übernahme und Entfernen der Prüfzeile erfolgen gemeinsam im Admin-Entwurf. Dadurch bleibt keine übernommene Zeile bis zur Server-Aktualisierung sichtbar. Speichern sichert die Änderung, Verwerfen stellt den ursprünglichen Entwurf wieder her. Die gemeldeten Fehler wurden vom Benutzer als behoben bestätigt.
+- Ersetzt das native Mehrfachauswahlfeld der Prüfliste durch einzeln anklickbare Markt-Kästchen mit sichtbarer Auswahl. In 0.4.1 enthalten; nicht in der veröffentlichten 0.4.0.
 
 ### 0.4.0 (2026-09-12)
 
@@ -92,7 +92,7 @@ ShoppingRoute wird unter der **[MIT-Lizenz](LICENSE)** veröffentlicht. Frühere
 
 - Speichert die serverseitige Startbereinigung bereits übernommener Prüfeinträge auch ohne erneute Artikelübernahme.
 - Normalisiert ältere Artikelmarkt-Strings beim Start zu Arrays und erhält Markt-Arrays in den Übernahmefunktionen.
-- Die ergänzende lokale Oberflächenkorrektur steht unter „WORK IN PROGRESS“; sie gehört nicht zum veröffentlichten 0.4.0-Paket.
+- Die ergänzende lokale Oberflächenkorrektur steht unter „0.4.1“; sie gehört nicht zum veröffentlichten 0.4.0-Paket.
 
 ### 0.3.9 (2026-09-11)
 

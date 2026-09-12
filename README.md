@@ -40,7 +40,7 @@ See `README_DE.md` for the detailed German documentation.
 
 ## Changelog
 
-### **WORK IN PROGRESS**
+### 0.4.1 (2026-09-12)
 
 - Validates shopping-list responses before rendering or replacing the current view. Incomplete responses show an error and a Reload button instead of crashing on `.map()`.
 
@@ -50,8 +50,8 @@ See `README_DE.md` for the detailed German documentation.
 
 - Corrects checker #16 metadata: removes unpublished 0.3.8 from `common.news`, adds the existing npm maintainer email to author/copyright fields, links the MIT license and declares testing ^6.2.1. Local checker: no errors; repository admission remains pending in PR #6434.
 
-- Updates the catalogue and removes accepted review rows in one Admin draft change, avoiding stale accepted rows after saving. Discarding restores the original draft. UI acceptance is pending.
-- Replaces the review queue’s native multi-select with independently clickable market checkboxes and a visible selection summary. Desktop/mobile acceptance is still pending; this fix is not part of published 0.4.0.
+- Updates the catalogue and removes accepted review rows in one Admin draft change, avoiding stale accepted rows after saving. Discarding restores the original draft. The reported errors were confirmed fixed by the user.
+- Replaces the review queue’s native multi-select with independently clickable market checkboxes and a visible selection summary. Included in 0.4.1; not in the published 0.4.0.
 
 ### 0.4.0 (2026-09-12)
 
@@ -59,7 +59,7 @@ See `README_DE.md` for the detailed German documentation.
 
 - Persists startup cleanup of previously accepted review rows even without accepting another product.
 - Normalizes legacy product-market strings to arrays at startup and preserves market arrays in acceptance functions.
-- The additional local UI correction is listed under “WORK IN PROGRESS”; it is not part of the published 0.4.0 package.
+- The additional local UI correction is listed under “0.4.1”; it is not part of the published 0.4.0 package.
 
 ### 0.3.9 (2026-09-11)
 

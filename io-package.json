@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "shoppingroute",
-    "version": "0.4.0",
+    "version": "0.4.1",
     "titleLang": {
       "en": "ShoppingRoute",
       "de": "ShoppingRoute",
@@ -60,6 +60,10 @@
     "icon": "shoppingroute.png",
     "tier": 3,
     "news": {
+      "0.4.1": {
+        "en": "Fixes review acceptance and market selection, prevents concurrent shopping-list writes and duplicates, adds verified item deletion, handles incomplete Admin responses, and resolves repository checker metadata findings.",
+        "de": "Korrigiert Prüflistenübernahme und Marktauswahl, verhindert parallele Schreibläufe und Duplikate, ergänzt geprüftes Löschen, behandelt unvollständige Admin-Antworten und behebt Metadaten-Beanstandungen des Repository-Checkers."
+      },
       "0.4.0": {
         "en": "Persists startup review cleanup and normalizes market arrays. Correction: the complete Admin review workflow was not fixed; accepted rows could remain visible and multi-market selection still had UI defects.",
         "de": "Speichert die Prüflistenbereinigung beim Start und normalisiert Markt-Arrays. Korrektur: Der vollständige Admin-Prüflistenablauf war nicht behoben; übernommene Zeilen konnten sichtbar bleiben und die Marktauswahl hatte weiterhin Bedienfehler.",

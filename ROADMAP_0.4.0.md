@@ -1,5 +1,9 @@
 # Fehlerliste und Abnahme: ShoppingRoute 0.4.0
 
+## Aktueller Stand: Übernahme in 0.4.1
+
+Alle gemeldeten Punkte F01–F10 sind im abgenommenen Stand aus PR #40 enthalten. Die vollständige Zuordnung und der E-Mail-/Issue-Abgleich stehen in [RELEASE_0.4.1.md](RELEASE_0.4.1.md). Die folgenden Abschnitte dokumentieren den historischen Verlauf einschließlich damaliger offener Prüfungen.
+
 Diese Datei sammelt verbindlich vorgesehene Änderungen für Version 0.4.0. Ein Eintrag gilt erst nach Implementierung, automatischen Tests und einem manuellen Test in der ioBroker-Admin-Oberfläche als erledigt.
 
 
