@@ -19,7 +19,7 @@ test('review uses a direct Admin draft editor instead of sendTo/useNative', () =
     assert.equal(review.reviewItems.hidden, 'true');
 });
 
-test('accept immediately updates the catalogue and visible status in the same Admin draft', () => {
+test('accept atomically updates catalogue and removes review row in the same Admin draft', () => {
     const data = {
         products: [],
         reviewItems: [{
@@ -35,8 +35,7 @@ test('accept immediately updates the catalogue and visible status in the same Ad
         }],
     };
     const result = model.acceptReviewRows(data, [0]);
-    assert.equal(result.reviewItems[0].action, 'accepted');
-    assert.deepEqual(result.reviewItems[0].availableMarkets, ['LIDL', 'REWE']);
+    assert.deepEqual(result.reviewItems, []);
     assert.deepEqual(result.products, [{
         name: 'Schmelzkäse',
         aliases: '',
@@ -58,7 +57,7 @@ test('accepting an already-known article updates it without creating a duplicate
     assert.equal(result.products[0].defaultMarket, 'LIDL');
     assert.equal(result.products[0].aliases, 'Zucchino');
     assert.deepEqual(result.products[0].availableMarkets, ['LIDL']);
-    assert.equal(result.reviewItems[0].action, 'accepted');
+    assert.deepEqual(result.reviewItems, []);
 });
 
 test('market selection remains an array throughout repeated review edits', () => {

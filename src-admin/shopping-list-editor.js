@@ -51,6 +51,34 @@ function visibleItems(view) {
         .map(item => ({ ...item, text: stripVisiblePrefix(item.text) }));
 }
 
+function validView(view) {
+    return Boolean(
+        view &&
+        typeof view.listName === 'string' &&
+        Array.isArray(view.lists) &&
+        view.lists.every(list => typeof list === 'string') &&
+        Array.isArray(view.markets) &&
+        view.markets.every(market => typeof market === 'string') &&
+        Array.isArray(view.items) &&
+        view.items.every(
+            item =>
+                item && typeof item.id === 'string' && typeof item.text === 'string' && typeof item.market === 'string',
+        ),
+    );
+}
+
+function checkedView(view) {
+    if (!validView(view)) {
+        throw new Error(
+            text(
+                'Die Einkaufslistendaten sind unvollständig. Bitte erneut laden.',
+                'The shopping-list data is incomplete. Please reload.',
+            ),
+        );
+    }
+    return view;
+}
+
 const responsiveStyles = `
 .shoppingroute-list-toolbar{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin-bottom:14px}
 .shoppingroute-list-toolbar select,.shoppingroute-list-toolbar button{min-height:36px;box-sizing:border-box}
@@ -83,6 +111,7 @@ class ShoppingListEditor extends React.Component {
     constructor(props) {
         super(props);
         this.state = { view: null, loading: true, busy: '', error: '' };
+        this.commandPending = false;
     }
 
     componentDidMount() {
@@ -109,7 +138,7 @@ class ShoppingListEditor extends React.Component {
             if (!result || result.error) {
                 throw new Error(result?.error || 'Shopping list could not be loaded.');
             }
-            this.setState({ view: result, loading: false, busy: '' });
+            this.setState({ view: checkedView(result), loading: false, busy: '' });
         } catch (error) {
             this.setState({ loading: false, busy: '', error: error instanceof Error ? error.message : String(error) });
         }
@@ -117,9 +146,10 @@ class ShoppingListEditor extends React.Component {
 
     async move(itemId, targetMarket, targetPosition) {
         const view = this.state.view;
-        if (!view || this.state.busy) {
+        if (!view || this.commandPending || this.state.busy) {
             return;
         }
+        this.commandPending = true;
         this.setState({ busy: itemId, error: '' });
         try {
             const result = await this.send('moveShoppingItem', {
@@ -129,36 +159,68 @@ class ShoppingListEditor extends React.Component {
                 targetPosition,
             });
             if (result?.view) {
-                this.setState({ view: result.view });
+                this.setState({ view: checkedView(result.view) });
             }
             if (!result?.ok) {
                 throw new Error(result?.error || 'The item could not be moved.');
             }
             this.setState({ busy: '' });
         } catch (error) {
-            this.setState({ busy: '', error: error instanceof Error ? error.message : String(error) });
+            const message = error instanceof Error ? error.message : String(error);
             await this.load(view.listName);
+            this.setState({ busy: '', error: message });
+        } finally {
+            this.commandPending = false;
+        }
+    }
+
+    async remove(itemId) {
+        const view = this.state.view;
+        if (!view || view.dryRun || this.commandPending || this.state.busy) {
+            return;
+        }
+        this.commandPending = true;
+        this.setState({ busy: itemId, error: '' });
+        try {
+            const result = await this.send('deleteShoppingItem', { listName: view.listName, itemId });
+            if (result?.view) {
+                this.setState({ view: checkedView(result.view) });
+            }
+            if (!result?.ok) {
+                throw new Error(result?.error || 'The item could not be deleted.');
+            }
+            this.setState({ busy: '' });
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            await this.load(view.listName);
+            this.setState({ busy: '', error: message });
+        } finally {
+            this.commandPending = false;
         }
     }
 
     async clearManual() {
         const view = this.state.view;
-        if (!view || this.state.busy) {
+        if (!view || this.commandPending || this.state.busy) {
             return;
         }
+        this.commandPending = true;
         this.setState({ busy: '__clear__', error: '' });
         try {
             const result = await this.send('clearManualShoppingOrder', { listName: view.listName });
             if (result?.view) {
-                this.setState({ view: result.view });
+                this.setState({ view: checkedView(result.view) });
             }
             if (!result?.ok) {
                 throw new Error(result?.error || 'Manual order could not be cleared.');
             }
             this.setState({ busy: '' });
         } catch (error) {
-            this.setState({ busy: '', error: error instanceof Error ? error.message : String(error) });
+            const message = error instanceof Error ? error.message : String(error);
             await this.load(view.listName);
+            this.setState({ busy: '', error: message });
+        } finally {
+            this.commandPending = false;
         }
     }
 
@@ -169,6 +231,7 @@ class ShoppingListEditor extends React.Component {
 
     onDrop(event, market, position) {
         event.preventDefault();
+        event.stopPropagation();
         const itemId = event.dataTransfer.getData('text/plain');
         if (itemId) {
             void this.move(itemId, market, position);
@@ -233,6 +296,19 @@ class ShoppingListEditor extends React.Component {
                         '↓',
                     ),
                     h(
+                        'button',
+                        {
+                            key: 'delete',
+                            type: 'button',
+                            className: 'shoppingroute-list-button',
+                            disabled: busy || view.dryRun,
+                            title: text('Aus der Alexa-Einkaufsliste löschen', 'Delete from the Alexa shopping list'),
+                            'aria-label': `${text('Artikel löschen', 'Delete item')}: ${stripVisiblePrefix(item.text)}`,
+                            onClick: () => void this.remove(item.id),
+                        },
+                        text('Löschen', 'Delete'),
+                    ),
+                    h(
                         'select',
                         {
                             key: 'market',
@@ -256,7 +332,7 @@ class ShoppingListEditor extends React.Component {
     }
 
     render() {
-        const view = this.state.view;
+        const view = validView(this.state.view) ? this.state.view : null;
         const busy = Boolean(this.state.busy);
         const children = [h('style', { key: 'styles' }, responsiveStyles)];
         children.push(
@@ -289,8 +365,32 @@ class ShoppingListEditor extends React.Component {
                 ),
             );
         }
-        if (this.state.loading || !view) {
+        if (this.state.loading) {
             children.push(h('div', { key: 'loading' }, text('Liste wird geladen …', 'Loading list …')));
+            return h('div', { style: { width: '100%' } }, children);
+        }
+        if (!view) {
+            if (!this.state.error) {
+                children.push(
+                    h(
+                        'div',
+                        { key: 'invalid' },
+                        text('Die Einkaufslistendaten sind unvollständig.', 'The shopping-list data is incomplete.'),
+                    ),
+                );
+            }
+            children.push(
+                h(
+                    'button',
+                    {
+                        key: 'retry',
+                        type: 'button',
+                        className: 'shoppingroute-list-button',
+                        onClick: () => this.load(),
+                    },
+                    text('Erneut laden', 'Reload'),
+                ),
+            );
             return h('div', { style: { width: '100%' } }, children);
         }
 
@@ -334,7 +434,7 @@ class ShoppingListEditor extends React.Component {
                     ? h(
                           'strong',
                           { key: 'dry', style: { marginLeft: 'auto' } },
-                          text('Dry Run aktiv – Verschieben gesperrt', 'Dry Run active – moving is disabled'),
+                          text('Dry Run aktiv – Änderungen gesperrt', 'Dry Run active – changes are disabled'),
                       )
                     : null,
             ]),

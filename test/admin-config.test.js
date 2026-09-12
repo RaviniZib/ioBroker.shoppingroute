@@ -331,9 +331,7 @@ test('unsaved markets and product groups are fed into the real product and revie
   assert.ok(fs.existsSync(path.join(root,'src-admin','review-editor.js')));
   const reviewSource=fs.readFileSync(path.join(root,'src-admin','review-editor.js'),'utf8');
   assert.match(reviewSource,/acceptReviewRows/);
-  assert.match(reviewSource,/action: 'accepted'/);
-  assert.match(reviewSource,/availableMarkets: values/);
-  assert.doesNotMatch(reviewSource,/availableMarkets: values\.join/);
+  assert.doesNotMatch(reviewSource,/multiple: true/);
 
   const source=fs.readFileSync(path.join(root,'src','main.ts'),'utf8');
   assert.match(source,/normalizeMarketSelection/);
@@ -374,7 +372,7 @@ test('Alexa list discovery scans actual list objects instead of configured names
 test('ioBroker checker metadata is present',()=>{
   const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
   assert.ok(pkg.keywords.includes('ioBroker'));
-  assert.equal(pkg.devDependencies['@iobroker/testing'],'^6.1.0');
+  assert.equal(pkg.devDependencies['@iobroker/testing'],'^6.2.1');
   assert.equal(ioPackage.common.type,'logic');
   assert.equal(ioPackage.common.tier,3);
   assert.ok(ioPackage.common.extIcon);

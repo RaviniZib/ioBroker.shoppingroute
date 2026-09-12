@@ -69,16 +69,30 @@ Anschließend kann 0.3.0 flexible Artikel marktübergreifend zusammenlegen, wenn
 
 ## Lizenz
 
-ShoppingRoute wird unter der **MIT-Lizenz** veröffentlicht. Frühere bereits veröffentlichte Versionen bleiben unter der jeweils damals gültigen Lizenz.
+ShoppingRoute wird unter der **[MIT-Lizenz](LICENSE)** veröffentlicht. Frühere bereits veröffentlichte Versionen bleiben unter der jeweils damals gültigen Lizenz.
 
 ## Changelog
 
+### **WORK IN PROGRESS**
+
+- Prüft Einkaufslistenantworten vor Anzeige und Übernahme. Unvollständige Antworten zeigen einen Fehler und „Erneut laden“, statt mit einem `.map()`-Fehler abzustürzen.
+
+- Ergänzt eine Löschtaste pro Einkaufsartikel. Die gewählte Amazon-ID und leere Marktüberschriften werden über die exklusive, protokollierte Verarbeitung mit direkter Schlussprüfung entfernt. Dry Run und Sicherheitsstopp sperren das Löschen.
+
+- Verhindert doppelte Einkaufsartikel durch weitergereichte Drop-Ereignisse und überlappende Schreibläufe. Reserviert Bedienbefehle und Backend-Läufe synchron; Verschiebefehler bleiben nach dem Nachladen sichtbar.
+
+- Korrigiert die Metadaten aus Checker-Issue #16: unveröffentlichte 0.3.8 aus `common.news` entfernt, öffentliche npm-Maintaineradresse bei Autor/Copyright ergänzt, MIT-Lizenz verlinkt und testing ^6.2.1 deklariert. Lokaler Checker ohne Fehler; Repository-Aufnahme über PR #6434 bleibt offen.
+
+- Übernahme und Entfernen der Prüfzeile erfolgen gemeinsam im Admin-Entwurf. Dadurch bleibt keine übernommene Zeile bis zur Server-Aktualisierung sichtbar. Speichern sichert die Änderung, Verwerfen stellt den ursprünglichen Entwurf wieder her. UI-Abnahme steht aus.
+- Ersetzt das native Mehrfachauswahlfeld der Prüfliste durch einzeln anklickbare Markt-Kästchen mit sichtbarer Auswahl. Desktop-/Handy-Abnahme steht aus; diese Korrektur ist nicht in der veröffentlichten 0.4.0 enthalten.
+
 ### 0.4.0 (2026-09-12)
 
-- Behebt den vollständigen Prüflistenablauf: Sofort übernommene Einträge werden nach Speichern und Adapterneustart zuverlässig aus der Prüfliste entfernt, ohne den Artikel zu duplizieren.
-- „Verfügbare Märkte“ bleibt in Prüfliste und Artikelstamm durchgehend ein Array; mehrere ausgewählte Märkte gehen beim Bearbeiten, Übernehmen oder Speichern nicht mehr verloren.
-- Speichert auch eine reine Startbereinigung und die Normalisierung älterer Artikelmarkt-Strings, wenn kein Artikel erneut übernommen werden muss.
-- Ergänzt einen End-to-End-Regressionstest für Bearbeiten, Übernehmen, Speichern und anschließende Startbereinigung.
+**Korrektur der ursprünglichen Freigabeaussage:** Der vollständige Prüflistenablauf war nicht behoben. Übernommene Zeilen konnten im Admin-Entwurf sichtbar bleiben; die Marktauswahl verwendete weiterhin ein natives Mehrfachauswahlfeld. Die ursprüngliche Bezeichnung „End-to-End-Test“ war falsch: Geprüft wurden Editor-/Hilfsfunktionen und Serialisierung, keine vollständige Admin-Bedienung.
+
+- Speichert die serverseitige Startbereinigung bereits übernommener Prüfeinträge auch ohne erneute Artikelübernahme.
+- Normalisiert ältere Artikelmarkt-Strings beim Start zu Arrays und erhält Markt-Arrays in den Übernahmefunktionen.
+- Die ergänzende lokale Oberflächenkorrektur steht unter „WORK IN PROGRESS“; sie gehört nicht zum veröffentlichten 0.4.0-Paket.
 
 ### 0.3.9 (2026-09-11)
 
@@ -159,4 +173,4 @@ ShoppingRoute wird unter der **MIT-Lizenz** veröffentlicht. Frühere bereits ve
 
 Ältere Versionen: [CHANGELOG_OLD.md](CHANGELOG_OLD.md).
 
-Copyright (c) 2026 RaviniZib
+Copyright (c) 2026 RaviniZib <zib@ravini.org>

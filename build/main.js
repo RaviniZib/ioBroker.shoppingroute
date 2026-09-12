@@ -107,6 +107,7 @@ function englishRuntimeError(error) {
 class ShoppingRoute extends utils.Adapter {
     listStates = new Map();
     applyingListName = '';
+    manualCommandPending = false;
     directClient = null;
     directClientPromise = null;
     directListIds = new Map();
@@ -364,69 +365,118 @@ class ShoppingRoute extends utils.Adapter {
         state.externalDirty = false;
         state.newIds.clear();
     }
+    async runManualShoppingCommand(operation) {
+        // Reserve synchronously: UI events and timer callbacks may arrive before the first await finishes.
+        if (this.manualCommandPending || this.applyingListName) {
+            throw new Error('A shopping-list update is already running. Please try again.');
+        }
+        this.manualCommandPending = true;
+        try {
+            return await operation();
+        }
+        finally {
+            this.manualCommandPending = false;
+            for (const [listName, state] of this.listStates) {
+                if (!this.isUnloading && state.phase === 'COLLECTING' && !state.timer) {
+                    this.armCollectionDeadline(listName, state, state.firstEventAt + COLLECT_WINDOW_MS);
+                }
+            }
+        }
+    }
     async applyManualMove(message) {
-        const listName = this.configuredListName(message?.listName);
-        const before = await this.buildShoppingListView(listName);
-        if (this.dryRun)
-            return { ok: false, error: 'Dry Run is active. Disable Dry Run before changing the Alexa list.', view: before };
-        if (!(await this.isEnabled()))
-            return { ok: false, error: 'ShoppingRoute is disabled.', view: before };
-        if (this.applyingListName)
-            return { ok: false, error: 'A shopping-list update is already running. Please try again.', view: before };
-        const itemId = String(message?.itemId || '').trim();
-        const item = before.items.find(entry => entry.id === itemId);
-        if (!item)
-            return { ok: false, error: 'The selected shopping-list item no longer exists.', view: before };
-        const targetMarket = String(message?.targetMarket || '').trim();
-        if (!before.markets.some(market => market.toLocaleLowerCase('de') === targetMarket.toLocaleLowerCase('de'))) {
-            return { ok: false, error: 'The selected target market is not available.', view: before };
-        }
-        const targetCount = before.items.filter(entry => entry.market === targetMarket && entry.id !== itemId).length;
-        const targetPosition = Math.max(0, Math.min(targetCount, Math.floor(Number(message?.targetPosition) || 0)));
-        const previous = this.manualOverrides.map(entry => ({ ...entry }));
-        this.manualOverrides = (0, manual_order_1.moveManualOverride)(this.manualOverrides, {
-            listName,
-            itemId,
-            originalText: item.text,
-            fromMarket: item.market,
-            fromPosition: item.position,
-            toMarket: targetMarket,
-            toPosition: targetPosition,
-        });
-        await this.persistManualOverrides();
-        await this.setStateAsync('info.lastError', '', true);
-        this.prepareImmediateApply(listName);
-        await this.startApply(listName);
-        const error = String((await this.getStateAsync('info.lastError'))?.val || '');
-        if (error) {
-            this.manualOverrides = previous;
+        return this.runManualShoppingCommand(async () => {
+            const listName = this.configuredListName(message?.listName);
+            const before = await this.buildShoppingListView(listName);
+            if (this.dryRun)
+                return { ok: false, error: 'Dry Run is active. Disable Dry Run before changing the Alexa list.', view: before };
+            if (!(await this.isEnabled()))
+                return { ok: false, error: 'ShoppingRoute is disabled.', view: before };
+            if (this.applyingListName)
+                return { ok: false, error: 'A shopping-list update is already running. Please try again.', view: before };
+            const itemId = String(message?.itemId || '').trim();
+            const item = before.items.find(entry => entry.id === itemId);
+            if (!item)
+                return { ok: false, error: 'The selected shopping-list item no longer exists.', view: before };
+            const targetMarket = String(message?.targetMarket || '').trim();
+            if (!before.markets.some(market => market.toLocaleLowerCase('de') === targetMarket.toLocaleLowerCase('de'))) {
+                return { ok: false, error: 'The selected target market is not available.', view: before };
+            }
+            const targetCount = before.items.filter(entry => entry.market === targetMarket && entry.id !== itemId).length;
+            const targetPosition = Math.max(0, Math.min(targetCount, Math.floor(Number(message?.targetPosition) || 0)));
+            const previous = this.manualOverrides.map(entry => ({ ...entry }));
+            this.manualOverrides = (0, manual_order_1.moveManualOverride)(this.manualOverrides, {
+                listName,
+                itemId,
+                originalText: item.text,
+                fromMarket: item.market,
+                fromPosition: item.position,
+                toMarket: targetMarket,
+                toPosition: targetPosition,
+            });
             await this.persistManualOverrides();
-            return { ok: false, error, view: await this.buildShoppingListView(listName, true) };
-        }
-        return { ok: true, view: await this.buildShoppingListView(listName) };
+            await this.setStateAsync('info.lastError', '', true);
+            this.prepareImmediateApply(listName);
+            await this.startApply(listName, true);
+            const error = String((await this.getStateAsync('info.lastError'))?.val || '');
+            if (error) {
+                this.manualOverrides = previous;
+                await this.persistManualOverrides();
+                return { ok: false, error, view: await this.buildShoppingListView(listName, true) };
+            }
+            return { ok: true, view: await this.buildShoppingListView(listName) };
+        });
+    }
+    async deleteShoppingItem(message) {
+        return this.runManualShoppingCommand(async () => {
+            const listName = String(message?.listName || '').trim();
+            if (!this.listConfigs.some(list => list.name === listName))
+                throw new Error('The selected shopping list is not configured.');
+            const before = await this.buildShoppingListView(listName);
+            if (this.dryRun)
+                return { ok: false, error: 'Dry Run is active. Disable Dry Run before changing the Alexa list.', view: before };
+            if (!(await this.isEnabled()))
+                return { ok: false, error: 'ShoppingRoute is disabled.', view: before };
+            const itemId = String(message?.itemId || '').trim();
+            if (!before.items.some(item => item.id === itemId)) {
+                return { ok: false, error: 'The selected shopping-list item no longer exists.', view: before };
+            }
+            await this.setStateAsync('info.lastError', '', true);
+            this.prepareImmediateApply(listName);
+            await this.startApply(listName, true, itemId);
+            const view = await this.buildShoppingListView(listName, true);
+            const error = String((await this.getStateAsync('info.lastError'))?.val || '');
+            if (error)
+                return { ok: false, error, view };
+            if (view.items.some(item => item.id === itemId)) {
+                return { ok: false, error: 'The deletion was not confirmed. Refresh the list before trying again.', view };
+            }
+            return { ok: true, view };
+        });
     }
     async clearManualShoppingOrder(message) {
-        const listName = this.configuredListName(message?.listName);
-        const before = await this.buildShoppingListView(listName);
-        if (this.dryRun)
-            return { ok: false, error: 'Dry Run is active. Disable Dry Run before changing the Alexa list.', view: before };
-        if (!(await this.isEnabled()))
-            return { ok: false, error: 'ShoppingRoute is disabled.', view: before };
-        if (this.applyingListName)
-            return { ok: false, error: 'A shopping-list update is already running. Please try again.', view: before };
-        const previous = this.manualOverrides.map(entry => ({ ...entry }));
-        this.manualOverrides = (0, manual_order_1.clearManualOverridesForList)(this.manualOverrides, listName);
-        await this.persistManualOverrides();
-        await this.setStateAsync('info.lastError', '', true);
-        this.prepareImmediateApply(listName);
-        await this.startApply(listName);
-        const error = String((await this.getStateAsync('info.lastError'))?.val || '');
-        if (error) {
-            this.manualOverrides = previous;
+        return this.runManualShoppingCommand(async () => {
+            const listName = this.configuredListName(message?.listName);
+            const before = await this.buildShoppingListView(listName);
+            if (this.dryRun)
+                return { ok: false, error: 'Dry Run is active. Disable Dry Run before changing the Alexa list.', view: before };
+            if (!(await this.isEnabled()))
+                return { ok: false, error: 'ShoppingRoute is disabled.', view: before };
+            if (this.applyingListName)
+                return { ok: false, error: 'A shopping-list update is already running. Please try again.', view: before };
+            const previous = this.manualOverrides.map(entry => ({ ...entry }));
+            this.manualOverrides = (0, manual_order_1.clearManualOverridesForList)(this.manualOverrides, listName);
             await this.persistManualOverrides();
-            return { ok: false, error, view: await this.buildShoppingListView(listName, true) };
-        }
-        return { ok: true, view: await this.buildShoppingListView(listName) };
+            await this.setStateAsync('info.lastError', '', true);
+            this.prepareImmediateApply(listName);
+            await this.startApply(listName, true);
+            const error = String((await this.getStateAsync('info.lastError'))?.val || '');
+            if (error) {
+                this.manualOverrides = previous;
+                await this.persistManualOverrides();
+                return { ok: false, error, view: await this.buildShoppingListView(listName, true) };
+            }
+            return { ok: true, view: await this.buildShoppingListView(listName) };
+        });
     }
     async onMessage(obj) {
         if (!obj?.callback)
@@ -447,6 +497,15 @@ class ShoppingRoute extends utils.Adapter {
             catch (error) {
                 const message = error instanceof Error ? error.message : String(error);
                 this.sendTo(obj.from, obj.command, { ok: false, error: message, view: await this.buildShoppingListView(this.configuredListName(obj.message?.listName), true) }, obj.callback);
+            }
+            return;
+        }
+        if (obj.command === 'deleteShoppingItem') {
+            try {
+                this.sendTo(obj.from, obj.command, await this.deleteShoppingItem(obj.message), obj.callback);
+            }
+            catch (error) {
+                this.sendTo(obj.from, obj.command, { ok: false, error: error instanceof Error ? error.message : String(error) }, obj.callback);
             }
             return;
         }
@@ -704,18 +763,17 @@ class ShoppingRoute extends utils.Adapter {
             this.armCollectionDeadline(list.name, state, delay === 0 ? now : collected.deadline);
         }
     }
-    async startApply(listName) {
+    async startApply(listName, manualCommand = false, deleteItemId) {
         const state = this.getListState(listName);
         if (this.isUnloading || state.phase !== 'COLLECTING')
+            return;
+        if (this.manualCommandPending && !manualCommand)
             return;
         if (this.applyingListName) {
             // The active list's finally block arms every other collected list exactly once.
             return;
         }
-        if (!(await this.isEnabled())) {
-            state.phase = 'IDLE';
-            return;
-        }
+        // Acquire before reading control.enabled, otherwise two callers can both pass the guard.
         Object.assign(state, (0, direct_sort_lifecycle_1.beginDirectApply)(state));
         this.applyingListName = listName;
         const runtime = {
@@ -732,7 +790,9 @@ class ShoppingRoute extends utils.Adapter {
             rebuildFrom: null,
         };
         try {
-            await this.applyDirectSort(listName, state, runtime);
+            if (this.isUnloading || !(await this.isEnabled()))
+                return;
+            await this.applyDirectSort(listName, state, runtime, deleteItemId);
         }
         catch (error) {
             const message = englishRuntimeError(error);
@@ -835,7 +895,7 @@ class ShoppingRoute extends utils.Adapter {
         const client = await this.initializeDirectClient();
         return (0, alexa_direct_1.toAlexaListItems)(await this.amazonCall(runtime, () => client.getItems(listId)));
     }
-    async applyDirectSort(listName, state, runtime) {
+    async applyDirectSort(listName, state, runtime, deleteItemId) {
         await this.ensureTrafficDay();
         this.traffic.localChecks += 1;
         await this.persistTrafficMetrics();
@@ -844,7 +904,12 @@ class ShoppingRoute extends utils.Adapter {
         const snapshot = await this.readDirectItems(listId, runtime);
         if ((0, sorter_1.activeItems)(snapshot).length > MAX_ACTIVE_ITEMS)
             throw new Error(`${listName}: more than 99 active entries.`);
-        const logical = this.prefixFreeItems(snapshot);
+        if (deleteItemId && !(0, sorter_1.activeItems)(snapshot).some(item => String(item.id) === deleteItemId && !(0, market_plan_1.isMarketHeader)((0, prefix_sort_1.stripSortPrefix)(item.value), this.markets))) {
+            throw new Error('The item selected for deletion is no longer active.');
+        }
+        // Keep the full snapshot for versioned DELETEs and verification; plan the route without this one ID.
+        const routeItems = deleteItemId ? snapshot.filter(item => String(item.id) !== deleteItemId) : snapshot;
+        const logical = this.prefixFreeItems(routeItems);
         await this.recordNewItems(listName, logical);
         await this.updateLearningAndDiagnostics(listName, logical);
         const priority = this.priorityMarketForList(listName);
@@ -853,7 +918,7 @@ class ShoppingRoute extends utils.Adapter {
             this.manualOverrides = reconciledOverrides;
             await this.persistManualOverrides();
         }
-        const desired = (0, prefix_sort_1.buildPrefixTargets)(snapshot, this.markets, this.routes, this.products, this.fallbackMarket, priority, this.minimumItemsPerMarket, this.marketHeadersEnabled, this.manualOverrides, listName);
+        const desired = (0, prefix_sort_1.buildPrefixTargets)(routeItems, this.markets, this.routes, this.products, this.fallbackMarket, priority, this.minimumItemsPerMarket, this.marketHeadersEnabled, this.manualOverrides, listName);
         const plan = (0, prefix_sort_1.createPrefixSortPlan)(snapshot, desired);
         runtime.fallback = plan.fallback;
         runtime.rebuildFrom = plan.rebuildFrom;
@@ -1006,7 +1071,8 @@ class ShoppingRoute extends utils.Adapter {
         }
         catch { /* preserve the last journal payload */ }
         await this.setStateAsync('control.enabled', false, true);
-        const message = `${listName}: ${reason} SAFETY STOP: further direct writes are disabled; no automatic retry.`;
+        const detail = reason.startsWith(`${listName}: `) ? reason.slice(listName.length + 2) : reason;
+        const message = `${listName}: ${detail} SAFETY STOP: further direct writes are disabled; no automatic retry.`;
         await this.setError(message);
         this.log.error(message);
     }

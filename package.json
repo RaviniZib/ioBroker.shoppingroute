@@ -2,7 +2,7 @@
   "name": "iobroker.shoppingroute",
   "version": "0.4.0",
   "description": "Smart Alexa shopping-list routing by market, product group and individual store walking route with learning, multi-list support and API protection.",
-  "author": "RaviniZib",
+  "author": "RaviniZib <zib@ravini.org>",
   "license": "MIT",
   "homepage": "https://github.com/RaviniZib/ioBroker.shoppingroute",
   "repository": {
@@ -49,19 +49,19 @@
     "@iobroker/adapter-core": "^3.4.3"
   },
   "devDependencies": {
+    "@alcalzone/release-script": "^5.2.1",
+    "@alcalzone/release-script-plugin-iobroker": "^5.2.0",
+    "@alcalzone/release-script-plugin-license": "^5.2.2",
+    "@alcalzone/release-script-plugin-manual-review": "^5.2.0",
+    "@iobroker/adapter-dev": "^1.5.0",
     "@iobroker/eslint-config": "^2.3.4",
-    "@iobroker/testing": "^6.1.0",
+    "@iobroker/testing": "^6.2.1",
     "@module-federation/vite": "^1.4.1",
     "@tsconfig/node22": "^22.0.5",
     "@types/node": "^22.15.0",
     "react": "^18.3.1",
     "typescript": "^5.8.3",
     "vite": "^6.3.5",
-    "vite-plugin-commonjs": "^0.10.4",
-    "@alcalzone/release-script": "^5.2.1",
-    "@alcalzone/release-script-plugin-iobroker": "^5.2.0",
-    "@alcalzone/release-script-plugin-license": "^5.2.2",
-    "@alcalzone/release-script-plugin-manual-review": "^5.2.0",
-    "@iobroker/adapter-dev": "^1.5.0"
+    "vite-plugin-commonjs": "^0.10.4"
   }
 }

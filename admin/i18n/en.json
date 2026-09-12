@@ -49,7 +49,7 @@
   "ui.items.productstab.items.products.items.3.title": "Default market",
   "ui.items.productstab.items.products.items.4.title": "Available markets",
   "ui.items.reviewtab.label": "Review",
-  "ui.items.reviewtab.items.reviewhelp.text": "Unknown products appear here in review mode. Correct product, product group, default market or aliases, choose Accept or Ignore, then save. Accepted entries are moved into the product catalogue after restart.",
+  "ui.items.reviewtab.items.reviewhelp.text": "Unknown products appear here in review mode. Correct the product, product group, default market, available markets or aliases. Accept immediately moves the product into the catalogue and removes its review row in the draft. Then save normally; discarding undoes unsaved changes.",
   "ui.items.reviewtab.items.reviewitems.label": "Unknown products",
   "ui.items.reviewtab.items.reviewitems.items.1.title": "Alexa text",
   "ui.items.reviewtab.items.reviewitems.items.5.title": "Action",

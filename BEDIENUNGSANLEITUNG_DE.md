@@ -202,6 +202,8 @@ Für den normalen Betrieb empfiehlt sich zunächst **Erst prüfen**.
 
 ## 13. Prüfliste
 
+**Lokale Korrektur, noch nicht veröffentlicht:** „Verfügbare Märkte“ öffnet eine Liste mit Kästchen. Jeden gewünschten Markt einzeln anklicken oder antippen. Erneutes Anklicken entfernt nur diesen Markt; andere Häkchen bleiben bestehen. Die gewählten Namen bleiben in der Zusammenfassung sichtbar. Strg/Cmd ist nicht erforderlich. Der Standardmarkt wird unabhängig davon eingestellt. „Übernehmen“ bzw. „Alle übernehmen“ verschiebt die Artikel sofort in den Artikelstamm und entfernt die entsprechenden Prüfzeilen im selben Entwurf. Danach normal speichern. Verwerfen stellt den ursprünglichen Stand wieder her. Die Desktop-/Handy-Abnahme dieser Änderung steht noch aus.
+
 Im Reiter **Prüfliste** können unbekannte Artikel kontrolliert werden. Bearbeitbar sind unter anderem Produktname, Produktgruppe, Standardmarkt und Aliase.
 
 Mögliche Aktionen:
@@ -212,9 +214,17 @@ Mögliche Aktionen:
 
 Beim Übernehmen wird der Artikel in den Artikelstamm aufgenommen beziehungsweise ein bereits bekannter Artikel ergänzt.
 
-Nach dem normalen Speichern und dem dadurch ausgelösten Adapterneustart verschwindet ein übernommener Eintrag aus der Prüfliste. Er ist anschließend genau einmal im Reiter **Artikel** zu finden; alle über die Mehrfachauswahl gewählten Märkte bleiben erhalten. **Ignorieren** entfernt den Eintrag, ohne ihn in den Artikelstamm aufzunehmen.
+Für die veröffentlichte 0.4.0 war die Entfernung nach Speichern und Adapterneustart vorgesehen. Dieser Ablauf war in der Admin-Oberfläche nicht zuverlässig: Übernommene Zeilen konnten sichtbar bleiben. Die oben beschriebene lokale Korrektur entfernt sie bereits im Entwurf; ihre reale UI-Abnahme ist noch offen. **Ignorieren** ist die Aktion zum Verwerfen eines unbekannten Artikels ohne Aufnahme in den Artikelstamm.
 
 ### Aktuelle Einkaufsliste im Admin
+
+Falls die Liste nicht geladen werden kann oder unvollständige Daten zurückkommen, erscheint eine Fehlermeldung. Mit **Erneut laden** lässt sich eine fehlgeschlagene erste Abfrage wiederholen. War bereits eine Liste geladen, bleibt deren letzter gültiger Stand bei einem Aktualisierungsfehler sichtbar; die Fehlermeldung weist darauf hin, dass er nicht aktuell bestätigt ist.
+
+**Lokale, unveröffentlichte Korrektur:** Eine Verschiebung wird nur einmal verarbeitet. Während einer laufenden Änderung sind weitere Verschiebungen und das Zurücksetzen gesperrt; danach sind sie wieder möglich. Eine Fehlermeldung bleibt auch nach dem Nachladen der Liste sichtbar. Bei einem Sicherheitsstopp wird nicht automatisch erneut geschrieben.
+
+Mit **Löschen** an einer Artikelzeile wird genau dieser Eintrag unmittelbar aus der Alexa-Einkaufsliste entfernt; der Artikelstamm bleibt erhalten. Es ist kein zusätzliches Speichern der Adapterkonfiguration erforderlich. Beim letzten Artikel eines Markts wird dessen Überschrift ebenfalls entfernt. Während der Verarbeitung sind weitere Änderungen gesperrt; in Dry Run ist die Löschtaste deaktiviert. Erst nach direkter Bestätigung durch Amazon gilt die Löschung als erfolgreich. Bei einer Fehlermeldung den angezeigten Listenstand prüfen; es erfolgt kein automatischer Wiederholungsversuch.
+
+Bleibt bei aktivem Sicherheitsstopp am Handy eine leere Marktüberschrift stehen, kann der Adapter diese nicht mehr bei Amazon entfernen: Die Admin-Ansicht blendet leere Märkte unabhängig davon aus. Erst nach Prüfung und Behebung der unterbrochenen Verarbeitung dürfen Schreibzugriffe wieder aktiviert werden.
 
 Die aktuelle Einkaufsliste erscheint als einspaltige Folge von Marktabschnitten. Artikel lassen sich per Drag&Drop, mit den Pfeiltasten oder über die Marktauswahl verschieben. **Manuelle Reihenfolge zurücksetzen** entfernt diese manuellen Vorgaben.
 

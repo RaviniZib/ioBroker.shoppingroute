@@ -21,7 +21,7 @@ test('accept rows are applied once and removed from the persisted review queue',
     assert.equal(second.products.length, 1);
 });
 
-test('complete editor-save-restart cycle keeps all markets and clears the review row', () => {
+test('serialized editor draft and startup helper preserve markets without resurrecting rows', () => {
     const initial = {
         products: [],
         reviewItems: [{
@@ -31,9 +31,11 @@ test('complete editor-save-restart cycle keeps all markets and clears the review
         }],
     };
     const draft = ReviewEditorModel.acceptReviewRows(initial, [0]);
-    assert.equal(draft.reviewItems[0].action, 'accepted');
+    assert.deepEqual(draft.reviewItems, []);
+    assert.equal(initial.reviewItems.length, 1, 'discarding can restore unchanged original draft');
     assert.deepEqual(draft.products[0].availableMarkets, ['ALDI', 'LIDL', 'REWE']);
-    const afterRestart = applyReviewActions(draft.products, draft.reviewItems);
+    const persisted = JSON.parse(JSON.stringify(draft));
+    const afterRestart = applyReviewActions(persisted.products, persisted.reviewItems);
     assert.equal(afterRestart.accepted.length, 0, 'already accepted UI rows are not applied twice');
     assert.equal(afterRestart.remainingReviews.length, 0, 'persisted accepted rows are cleared on restart');
     assert.equal(afterRestart.products.length, 1, 'backend does not duplicate the product already written by the editor');
