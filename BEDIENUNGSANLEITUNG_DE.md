@@ -218,6 +218,8 @@ Für die veröffentlichte 0.4.0 war die Entfernung nach Speichern und Adapterneu
 
 ### Aktuelle Einkaufsliste im Admin
 
+Falls die Liste nicht geladen werden kann oder unvollständige Daten zurückkommen, erscheint eine Fehlermeldung. Mit **Erneut laden** lässt sich eine fehlgeschlagene erste Abfrage wiederholen. War bereits eine Liste geladen, bleibt deren letzter gültiger Stand bei einem Aktualisierungsfehler sichtbar; die Fehlermeldung weist darauf hin, dass er nicht aktuell bestätigt ist.
+
 **Lokale, unveröffentlichte Korrektur:** Eine Verschiebung wird nur einmal verarbeitet. Während einer laufenden Änderung sind weitere Verschiebungen und das Zurücksetzen gesperrt; danach sind sie wieder möglich. Eine Fehlermeldung bleibt auch nach dem Nachladen der Liste sichtbar. Bei einem Sicherheitsstopp wird nicht automatisch erneut geschrieben.
 
 Mit **Löschen** an einer Artikelzeile wird genau dieser Eintrag unmittelbar aus der Alexa-Einkaufsliste entfernt; der Artikelstamm bleibt erhalten. Es ist kein zusätzliches Speichern der Adapterkonfiguration erforderlich. Beim letzten Artikel eines Markts wird dessen Überschrift ebenfalls entfernt. Während der Verarbeitung sind weitere Änderungen gesperrt; in Dry Run ist die Löschtaste deaktiviert. Erst nach direkter Bestätigung durch Amazon gilt die Löschung als erfolgreich. Bei einer Fehlermeldung den angezeigten Listenstand prüfen; es erfolgt kein automatischer Wiederholungsversuch.

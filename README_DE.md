@@ -75,6 +75,8 @@ ShoppingRoute wird unter der **[MIT-Lizenz](LICENSE)** veröffentlicht. Frühere
 
 ### **WORK IN PROGRESS**
 
+- Prüft Einkaufslistenantworten vor Anzeige und Übernahme. Unvollständige Antworten zeigen einen Fehler und „Erneut laden“, statt mit einem `.map()`-Fehler abzustürzen.
+
 - Ergänzt eine Löschtaste pro Einkaufsartikel. Die gewählte Amazon-ID und leere Marktüberschriften werden über die exklusive, protokollierte Verarbeitung mit direkter Schlussprüfung entfernt. Dry Run und Sicherheitsstopp sperren das Löschen.
 
 - Verhindert doppelte Einkaufsartikel durch weitergereichte Drop-Ereignisse und überlappende Schreibläufe. Reserviert Bedienbefehle und Backend-Läufe synchron; Verschiebefehler bleiben nach dem Nachladen sichtbar.

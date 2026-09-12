@@ -51,6 +51,34 @@ function visibleItems(view) {
         .map(item => ({ ...item, text: stripVisiblePrefix(item.text) }));
 }
 
+function validView(view) {
+    return Boolean(
+        view &&
+        typeof view.listName === 'string' &&
+        Array.isArray(view.lists) &&
+        view.lists.every(list => typeof list === 'string') &&
+        Array.isArray(view.markets) &&
+        view.markets.every(market => typeof market === 'string') &&
+        Array.isArray(view.items) &&
+        view.items.every(
+            item =>
+                item && typeof item.id === 'string' && typeof item.text === 'string' && typeof item.market === 'string',
+        ),
+    );
+}
+
+function checkedView(view) {
+    if (!validView(view)) {
+        throw new Error(
+            text(
+                'Die Einkaufslistendaten sind unvollständig. Bitte erneut laden.',
+                'The shopping-list data is incomplete. Please reload.',
+            ),
+        );
+    }
+    return view;
+}
+
 const responsiveStyles = `
 .shoppingroute-list-toolbar{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin-bottom:14px}
 .shoppingroute-list-toolbar select,.shoppingroute-list-toolbar button{min-height:36px;box-sizing:border-box}
@@ -110,7 +138,7 @@ class ShoppingListEditor extends React.Component {
             if (!result || result.error) {
                 throw new Error(result?.error || 'Shopping list could not be loaded.');
             }
-            this.setState({ view: result, loading: false, busy: '' });
+            this.setState({ view: checkedView(result), loading: false, busy: '' });
         } catch (error) {
             this.setState({ loading: false, busy: '', error: error instanceof Error ? error.message : String(error) });
         }
@@ -131,7 +159,7 @@ class ShoppingListEditor extends React.Component {
                 targetPosition,
             });
             if (result?.view) {
-                this.setState({ view: result.view });
+                this.setState({ view: checkedView(result.view) });
             }
             if (!result?.ok) {
                 throw new Error(result?.error || 'The item could not be moved.');
@@ -156,7 +184,7 @@ class ShoppingListEditor extends React.Component {
         try {
             const result = await this.send('deleteShoppingItem', { listName: view.listName, itemId });
             if (result?.view) {
-                this.setState({ view: result.view });
+                this.setState({ view: checkedView(result.view) });
             }
             if (!result?.ok) {
                 throw new Error(result?.error || 'The item could not be deleted.');
@@ -181,7 +209,7 @@ class ShoppingListEditor extends React.Component {
         try {
             const result = await this.send('clearManualShoppingOrder', { listName: view.listName });
             if (result?.view) {
-                this.setState({ view: result.view });
+                this.setState({ view: checkedView(result.view) });
             }
             if (!result?.ok) {
                 throw new Error(result?.error || 'Manual order could not be cleared.');
@@ -304,7 +332,7 @@ class ShoppingListEditor extends React.Component {
     }
 
     render() {
-        const view = this.state.view;
+        const view = validView(this.state.view) ? this.state.view : null;
         const busy = Boolean(this.state.busy);
         const children = [h('style', { key: 'styles' }, responsiveStyles)];
         children.push(
@@ -337,8 +365,32 @@ class ShoppingListEditor extends React.Component {
                 ),
             );
         }
-        if (this.state.loading || !view) {
+        if (this.state.loading) {
             children.push(h('div', { key: 'loading' }, text('Liste wird geladen …', 'Loading list …')));
+            return h('div', { style: { width: '100%' } }, children);
+        }
+        if (!view) {
+            if (!this.state.error) {
+                children.push(
+                    h(
+                        'div',
+                        { key: 'invalid' },
+                        text('Die Einkaufslistendaten sind unvollständig.', 'The shopping-list data is incomplete.'),
+                    ),
+                );
+            }
+            children.push(
+                h(
+                    'button',
+                    {
+                        key: 'retry',
+                        type: 'button',
+                        className: 'shoppingroute-list-button',
+                        onClick: () => this.load(),
+                    },
+                    text('Erneut laden', 'Reload'),
+                ),
+            );
             return h('div', { style: { width: '100%' } }, children);
         }
 

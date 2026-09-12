@@ -188,3 +188,19 @@ Das ursprüngliche Fehlerjournal ist gesichert; seine manuelle Auflösung berüc
 - Installiertes Backend und aus dem ioBroker-Dateispeicher zurückgelesene Admin-Einstiegs-/Komponentendateien stimmen per SHA-256 mit dem geprüften Build überein.
 - Adapter läuft, `control.enabled=true`, `info.lastError` leer, `info.sortTransaction={}`. Der automatische Lauf nach Neustart bestätigt vier aktive Einträge.
 - History und beide Anleitungen ergänzt. Version unverändert 0.4.0; kein GitHub-/npm-Release. Tatsächliche Bedienung im Desktop-/Handy-Browser bleibt als Abnahme offen.
+
+## F10 – Einkaufsliste stürzt beim Rendern ab (12.09.2026, 13:15 Uhr)
+
+**Benutzerbefund:** Die benutzerdefinierte Einkaufsliste kann nicht angezeigt werden; `Cannot read properties of undefined (reading 'map')`. Die vorige Installation ist damit ausdrücklich nicht als erfolgreiche UI-Abnahme zu werten.
+
+**Reproduktion:** Eine unvollständige Antwort ohne `lists` wurde ungeprüft als Ansicht gespeichert. `render()` rief darauf `view.lists.map()` auf und erzeugte exakt die gemeldete Ausnahme. Auch Antworten auf Verschieben, Löschen und Zurücksetzen wurden ungeprüft übernommen. Ohne gültige Ansicht fehlte zudem ein Weg zum erneuten Laden.
+
+**Abgrenzung:** Eine direkte Anfrage über den tatsächlich installierten Admin-WebSocket-Client lieferte bei der Diagnose eine vollständige Ansicht mit drei Artikeln. Die konkrete Antwort bzw. Aufrufstelle des ursprünglichen Browserfehlers ist nicht aufgezeichnet; die Reproduktion belegt den fehlenden Schutz, aber nicht den ursprünglichen Auslöser.
+
+**Lokale Korrektur:** Gemeinsame Strukturprüfung vor Übernahme jeder Ansicht; zusätzlicher Schutz beim Rendern; verständlicher Fehler und „Erneut laden“ statt Komponentenabsturz. Eine bereits geladene gültige Ansicht bleibt bei fehlerhafter Aktualisierung erhalten. Keine Ersatzdaten, die eine fehlgeschlagene Abfrage als leere Liste ausgeben. Fünf Regressionsfälle hinzugefügt; vier scheiterten vor der Änderung. Browser-Abnahme bleibt offen.
+
+### F10 – Prüfergebnis und Installation
+
+149 Tests bestanden, 0 fehlgeschlagen; Lint/TypeScript bestanden, jeweils lokal und auf dem Server. Ein zusätzlicher Lesetest verbindet den echten installierten Admin-WebSocket-Client mit dem Editor: vollständige Antwort mit drei Artikeln, drei gerenderte Artikelzeilen und drei Löschtasten. Das prüft den Komponentenbaum, nicht den Browser-DOM.
+
+Die korrigierten Admin-Dateien sind einzeln in den ioBroker-Dateispeicher geschrieben und zurückgelesen worden; SHA-256 stimmt mit dem Build überein. Adapter läuft, aktuelles Fehlerfeld leer. Kein Backend-Neustart und keine Änderung an Einkaufsdaten. History und Anleitungen ergänzt. Tatsächlicher Auslöser der historischen Antwort und Browser-Abnahme weiterhin offen.

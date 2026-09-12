@@ -230,6 +230,8 @@ Save to persist the updated product catalogue and review queue together. **Ignor
 
 ### Current shopping list in Admin
 
+If loading fails or the response is incomplete, an error is shown. Use **Reload** to retry an initial failed request. If a list was already loaded, its last valid view remains visible after a refresh failure; the error indicates that this view has not been freshly confirmed.
+
 **Local, unreleased correction:** Each move is handled once. Further moves and order resets are blocked while a change is in progress, then become available again. Errors remain visible after refreshing the list. A safety stop never triggers automatic write retries.
 
 Use **Delete** on an item row to remove that specific entry immediately from the Alexa shopping list; the product catalogue is retained. No separate adapter-configuration save is required. Deleting a market's last article also removes its header. Further changes are blocked during processing, and Dry Run disables the Delete button. Success requires direct Amazon verification. On failure, inspect the displayed list; there is no automatic retry.
