@@ -160,3 +160,31 @@ GitHub-Issue #16 bleibt offen und unverändert. Es wurden weder ein Recheck-Komm
 Vollständiges Server-Repository: `/home/pi/shoppingroute-review-fix.289xqv/repository`, lokaler Branch `fix/local-review-completion`. Die Arbeitskopie basiert auf dem veröffentlichten main-Stand; alle aktuellen Korrekturen sind dort enthalten. Build, 130 Unit-/Komponententests, 70 Pakettests, Lint/TypeScript und 4 isolierte ioBroker-Integrationstests sind bestanden.
 
 Die Integration läuft in einem getrennten Testcontainer mit Node 24.21.0 und Controller 7.2.2. Sie speichert den vom echten Editor erzeugten Entwurf direkt in die Test-Objektdatenbank und startet den tatsächlichen Adapterprozess. Sie ersetzt keinen Browser-Test des Admin-Speicherbuttons. Die Desktop-/Handy-Abnahme bleibt deshalb offen. Der Test enthält keine echte Alexa-Liste; entsprechende Warnungen sind im Testprotokoll sichtbar.
+
+## F08 – Doppelter Artikel nach Drag & Drop (12.09.2026, 12:19 Uhr)
+
+**Befund:** Nach einer Verschiebung erschien derselbe Artikel zweimal; Schlussprüfung „Expected 6 active items, found 7“, danach Schreibstopp. Direkte Amazon-Lesung bestätigt zwei neue IDs für denselben Zieltext im Abstand von 89 ms. Die alte ID war entfernt. Diagnose-Schnappschüsse liegen lokal unter `drag-drop-incident` neben dem Server-Repository.
+
+**Reproduzierte Ursachen:** Drop-Ereignisse wurden von der Artikelzeile zum Marktabschnitt weitergereicht und zweimal verarbeitet. Reacts asynchrones `setState` sperrte den zweiten Aufruf nicht sofort. Im Adapter wurde die globale Apply-Sperre erst nach `await isEnabled()` gesetzt; manuelle Befehle hatten während Lesen/Speichern noch keine Reservierung.
+
+**Lokale Korrektur:** `stopPropagation` am Drop; synchrone Befehlsreservierung im Editor; exklusive manuelle Bearbeitung vor der ersten asynchronen Operation; globale Apply-Sperre vor dem ersten `await`. Automatische Läufe warten während manueller Vorbereitung und werden danach wieder eingeplant. Fehler bleiben nach dem Nachladen sichtbar; Meldungen enthalten den Listennamen nur einmal. Der Sicherheitsstopp wird nicht gelockert.
+
+**Nachweis:** Vier gezielte Regressionsfälle scheiterten vor der Änderung und bestehen danach. Insgesamt sieben neue Tests prüfen Ereignisweitergabe, schnelle doppelte Bedienung, parallele Backend-Aufrufe, manuell/automatisch konkurrierende Läufe, erneute Nutzung der Sperren, Fehlerpfad und sichtbare Fehlermeldung. Gesamt: 137 Tests bestanden; Lint/TypeScript bestanden. Browser-Abnahme eines echten Drag & Drop bleibt separat offen.
+
+### F08 – Bereinigung und leerer Markt auf dem Handy
+
+Nach dem Schreibstopp löschte der Benutzer den letzten LIDL-Artikel am Handy. Admin blendete LIDL aus, während dessen Amazon-Überschrift wegen des Schreibstopps bestehen blieb. Während der Adapter gestoppt war, wurden ausschließlich die nachgewiesene zusätzliche Weckgummis-ID und die nun leere LIDL-Überschrift entfernt. Vor jedem DELETE wurden alle aktiven IDs, Werte und Versionen mit dem gesicherten Stand verglichen; danach wurde genau die erwartete Restliste bestätigt. Der vom Benutzer gelöschte Artikel wurde nicht wiederhergestellt.
+
+Das ursprüngliche Fehlerjournal ist gesichert; seine manuelle Auflösung berücksichtigt die spätere Benutzerlöschung ausdrücklich. Danach wurde der Adapter gestartet und wieder aktiviert. Direkte Prüfung: vier aktive Einträge (REWE-Überschrift und drei Artikel), Weckgummis einmal, LIDL entfernt, `info.lastError` leer. Die Reparaturbelege liegen unter `drag-drop-incident` neben dem Server-Repository. Das ist keine Sichtprüfung auf dem Handy.
+
+## F09 – Fehlende Löschtaste in der Einkaufsliste
+
+**Lokal umgesetzt, gebaut, geprüft und auf dem Server installiert:** Eine Löschtaste pro Artikel übermittelt die konkrete Amazon-ID. Der vorhandene Sortierplan entfernt diese ID und gegebenenfalls leere Marktüberschriften in einer gemeinsamen, persistent protokollierten Verarbeitung mit direkter Schlussprüfung. Artikelstamm und gleichnamige andere IDs bleiben erhalten. Gleichzeitiges Löschen/Verschieben wird vor dem ersten asynchronen Aufruf abgewehrt. Dry Run, Schreibstopp, unbekannte Listen und veraltete IDs erlauben keine Löschung. Keine automatische Wiederholung. Desktop-/Handy-Abnahme bleibt offen.
+
+### Abschließender lokaler Nachweis für F08/F09
+
+- Build und Tests in beiden Arbeitskopien: **144 bestanden, 0 fehlgeschlagen**; Lint/TypeScript bestanden.
+- Paketprüfung auf dem Server: **70 bestanden, 0 fehlgeschlagen**.
+- Installiertes Backend und aus dem ioBroker-Dateispeicher zurückgelesene Admin-Einstiegs-/Komponentendateien stimmen per SHA-256 mit dem geprüften Build überein.
+- Adapter läuft, `control.enabled=true`, `info.lastError` leer, `info.sortTransaction={}`. Der automatische Lauf nach Neustart bestätigt vier aktive Einträge.
+- History und beide Anleitungen ergänzt. Version unverändert 0.4.0; kein GitHub-/npm-Release. Tatsächliche Bedienung im Desktop-/Handy-Browser bleibt als Abnahme offen.

@@ -75,6 +75,10 @@ ShoppingRoute wird unter der **[MIT-Lizenz](LICENSE)** veröffentlicht. Frühere
 
 ### **WORK IN PROGRESS**
 
+- Ergänzt eine Löschtaste pro Einkaufsartikel. Die gewählte Amazon-ID und leere Marktüberschriften werden über die exklusive, protokollierte Verarbeitung mit direkter Schlussprüfung entfernt. Dry Run und Sicherheitsstopp sperren das Löschen.
+
+- Verhindert doppelte Einkaufsartikel durch weitergereichte Drop-Ereignisse und überlappende Schreibläufe. Reserviert Bedienbefehle und Backend-Läufe synchron; Verschiebefehler bleiben nach dem Nachladen sichtbar.
+
 - Korrigiert die Metadaten aus Checker-Issue #16: unveröffentlichte 0.3.8 aus `common.news` entfernt, öffentliche npm-Maintaineradresse bei Autor/Copyright ergänzt, MIT-Lizenz verlinkt und testing ^6.2.1 deklariert. Lokaler Checker ohne Fehler; Repository-Aufnahme über PR #6434 bleibt offen.
 
 - Übernahme und Entfernen der Prüfzeile erfolgen gemeinsam im Admin-Entwurf. Dadurch bleibt keine übernommene Zeile bis zur Server-Aktualisierung sichtbar. Speichern sichert die Änderung, Verwerfen stellt den ursprünglichen Entwurf wieder her. UI-Abnahme steht aus.

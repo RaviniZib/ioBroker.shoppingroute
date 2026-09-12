@@ -218,6 +218,12 @@ Für die veröffentlichte 0.4.0 war die Entfernung nach Speichern und Adapterneu
 
 ### Aktuelle Einkaufsliste im Admin
 
+**Lokale, unveröffentlichte Korrektur:** Eine Verschiebung wird nur einmal verarbeitet. Während einer laufenden Änderung sind weitere Verschiebungen und das Zurücksetzen gesperrt; danach sind sie wieder möglich. Eine Fehlermeldung bleibt auch nach dem Nachladen der Liste sichtbar. Bei einem Sicherheitsstopp wird nicht automatisch erneut geschrieben.
+
+Mit **Löschen** an einer Artikelzeile wird genau dieser Eintrag unmittelbar aus der Alexa-Einkaufsliste entfernt; der Artikelstamm bleibt erhalten. Es ist kein zusätzliches Speichern der Adapterkonfiguration erforderlich. Beim letzten Artikel eines Markts wird dessen Überschrift ebenfalls entfernt. Während der Verarbeitung sind weitere Änderungen gesperrt; in Dry Run ist die Löschtaste deaktiviert. Erst nach direkter Bestätigung durch Amazon gilt die Löschung als erfolgreich. Bei einer Fehlermeldung den angezeigten Listenstand prüfen; es erfolgt kein automatischer Wiederholungsversuch.
+
+Bleibt bei aktivem Sicherheitsstopp am Handy eine leere Marktüberschrift stehen, kann der Adapter diese nicht mehr bei Amazon entfernen: Die Admin-Ansicht blendet leere Märkte unabhängig davon aus. Erst nach Prüfung und Behebung der unterbrochenen Verarbeitung dürfen Schreibzugriffe wieder aktiviert werden.
+
 Die aktuelle Einkaufsliste erscheint als einspaltige Folge von Marktabschnitten. Artikel lassen sich per Drag&Drop, mit den Pfeiltasten oder über die Marktauswahl verschieben. **Manuelle Reihenfolge zurücksetzen** entfernt diese manuellen Vorgaben.
 
 Einträge im Format `═════ MARKT ═════` und unterstützte ältere Überschriftenformate werden nicht als Artikel angezeigt. Entscheidend ist die Überschriftenstruktur; auch ein unbekannter oder vertippter Name wie `═════ DROGERIEMART ═════` wird ausgefiltert.

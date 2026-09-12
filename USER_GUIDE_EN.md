@@ -230,6 +230,12 @@ Save to persist the updated product catalogue and review queue together. **Ignor
 
 ### Current shopping list in Admin
 
+**Local, unreleased correction:** Each move is handled once. Further moves and order resets are blocked while a change is in progress, then become available again. Errors remain visible after refreshing the list. A safety stop never triggers automatic write retries.
+
+Use **Delete** on an item row to remove that specific entry immediately from the Alexa shopping list; the product catalogue is retained. No separate adapter-configuration save is required. Deleting a market's last article also removes its header. Further changes are blocked during processing, and Dry Run disables the Delete button. Success requires direct Amazon verification. On failure, inspect the displayed list; there is no automatic retry.
+
+During a safety stop, an empty market header can remain in Alexa because its removal requires a blocked write. Admin hides empty market groups independently. Writes may only be re-enabled after the interrupted operation has been checked and resolved.
+
 The current shopping list is shown as a single-column sequence of market sections. Items can be moved by drag and drop, with the arrow buttons, or with the market selector. **Reset manual order** removes these manual overrides.
 
 Entries formatted as `═════ MARKET ═════` and supported legacy heading formats are hidden from the item list. Recognition is structural, so an unknown or misspelled label such as `═════ DROGERIEMART ═════` is filtered as well.

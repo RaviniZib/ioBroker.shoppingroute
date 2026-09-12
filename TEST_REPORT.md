@@ -62,3 +62,23 @@ An unpublished correction replaces that control with labeled checkboxes (44px la
 - Earlier attempts were not counted as passes: production-controller guard refused a host run; the scratch runner could not enumerate network interfaces; a first container lacked dependency resolution. Initial new-test failures exposed test-harness semantics (array merging and one-use harness), corrected by replacing the whole saved native object and using one actual adapter start per case.
 - Fresh test-container dependency installation emitted upstream deprecation/install-script notices. There is no blanket claim of zero warnings.
 - Logs retained on the server beside the local repository: `local-tests.log`, `local-lint.log`, `package-tests.log`, `integration-verified.log`, `repochecker-final.log`.
+
+## Local drag/drop duplicate correction
+
+Incident: final verification expected 6 active entries and found 7. A direct read confirmed two distinct newly created IDs with the same target value, 89 ms apart; the original deleted ID was absent. The safety stop prevented further writes.
+
+Four new regressions failed against the previous code, reproducing event bubbling, asynchronous React busy-state admission, the backend lock race before `isEnabled`, and concurrent manual preparation. The corrected code passes those cases plus three tests for automatic/manual contention, lock release/error handling, and preserving visible errors after refresh. **137 tests passed, 0 failed; lint/TypeScript passed.** These invoke the real component handlers and compiled adapter methods with controlled I/O, not a browser or live Amazon write test.
+
+The fix reserves commands synchronously, stops drop propagation and preserves exclusive direct writes. No relaxation of final verification, no automatic duplicate deletion and no automatic retry after a safety stop were added.
+
+### Verified incident recovery and Delete button
+
+The stopped adapter's interrupted journal and active list were archived. Exactly the proven extra duplicate ID and the orphan LIDL header were deleted manually, with exact ID/value/version guards before each DELETE and direct verification after each. The user's intervening deletion of Schlabberwurst was preserved. The journal was manually reconciled only after the resulting four-entry list was verified. After restarting and re-enabling, the adapter reported four active prefix-sorted entries and an empty current error. Evidence is retained in `drag-drop-incident`; this is not a phone screenshot acceptance.
+
+Seven additional regressions exercise the Delete button and real compiled message/manual/apply paths with mocked Amazon I/O: one ID-based request under rapid clicks, last-item/header deletion, preservation of a same-name second ID, failed verification with persistent journal and safety stop, blocked/stale/invalid requests, concurrent commands, and visible error reporting. Live personal articles are not deleted to test the new button. Final evidence is recorded below.
+
+Final checks in both local working copies: **144 tests passed, 0 failed; lint and TypeScript passed**. Server package checks: **70 passed, 0 failed**. Scratch npm emitted its existing unknown-http-proxy environment warning; the server lint run did not. The existing repository checker warning W4001 remains documented above; no claim of globally zero warnings is made.
+
+Installed main.js SHA-256: `8de0fabab86160313fe7ac7b939b1d9b3432cf44c25c0cd3e7c678f875959f44`. Admin entry read back from ioBroker: `8d52f5353bf5870f44aa7a8bcf7ca7104c8e6e4c4f39a12dd302779068c8b87d`; component bundle: `c2656c48b10f7202da1a002ab4b43e4b16b0f1713ad5a659e9dfdeb8051dadbc`. All match the tested local build. Read-back initially failed due to incorrect CLI path syntax, then a destination permission error; an absolute temporary destination succeeded. The first cleanup attempt refused to write because upload had re-enabled the instance; the adapter was stopped again before the guarded repair.
+
+Post-install: instance alive, control enabled, current error empty, journal `{}`, and automatic direct verification reports four active prefix-sorted entries. Desktop/mobile browser acceptance of Delete and drag/drop remains pending. No GitHub writes or npm publication. Final logs: `drag-drop-incident/final-tests.log`, `final-lint.log`, `final-package-tests.log`, `final-upload.log`.
