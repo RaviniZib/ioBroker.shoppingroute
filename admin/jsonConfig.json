@@ -572,10 +572,7 @@
           "sm": 12,
           "md": 12,
           "lg": 12,
-          "xl": 12,
-          "onChange": {
-            "calculateFunc": "(data.products || []).map(row => ({...row,availableMarkets:Array.isArray(row.availableMarkets)?row.availableMarkets.map(v=>typeof v==='string'?v.trim():'').filter(Boolean).join(','):String(row.availableMarkets || '')}))"
-          }
+          "xl": 12
         }
       }
     },
@@ -706,9 +703,6 @@
           "md": 12,
           "lg": 12,
           "xl": 12,
-          "onChange": {
-            "calculateFunc": "(data.reviewItems || []).map(row => ({...row,availableMarkets:Array.isArray(row.availableMarkets)?row.availableMarkets.map(v=>typeof v==='string'?v.trim():'').filter(Boolean).join(','):String(row.availableMarkets || '')}))"
-          },
           "hidden": "true"
         }
       }

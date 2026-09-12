@@ -151,7 +151,6 @@ export function applyReviewActions(
 
     for (const review of reviewItems) {
         if (review.action === 'accepted') {
-            remaining.push({ ...review });
             continue;
         }
         if (review.action !== 'accept') {
@@ -176,7 +175,6 @@ export function applyReviewActions(
                 existing.aliases = [...aliases].join(',');
             }
             accepted.push({ ...existing });
-            remaining.push({ ...review, action: 'accepted' });
             continue;
         }
 
@@ -191,7 +189,6 @@ export function applyReviewActions(
         };
         merged.push(product);
         accepted.push(product);
-        remaining.push({ ...review, action: 'accepted' });
     }
 
     return {

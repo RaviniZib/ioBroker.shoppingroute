@@ -4,8 +4,8 @@ Diese Datei sammelt verbindlich vorgesehene Änderungen für Version 0.4.0. Ein 
 
 ## Offener Fehler: Mehrfachauswahl „Verfügbare Märkte“
 
-**Status:** offen  
-**Gemeldet:** 2026-09-12  
+**Status:** implementiert und auf der realen ioBroker-Instanz geprüft; Freigabe nach vollständiger CI
+**Gemeldet:** 2026-09-12
 **Betroffen:** Prüfliste; vorsorglich auch Artikelliste prüfen
 
 ### Fehlerbild
@@ -49,8 +49,8 @@ Die Admin-Konfiguration wandelt `availableMarkets` während einer Tabellenänder
 
 ## Offener Fehler: Übernommene Prüflistenzeile bleibt nach dem Speichern stehen
 
-**Status:** offen, Release-Blocker für 0.4.0  
-**Gemeldet:** 2026-09-12  
+**Status:** implementiert und auf der realen ioBroker-Instanz geprüft; Freigabe nach vollständiger CI
+**Gemeldet:** 2026-09-12
 **Betroffen:** Prüfliste und Verarbeitung beim Adapterstart
 
 ### Bestätigtes Fehlerbild
@@ -59,7 +59,7 @@ Der neue Prüflisten-Editor übernimmt den Artikel sofort in den Artikelstamm un
 
 ### Bestätigte Ursache
 
-Der Admin-Editor setzt den Status auf `accepted`. Die Startverarbeitung `applyReviewActions` verarbeitet und entfernt ausschließlich Zeilen mit `action === "accept"`. Deshalb wird der bereits übernommene Eintrag nach dem Neustart nicht aus `reviewItems` entfernt.
+Der Admin-Editor setzt den Status auf `accepted`. Die Startverarbeitung entfernt diesen Eintrag intern bereits, meldet aber keinen neu übernommenen Artikel. Der Startcode setzt deshalb kein Änderungsflag und schreibt die bereinigte Prüfliste nicht in die Instanzkonfiguration zurück. Zusätzlich wurden ältere `availableMarkets`-Strings im Artikelstamm beim Start nicht als Arrays gespeichert.
 
 ### Ziel für 0.4.0
 

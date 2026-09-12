@@ -35,7 +35,7 @@ function canonicalProductKey(value) {
     return key;
 }
 
-function normalizeMarketCsv(value) {
+function normalizeMarketSelection(value) {
     const source = Array.isArray(value) ? value : String(value || '').split(/[;,]/);
     const seen = new Set();
     return source
@@ -47,8 +47,7 @@ function normalizeMarketCsv(value) {
             }
             seen.add(key);
             return true;
-        })
-        .join(',');
+        });
 }
 
 function activeMarkets(data) {
@@ -143,7 +142,7 @@ function acceptReviewRows(data, indexes) {
                 existing.defaultMarket = String(review.defaultMarket || '');
             }
             if (review.availableMarkets !== undefined) {
-                existing.availableMarkets = normalizeMarketCsv(review.availableMarkets);
+                existing.availableMarkets = normalizeMarketSelection(review.availableMarkets);
             }
             if (review.aliases) {
                 existing.aliases = mergeAliases(existing.aliases, review.aliases);
@@ -155,12 +154,12 @@ function acceptReviewRows(data, indexes) {
                 aliases: String(review.aliases || ''),
                 category: String(review.category || review.guessedCategory || 'Sonstiges'),
                 defaultMarket: String(review.defaultMarket || ''),
-                availableMarkets: normalizeMarketCsv(review.availableMarkets),
+                availableMarkets: normalizeMarketSelection(review.availableMarkets),
             });
         }
         reviewItems[index] = {
             ...review,
-            availableMarkets: normalizeMarketCsv(review.availableMarkets),
+            availableMarkets: normalizeMarketSelection(review.availableMarkets),
             action: 'accepted',
         };
     }
@@ -304,7 +303,7 @@ class ReviewEditor extends React.Component {
                         onChange: event => {
                             const values = [...event.target.selectedOptions].map(option => option.value);
                             this.update(index, {
-                                availableMarkets: values.join(','),
+                                availableMarkets: values,
                                 action: accepted ? 'pending' : row.action,
                             });
                         },
@@ -413,7 +412,7 @@ class ReviewEditor extends React.Component {
 module.exports = {
     Components: { ReviewEditor },
     ReviewEditorModel: {
-        normalizeMarketCsv,
+        normalizeMarketSelection,
         updateReviewRow,
         acceptReviewRows,
         findProductIndex,
