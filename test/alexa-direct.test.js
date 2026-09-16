@@ -93,3 +93,28 @@ test('local Alexa2 auth is reused without logging credentials', async () => {
     assert.equal(options.logger, undefined);
     assert.deepEqual(logs, []);
 });
+
+test('stalled Alexa list reads time out instead of hanging forever', async () => {
+    const remote = fakeRemote(() => {});
+    remote.getListItemsV2 = () => {};
+    const client = new AlexaDirectClient(remote, 'amazon.de', 20);
+    await assert.rejects(client.getItems('list-1'), error => {
+        assert.ok(error instanceof DirectAlexaError);
+        assert.equal(error.kind, 'remote');
+        assert.match(error.message, /Alexa list item lookup timed out after 20 ms/);
+        return true;
+    });
+});
+
+test('stalled Alexa initialization times out instead of blocking adapter startup', async () => {
+    class Remote {
+        init() {}
+        getLists(callback) { callback(null, []); }
+        getListItemsV2(_id, _options, callback) { callback(null, []); }
+        httpsGet() {}
+    }
+    await assert.rejects(
+        AlexaDirectClient.connect({ cookie: 'secret-cookie', alexaServiceHost: 'alexa.amazon.de' }, () => Remote, 20),
+        /Alexa initialization timed out after 20 ms/,
+    );
+});
