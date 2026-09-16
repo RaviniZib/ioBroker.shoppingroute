@@ -86,13 +86,14 @@ function callbackPromise<T>(
 ): Promise<T> {
     return new Promise<T>((resolve, reject) => {
         let settled = false;
+        let timer: ReturnType<typeof setTimeout> | undefined;
         const finish = (callback: () => void): void => {
             if (settled) return;
             settled = true;
-            clearTimeout(timer);
+            if (timer) clearTimeout(timer);
             callback();
         };
-        const timer = setTimeout(() => {
+        timer = setTimeout(() => {
             finish(() => reject(new DirectAlexaError('remote', `${operation} timed out after ${timeoutMs} ms.`)));
         }, Math.max(1, timeoutMs));
         try {
