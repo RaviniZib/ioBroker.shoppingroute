@@ -4,6 +4,8 @@ declare const require: any;
 
 type Callback = (error?: unknown, result?: any) => void;
 
+const DEFAULT_CALLBACK_TIMEOUT_MS = 30000;
+
 interface AlexaRemoteLike {
     init(options: Record<string, unknown>, callback: Callback): void;
     getLists(callback: Callback): void;
@@ -77,15 +79,32 @@ function amazonPageFromHost(host: unknown): string {
     return value.startsWith('alexa.') ? value.slice('alexa.'.length) : 'amazon.de';
 }
 
-function callbackPromise<T>(invoke: (callback: Callback) => void): Promise<T> {
+function callbackPromise<T>(
+    invoke: (callback: Callback) => void,
+    operation = 'Amazon API request',
+    timeoutMs = DEFAULT_CALLBACK_TIMEOUT_MS,
+): Promise<T> {
     return new Promise<T>((resolve, reject) => {
         let settled = false;
-        invoke((error, result) => {
+        const finish = (callback: () => void): void => {
             if (settled) return;
             settled = true;
-            if (error) reject(classifyDirectAlexaError(error));
-            else resolve(result as T);
-        });
+            clearTimeout(timer);
+            callback();
+        };
+        const timer = setTimeout(() => {
+            finish(() => reject(new DirectAlexaError('remote', `${operation} timed out after ${timeoutMs} ms.`)));
+        }, Math.max(1, timeoutMs));
+        try {
+            invoke((error, result) => {
+                finish(() => {
+                    if (error) reject(classifyDirectAlexaError(error));
+                    else resolve(result as T);
+                });
+            });
+        } catch (error) {
+            finish(() => reject(classifyDirectAlexaError(error)));
+        }
     });
 }
 
@@ -125,15 +144,18 @@ export function toAlexaListItems(items: DirectAmazonItem[]): AlexaListItem[] {
 export class AlexaDirectClient {
     private readonly remote: AlexaRemoteLike;
     private readonly amazonPage: string;
+    private readonly timeoutMs: number;
 
-    public constructor(remote: AlexaRemoteLike, amazonPage = 'amazon.de') {
+    public constructor(remote: AlexaRemoteLike, amazonPage = 'amazon.de', timeoutMs = DEFAULT_CALLBACK_TIMEOUT_MS) {
         this.remote = remote;
         this.amazonPage = amazonPage;
+        this.timeoutMs = timeoutMs;
     }
 
     public static async connect(
         native: Alexa2NativeAuth,
         load: (id: string) => any = require,
+        timeoutMs = DEFAULT_CALLBACK_TIMEOUT_MS,
     ): Promise<AlexaDirectClient> {
         let AlexaRemote: any;
         try { AlexaRemote = load('alexa-remote2'); }
@@ -163,8 +185,8 @@ export class AlexaDirectClient {
             bluetooth: false,
             notifications: false,
             cookieRefreshInterval: 0,
-        }, callback));
-        return new AlexaDirectClient(remote, amazonPage);
+        }, callback), 'Alexa initialization', timeoutMs);
+        return new AlexaDirectClient(remote, amazonPage, timeoutMs);
     }
 
     public close(): void {
@@ -172,7 +194,11 @@ export class AlexaDirectClient {
     }
 
     public async getLists(): Promise<DirectAlexaList[]> {
-        const lists = await callbackPromise<any[]>(callback => this.remote.getLists(callback));
+        const lists = await callbackPromise<any[]>(
+            callback => this.remote.getLists(callback),
+            'Alexa list lookup',
+            this.timeoutMs,
+        );
         return (Array.isArray(lists) ? lists : []).map(list => ({
             listId: String(list?.listId || list?.itemId || list?.id || ''),
             name: String(list?.name || list?.listName || list?.type || '').trim(),
@@ -180,7 +206,11 @@ export class AlexaDirectClient {
     }
 
     public async getItems(listId: string): Promise<DirectAmazonItem[]> {
-        const items = await callbackPromise<any[]>(callback => this.remote.getListItemsV2(listId, { limit: 100 }, callback));
+        const items = await callbackPromise<any[]>(
+            callback => this.remote.getListItemsV2(listId, { limit: 100 }, callback),
+            'Alexa list item lookup',
+            this.timeoutMs,
+        );
         return (Array.isArray(items) ? items : []).map(mapItem).filter(item => item.itemId);
     }
 
@@ -188,7 +218,7 @@ export class AlexaDirectClient {
         const result = await callbackPromise<any>(callback => this.remote.httpsGet(path, callback, {
             method,
             ...(data === undefined ? {} : { data: JSON.stringify(data) }),
-        }));
+        }), `Alexa ${method} request`, this.timeoutMs);
         const failure = remoteFailure(result);
         if (failure) throw failure;
         return result;
