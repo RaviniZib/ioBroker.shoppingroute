@@ -49,10 +49,14 @@ const review_tools_1 = require("./lib/review-tools");
 const manual_order_1 = require("./lib/manual-order");
 const state_change_1 = require("./lib/state-change");
 const direct_sort_lifecycle_1 = require("./lib/direct-sort-lifecycle");
-const VERSION = '0.4.1';
+const VERSION = '0.4.2';
 const COLLECT_WINDOW_MS = 5000;
 const MAX_ACTIVE_ITEMS = 99;
 const OWN_REFRESH_MAX_MS = 30000;
+const DIRECT_POLL_BASE_MS = 60000;
+const DIRECT_POLL_MAX_MS = 15 * 60000;
+const DIRECT_FINAL_VERIFY_ATTEMPTS = 3;
+const DIRECT_FINAL_VERIFY_RETRY_MS = 1500;
 const DEFAULT_CATEGORIES = [
     'Obst/Gemüse',
     'Tee/Kaffee',
@@ -87,6 +91,15 @@ function mapsEqual(left, right) {
             return false;
     return true;
 }
+function containsValueCounts(actualValues, expectedValues) {
+    const actual = countValues(actualValues);
+    const expected = countValues(expectedValues);
+    for (const [value, count] of expected) {
+        if ((actual.get(value) || 0) < count)
+            return false;
+    }
+    return true;
+}
 function englishRuntimeError(error) {
     const message = error instanceof Error ? error.message : String(error);
     return message
@@ -108,6 +121,9 @@ class ShoppingRoute extends utils.Adapter {
     listStates = new Map();
     applyingListName = '';
     manualCommandPending = false;
+    directPollTimer;
+    directPollRunning = false;
+    directPollDelayMs = DIRECT_POLL_BASE_MS;
     directClient = null;
     directClientPromise = null;
     directListIds = new Map();
@@ -274,6 +290,7 @@ class ShoppingRoute extends utils.Adapter {
         this.log.info('IMPORTANT: Set every managed list in the Alexa app to alphabetical sorting (A–Z).');
         this.log.debug('Direct sorting uses visible prefixes 00>–99>; Alexa2 list states are used only as an external trigger source.');
         this.scheduleAll(COLLECT_WINDOW_MS);
+        this.armDirectPoll(DIRECT_POLL_BASE_MS);
     }
     async discoverAlexaLists(instanceName = this.alexaInstance) {
         const instance = String(instanceName || this.alexaInstance).trim() || this.alexaInstance;
@@ -669,6 +686,8 @@ class ShoppingRoute extends utils.Adapter {
     }
     onUnload(callback) {
         this.isUnloading = true;
+        if (this.directPollTimer)
+            this.clearTimeout(this.directPollTimer);
         for (const state of this.listStates.values())
             if (state.timer)
                 this.clearTimeout(state.timer);
@@ -747,6 +766,46 @@ class ShoppingRoute extends utils.Adapter {
             state.timer = undefined;
             void this.startApply(listName);
         }, delay);
+    }
+    armDirectPoll(delay) {
+        if (this.isUnloading)
+            return;
+        if (this.directPollTimer)
+            this.clearTimeout(this.directPollTimer);
+        this.directPollTimer = this.setTimeout(() => {
+            this.directPollTimer = undefined;
+            void this.runDirectPoll();
+        }, delay);
+    }
+    async runDirectPoll() {
+        if (this.isUnloading || this.directPollRunning)
+            return;
+        this.directPollRunning = true;
+        try {
+            // Keep the poll timer alive while writes are running or sorting is disabled.
+            if (this.applyingListName || this.manualCommandPending || !(await this.isEnabled())) {
+                this.directPollDelayMs = DIRECT_POLL_BASE_MS;
+                return;
+            }
+            for (const list of this.listConfigs) {
+                const listId = await this.directListId(list.name);
+                const items = await this.readDirectItems(listId);
+                this.observeListState(list.name, JSON.stringify(items));
+            }
+            this.directPollDelayMs = DIRECT_POLL_BASE_MS;
+            await this.setStateAsync('info.connection', true, true);
+        }
+        catch (error) {
+            this.directPollDelayMs = Math.min(DIRECT_POLL_MAX_MS, Math.max(DIRECT_POLL_BASE_MS, this.directPollDelayMs) * 2);
+            this.directClient?.close();
+            this.directClient = null;
+            this.directListIds.clear();
+            this.log.warn(`Direct Amazon list poll failed; retrying in ${Math.round(this.directPollDelayMs / 60000)} minute(s): ${String(error)}`);
+        }
+        finally {
+            this.directPollRunning = false;
+            this.armDirectPoll(this.directPollDelayMs);
+        }
     }
     scheduleAll(delay) {
         if (this.isUnloading)
@@ -994,9 +1053,36 @@ class ShoppingRoute extends utils.Adapter {
             await this.recordDirectWrite();
             await this.persistDirectJournal(journal);
         }
-        // Exactly one direct control read after all writes; Alexa2 states are intentionally not part of confirmation.
-        const verifiedItems = await this.readDirectItems(listId, runtime);
-        const verification = (0, prefix_sort_1.verifyPrefixResult)(verifiedItems, plan, state.externalDirty);
+        // Direct Amazon reads are authoritative. Retry briefly because list updates can be eventually consistent.
+        let verifiedItems = [];
+        let verification = {
+            ok: false,
+            reason: 'Final verification did not run.',
+        };
+        for (let attempt = 1; attempt <= DIRECT_FINAL_VERIFY_ATTEMPTS; attempt += 1) {
+            verifiedItems = await this.readDirectItems(listId, runtime);
+            verification = (0, prefix_sort_1.verifyPrefixResult)(verifiedItems, plan, state.externalDirty);
+            if (verification.ok)
+                break;
+            if (attempt < DIRECT_FINAL_VERIFY_ATTEMPTS) {
+                this.log.debug(`${listName}: final verification attempt ${attempt}/${DIRECT_FINAL_VERIFY_ATTEMPTS} failed: ` +
+                    `${englishRuntimeError(verification.reason || 'Unknown verification error.')} Retrying.`);
+                await this.wait(DIRECT_FINAL_VERIFY_RETRY_MS);
+            }
+        }
+        // If every planned write is present and only additional active items remain, preserve them and sort again.
+        // Missing updates, undeleted IDs and missing batch-created values still reach the hard safety stop below.
+        let inferredExternalChange = false;
+        if (!verification.ok && !state.externalDirty) {
+            const relaxedVerification = (0, prefix_sort_1.verifyPrefixResult)(verifiedItems, plan, true);
+            if (relaxedVerification.ok) {
+                inferredExternalChange = true;
+                state.externalDirty = true;
+                state.lastExternalAt = Date.now();
+                verification = relaxedVerification;
+                this.log.warn(`${listName}: additional active Amazon items appeared during final verification; scheduling a follow-up sort instead of activating the safety stop.`);
+            }
+        }
         if (!verification.ok)
             throw new Error(`${listName}: direct final verification failed: ${englishRuntimeError(verification.reason || 'Unknown verification error.')}`);
         const reboundOverrides = (0, manual_order_1.reconcileManualOverrides)(this.manualOverrides, listName, verifiedItems);
@@ -1010,7 +1096,7 @@ class ShoppingRoute extends utils.Adapter {
         state.ownObservation = this.buildOwnObservation(snapshot, plan);
         this.activeCountByList.set(listName, (0, market_plan_1.realActiveItems)(this.prefixFreeItems(verifiedItems), this.markets).length);
         await this.updateActiveItemCount();
-        await this.setStateAsync('info.lastSort', `${new Date().toISOString()} – ${listName}: prefix sorting confirmed directly`, true);
+        await this.setStateAsync('info.lastSort', `${new Date().toISOString()} – ${listName}: prefix sorting confirmed directly${inferredExternalChange ? '; additional items queued for follow-up' : ''}`, true);
         await this.setStateAsync('info.lastError', '', true);
     }
     buildOwnObservation(snapshot, plan) {
@@ -1102,16 +1188,28 @@ class ShoppingRoute extends utils.Adapter {
             return false;
         }
         try {
-            const items = await this.readDirectItems(journal.listId);
-            const activeValues = (0, sorter_1.activeItems)(items).map(item => String(item.value).trim()).sort((a, b) => a.localeCompare(b, 'de', { numeric: true }));
             const expected = [...journal.expectedValues];
-            const ids = new Set((0, sorter_1.activeItems)(items).map(item => String(item.id)));
-            const exact = activeValues.length === expected.length && activeValues.every((value, index) => value === expected[index]);
-            const deletedGone = journal.deletedIds.every(id => !ids.has(id));
-            if (exact && deletedGone) {
-                await this.clearDirectJournal();
-                this.log.debug(`${journal.listName}: interrupted direct apply was fully completed remotely; journal cleared.`);
-                return true;
+            for (let attempt = 1; attempt <= DIRECT_FINAL_VERIFY_ATTEMPTS; attempt += 1) {
+                const items = await this.readDirectItems(journal.listId);
+                const active = (0, sorter_1.activeItems)(items);
+                const activeValues = active.map(item => String(item.value).trim()).sort((a, b) => a.localeCompare(b, 'de', { numeric: true }));
+                const ids = new Set(active.map(item => String(item.id)));
+                const exact = activeValues.length === expected.length && activeValues.every((value, index) => value === expected[index]);
+                const deletedGone = journal.deletedIds.every(id => !ids.has(id));
+                const expectedPresent = containsValueCounts(activeValues, expected);
+                if (deletedGone && expectedPresent) {
+                    await this.clearDirectJournal();
+                    if (exact) {
+                        this.log.debug(`${journal.listName}: interrupted direct apply was fully completed remotely; journal cleared.`);
+                    }
+                    else {
+                        this.log.warn(`${journal.listName}: interrupted direct apply is complete and only additional active items remain; journal cleared and a follow-up sort will run.`);
+                    }
+                    return true;
+                }
+                if (attempt < DIRECT_FINAL_VERIFY_ATTEMPTS) {
+                    await this.wait(DIRECT_FINAL_VERIFY_RETRY_MS);
+                }
             }
             await this.activateDirectSafetyStop(journal.listName, 'Interrupted direct apply is not complete remotely; journal is retained.');
             return false;

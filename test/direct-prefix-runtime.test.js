@@ -23,9 +23,21 @@ test('only one productive direct prefix path remains', () => {
 test('collection applies immediately at two new IDs or five seconds after the first event', () => {
     assert.match(main, /const COLLECT_WINDOW_MS = 5000;/);
     assert.match(main, /collectDirectInput\(state, observedAt, addedIds, COLLECT_WINDOW_MS\)/);
+
     assert.match(main, /armCollectionDeadline/);
     assert.equal((main.match(/void this\.startApply\(listName\)/g) || []).length, 1);
 });
+test('direct Amazon polling is the resilient trigger with bounded backoff', () => {
+    assert.match(main, /const DIRECT_POLL_BASE_MS = 60000;/);
+    assert.match(main, /const DIRECT_POLL_MAX_MS = 15 \* 60000;/);
+    assert.match(main, /private async runDirectPoll/);
+    assert.match(main, /await this\.readDirectItems\(listId\)/);
+    assert.match(main, /this\.observeListState\(list\.name, JSON\.stringify\(items\)\)/);
+    assert.match(main, /Math\.min\(DIRECT_POLL_MAX_MS/);
+    assert.match(main, /this\.directClient = null/);
+    assert.match(main, /if \(this\.directPollTimer\) this\.clearTimeout\(this\.directPollTimer\)/);
+});
+
 
 test('APPLYING is exclusive and external changes create at most one new collection window', () => {
     assert.match(main, /collectDirectInput\(state, observedAt, addedIds, COLLECT_WINDOW_MS\)/);
@@ -44,11 +56,16 @@ test('own direct writes are absorbed by IDs and prefix-free text, including batc
     assert.match(main, /if \(this\.isOwnRefresh\(state, current, observedAt\)\) return;/);
 });
 
-test('one final Amazon read verifies the complete APPLYING result and no state confirmation is used', () => {
+test('bounded final Amazon verification retries and queues harmless additional items for a follow-up', () => {
     const apply = main.slice(main.indexOf('private async applyDirectSort'), main.indexOf('private buildOwnObservation'));
     const writeSection = apply.slice(apply.indexOf('for (const update'));
     assert.equal((writeSection.match(/readDirectItems\(listId, runtime\)/g) || []).length, 1);
+    assert.match(writeSection, /DIRECT_FINAL_VERIFY_ATTEMPTS/);
+    assert.match(writeSection, /DIRECT_FINAL_VERIFY_RETRY_MS/);
     assert.match(writeSection, /verifyPrefixResult/);
+    assert.match(writeSection, /verifyPrefixResult\(verifiedItems, plan, true\)/);
+    assert.match(writeSection, /state\.externalDirty = true/);
+    assert.match(writeSection, /scheduling a follow-up sort instead of activating the safety stop/);
     assert.doesNotMatch(writeSection, /getForeignState|waitFor/);
 });
 
@@ -62,6 +79,16 @@ test('legacy transaction markers are not recovered by the new architecture', () 
     assert.match(main, /journal\.version !== 2/);
     assert.match(main, /Old interrupted marker transaction/);
     assert.doesNotMatch(main, /rollbackBufferedTransaction|recoverInterruptedSortTransaction/);
+});
+
+test('restart recovery accepts verified supersets but retains hard checks', () => {
+    const recovery = main.slice(main.indexOf('private async recoverDirectApplyJournal'), main.indexOf('private logDirectRuntime'));
+    assert.match(recovery, /DIRECT_FINAL_VERIFY_ATTEMPTS/);
+    assert.match(recovery, /DIRECT_FINAL_VERIFY_RETRY_MS/);
+    assert.match(recovery, /containsValueCounts\(activeValues, expected\)/);
+    assert.match(recovery, /deletedGone && expectedPresent/);
+    assert.match(recovery, /only additional active items remain/);
+    assert.match(recovery, /activateDirectSafetyStop/);
 });
 
 test('technical runtime metrics use debug and the compact info summary is configurable', () => {
