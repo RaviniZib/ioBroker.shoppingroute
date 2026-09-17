@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "shoppingroute",
-    "version": "0.4.1",
+    "version": "0.4.2",
     "titleLang": {
       "en": "ShoppingRoute",
       "de": "ShoppingRoute",
@@ -60,6 +60,19 @@
     "icon": "shoppingroute.png",
     "tier": 3,
     "news": {
+      "0.4.2": {
+        "en": "Prevents stalled Alexa callbacks, adds direct Amazon list polling, and safely handles additional items and delayed verification without unnecessary sorting stops.",
+        "de": "Verhindert hängende Alexa-Aufrufe, ergänzt den direkten Amazon-Listenabgleich und behandelt zusätzliche Artikel sowie verzögerte Bestätigungen ohne unnötige Sortierstopps.",
+        "ru": "Предотвращает зависание вызовов Alexa, добавляет прямой опрос списков Amazon и обработку новых товаров без лишних остановок сортировки.",
+        "pt": "Evita chamadas Alexa bloqueadas, consulta listas Amazon diretamente e trata artigos adicionais sem paragens desnecessárias.",
+        "nl": "Voorkomt vastlopende Alexa-aanroepen, controleert Amazon-lijsten rechtstreeks en verwerkt extra artikelen zonder onnodige sorteeronderbrekingen.",
+        "fr": "Évite les appels Alexa bloqués, interroge directement les listes Amazon et gère les articles supplémentaires sans arrêt inutile du tri.",
+        "it": "Evita chiamate Alexa bloccate, controlla direttamente le liste Amazon e gestisce articoli aggiuntivi senza arresti inutili.",
+        "es": "Evita llamadas Alexa bloqueadas, consulta listas Amazon directamente y gestiona artículos adicionales sin detener innecesariamente la ordenación.",
+        "pl": "Zapobiega zawieszaniu wywołań Alexa, bezpośrednio sprawdza listy Amazon i obsługuje dodatkowe produkty bez zbędnego zatrzymywania sortowania.",
+        "uk": "Запобігає зависанню викликів Alexa, додає пряме опитування списків Amazon та обробку нових товарів без зайвих зупинок сортування.",
+        "zh-cn": "防止 Alexa 调用挂起，直接轮询 Amazon 清单，并安全处理新增商品和延迟确认，避免不必要的排序停止。"
+      },
       "0.4.1": {
         "en": "Fixes review acceptance and market selection, prevents concurrent shopping-list writes and duplicates, adds verified item deletion, handles incomplete Admin responses, and resolves repository checker metadata findings.",
         "de": "Korrigiert Prüflistenübernahme und Marktauswahl, verhindert parallele Schreibläufe und Duplikate, ergänzt geprüftes Löschen, behandelt unvollständige Admin-Antworten und behebt Metadaten-Beanstandungen des Repository-Checkers.",

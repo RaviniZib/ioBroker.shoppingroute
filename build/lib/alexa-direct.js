@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AlexaDirectClient = exports.DirectAlexaError = void 0;
 exports.classifyDirectAlexaError = classifyDirectAlexaError;
 exports.toAlexaListItems = toAlexaListItems;
+const DEFAULT_CALLBACK_TIMEOUT_MS = 30000;
 class DirectAlexaError extends Error {
     kind;
     constructor(kind, message) {
@@ -41,18 +42,35 @@ function amazonPageFromHost(host) {
     const value = (typeof host === 'string' ? host : '').trim().replace(/^https?:\/\//, '').split('/')[0];
     return value.startsWith('alexa.') ? value.slice('alexa.'.length) : 'amazon.de';
 }
-function callbackPromise(invoke) {
+function callbackPromise(invoke, operation = 'Amazon API request', timeoutMs = DEFAULT_CALLBACK_TIMEOUT_MS) {
     return new Promise((resolve, reject) => {
         let settled = false;
-        invoke((error, result) => {
+        const timer = setTimeout(() => {
             if (settled)
                 return;
             settled = true;
-            if (error)
-                reject(classifyDirectAlexaError(error));
-            else
-                resolve(result);
-        });
+            reject(new DirectAlexaError('remote', `${operation} timed out after ${timeoutMs} ms.`));
+        }, Math.max(1, timeoutMs));
+        const finish = (callback) => {
+            if (settled)
+                return;
+            settled = true;
+            clearTimeout(timer);
+            callback();
+        };
+        try {
+            invoke((error, result) => {
+                finish(() => {
+                    if (error)
+                        reject(classifyDirectAlexaError(error));
+                    else
+                        resolve(result);
+                });
+            });
+        }
+        catch (error) {
+            finish(() => reject(classifyDirectAlexaError(error)));
+        }
     });
 }
 function remoteFailure(result) {
@@ -90,11 +108,13 @@ function toAlexaListItems(items) {
 class AlexaDirectClient {
     remote;
     amazonPage;
-    constructor(remote, amazonPage = 'amazon.de') {
+    timeoutMs;
+    constructor(remote, amazonPage = 'amazon.de', timeoutMs = DEFAULT_CALLBACK_TIMEOUT_MS) {
         this.remote = remote;
         this.amazonPage = amazonPage;
+        this.timeoutMs = timeoutMs;
     }
-    static async connect(native, load = require) {
+    static async connect(native, load = require, timeoutMs = DEFAULT_CALLBACK_TIMEOUT_MS) {
         let AlexaRemote;
         try {
             AlexaRemote = load('alexa-remote2');
@@ -133,28 +153,28 @@ class AlexaDirectClient {
             bluetooth: false,
             notifications: false,
             cookieRefreshInterval: 0,
-        }, callback));
-        return new AlexaDirectClient(remote, amazonPage);
+        }, callback), 'Alexa initialization', timeoutMs);
+        return new AlexaDirectClient(remote, amazonPage, timeoutMs);
     }
     close() {
         this.remote.stopProxyServer?.();
     }
     async getLists() {
-        const lists = await callbackPromise(callback => this.remote.getLists(callback));
+        const lists = await callbackPromise(callback => this.remote.getLists(callback), 'Alexa list lookup', this.timeoutMs);
         return (Array.isArray(lists) ? lists : []).map(list => ({
             listId: String(list?.listId || list?.itemId || list?.id || ''),
             name: String(list?.name || list?.listName || list?.type || '').trim(),
         })).filter(list => list.listId && list.name);
     }
     async getItems(listId) {
-        const items = await callbackPromise(callback => this.remote.getListItemsV2(listId, { limit: 100 }, callback));
+        const items = await callbackPromise(callback => this.remote.getListItemsV2(listId, { limit: 100 }, callback), 'Alexa list item lookup', this.timeoutMs);
         return (Array.isArray(items) ? items : []).map(mapItem).filter(item => item.itemId);
     }
     async request(path, method, data) {
         const result = await callbackPromise(callback => this.remote.httpsGet(path, callback, {
             method,
             ...(data === undefined ? {} : { data: JSON.stringify(data) }),
-        }));
+        }), `Alexa ${method} request`, this.timeoutMs);
         const failure = remoteFailure(result);
         if (failure)
             throw failure;

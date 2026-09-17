@@ -40,6 +40,12 @@ See `README_DE.md` for the detailed German documentation.
 
 ## Changelog
 
+### 0.4.2 (2026-09-17)
+- (RaviniZib) Bound direct Alexa callbacks to 30 seconds so missing callbacks cannot block startup or sorting.
+- (RaviniZib) Poll Amazon lists directly with error backoff when Alexa2 events are missing; keep polling scheduled while sorting is busy or disabled.
+- (RaviniZib) Retry delayed final verification and preserve concurrent additions for a follow-up sort. Recover completed transactions without discarding additional items; retain safety stops for incomplete writes.
+- (RaviniZib) Refresh the checked-in build and add recovery and polling regression tests.
+
 ### 0.4.1 (2026-09-12)
 
 - Validates shopping-list responses before rendering or replacing the current view. Incomplete responses show an error and a Reload button instead of crashing on `.map()`.

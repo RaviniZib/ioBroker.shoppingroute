@@ -147,13 +147,68 @@ test('delivered product group editor satisfies the ioBroker module federation co
   }
 });
 
-test('walking route editor source and delivered entry remain file-identical', () => {
+test('delivered walking route editor satisfies the ioBroker module federation contract', () => {
+  const customDir = join(__dirname, '..', 'admin', 'custom');
+  const manifest = JSON.parse(readFileSync(join(customDir, 'mf-manifest.json'), 'utf8'));
+  const exposedComponents = manifest.exposes.find(expose => expose.path === './Components');
+
+  assert.equal(manifest.metaData.remoteEntry.name, 'routeEditor.js');
+  assert.equal(manifest.metaData.remoteEntry.type, 'module');
+  assert.equal(exposedComponents && exposedComponents.name, 'Components');
+
+  const temporaryRoot = mkdtempSync(join(tmpdir(), 'shoppingroute-product-groups-editor-'));
+  const temporaryCustomDir = join(temporaryRoot, 'custom');
+  try {
+    cpSync(customDir, temporaryCustomDir, { recursive: true });
+    writeFileSync(join(temporaryCustomDir, 'package.json'), '{"type":"module"}\n');
+    const loaderProbe = `
+      globalThis.window = globalThis;
+      globalThis.document = {
+        defaultView: globalThis,
+        getElementsByTagName: () => [],
+        querySelector: () => null,
+        createElement: () => ({ setAttribute() {}, addEventListener() {} }),
+        head: { appendChild() {} },
+      };
+      globalThis.dispatchEvent = () => true;
+      globalThis.Event = class {
+        constructor(type, options) {
+          this.type = type;
+          this.defaultPrevented = false;
+          Object.assign(this, options);
+        }
+      };
+      const remote = await import('./routeEditor.js');
+      await remote.init({});
+      const factory = await remote.get('./Components');
+      const exposed = factory();
+      console.log(JSON.stringify({
+        exports: Object.keys(remote).sort(),
+        module: Object.keys(exposed).sort(),
+        components: Object.keys(exposed.default || {}).sort(),
+      }));
+    `;
+    const probe = spawnSync(process.execPath, ['--input-type=module', '--eval', loaderProbe], {
+      cwd: temporaryCustomDir,
+      encoding: 'utf8',
+    });
+
+    assert.equal(probe.status, 0, probe.stderr);
+    assert.deepEqual(JSON.parse(probe.stdout.trim()), {
+      exports: ['get', 'init'],
+      module: ['default'],
+      components: ['RouteEditor'],
+    });
+  } finally {
+    rmSync(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
+test('walking route editor sources remain unchanged', () => {
   const root = join(__dirname, '..');
   const hashes = {
     'src-admin/route-editor.js': 'cbb6fbc953999c1ac9a5034aadd1934db7fb3ee1671d0fd4b098c34b271c6fa8',
     'src-admin/route-editor-components.mjs': 'f0fe127c17f646ccecb87905cb27fe818a91883a49bbd55858beb20cfef970fa',
-    'admin/custom/routeEditor.js': 'f9e11a4617b39a2ad148e219738c04928ecda0559dddafd6317cd795a4bc8eca',
-    'admin/custom/mf-manifest.json': '39714d615dc53fa052c47280829b8042997464aaea078c09a1366730181e1c3f',
   };
 
   for (const [file, expected] of Object.entries(hashes)) {
