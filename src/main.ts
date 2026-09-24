@@ -62,7 +62,7 @@ import {
     type DirectSortPhase,
 } from './lib/direct-sort-lifecycle';
 
-const VERSION = '0.4.2';
+const VERSION = '0.4.3';
 const COLLECT_WINDOW_MS = 5000;
 const MAX_ACTIVE_ITEMS = 99;
 const OWN_REFRESH_MAX_MS = 30000;
@@ -945,7 +945,10 @@ export class ShoppingRoute extends utils.Adapter {
             const native = (object.native || {}) as Alexa2NativeAuth;
             const version = (object.common as { version?: unknown } | undefined)?.version;
             this.alexa2Version = typeof version === 'string' || typeof version === 'number' ? String(version) : 'unknown';
-            const client = await AlexaDirectClient.connect(native, this);
+            const client = await AlexaDirectClient.connect(native, {
+                set: (callback, timeout) => this.setTimeout(callback, timeout),
+                clear: timeout => this.clearTimeout(timeout),
+            });
             this.directClient = client;
             this.compatibilityDetail = 'Direct alexa-remote2 session using local Alexa2 authentication is ready.';
             try {

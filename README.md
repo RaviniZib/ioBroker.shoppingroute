@@ -40,6 +40,10 @@ See `README_DE.md` for the detailed German documentation.
 
 ## Changelog
 
+### 0.4.3 (2026-09-25)
+- (RaviniZib) Route Alexa callback timeouts through ioBroker-managed timers so stalled callbacks stay bounded without plain Node.js `setTimeout()` calls in adapter source.
+- (RaviniZib) Keep `common.news` within the seven entries supported by the repository builder.
+
 ### 0.4.2 (2026-09-17)
 - (RaviniZib) Bound direct Alexa callbacks to 30 seconds so missing callbacks cannot block startup or sorting.
 - (RaviniZib) Poll Amazon lists directly with error backoff when Alexa2 events are missing; keep polling scheduled while sorting is busy or disabled.

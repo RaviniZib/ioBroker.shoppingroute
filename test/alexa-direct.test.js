@@ -5,8 +5,8 @@ const assert = require('node:assert/strict');
 const { AlexaDirectClient, DirectAlexaError, classifyDirectAlexaError } = require('../build/lib/alexa-direct');
 
 const timerApi = {
-    setTimeout(callback, timeout) { return setTimeout(callback, timeout); },
-    clearTimeout(timeout) { clearTimeout(timeout); },
+    set(callback, timeout) { return setTimeout(callback, timeout); },
+    clear(timeout) { clearTimeout(timeout); },
 };
 
 function fakeRemote(handler) {
@@ -122,4 +122,63 @@ test('stalled Alexa initialization times out instead of blocking adapter startup
         AlexaDirectClient.connect({ cookie: 'secret-cookie', alexaServiceHost: 'alexa.amazon.de' }, timerApi, () => Remote, 20),
         /Alexa initialization timed out after 20 ms/,
     );
+});
+
+test('every Alexa operation times out once without retrying or accepting a late callback', async () => {
+    const operations = [
+        client => client.getLists(),
+        client => client.getItems('list-1'),
+        client => client.updateItem('list-1', 'item-1', 1, 'Milk'),
+        client => client.deleteItem('list-1', 'item-1', 1),
+        client => client.batchCreate('list-1', ['Milk']),
+    ];
+    for (const operation of operations) {
+        let expire;
+        let lateCallback;
+        let calls = 0;
+        const capture = callback => { calls++; lateCallback = callback; };
+        const remote = {
+            getLists: capture,
+            getListItemsV2: (_id, _options, callback) => capture(callback),
+            httpsGet: (_path, callback) => capture(callback),
+        };
+        const timers = {
+            set(callback, delay) { assert.equal(delay, 30000); expire = callback; return 1; },
+            clear() { assert.fail('expired timer must not be cleared by a late callback'); },
+        };
+        const pending = operation(new AlexaDirectClient(remote, timers));
+        const rejected = assert.rejects(pending, /timed out after 30000 ms/);
+        expire();
+        await rejected;
+        lateCallback(null, []);
+        lateCallback(new Error('late failure'));
+        await assert.rejects(pending, /timed out after 30000 ms/);
+        assert.equal(calls, 1);
+    }
+});
+
+test('successful callbacks and synchronous failures clear the injected timer', async () => {
+    for (const fail of [false, true]) {
+        const cleared = [];
+        const timers = {
+            set() { return 42; },
+            clear(handle) { cleared.push(handle); },
+        };
+        const remote = fakeRemote(() => {});
+        if (fail) remote.getLists = () => { throw new Error('synchronous failure'); };
+        const pending = new AlexaDirectClient(remote, timers).getLists();
+        if (fail) await assert.rejects(pending, /synchronous failure/);
+        else assert.deepEqual(await pending, [{ listId: 'list-1', name: 'SHOP' }]);
+        assert.deepEqual(cleared, [42]);
+    }
+});
+
+test('adapter shutdown refuses requests when ioBroker cannot create a timeout', async () => {
+    const timers = {
+        set() { return undefined; },
+        clear() { assert.fail('no timer was created'); },
+    };
+    const remote = fakeRemote(() => assert.fail('no Amazon write may start during shutdown'));
+    const client = new AlexaDirectClient(remote, timers);
+    await assert.rejects(client.deleteItem('list-1', 'item-1', 1), /adapter is stopping/);
 });

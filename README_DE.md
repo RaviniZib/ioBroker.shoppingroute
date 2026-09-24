@@ -73,6 +73,10 @@ ShoppingRoute wird unter der **[MIT-Lizenz](LICENSE)** veröffentlicht. Frühere
 
 ## Changelog
 
+### 0.4.3 (2026-09-25)
+- Alexa-Callback-Timeouts verwenden jetzt ioBroker-verwaltete Timer; hängende Aufrufe bleiben damit begrenzt, ohne nacktes Node.js-`setTimeout()` im Adapter-Quellcode.
+- `common.news` wird auf die vom Repository-Builder unterstützten sieben Einträge begrenzt.
+
 ### 0.4.1 (2026-09-12)
 
 - Prüft Einkaufslistenantworten vor Anzeige und Übernahme. Unvollständige Antworten zeigen einen Fehler und „Erneut laden“, statt mit einem `.map()`-Fehler abzustürzen.

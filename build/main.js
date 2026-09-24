@@ -49,7 +49,7 @@ const review_tools_1 = require("./lib/review-tools");
 const manual_order_1 = require("./lib/manual-order");
 const state_change_1 = require("./lib/state-change");
 const direct_sort_lifecycle_1 = require("./lib/direct-sort-lifecycle");
-const VERSION = '0.4.2';
+const VERSION = '0.4.3';
 const COLLECT_WINDOW_MS = 5000;
 const MAX_ACTIVE_ITEMS = 99;
 const OWN_REFRESH_MAX_MS = 30000;
@@ -902,7 +902,10 @@ class ShoppingRoute extends utils.Adapter {
             const native = (object.native || {});
             const version = object.common?.version;
             this.alexa2Version = typeof version === 'string' || typeof version === 'number' ? String(version) : 'unknown';
-            const client = await alexa_direct_1.AlexaDirectClient.connect(native);
+            const client = await alexa_direct_1.AlexaDirectClient.connect(native, {
+                set: (callback, timeout) => this.setTimeout(callback, timeout),
+                clear: timeout => this.clearTimeout(timeout),
+            });
             this.directClient = client;
             this.compatibilityDetail = 'Direct alexa-remote2 session using local Alexa2 authentication is ready.';
             try {
