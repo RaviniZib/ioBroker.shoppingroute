@@ -3,6 +3,8 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { AlexaDirectClient, DirectAlexaError, classifyDirectAlexaError } = require('../build/lib/alexa-direct');
+const nodeTimers = require('node:timers');
+const timerApi = { set: nodeTimers.setTimeout, clear: nodeTimers.clearTimeout };
 
 function fakeRemote(handler) {
     return {
@@ -18,7 +20,7 @@ test('direct UPDATE uses the exact item URL/version and requires a newer confirm
     const client = new AlexaDirectClient(fakeRemote((path, flags, callback) => {
         calls.push({ path, flags });
         callback(null, { itemInfo: { itemId: 'item-1', itemName: '25> Tomaten', version: 5, itemStatus: 'ACTIVE' } });
-    }));
+    }), timerApi);
     const result = await client.updateItem('list-1', 'item-1', 4, '25> Tomaten');
     assert.equal(result.version, 5);
     assert.match(calls[0].path, /items\/item-1\?version=4$/);
@@ -37,7 +39,7 @@ test('batch CREATE sends every suffix item in one POST and validates failures', 
             ],
             failures: [],
         });
-    }));
+    }), timerApi);
     const result = await client.batchCreate('list-1', ['30> Milch', '40> Eier']);
     assert.equal(result.items.length, 2);
     assert.equal(call.flags.method, 'POST');
@@ -45,7 +47,7 @@ test('batch CREATE sends every suffix item in one POST and validates failures', 
 
     const failed = new AlexaDirectClient(fakeRemote((_path, _flags, callback) => {
         callback(null, { itemInfoList: [], failures: [{ reason: 'bad' }] });
-    }));
+    }), timerApi);
     await assert.rejects(failed.batchCreate('list-1', ['30> Milch']), /Batch CREATE incomplete/);
 });
 
@@ -53,7 +55,7 @@ test('DELETE is item-specific and version conflicts are never retried by the cli
     let calls = 0;
     const client = new AlexaDirectClient(fakeRemote((_path, _flags, callback) => {
         calls += 1;
-        callback(new Error('HTTP 409 VersionMismatch'));
+        callback(new Error('HTTP 409 VersionMismatch'), timerApi);
     }));
     await assert.rejects(client.deleteItem('list-1', 'item-1', 7), error => {
         assert.ok(error instanceof DirectAlexaError);
@@ -84,7 +86,7 @@ test('local Alexa2 auth is reused without logging credentials', async () => {
         alexaServiceHost: 'alexa.amazon.de',
         userAgent: 'agent',
         acceptLanguage: 'de-DE',
-    }, () => Remote);
+    }, timerApi, () => Remote);
     assert.equal(options.cookie, 'secret-cookie');
     assert.equal(options.csrf, 'secret-csrf');
     assert.equal(options.setupProxy, false);
@@ -97,7 +99,7 @@ test('local Alexa2 auth is reused without logging credentials', async () => {
 test('stalled Alexa list reads time out instead of hanging forever', async () => {
     const remote = fakeRemote(() => {});
     remote.getListItemsV2 = () => {};
-    const client = new AlexaDirectClient(remote, 'amazon.de', 20);
+    const client = new AlexaDirectClient(remote, timerApi, 'amazon.de', 20);
     await assert.rejects(client.getItems('list-1'), error => {
         assert.ok(error instanceof DirectAlexaError);
         assert.equal(error.kind, 'remote');
@@ -114,7 +116,7 @@ test('stalled Alexa initialization times out instead of blocking adapter startup
         httpsGet() {}
     }
     await assert.rejects(
-        AlexaDirectClient.connect({ cookie: 'secret-cookie', alexaServiceHost: 'alexa.amazon.de' }, () => Remote, 20),
+        AlexaDirectClient.connect({ cookie: 'secret-cookie', alexaServiceHost: 'alexa.amazon.de' }, timerApi, () => Remote, 20),
         /Alexa initialization timed out after 20 ms/,
     );
 });
