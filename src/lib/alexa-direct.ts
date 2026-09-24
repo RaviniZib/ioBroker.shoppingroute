@@ -4,6 +4,11 @@ declare const require: any;
 
 type Callback = (error?: unknown, result?: any) => void;
 
+export interface DirectAlexaTimers {
+    set(callback: () => void, delayMs: number): unknown;
+    clear(handle: unknown): void;
+}
+
 const DEFAULT_CALLBACK_TIMEOUT_MS = 30000;
 
 interface AlexaRemoteLike {
@@ -80,13 +85,14 @@ function amazonPageFromHost(host: unknown): string {
 }
 
 function callbackPromise<T>(
+    timers: DirectAlexaTimers,
     invoke: (callback: Callback) => void,
     operation = 'Amazon API request',
     timeoutMs = DEFAULT_CALLBACK_TIMEOUT_MS,
 ): Promise<T> {
     return new Promise<T>((resolve, reject) => {
         let settled = false;
-        const timer = setTimeout(() => {
+        const timer = timers.set(() => {
             if (settled) return;
             settled = true;
             reject(new DirectAlexaError('remote', `${operation} timed out after ${timeoutMs} ms.`));
@@ -94,7 +100,7 @@ function callbackPromise<T>(
         const finish = (callback: () => void): void => {
             if (settled) return;
             settled = true;
-            clearTimeout(timer);
+            timers.clear(timer);
             callback();
         };
         try {
@@ -147,15 +153,18 @@ export class AlexaDirectClient {
     private readonly remote: AlexaRemoteLike;
     private readonly amazonPage: string;
     private readonly timeoutMs: number;
+    private readonly timers: DirectAlexaTimers;
 
-    public constructor(remote: AlexaRemoteLike, amazonPage = 'amazon.de', timeoutMs = DEFAULT_CALLBACK_TIMEOUT_MS) {
+    public constructor(remote: AlexaRemoteLike, timers: DirectAlexaTimers, amazonPage = 'amazon.de', timeoutMs = DEFAULT_CALLBACK_TIMEOUT_MS) {
         this.remote = remote;
+        this.timers = timers;
         this.amazonPage = amazonPage;
         this.timeoutMs = timeoutMs;
     }
 
     public static async connect(
         native: Alexa2NativeAuth,
+        timers: DirectAlexaTimers,
         load: (id: string) => any = require,
         timeoutMs = DEFAULT_CALLBACK_TIMEOUT_MS,
     ): Promise<AlexaDirectClient> {
@@ -173,7 +182,7 @@ export class AlexaDirectClient {
         }
         const cookie = cookieData || native.cookie;
         if (!cookie) throw new DirectAlexaError('authentication', 'Alexa2 does not contain a reusable cookie.');
-        await callbackPromise<void>(callback => remote.init({
+        await callbackPromise<void>(timers, callback => remote.init({
             cookie,
             csrf: native.csrf,
             formerRegistrationData: typeof cookieData === 'object' ? cookieData : undefined,
@@ -188,7 +197,7 @@ export class AlexaDirectClient {
             notifications: false,
             cookieRefreshInterval: 0,
         }, callback), 'Alexa initialization', timeoutMs);
-        return new AlexaDirectClient(remote, amazonPage, timeoutMs);
+        return new AlexaDirectClient(remote, timers, amazonPage, timeoutMs);
     }
 
     public close(): void {
@@ -197,6 +206,7 @@ export class AlexaDirectClient {
 
     public async getLists(): Promise<DirectAlexaList[]> {
         const lists = await callbackPromise<any[]>(
+            this.timers,
             callback => this.remote.getLists(callback),
             'Alexa list lookup',
             this.timeoutMs,
@@ -209,6 +219,7 @@ export class AlexaDirectClient {
 
     public async getItems(listId: string): Promise<DirectAmazonItem[]> {
         const items = await callbackPromise<any[]>(
+            this.timers,
             callback => this.remote.getListItemsV2(listId, { limit: 100 }, callback),
             'Alexa list item lookup',
             this.timeoutMs,
@@ -217,7 +228,7 @@ export class AlexaDirectClient {
     }
 
     private async request(path: string, method: string, data?: unknown): Promise<any> {
-        const result = await callbackPromise<any>(callback => this.remote.httpsGet(path, callback, {
+        const result = await callbackPromise<any>(this.timers, callback => this.remote.httpsGet(path, callback, {
             method,
             ...(data === undefined ? {} : { data: JSON.stringify(data) }),
         }), `Alexa ${method} request`, this.timeoutMs);
