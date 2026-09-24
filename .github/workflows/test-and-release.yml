@@ -39,6 +39,8 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           os: ${{ matrix.os }}
+          build: 'true'
+          build-command: 'npm run build'
 
   deploy:
     needs: [check-and-lint, adapter-tests]

@@ -4,9 +4,9 @@ declare const require: any;
 
 type Callback = (error?: unknown, result?: any) => void;
 
-export interface DirectAlexaTimers {
-    set(callback: () => void, delayMs: number): unknown;
-    clear(handle: unknown): void;
+export interface AlexaTimer {
+    setTimeout(callback: () => void, timeout: number): ioBroker.Timeout | undefined;
+    clearTimeout(timeout: ioBroker.Timeout | undefined): void;
 }
 
 const DEFAULT_CALLBACK_TIMEOUT_MS = 30000;
@@ -85,22 +85,26 @@ function amazonPageFromHost(host: unknown): string {
 }
 
 function callbackPromise<T>(
-    timers: DirectAlexaTimers,
+    timerApi: AlexaTimer,
     invoke: (callback: Callback) => void,
     operation = 'Amazon API request',
     timeoutMs = DEFAULT_CALLBACK_TIMEOUT_MS,
 ): Promise<T> {
     return new Promise<T>((resolve, reject) => {
         let settled = false;
-        const timer = timers.set(() => {
+        const timer = timerApi.setTimeout(() => {
             if (settled) return;
             settled = true;
             reject(new DirectAlexaError('remote', `${operation} timed out after ${timeoutMs} ms.`));
         }, Math.max(1, timeoutMs));
+        if (timer === undefined) {
+            reject(new DirectAlexaError('remote', `${operation} cannot start because the adapter is stopping.`));
+            return;
+        }
         const finish = (callback: () => void): void => {
             if (settled) return;
             settled = true;
-            timers.clear(timer);
+            timerApi.clearTimeout(timer);
             callback();
         };
         try {
@@ -153,18 +157,23 @@ export class AlexaDirectClient {
     private readonly remote: AlexaRemoteLike;
     private readonly amazonPage: string;
     private readonly timeoutMs: number;
-    private readonly timers: DirectAlexaTimers;
+    private readonly timerApi: AlexaTimer;
 
-    public constructor(remote: AlexaRemoteLike, timers: DirectAlexaTimers, amazonPage = 'amazon.de', timeoutMs = DEFAULT_CALLBACK_TIMEOUT_MS) {
+    public constructor(
+        remote: AlexaRemoteLike,
+        timerApi: AlexaTimer,
+        amazonPage = 'amazon.de',
+        timeoutMs = DEFAULT_CALLBACK_TIMEOUT_MS,
+    ) {
         this.remote = remote;
-        this.timers = timers;
+        this.timerApi = timerApi;
         this.amazonPage = amazonPage;
         this.timeoutMs = timeoutMs;
     }
 
     public static async connect(
         native: Alexa2NativeAuth,
-        timers: DirectAlexaTimers,
+        timerApi: AlexaTimer,
         load: (id: string) => any = require,
         timeoutMs = DEFAULT_CALLBACK_TIMEOUT_MS,
     ): Promise<AlexaDirectClient> {
@@ -182,7 +191,7 @@ export class AlexaDirectClient {
         }
         const cookie = cookieData || native.cookie;
         if (!cookie) throw new DirectAlexaError('authentication', 'Alexa2 does not contain a reusable cookie.');
-        await callbackPromise<void>(timers, callback => remote.init({
+        await callbackPromise<void>(timerApi, callback => remote.init({
             cookie,
             csrf: native.csrf,
             formerRegistrationData: typeof cookieData === 'object' ? cookieData : undefined,
@@ -197,7 +206,7 @@ export class AlexaDirectClient {
             notifications: false,
             cookieRefreshInterval: 0,
         }, callback), 'Alexa initialization', timeoutMs);
-        return new AlexaDirectClient(remote, timers, amazonPage, timeoutMs);
+        return new AlexaDirectClient(remote, timerApi, amazonPage, timeoutMs);
     }
 
     public close(): void {
@@ -206,7 +215,7 @@ export class AlexaDirectClient {
 
     public async getLists(): Promise<DirectAlexaList[]> {
         const lists = await callbackPromise<any[]>(
-            this.timers,
+            this.timerApi,
             callback => this.remote.getLists(callback),
             'Alexa list lookup',
             this.timeoutMs,
@@ -219,7 +228,7 @@ export class AlexaDirectClient {
 
     public async getItems(listId: string): Promise<DirectAmazonItem[]> {
         const items = await callbackPromise<any[]>(
-            this.timers,
+            this.timerApi,
             callback => this.remote.getListItemsV2(listId, { limit: 100 }, callback),
             'Alexa list item lookup',
             this.timeoutMs,
@@ -228,7 +237,7 @@ export class AlexaDirectClient {
     }
 
     private async request(path: string, method: string, data?: unknown): Promise<any> {
-        const result = await callbackPromise<any>(this.timers, callback => this.remote.httpsGet(path, callback, {
+        const result = await callbackPromise<any>(this.timerApi, callback => this.remote.httpsGet(path, callback, {
             method,
             ...(data === undefined ? {} : { data: JSON.stringify(data) }),
         }), `Alexa ${method} request`, this.timeoutMs);

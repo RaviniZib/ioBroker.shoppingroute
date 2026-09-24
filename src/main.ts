@@ -945,10 +945,7 @@ export class ShoppingRoute extends utils.Adapter {
             const native = (object.native || {}) as Alexa2NativeAuth;
             const version = (object.common as { version?: unknown } | undefined)?.version;
             this.alexa2Version = typeof version === 'string' || typeof version === 'number' ? String(version) : 'unknown';
-            const client = await AlexaDirectClient.connect(native, {
-                set: (callback, delayMs) => this.setTimeout(callback, delayMs),
-                clear: handle => this.clearTimeout(handle as ioBroker.Timeout),
-            });
+            const client = await AlexaDirectClient.connect(native, this);
             this.directClient = client;
             this.compatibilityDetail = 'Direct alexa-remote2 session using local Alexa2 authentication is ready.';
             try {
