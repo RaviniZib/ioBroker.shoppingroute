@@ -5,8 +5,8 @@ declare const require: any;
 type Callback = (error?: unknown, result?: any) => void;
 
 export interface AlexaTimer {
-    setTimeout(callback: () => void, timeout: number): ioBroker.Timeout | undefined;
-    clearTimeout(timeout: ioBroker.Timeout | undefined): void;
+    set(callback: () => void, timeout: number): ioBroker.Timeout | undefined;
+    clear(timeout: ioBroker.Timeout | undefined): void;
 }
 
 const DEFAULT_CALLBACK_TIMEOUT_MS = 30000;
@@ -92,7 +92,7 @@ function callbackPromise<T>(
 ): Promise<T> {
     return new Promise<T>((resolve, reject) => {
         let settled = false;
-        const timer = timerApi.setTimeout(() => {
+        const timer = timerApi.set(() => {
             if (settled) return;
             settled = true;
             reject(new DirectAlexaError('remote', `${operation} timed out after ${timeoutMs} ms.`));
@@ -104,7 +104,7 @@ function callbackPromise<T>(
         const finish = (callback: () => void): void => {
             if (settled) return;
             settled = true;
-            timerApi.clearTimeout(timer);
+            timerApi.clear(timer);
             callback();
         };
         try {

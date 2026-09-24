@@ -5,8 +5,8 @@ const assert = require('node:assert/strict');
 const { AlexaDirectClient, DirectAlexaError, classifyDirectAlexaError } = require('../build/lib/alexa-direct');
 
 const timerApi = {
-    setTimeout(callback, timeout) { return setTimeout(callback, timeout); },
-    clearTimeout(timeout) { clearTimeout(timeout); },
+    set(callback, timeout) { return setTimeout(callback, timeout); },
+    clear(timeout) { clearTimeout(timeout); },
 };
 
 function fakeRemote(handler) {
@@ -143,8 +143,8 @@ test('every Alexa operation times out once without retrying or accepting a late 
             httpsGet: (_path, callback) => capture(callback),
         };
         const timers = {
-            setTimeout(callback, delay) { assert.equal(delay, 30000); expire = callback; return 1; },
-            clearTimeout() { assert.fail('expired timer must not be cleared by a late callback'); },
+            set(callback, delay) { assert.equal(delay, 30000); expire = callback; return 1; },
+            clear() { assert.fail('expired timer must not be cleared by a late callback'); },
         };
         const pending = operation(new AlexaDirectClient(remote, timers));
         const rejected = assert.rejects(pending, /timed out after 30000 ms/);
@@ -161,8 +161,8 @@ test('successful callbacks and synchronous failures clear the injected timer', a
     for (const fail of [false, true]) {
         const cleared = [];
         const timers = {
-            setTimeout() { return 42; },
-            clearTimeout(handle) { cleared.push(handle); },
+            set() { return 42; },
+            clear(handle) { cleared.push(handle); },
         };
         const remote = fakeRemote(() => {});
         if (fail) remote.getLists = () => { throw new Error('synchronous failure'); };
@@ -175,8 +175,8 @@ test('successful callbacks and synchronous failures clear the injected timer', a
 
 test('adapter shutdown refuses requests when ioBroker cannot create a timeout', async () => {
     const timers = {
-        setTimeout() { return undefined; },
-        clearTimeout() { assert.fail('no timer was created'); },
+        set() { return undefined; },
+        clear() { assert.fail('no timer was created'); },
     };
     const remote = fakeRemote(() => assert.fail('no Amazon write may start during shutdown'));
     const client = new AlexaDirectClient(remote, timers);

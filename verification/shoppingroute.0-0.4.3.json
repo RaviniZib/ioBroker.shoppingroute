@@ -1,0 +1,600 @@
+{
+  "shoppingroute.0.control": {
+    "_id": "shoppingroute.0.control",
+    "type": "channel",
+    "common": {
+      "name": "Control"
+    },
+    "native": {},
+    "ts": 1790291822180
+  },
+  "shoppingroute.0.control.clearTemporaryPriorityMarket": {
+    "_id": "shoppingroute.0.control.clearTemporaryPriorityMarket",
+    "type": "state",
+    "common": {
+      "name": "Clear temporary priority market",
+      "type": "boolean",
+      "role": "button",
+      "read": false,
+      "write": true,
+      "def": false
+    },
+    "native": {},
+    "ts": 1790291822181
+  },
+  "shoppingroute.0.control.compatibilityTest": {
+    "_id": "shoppingroute.0.control.compatibilityTest",
+    "type": "state",
+    "common": {
+      "name": "Run Alexa write compatibility test",
+      "type": "boolean",
+      "role": "button",
+      "read": false,
+      "write": true,
+      "def": false
+    },
+    "native": {},
+    "ts": 1790291822187
+  },
+  "shoppingroute.0.control.enabled": {
+    "_id": "shoppingroute.0.control.enabled",
+    "type": "state",
+    "common": {
+      "name": "Automatic sorting enabled",
+      "type": "boolean",
+      "role": "switch.enable",
+      "read": true,
+      "write": true,
+      "def": true
+    },
+    "native": {},
+    "ts": 1790291822189
+  },
+  "shoppingroute.0.control.exportConfig": {
+    "_id": "shoppingroute.0.control.exportConfig",
+    "type": "state",
+    "common": {
+      "name": "Refresh configuration export",
+      "type": "boolean",
+      "role": "button",
+      "read": false,
+      "write": true,
+      "def": false
+    },
+    "native": {},
+    "ts": 1790291822196
+  },
+  "shoppingroute.0.control.importConfigJson": {
+    "_id": "shoppingroute.0.control.importConfigJson",
+    "type": "state",
+    "common": {
+      "name": "Import ShoppingRoute configuration JSON",
+      "type": "string",
+      "role": "json",
+      "read": true,
+      "write": true,
+      "def": ""
+    },
+    "native": {},
+    "ts": 1790291822201
+  },
+  "shoppingroute.0.control.marketProfileImport": {
+    "_id": "shoppingroute.0.control.marketProfileImport",
+    "type": "state",
+    "common": {
+      "name": "Import ShoppingRoute market profile JSON",
+      "type": "string",
+      "role": "json",
+      "read": true,
+      "write": true,
+      "def": ""
+    },
+    "native": {},
+    "ts": 1790291822203
+  },
+  "shoppingroute.0.control.refreshFeedbackReport": {
+    "_id": "shoppingroute.0.control.refreshFeedbackReport",
+    "type": "state",
+    "common": {
+      "name": "Refresh privacy-safe feedback report",
+      "type": "boolean",
+      "role": "button",
+      "read": false,
+      "write": true,
+      "def": false
+    },
+    "native": {},
+    "ts": 1790291822209
+  },
+  "shoppingroute.0.control.resetStatistics": {
+    "_id": "shoppingroute.0.control.resetStatistics",
+    "type": "state",
+    "common": {
+      "name": "Reset local shopping statistics",
+      "type": "boolean",
+      "role": "button",
+      "read": false,
+      "write": true,
+      "def": false
+    },
+    "native": {},
+    "ts": 1790291822210
+  },
+  "shoppingroute.0.control.resetTrafficStats": {
+    "_id": "shoppingroute.0.control.resetTrafficStats",
+    "type": "state",
+    "common": {
+      "name": "Reset API/traffic counters",
+      "type": "boolean",
+      "role": "button",
+      "read": false,
+      "write": true,
+      "def": false
+    },
+    "native": {},
+    "ts": 1790291822216
+  },
+  "shoppingroute.0.control.sortNow": {
+    "_id": "shoppingroute.0.control.sortNow",
+    "type": "state",
+    "common": {
+      "name": "Sort now",
+      "type": "boolean",
+      "role": "button",
+      "read": false,
+      "write": true,
+      "def": false
+    },
+    "native": {},
+    "ts": 1790291822218
+  },
+  "shoppingroute.0.control.temporaryPriorityMarket": {
+    "_id": "shoppingroute.0.control.temporaryPriorityMarket",
+    "type": "state",
+    "common": {
+      "name": "Temporary priority market",
+      "type": "string",
+      "role": "text",
+      "read": true,
+      "write": true,
+      "def": "",
+      "states": {
+        "__none__": "— No market —",
+        "ALDI": "ALDI",
+        "LIDL": "LIDL",
+        "Ohne Markt": "Ohne Markt",
+        "PENNY": "PENNY",
+        "REWE": "REWE",
+        "BAUMARKT": "BAUMARKT",
+        "EDEKA": "EDEKA",
+        "JAWOLL": "JAWOLL",
+        "MARKT": "MARKT",
+        "NETTO": "NETTO",
+        "LANDWIRT": "LANDWIRT",
+        "AMAZON": "AMAZON",
+        "BLEYER&WICHERT": "BLEYER&WICHERT",
+        "DROGERIEMART": "DROGERIEMART",
+        "OPTIKER": "OPTIKER",
+        "Apotheke": "Apotheke",
+        "DROGERIEMARKT": "DROGERIEMARKT"
+      }
+    },
+    "native": {},
+    "ts": 1790291822367
+  },
+  "shoppingroute.0.info": {
+    "_id": "shoppingroute.0.info",
+    "type": "channel",
+    "common": {
+      "name": "Information"
+    },
+    "native": {},
+    "ts": 1790291822010
+  },
+  "shoppingroute.0.info.abortedRunsToday": {
+    "_id": "shoppingroute.0.info.abortedRunsToday",
+    "type": "state",
+    "common": {
+      "name": "Aborted sorting runs today",
+      "type": "number",
+      "role": "value",
+      "read": true,
+      "write": false,
+      "def": 0
+    },
+    "native": {},
+    "ts": 1790291822015
+  },
+  "shoppingroute.0.info.activeItems": {
+    "_id": "shoppingroute.0.info.activeItems",
+    "type": "state",
+    "common": {
+      "name": "Active shopping items",
+      "type": "number",
+      "role": "value",
+      "read": true,
+      "write": false,
+      "def": 0
+    },
+    "native": {},
+    "ts": 1790291822024
+  },
+  "shoppingroute.0.info.activeItemsByList": {
+    "_id": "shoppingroute.0.info.activeItemsByList",
+    "type": "state",
+    "common": {
+      "name": "Active shopping items by list",
+      "type": "string",
+      "role": "json",
+      "read": true,
+      "write": false,
+      "def": "{}"
+    },
+    "native": {},
+    "ts": 1790291822037
+  },
+  "shoppingroute.0.info.alexaWritesToday": {
+    "_id": "shoppingroute.0.info.alexaWritesToday",
+    "type": "state",
+    "common": {
+      "name": "Alexa value writes today",
+      "type": "number",
+      "role": "value",
+      "read": true,
+      "write": false,
+      "def": 0
+    },
+    "native": {},
+    "ts": 1790291822042
+  },
+  "shoppingroute.0.info.aliasSuggestions": {
+    "_id": "shoppingroute.0.info.aliasSuggestions",
+    "type": "state",
+    "common": {
+      "name": "Suggested product aliases",
+      "type": "string",
+      "role": "json",
+      "read": true,
+      "write": false,
+      "def": "[]"
+    },
+    "native": {},
+    "ts": 1790291822047
+  },
+  "shoppingroute.0.info.compatibility": {
+    "_id": "shoppingroute.0.info.compatibility",
+    "type": "state",
+    "common": {
+      "name": "Compatibility diagnostics",
+      "type": "string",
+      "role": "json",
+      "read": true,
+      "write": false,
+      "def": "{}"
+    },
+    "native": {},
+    "ts": 1790291822050
+  },
+  "shoppingroute.0.info.compatibilityWritesToday": {
+    "_id": "shoppingroute.0.info.compatibilityWritesToday",
+    "type": "state",
+    "common": {
+      "name": "Compatibility-test writes today",
+      "type": "number",
+      "role": "value",
+      "read": true,
+      "write": false,
+      "def": 0
+    },
+    "native": {},
+    "ts": 1790291822053
+  },
+  "shoppingroute.0.info.configExport": {
+    "_id": "shoppingroute.0.info.configExport",
+    "type": "state",
+    "common": {
+      "name": "Exportable ShoppingRoute configuration",
+      "type": "string",
+      "role": "json",
+      "read": true,
+      "write": false,
+      "def": "{}"
+    },
+    "native": {},
+    "ts": 1790291822059
+  },
+  "shoppingroute.0.info.connection": {
+    "_id": "shoppingroute.0.info.connection",
+    "type": "state",
+    "common": {
+      "name": "Alexa list connection",
+      "type": "boolean",
+      "role": "indicator.connected",
+      "read": true,
+      "write": false,
+      "def": false
+    },
+    "native": {},
+    "ts": 1790291822106
+  },
+  "shoppingroute.0.info.feedbackReport": {
+    "_id": "shoppingroute.0.info.feedbackReport",
+    "type": "state",
+    "common": {
+      "name": "Privacy-safe diagnostic/feedback report",
+      "type": "string",
+      "role": "json",
+      "read": true,
+      "write": false,
+      "def": "{}"
+    },
+    "native": {},
+    "ts": 1790291822112
+  },
+  "shoppingroute.0.info.lastCompatibilityTest": {
+    "_id": "shoppingroute.0.info.lastCompatibilityTest",
+    "type": "state",
+    "common": {
+      "name": "Last Alexa write compatibility test",
+      "type": "string",
+      "role": "text",
+      "read": true,
+      "write": false,
+      "def": "Not executed yet."
+    },
+    "native": {},
+    "ts": 1790291822114
+  },
+  "shoppingroute.0.info.lastError": {
+    "_id": "shoppingroute.0.info.lastError",
+    "type": "state",
+    "common": {
+      "name": "Last error",
+      "type": "string",
+      "role": "text",
+      "read": true,
+      "write": false,
+      "def": ""
+    },
+    "native": {},
+    "ts": 1790291822117
+  },
+  "shoppingroute.0.info.lastLearnedItems": {
+    "_id": "shoppingroute.0.info.lastLearnedItems",
+    "type": "state",
+    "common": {
+      "name": "Last automatically learned items",
+      "type": "string",
+      "role": "json",
+      "read": true,
+      "write": false,
+      "def": "[]"
+    },
+    "native": {},
+    "ts": 1790291822123
+  },
+  "shoppingroute.0.info.lastPlan": {
+    "_id": "shoppingroute.0.info.lastPlan",
+    "type": "state",
+    "common": {
+      "name": "Last sorting plan",
+      "type": "string",
+      "role": "json",
+      "read": true,
+      "write": false,
+      "def": "[]"
+    },
+    "native": {},
+    "ts": 1790291822125
+  },
+  "shoppingroute.0.info.lastSort": {
+    "_id": "shoppingroute.0.info.lastSort",
+    "type": "state",
+    "common": {
+      "name": "Last sorting run",
+      "type": "string",
+      "role": "text",
+      "read": true,
+      "write": false,
+      "def": ""
+    },
+    "native": {},
+    "ts": 1790291822130
+  },
+  "shoppingroute.0.info.localChecksToday": {
+    "_id": "shoppingroute.0.info.localChecksToday",
+    "type": "state",
+    "common": {
+      "name": "Local list checks today",
+      "type": "number",
+      "role": "value",
+      "read": true,
+      "write": false,
+      "def": 0
+    },
+    "native": {},
+    "ts": 1790291822132
+  },
+  "shoppingroute.0.info.manualOverrides": {
+    "_id": "shoppingroute.0.info.manualOverrides",
+    "type": "state",
+    "common": {
+      "name": "Manual shopping-list item overrides",
+      "type": "string",
+      "role": "json",
+      "read": true,
+      "write": false,
+      "def": "[]"
+    },
+    "native": {},
+    "ts": 1790291822226
+  },
+  "shoppingroute.0.info.marketProfiles": {
+    "_id": "shoppingroute.0.info.marketProfiles",
+    "type": "state",
+    "common": {
+      "name": "Exportable market profiles",
+      "type": "string",
+      "role": "json",
+      "read": true,
+      "write": false,
+      "def": "[]"
+    },
+    "native": {},
+    "ts": 1790291822139
+  },
+  "shoppingroute.0.info.plannedChangesToday": {
+    "_id": "shoppingroute.0.info.plannedChangesToday",
+    "type": "state",
+    "common": {
+      "name": "Planned Alexa value changes today",
+      "type": "number",
+      "role": "value",
+      "read": true,
+      "write": false,
+      "def": 0
+    },
+    "native": {},
+    "ts": 1790291822141
+  },
+  "shoppingroute.0.info.preview": {
+    "_id": "shoppingroute.0.info.preview",
+    "type": "state",
+    "common": {
+      "name": "Sorting preview",
+      "type": "string",
+      "role": "json",
+      "read": true,
+      "write": false,
+      "def": "{}"
+    },
+    "native": {},
+    "ts": 1790291822146
+  },
+  "shoppingroute.0.info.previewText": {
+    "_id": "shoppingroute.0.info.previewText",
+    "type": "state",
+    "common": {
+      "name": "Human-readable sorting preview",
+      "type": "string",
+      "role": "text",
+      "read": true,
+      "write": false,
+      "def": ""
+    },
+    "native": {},
+    "ts": 1790291822148
+  },
+  "shoppingroute.0.info.reviewQueue": {
+    "_id": "shoppingroute.0.info.reviewQueue",
+    "type": "state",
+    "common": {
+      "name": "Unknown-product review queue",
+      "type": "string",
+      "role": "json",
+      "read": true,
+      "write": false,
+      "def": "[]"
+    },
+    "native": {},
+    "ts": 1790291822154
+  },
+  "shoppingroute.0.info.sortRunsToday": {
+    "_id": "shoppingroute.0.info.sortRunsToday",
+    "type": "state",
+    "common": {
+      "name": "Real sorting runs today",
+      "type": "number",
+      "role": "value",
+      "read": true,
+      "write": false,
+      "def": 0
+    },
+    "native": {},
+    "ts": 1790291822158
+  },
+  "shoppingroute.0.info.sortTransaction": {
+    "_id": "shoppingroute.0.info.sortTransaction",
+    "type": "state",
+    "common": {
+      "name": "Buffered sort transaction journal",
+      "type": "string",
+      "role": "json",
+      "read": true,
+      "write": false,
+      "def": "{}"
+    },
+    "native": {},
+    "ts": 1790291822156
+  },
+  "shoppingroute.0.info.statistics": {
+    "_id": "shoppingroute.0.info.statistics",
+    "type": "state",
+    "common": {
+      "name": "Local shopping statistics",
+      "type": "string",
+      "role": "json",
+      "read": true,
+      "write": false,
+      "def": "{}"
+    },
+    "native": {},
+    "ts": 1790291822159
+  },
+  "shoppingroute.0.info.traffic": {
+    "_id": "shoppingroute.0.info.traffic",
+    "type": "state",
+    "common": {
+      "name": "API and traffic diagnostics",
+      "type": "string",
+      "role": "json",
+      "read": true,
+      "write": false,
+      "def": "{}"
+    },
+    "native": {},
+    "ts": 1790291822164
+  },
+  "shoppingroute.0.info.unknownItems": {
+    "_id": "shoppingroute.0.info.unknownItems",
+    "type": "state",
+    "common": {
+      "name": "Unknown items",
+      "type": "string",
+      "role": "json",
+      "read": true,
+      "write": false,
+      "def": "[]"
+    },
+    "native": {},
+    "ts": 1790291822171
+  },
+  "shoppingroute.0.info.versionInstalled": {
+    "_id": "shoppingroute.0.info.versionInstalled",
+    "type": "state",
+    "common": {
+      "name": "Installed ShoppingRoute version",
+      "type": "string",
+      "role": "text",
+      "read": true,
+      "write": false,
+      "def": ""
+    },
+    "native": {},
+    "ts": 1790291822173
+  },
+  "shoppingroute.0.info.writeCapability": {
+    "_id": "shoppingroute.0.info.writeCapability",
+    "type": "state",
+    "common": {
+      "name": "Alexa write capability",
+      "type": "string",
+      "role": "text",
+      "read": true,
+      "write": false,
+      "def": "unknown"
+    },
+    "native": {},
+    "ts": 1790291822178
+  }
+}
