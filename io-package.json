@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "shoppingroute",
-    "version": "0.4.2",
+    "version": "0.4.3",
     "titleLang": {
       "en": "ShoppingRoute",
       "de": "ShoppingRoute",
@@ -60,6 +60,19 @@
     "icon": "shoppingroute.png",
     "tier": 3,
     "news": {
+      "0.4.3": {
+        "en": "Uses ioBroker-managed timers for Alexa callback timeouts and keeps repository news metadata within the supported seven-entry limit.",
+        "de": "Verwendet ioBroker-verwaltete Timer für Alexa-Callback-Timeouts und hält die Repository-News-Metadaten innerhalb des unterstützten Limits von sieben Einträgen.",
+        "ru": "Использует таймеры ioBroker для тайм-аутов Alexa и ограничивает news поддерживаемыми семью записями.",
+        "pt": "Usa temporizadores geridos pelo ioBroker para timeouts Alexa e mantém news no limite suportado de sete entradas.",
+        "nl": "Gebruikt door ioBroker beheerde timers voor Alexa-time-outs en houdt news binnen de ondersteunde limiet van zeven items.",
+        "fr": "Utilise les temporisateurs gérés par ioBroker pour les délais Alexa et limite news aux sept entrées prises en charge.",
+        "it": "Usa timer gestiti da ioBroker per i timeout Alexa e mantiene news entro il limite supportato di sette voci.",
+        "es": "Usa temporizadores gestionados por ioBroker para los tiempos de espera de Alexa y limita news a siete entradas.",
+        "pl": "Używa timerów zarządzanych przez ioBroker dla limitów czasu Alexa i ogranicza news do siedmiu wpisów.",
+        "uk": "Використовує таймери ioBroker для тайм-аутів Alexa та обмежує news сімома підтримуваними записами.",
+        "zh-cn": "使用 ioBroker 管理的计时器处理 Alexa 超时，并将 news 限制为支持的七个条目。"
+      },
       "0.4.2": {
         "en": "Prevents stalled Alexa callbacks, adds direct Amazon list polling, and safely handles additional items and delayed verification without unnecessary sorting stops.",
         "de": "Verhindert hängende Alexa-Aufrufe, ergänzt den direkten Amazon-Listenabgleich und behandelt zusätzliche Artikel sowie verzögerte Bestätigungen ohne unnötige Sortierstopps.",
@@ -137,32 +150,6 @@
         "pl": "Porządki dla kontrolera repozytorium: jawny tryb i18n JSON Config i pliki tłumaczeń, usunięta przestarzała ochrona prepublish oraz zarchiwizowane starsze wpisy changeloga. Sortowanie i działanie w czasie wykonywania pozostają bez zmian.",
         "uk": "Очищення для перевірки репозиторію: явний режим i18n JSON Config і файли перекладів, застарілий захист prepublish видалено, старі записи журналу змін заархівовано. Сортування й поведінка під час виконання не змінилися.",
         "zh-cn": "仓库检查器清理：明确启用 JSON Config i18n 模式并使用翻译文件，移除过时的 prepublish 保护，归档旧版更新日志。排序和运行时行为均未改变。"
-      },
-      "0.3.5": {
-        "en": "Changed the remaining statistics fallback to English, aligned release deployment with the tested `npm run build` path, removed the obsolete `stable:build` and `prepare-stable-build.js` source-map cleanup path, and updated regression protection; sorting behavior is unchanged.",
-        "de": "Den verbleibenden Statistik-Fallback auf Englisch umgestellt, Release-Deploy mit dem getesteten `npm run build`-Pfad vereinheitlicht, den veralteten `stable:build`-/`prepare-stable-build.js`-Source-Map-Bereinigungspfad entfernt und die Regression-Prüfung angepasst; das Sortierverhalten bleibt unverändert.",
-        "ru": "Оставшийся резервный текст статистики переведён на английский, развёртывание релиза приведено к протестированному пути `npm run build`, устаревший путь очистки карт исходного кода `stable:build` / `prepare-stable-build.js` удалён, а регрессионная проверка обновлена; поведение сортировки не изменилось.",
-        "pt": "O texto de recurso restante das estatísticas foi alterado para inglês, a implementação da versão foi alinhada com o caminho testado `npm run build`, o caminho obsoleto de limpeza de mapas de origem `stable:build` / `prepare-stable-build.js` foi removido e a proteção contra regressões foi atualizada; o comportamento da ordenação não mudou.",
-        "nl": "De resterende statistiekfallback is Engels gemaakt, de release-implementatie is afgestemd op het geteste `npm run build`-pad, het verouderde bronkaartopschoonpad `stable:build` / `prepare-stable-build.js` is verwijderd en de regressiecontrole is bijgewerkt; het sorteergedrag is ongewijzigd.",
-        "fr": "Le dernier texte de repli des statistiques est passé en anglais, le déploiement de version a été aligné sur le chemin testé `npm run build`, l’ancien nettoyage des sources maps via `stable:build` / `prepare-stable-build.js` a été supprimé et la protection contre les régressions mise à jour ; le comportement de tri est inchangé.",
-        "it": "Il fallback rimanente delle statistiche è stato reso inglese, il deploy della release è stato allineato al percorso testato `npm run build`, il percorso obsoleto di pulizia delle source map `stable:build` / `prepare-stable-build.js` è stato rimosso e la protezione dalle regressioni aggiornata; il comportamento di ordinamento non è cambiato.",
-        "es": "El texto de reserva restante de las estadísticas se cambió a inglés, el despliegue de la versión se alineó con la ruta probada `npm run build`, se eliminó la ruta obsoleta de limpieza de mapas de origen `stable:build` / `prepare-stable-build.js` y se actualizó la protección contra regresiones; el comportamiento de ordenación no cambió.",
-        "pl": "Pozostały tekst zastępczy statystyk zmieniono na angielski, wdrażanie wydania ujednolicono z testowaną ścieżką `npm run build`, usunięto przestarzałą ścieżkę czyszczenia map źródłowych `stable:build` / `prepare-stable-build.js` i zaktualizowano ochronę regresyjną; zachowanie sortowania nie uległo zmianie.",
-        "uk": "Залишковий резервний текст статистики змінено на англійський, розгортання випуску узгоджено з протестованим шляхом `npm run build`, застарілий шлях очищення карт вихідного коду `stable:build` / `prepare-stable-build.js` видалено, а регресійний захист оновлено; поведінку сортування не змінено.",
-        "zh-cn": "将剩余的统计回退文本改为英文，使发布部署使用经过测试的 `npm run build` 路径，移除过时的 `stable:build` / `prepare-stable-build.js` 源映射清理流程，并更新相应的回归保护；排序行为未改变。"
-      },
-      "0.3.4": {
-        "en": "Added Admin 8 compatibility for custom Admin components, clearer optional sort-summary logging and market headings, fixed the review queue “Accept all” action, required acknowledged foreign Alexa2 states, and removed obsolete configuration, internal npm checks and code obfuscation for improved repository compatibility.",
-        "de": "Admin-8-Kompatibilität für benutzerdefinierte Admin-Komponenten ergänzt, optionales Abschluss-Logging und Marktüberschriften verständlicher gestaltet, „Alle auf Übernehmen stellen“ repariert, bestätigte Werte für fremde Alexa2-States vorausgesetzt sowie veraltete Konfiguration, interne npm-Prüfung und Code-Obfuscation für bessere Repository-Kompatibilität entfernt.",
-        "ru": "Добавлена совместимость пользовательских компонентов Admin с Admin 8, улучшены необязательное итоговое журналирование сортировки и заголовки магазинов, исправлено действие «Принять все» в списке проверки, для внешних состояний Alexa2 теперь требуются подтверждённые значения, а устаревшие настройки, внутренняя проверка npm и обфускация кода удалены для лучшей совместимости с репозиторием.",
-        "pt": "Foi adicionada compatibilidade com o Admin 8 aos componentes personalizados, melhorados o registo final opcional da ordenação e os cabeçalhos dos mercados, corrigida a ação “Aceitar tudo” da fila de revisão, exigidos valores confirmados para estados Alexa2 externos e removidas configurações obsoletas, verificações npm internas e ofuscação de código para melhorar a compatibilidade com o repositório.",
-        "nl": "Admin 8-compatibiliteit voor aangepaste Admin-componenten is toegevoegd, de optionele afsluitende sorteerlog en winkelkoppen zijn verduidelijkt, de actie ‘Alles accepteren’ in de controlelijst is hersteld, externe Alexa2-states vereisen nu bevestigde waarden en verouderde configuratie, interne npm-controles en code-obfuscatie zijn verwijderd voor betere repositorycompatibiliteit.",
-        "fr": "Ajout de la compatibilité Admin 8 pour les composants Admin personnalisés, amélioration du journal récapitulatif de tri facultatif et des en-têtes de magasins, correction de l’action « Tout accepter » de la file de vérification, exigence de valeurs acquittées pour les états Alexa2 externes et suppression des réglages obsolètes, des contrôles npm internes et de l’obscurcissement du code pour améliorer la compatibilité du dépôt.",
-        "it": "Aggiunta la compatibilità con Admin 8 per i componenti Admin personalizzati, resi più chiari il log riepilogativo opzionale dell’ordinamento e le intestazioni dei negozi, corretta l’azione “Accetta tutto” della coda di revisione, richiesti valori confermati per gli stati Alexa2 esterni e rimossi configurazioni obsolete, controlli npm interni e offuscamento del codice per migliorare la compatibilità del repository.",
-        "es": "Se añadió compatibilidad con Admin 8 para los componentes personalizados, se aclararon el registro final opcional de ordenación y los encabezados de tiendas, se corrigió la acción «Aceptar todo» de la cola de revisión, se exigieron valores confirmados para estados Alexa2 externos y se eliminaron configuraciones obsoletas, comprobaciones npm internas y ofuscación de código para mejorar la compatibilidad del repositorio.",
-        "pl": "Dodano zgodność niestandardowych komponentów panelu z Admin 8, poprawiono opcjonalny dziennik podsumowania sortowania i nagłówki sklepów, naprawiono akcję „Zaakceptuj wszystko” w kolejce weryfikacji, wprowadzono wymóg potwierdzonych wartości dla zewnętrznych stanów Alexa2 oraz usunięto przestarzałą konfigurację, wewnętrzne sprawdzanie npm i zaciemnianie kodu dla lepszej zgodności z repozytorium.",
-        "uk": "Додано сумісність користувацьких компонентів Admin з Admin 8, покращено необов’язковий підсумковий журнал сортування та заголовки магазинів, виправлено дію «Прийняти все» в черзі перевірки, для зовнішніх станів Alexa2 тепер потрібні підтверджені значення, а застарілі налаштування, внутрішню перевірку npm і обфускацію коду видалено для кращої сумісності з репозиторієм.",
-        "zh-cn": "新增自定义管理组件的 Admin 8 兼容性，改进可选排序摘要日志和商店标题，修复审核队列的“全部接受”操作，要求外部 Alexa2 状态使用已确认值，并移除过时配置、内部 npm 检查和代码混淆，以提高仓库兼容性。"
       }
     },
     "extIcon": "https://raw.githubusercontent.com/RaviniZib/ioBroker.shoppingroute/main/admin/shoppingroute.png",
