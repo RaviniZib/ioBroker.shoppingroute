@@ -62,7 +62,7 @@ import {
     type DirectSortPhase,
 } from './lib/direct-sort-lifecycle';
 
-const VERSION = '0.4.3';
+const VERSION = '0.4.4';
 const COLLECT_WINDOW_MS = 5000;
 const MAX_ACTIVE_ITEMS = 99;
 const OWN_REFRESH_MAX_MS = 30000;
@@ -264,7 +264,7 @@ export class ShoppingRoute extends utils.Adapter {
         }).sort((a, b) => a.name.localeCompare(b.name, 'de', { sensitivity: 'base' }));
     }
     private get products(): ProductConfig[] { return this.runtimeProducts.filter(product => product?.name); }
-    private get fallbackMarket(): string { return String(this.cfg.fallbackMarket || 'Ohne Markt').trim() || 'Ohne Markt'; }
+    private get fallbackMarket(): string { return String(this.cfg.fallbackMarket || 'No Market').trim() || 'No Market'; }
     private get priorityMarket(): string { return String(this.cfg.priorityMarket || '').trim(); }
     private priorityMarketForList(listName: string): string {
         if (this.temporaryPriorityMarket) return this.temporaryPriorityMarket;

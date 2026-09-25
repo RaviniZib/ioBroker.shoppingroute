@@ -47,6 +47,14 @@ test('JSON Config uses explicit file-based i18n with complete translations',()=>
     assert.ok(fs.existsSync(translationPath),language);
     const translations=JSON.parse(fs.readFileSync(translationPath,'utf8'));
     const keys=Object.keys(translations).sort();
+    for (const removed of [
+      'ui.items.routestab.items.routeeditorrows.label',
+      'ui.items.routestab.items.routemarketfilter.help',
+      'ui.items.routestab.items.routemarketfilter.label',
+      'ui.items.productgroupstab.items.productgroupshelp.text',
+      'ui.items.marketstab.items.markets.label',
+      'ui.items.marketstab.items.marketshelp.text',
+    ]) assert.equal(translations[removed], undefined, `${language}: unused ${removed}`);
     expectedKeys??=keys;
     assert.deepEqual(keys,expectedKeys,`${language} translation key set`);
     assert.deepEqual(
@@ -74,10 +82,10 @@ test('backup and sharing use an Admin 7.6 compatible launcher without raw JSON c
   assert.ok(fs.existsSync(path.join(root,'admin','backup-transfer.html')));
 
   const html=fs.readFileSync(path.join(root,'admin','backup-transfer.html'),'utf8');
-  assert.match(html,/Sicherung herunterladen/);
-  assert.match(html,/Sicherung wiederherstellen/);
-  assert.match(html,/Marktprofil herunterladen/);
-  assert.match(html,/Marktprofil importieren/);
+  assert.match(html,/Download backup/);
+  assert.match(html,/Restore backup/);
+  assert.match(html,/Download market profile/);
+  assert.match(html,/Import market profile/);
   assert.match(html,/control\.importConfigJson/);
   assert.match(html,/control\.marketProfileImport/);
 
