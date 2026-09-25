@@ -2,7 +2,7 @@
 
 ![ShoppingRoute](admin/shoppingroute.png)
 
-**Aktuelle Version: 0.4.0**
+**Aktuelle Version: 0.4.4**
 
 ShoppingRoute sortiert Alexa-Einkaufslisteneinträge nach Markt, Produktgruppe und dem individuellen Laufweg durch den jeweiligen Markt. Dazu vergibt es sichtbare zweistellige Schlüssel wie `20> Bananen` und `40> ═════ ALDI ═════`; verwaltete Listen müssen deshalb in der Alexa-App auf **A–Z** stehen. ShoppingRoute übernimmt lokal die Alexa2-Authentifizierung für direkte Updates, Deletes und Batch-Creates; Alexa2-Listenstates bleiben die Triggerquelle für externe Änderungen.
 
@@ -72,6 +72,9 @@ Anschließend kann 0.3.0 flexible Artikel marktübergreifend zusammenlegen, wenn
 ShoppingRoute wird unter der **[MIT-Lizenz](LICENSE)** veröffentlicht. Frühere bereits veröffentlichte Versionen bleiben unter der jeweils damals gültigen Lizenz.
 
 ## Changelog
+
+### 0.4.4 (2026-09-25)
+- (RaviniZib) `No Market` als Standard-Ausweichmarkt für neue Konfigurationen, Backup-Seite in allen 11 Admin-Sprachen und sechs ungenutzte Übersetzungsschlüssel entfernt. Vorhandene Marktnamen, Laufwege und Produktdaten bleiben unverändert.
 
 ### 0.4.3 (2026-09-25)
 - Alexa-Callback-Timeouts verwenden jetzt ioBroker-verwaltete Timer; hängende Aufrufe bleiben damit begrenzt, ohne nacktes Node.js-`setTimeout()` im Adapter-Quellcode.

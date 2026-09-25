@@ -103,3 +103,16 @@ test('route normalization never removes existing routes during an update', () =>
   assert.equal(normalized.length,routes.length);
   assert.deepEqual(routeKeys(normalized),routeKeys(routes));
 });
+
+
+test('English fallback defaults remain consistent while old German backups keep their names', () => {
+  const native = require('../io-package.json').native;
+  assert.equal(native.fallbackMarket, 'No Market');
+  assert.ok(native.markets.some(m => m.name === native.fallbackMarket));
+  assert.ok(native.routes.some(r => r.market === native.fallbackMarket));
+  assert.ok(native.routes.every(r => native.markets.some(m => m.name === r.market)));
+  const legacy = { fallbackMarket: 'Ohne Markt', markets: [{ name: 'Ohne Markt' }],
+    routes: [{ market: 'Ohne Markt', category: 'Obst/Gemüse', order: 10 }],
+    productGroups: [{ name: 'Obst/Gemüse' }], products: [{ name: 'Apfel', category: 'Obst/Gemüse' }] };
+  assert.deepEqual(parseConfigImport(JSON.stringify(exportConfig(legacy, '0.4.3'))), legacy);
+});

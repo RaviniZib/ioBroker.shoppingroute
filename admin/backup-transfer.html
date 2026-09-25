@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="de">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ShoppingRoute – Sicherung / Teilen</title>
+<title>ShoppingRoute – Backup / Share</title>
 
 <style>
     :root {
@@ -124,36 +124,37 @@
 <input id="marketFile" type="file" accept=".json,application/json">
 
 <div class="section">
-    <h2 id="configTitle">Komplette Konfiguration</h2>
+    <h2 id="configTitle">Complete configuration</h2>
     <p id="configText">
-        Alle ShoppingRoute-Einstellungen direkt als JSON-Datei sichern oder aus einer Sicherungsdatei wiederherstellen.
+        Download all ShoppingRoute settings directly as a JSON file or restore them from a backup file.
     </p>
 
     <div class="row">
-        <button id="downloadConfig" type="button">↓ Sicherung herunterladen</button>
-        <button id="uploadConfig" type="button">↑ Sicherung wiederherstellen</button>
+        <button id="downloadConfig" type="button">↓ Download backup</button>
+        <button id="uploadConfig" type="button">↑ Restore backup</button>
     </div>
 </div>
 
 <div class="section">
-    <h2 id="marketTitle">Marktprofil teilen</h2>
+    <h2 id="marketTitle">Share market profile</h2>
     <p id="marketText">
-        Einen einzelnen Markt mit seinem Laufweg herunterladen oder ein Marktprofil aus einer JSON-Datei importieren.
+        Download one market with its walking route or import a market profile from a JSON file.
     </p>
 
     <div class="row">
         <select id="marketSelect" disabled>
-            <option value="">Marktprofile werden geladen …</option>
+            <option value="">Loading market profiles …</option>
         </select>
 
-        <button id="downloadMarket" type="button" disabled>↓ Marktprofil herunterladen</button>
-        <button id="uploadMarket" type="button">↑ Marktprofil importieren</button>
+        <button id="downloadMarket" type="button" disabled>↓ Download market profile</button>
+        <button id="uploadMarket" type="button">↑ Import market profile</button>
     </div>
 </div>
 
 <div id="status"></div>
 
 <script src="../../lib/js/socket.io.js"></script>
+<script src="backup-i18n.js"></script>
 
 <script>
 'use strict';
@@ -168,51 +169,12 @@
 
     let marketProfiles = [];
 
-    const de = String(navigator.language || '').toLowerCase().startsWith('de');
-
-    const texts = de ? {
-        configTitle: 'Komplette Konfiguration',
-        configText: 'Alle ShoppingRoute-Einstellungen direkt als JSON-Datei sichern oder aus einer Sicherungsdatei wiederherstellen.',
-        downloadConfig: '↓ Sicherung herunterladen',
-        uploadConfig: '↑ Sicherung wiederherstellen',
-        marketTitle: 'Marktprofil teilen',
-        marketText: 'Einen einzelnen Markt mit seinem Laufweg herunterladen oder ein Marktprofil aus einer JSON-Datei importieren.',
-        downloadMarket: '↓ Marktprofil herunterladen',
-        uploadMarket: '↑ Marktprofil importieren',
-        loading: 'Marktprofile werden geladen …',
-        noMarkets: 'Keine Marktprofile vorhanden',
-        backupDownloaded: 'Sicherung wurde heruntergeladen.',
-        profileDownloaded: 'Marktprofil wurde heruntergeladen.',
-        configImportStarted: 'Sicherung wurde übergeben. ShoppingRoute übernimmt die Konfiguration und startet anschließend neu.',
-        profileImportStarted: 'Marktprofil wurde übergeben und wird von ShoppingRoute übernommen.',
-        invalidBackup: 'Die gewählte Datei ist keine gültige JSON-Sicherung.',
-        invalidProfile: 'Die gewählte Datei ist kein gültiges ShoppingRoute-Marktprofil.',
-        noInstance: 'ShoppingRoute-Instanz konnte nicht ermittelt werden.',
-        connectionError: 'Verbindung zu ioBroker konnte nicht hergestellt werden.',
-        exportError: 'Sicherung konnte nicht erstellt werden.',
-        profileError: 'Marktprofile konnten nicht geladen werden.'
-    } : {
-        configTitle: 'Complete configuration',
-        configText: 'Download all ShoppingRoute settings directly as a JSON file or restore them from a backup file.',
-        downloadConfig: '↓ Download backup',
-        uploadConfig: '↑ Restore backup',
-        marketTitle: 'Share market profile',
-        marketText: 'Download one market with its walking route or import a market profile from a JSON file.',
-        downloadMarket: '↓ Download market profile',
-        uploadMarket: '↑ Import market profile',
-        loading: 'Loading market profiles …',
-        noMarkets: 'No market profiles available',
-        backupDownloaded: 'Backup downloaded.',
-        profileDownloaded: 'Market profile downloaded.',
-        configImportStarted: 'Backup submitted. ShoppingRoute will apply the configuration and restart afterwards.',
-        profileImportStarted: 'Market profile submitted and will be applied by ShoppingRoute.',
-        invalidBackup: 'The selected file is not a valid JSON backup.',
-        invalidProfile: 'The selected file is not a valid ShoppingRoute market profile.',
-        noInstance: 'ShoppingRoute instance could not be determined.',
-        connectionError: 'Could not connect to ioBroker.',
-        exportError: 'Backup could not be created.',
-        profileError: 'Market profiles could not be loaded.'
-    };
+    const { translations, resolveLanguage } = window.ShoppingRouteBackupI18n;
+    const language = resolveLanguage(params.get('lang') || navigator.language);
+    const texts = translations[language];
+    document.documentElement.lang = language;
+    document.title = texts.title;
+    marketSelect.options[0].textContent = texts.loading;
 
     for (const id of [
         'configTitle', 'configText', 'downloadConfig', 'uploadConfig',
@@ -268,7 +230,7 @@
             ) {
                 reject(
                     new Error(
-                        'ioBroker Socket-Bibliothek ist nicht verfügbar'
+                        'ioBroker socket library is not available'
                     )
                 );
                 return;
@@ -295,7 +257,7 @@
                 reject(
                     error instanceof Error
                         ? error
-                        : new Error(String(error || 'Socket-Verbindungsfehler'))
+                        : new Error(String(error || 'Socket connection error'))
                 );
             };
 
@@ -376,7 +338,7 @@
     function getState(id) {
         return new Promise((resolve, reject) => {
             if (!socket) {
-                reject(new Error('Keine ioBroker-Verbindung'));
+                reject(new Error('No ioBroker connection'));
                 return;
             }
 
@@ -398,7 +360,7 @@
     function setState(id, val) {
         return new Promise((resolve, reject) => {
             if (!socket) {
-                reject(new Error('Keine ioBroker-Verbindung'));
+                reject(new Error('No ioBroker connection'));
                 return;
             }
 
@@ -426,10 +388,10 @@
     }
 
     function safeFilename(value) {
-        return String(value || 'markt')
+        return String(value || 'market')
             .trim()
             .replace(/[^a-zA-Z0-9._-]+/g, '-')
-            .replace(/^-+|-+$/g, '') || 'markt';
+            .replace(/^-+|-+$/g, '') || 'market';
     }
 
     function datePart() {
@@ -517,7 +479,7 @@
                 String(a && a.market && a.market.name || '')
                     .localeCompare(
                         String(b && b.market && b.market.name || ''),
-                        'de',
+                        language,
                         { sensitivity: 'base' }
                     )
             );
@@ -540,7 +502,7 @@
 
                 option.value = String(index);
                 option.textContent =
-                    String(profile && profile.market && profile.market.name || 'Markt');
+                    String(profile && profile.market && profile.market.name || texts.genericMarket);
 
                 marketSelect.appendChild(option);
             }
@@ -649,7 +611,7 @@
             }
 
             downloadText(
-                'shoppingroute-marktprofil-' +
+                'shoppingroute-market-profile-' +
                     safeFilename(profile.market.name) +
                     '-' +
                     datePart() +

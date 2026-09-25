@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "shoppingroute",
-    "version": "0.4.3",
+    "version": "0.4.4",
     "titleLang": {
       "en": "ShoppingRoute",
       "de": "ShoppingRoute",
@@ -60,6 +60,19 @@
     "icon": "shoppingroute.png",
     "tier": 3,
     "news": {
+      "0.4.4": {
+        "en": "Use No Market as the default fallback market, translate the backup utility into all 11 admin languages, and remove six unused translation keys. Existing configuration is preserved.",
+        "de": "No Market als Standard-Ausweichmarkt, Backup-Seite in allen 11 Admin-Sprachen und sechs ungenutzte Übersetzungsschlüssel entfernt. Bestehende Konfigurationen bleiben erhalten.",
+        "ru": "Резервный магазин по умолчанию: No Market. Страница резервного копирования переведена на 11 языков, удалены шесть неиспользуемых ключей перевода. Существующая конфигурация сохранена.",
+        "pt": "No Market como loja predefinida de recurso, página de cópia de segurança nos 11 idiomas e remoção de seis chaves de tradução não utilizadas. A configuração existente é preservada.",
+        "nl": "No Market als standaard terugvalwinkel, de back-uppagina in alle 11 beheertalen en zes ongebruikte vertaalsleutels verwijderd. Bestaande configuratie blijft behouden.",
+        "fr": "No Market comme magasin de secours par défaut, outil de sauvegarde traduit dans les 11 langues et suppression de six clés de traduction inutilisées. La configuration existante est préservée.",
+        "it": "No Market come negozio predefinito di riserva, pagina di backup in tutte le 11 lingue e rimozione di sei chiavi di traduzione inutilizzate. La configurazione esistente viene preservata.",
+        "es": "No Market como tienda predeterminada de respaldo, página de copias de seguridad en los 11 idiomas y eliminación de seis claves de traducción sin uso. Se conserva la configuración existente.",
+        "pl": "No Market jako domyślny sklep zastępczy, strona kopii zapasowej w 11 językach i usunięcie sześciu nieużywanych kluczy tłumaczeń. Istniejąca konfiguracja zostaje zachowana.",
+        "uk": "Резервний магазин за замовчуванням: No Market. Сторінку резервного копіювання перекладено 11 мовами, видалено шість невикористаних ключів перекладу. Наявну конфігурацію збережено.",
+        "zh-cn": "默认备用商店名称改为 No Market，备份页面支持全部 11 种管理语言，并移除六个未使用的翻译键。保留现有配置。"
+      },
       "0.4.3": {
         "en": "Uses ioBroker-managed timers for Alexa callback timeouts and keeps repository news metadata within the supported seven-entry limit.",
         "de": "Verwendet ioBroker-verwaltete Timer für Alexa-Callback-Timeouts und hält die Repository-News-Metadaten innerhalb des unterstützten Limits von sieben Einträgen.",
@@ -137,19 +150,6 @@
         "pl": "Dodaje interaktywną listę zakupów w Adminie z przeciąganiem/ręcznym przenoszeniem między sklepami, trwałymi ręcznymi nadpisaniami pozycji, poprawkami responsywności oraz zachowanym statusem „zaakceptowano” po zwykłym zapisie.",
         "uk": "Додано інтерактивний список покупок в Admin із перетягуванням і ручним переміщенням між магазинами, постійними ручними налаштуваннями елементів, покращеною адаптивністю та збереженням статусу «прийнято» після звичайного збереження.",
         "zh-cn": "新增 Admin 交互式购物清单，可拖放/手动在商店之间移动商品，保存逐项手动覆盖，改进响应式布局，并在普通保存后保留“已接受”状态。"
-      },
-      "0.3.6": {
-        "en": "Repository checker cleanup: explicit JSON Config i18n mode and translation files, obsolete prepublish protection removed, and older changelog entries archived. Sorting and runtime behavior are unchanged.",
-        "de": "Repository-Checker-Bereinigung: expliziter JSON-Config-i18n-Modus mit Übersetzungsdateien, veralteter Prepublish-Schutz entfernt und ältere Changelog-Einträge archiviert. Sortier- und Laufzeitverhalten bleiben unverändert.",
-        "ru": "Очистка для проверки репозитория: явный режим i18n JSON Config и файлы переводов, удалена устаревшая защита prepublish, старые записи журнала изменений архивированы. Сортировка и поведение во время выполнения не изменены.",
-        "pt": "Limpeza do verificador do repositório: modo i18n explícito do JSON Config e ficheiros de tradução, proteção prepublish obsoleta removida e entradas antigas do changelog arquivadas. A ordenação e o comportamento em execução não mudaram.",
-        "nl": "Opschoning voor de repositorychecker: expliciete JSON Config-i18n-modus en vertaalbestanden, verouderde prepublish-beveiliging verwijderd en oudere changelog-items gearchiveerd. Sorteer- en runtimegedrag zijn ongewijzigd.",
-        "fr": "Nettoyage pour le vérificateur du dépôt : mode i18n JSON Config explicite et fichiers de traduction, ancienne protection prepublish supprimée et anciennes entrées du changelog archivées. Le tri et le comportement à l’exécution sont inchangés.",
-        "it": "Pulizia per il controllo del repository: modalità i18n JSON Config esplicita e file di traduzione, protezione prepublish obsoleta rimossa e voci meno recenti del changelog archiviate. Ordinamento e comportamento runtime invariati.",
-        "es": "Limpieza para el verificador del repositorio: modo i18n explícito de JSON Config y archivos de traducción, protección prepublish obsoleta eliminada y entradas antiguas del changelog archivadas. La ordenación y el comportamiento en ejecución no cambiaron.",
-        "pl": "Porządki dla kontrolera repozytorium: jawny tryb i18n JSON Config i pliki tłumaczeń, usunięta przestarzała ochrona prepublish oraz zarchiwizowane starsze wpisy changeloga. Sortowanie i działanie w czasie wykonywania pozostają bez zmian.",
-        "uk": "Очищення для перевірки репозиторію: явний режим i18n JSON Config і файли перекладів, застарілий захист prepublish видалено, старі записи журналу змін заархівовано. Сортування й поведінка під час виконання не змінилися.",
-        "zh-cn": "仓库检查器清理：明确启用 JSON Config i18n 模式并使用翻译文件，移除过时的 prepublish 保护，归档旧版更新日志。排序和运行时行为均未改变。"
       }
     },
     "extIcon": "https://raw.githubusercontent.com/RaviniZib/ioBroker.shoppingroute/main/admin/shoppingroute.png",
@@ -167,7 +167,7 @@
     "dryRun": true,
     "autoLearnProducts": true,
     "logSortSummary": true,
-    "fallbackMarket": "Ohne Markt",
+    "fallbackMarket": "No Market",
     "priorityMarket": "",
     "markets": [
       {
@@ -195,7 +195,7 @@
         "enabled": true
       },
       {
-        "name": "Ohne Markt",
+        "name": "No Market",
         "aliases": "",
         "order": 999,
         "enabled": true
@@ -503,77 +503,77 @@
         "order": 150
       },
       {
-        "market": "Ohne Markt",
+        "market": "No Market",
         "category": "Obst/Gemüse",
         "order": 10
       },
       {
-        "market": "Ohne Markt",
+        "market": "No Market",
         "category": "Tee/Kaffee",
         "order": 20
       },
       {
-        "market": "Ohne Markt",
+        "market": "No Market",
         "category": "Brot/Gebäck",
         "order": 30
       },
       {
-        "market": "Ohne Markt",
+        "market": "No Market",
         "category": "Schokolade/Naschen",
         "order": 40
       },
       {
-        "market": "Ohne Markt",
+        "market": "No Market",
         "category": "Fleisch/Fisch",
         "order": 50
       },
       {
-        "market": "Ohne Markt",
+        "market": "No Market",
         "category": "Wurst/Salate/Teigwaren",
         "order": 60
       },
       {
-        "market": "Ohne Markt",
+        "market": "No Market",
         "category": "Milchprodukte",
         "order": 70
       },
       {
-        "market": "Ohne Markt",
+        "market": "No Market",
         "category": "Haushalt/Hygiene",
         "order": 80
       },
       {
-        "market": "Ohne Markt",
+        "market": "No Market",
         "category": "Nonfood",
         "order": 90
       },
       {
-        "market": "Ohne Markt",
+        "market": "No Market",
         "category": "Konserven",
         "order": 100
       },
       {
-        "market": "Ohne Markt",
+        "market": "No Market",
         "category": "H-Milch/Nudeln",
         "order": 110
       },
       {
-        "market": "Ohne Markt",
+        "market": "No Market",
         "category": "Kosmetikartikel",
         "order": 120
       },
       {
-        "market": "Ohne Markt",
+        "market": "No Market",
         "category": "Getränke",
         "order": 130
       },
       {
-        "market": "Ohne Markt",
+        "market": "No Market",
         "category": "TK-Produkte",
         "order": 140
       },
       {
-        "market": "Ohne Markt",
+        "market": "No Market",
         "category": "Sonstiges",
         "order": 150
       }
