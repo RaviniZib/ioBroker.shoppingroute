@@ -49,7 +49,7 @@ const review_tools_1 = require("./lib/review-tools");
 const manual_order_1 = require("./lib/manual-order");
 const state_change_1 = require("./lib/state-change");
 const direct_sort_lifecycle_1 = require("./lib/direct-sort-lifecycle");
-const VERSION = '0.4.3';
+const VERSION = '0.4.4';
 const COLLECT_WINDOW_MS = 5000;
 const MAX_ACTIVE_ITEMS = 99;
 const OWN_REFRESH_MAX_MS = 30000;
@@ -183,7 +183,7 @@ class ShoppingRoute extends utils.Adapter {
         }).sort((a, b) => a.name.localeCompare(b.name, 'de', { sensitivity: 'base' }));
     }
     get products() { return this.runtimeProducts.filter(product => product?.name); }
-    get fallbackMarket() { return String(this.cfg.fallbackMarket || 'Ohne Markt').trim() || 'Ohne Markt'; }
+    get fallbackMarket() { return String(this.cfg.fallbackMarket || 'No Market').trim() || 'No Market'; }
     get priorityMarket() { return String(this.cfg.priorityMarket || '').trim(); }
     priorityMarketForList(listName) {
         if (this.temporaryPriorityMarket)
