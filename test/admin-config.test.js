@@ -380,7 +380,7 @@ test('Alexa list discovery scans actual list objects instead of configured names
 test('ioBroker checker metadata is present',()=>{
   const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
   assert.ok(pkg.keywords.includes('ioBroker'));
-  assert.equal(pkg.devDependencies['@iobroker/testing'],'^6.2.1');
+  assert.equal(pkg.devDependencies['@iobroker/testing'],'^6.3.0');
   assert.equal(ioPackage.common.type,'logic');
   assert.equal(ioPackage.common.tier,3);
   assert.ok(ioPackage.common.extIcon);
