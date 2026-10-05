@@ -146,11 +146,7 @@
           "sm": 12,
           "md": 6,
           "lg": 6,
-          "xl": 6,
-          "alsoDependsOn": [
-            "markets"
-          ],
-          "jsonData": "{\"markets\":${JSON.stringify(data.markets || [])}}"
+          "xl": 6
         },
         "priorityMarket": {
           "type": "selectSendTo",
@@ -163,11 +159,7 @@
           "md": 6,
           "lg": 6,
           "xl": 6,
-          "help": "ui.items.general.items.prioritymarket.help",
-          "alsoDependsOn": [
-            "markets"
-          ],
-          "jsonData": "{\"markets\":${JSON.stringify(data.markets || [])}}"
+          "help": "ui.items.general.items.prioritymarket.help"
         },
         "temporaryMarketHelp": {
           "type": "staticText",
@@ -338,7 +330,8 @@
           "lg": 12,
           "xl": 12
         }
-      }
+      },
+      "hidden": "true"
     },
     "marketsTab": {
       "type": "panel",
@@ -393,7 +386,8 @@
           "lg": 12,
           "xl": 12
         }
-      }
+      },
+      "hidden": "true"
     },
     "productGroupsTab": {
       "type": "panel",
@@ -429,7 +423,8 @@
           "lg": 12,
           "xl": 12
         }
-      }
+      },
+      "hidden": "true"
     },
     "routesTab": {
       "type": "panel",
@@ -485,7 +480,8 @@
           "lg": 12,
           "xl": 12
         }
-      }
+      },
+      "hidden": "true"
     },
     "productsTab": {
       "type": "panel",
@@ -574,7 +570,8 @@
           "lg": 12,
           "xl": 12
         }
-      }
+      },
+      "hidden": "true"
     },
     "reviewTab": {
       "type": "panel",
@@ -705,7 +702,8 @@
           "xl": 12,
           "hidden": "true"
         }
-      }
+      },
+      "hidden": "true"
     },
     "transferTab": {
       "type": "panel",
@@ -782,7 +780,8 @@
           "lg": 12,
           "xl": 12
         }
-      }
+      },
+      "hidden": "true"
     }
   },
   "i18n": true,
