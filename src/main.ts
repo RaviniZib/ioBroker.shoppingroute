@@ -310,7 +310,10 @@ export class ShoppingRoute extends utils.Adapter {
             if (!parsed || typeof parsed !== 'object') return null;
             const envelope = parsed as { version?: unknown; savedAt?: unknown; data?: unknown };
             if (envelope.version !== 1 || !envelope.data || typeof envelope.data !== 'object') return null;
-            return { savedAt: String(envelope.savedAt || ''), data: this.managedConfigData(envelope.data as Record<string, unknown>) };
+            return {
+                savedAt: typeof envelope.savedAt === 'string' ? envelope.savedAt : '',
+                data: this.managedConfigData(envelope.data as Record<string, unknown>),
+            };
         } catch {
             return null;
         }
