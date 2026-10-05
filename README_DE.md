@@ -2,7 +2,7 @@
 
 ![ShoppingRoute](admin/shoppingroute.png)
 
-**Aktuelle Version: 0.4.4**
+**Aktuelle Version: 0.5.0**
 
 ShoppingRoute sortiert Alexa-Einkaufslisteneinträge nach Markt, Produktgruppe und dem individuellen Laufweg durch den jeweiligen Markt. Dazu vergibt es sichtbare zweistellige Schlüssel wie `20> Bananen` und `40> ═════ ALDI ═════`; verwaltete Listen müssen deshalb in der Alexa-App auf **A–Z** stehen. ShoppingRoute übernimmt lokal die Alexa2-Authentifizierung für direkte Updates, Deletes und Batch-Creates; Alexa2-Listenstates bleiben die Triggerquelle für externe Änderungen.
 
@@ -12,6 +12,11 @@ ShoppingRoute sortiert Alexa-Einkaufslisteneinträge nach Markt, Produktgruppe u
 🇬🇧 [**English user guide**](USER_GUIDE_EN.md)
 
 ## Funktionen
+
+- eigene **ShoppingRoute-Verwaltungsseite** in der ioBroker-Seitenleiste für Einkaufsliste, Artikel, Märkte, Produktgruppen, Laufwege, Listen und Prüfung
+- Katalogänderungen werden zur Laufzeit gespeichert und benötigen keinen Adapter-Neustart
+- Marktnamen werden unabhängig von der Eingabe automatisch in **GROSSBUCHSTABEN** gespeichert; alle Marktverweise werden konsistent mit normalisiert
+- Schutz vor versehentlichem Zurücksetzen großer Katalogdaten durch Admin-/Update-Vorgänge
 
 - mehrere Alexa-Einkaufslisten mit eigenem Prioritätsmarkt
 - globale, listenbezogene und temporäre Marktpriorität
@@ -72,6 +77,13 @@ Anschließend kann 0.3.0 flexible Artikel marktübergreifend zusammenlegen, wenn
 ShoppingRoute wird unter der **[MIT-Lizenz](LICENSE)** veröffentlicht. Frühere bereits veröffentlichte Versionen bleiben unter der jeweils damals gültigen Lizenz.
 
 ## Changelog
+
+### 0.5.0 (2026-10-05)
+- Neue eigenständige ShoppingRoute-Verwaltungsseite in der ioBroker-Seitenleiste mit fester Kopfzeile sowie Einkaufsliste, Artikel-, Markt-, Produktgruppen-, Laufweg-, Listen- und Prüfverwaltung.
+- Große Katalogdaten werden außerhalb der normalen Instanzkonfiguration als Laufzeitdaten gespeichert; Änderungen benötigen keinen Adapter-Neustart mehr.
+- Schutzmechanismus und Regressionstests verhindern den in Issue #59 beobachteten Rückfall auf Paket-Standarddaten; zusätzlich auf einer realen ioBroker-Instanz geprüft.
+- Marktnamen werden beim Anlegen, Umbenennen, Laden und Speichern immer in GROSSBUCHSTABEN normalisiert; Marktverweise werden konsistent mitgezogen.
+- Überarbeitete Verwaltungsoberfläche mit festem Header, Logo und dezenter Block-/Zebra-Darstellung.
 
 ### 0.4.4 (2026-09-25)
 - (RaviniZib) `No Market` als Standard-Ausweichmarkt für neue Konfigurationen, Backup-Seite in allen 11 Admin-Sprachen und sechs ungenutzte Übersetzungsschlüssel entfernt. Vorhandene Marktnamen, Laufwege und Produktdaten bleiben unverändert.
