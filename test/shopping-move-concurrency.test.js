@@ -244,13 +244,13 @@ test('delete dispatch replies to Admin and the UI keeps a failed deletion visibl
     assert.equal(editor.commandPending, false);
 });
 
-test('runtime uses English fallback for empty defaults and preserves configured market names', () => {
+test('runtime normalizes fallback market names to uppercase', () => {
     const adapter = runtimeFixture();
-    assert.equal(adapter.fallbackMarket, 'No Market');
+    assert.equal(adapter.fallbackMarket, 'NO MARKET');
     adapter.config.fallbackMarket = '   ';
-    assert.equal(adapter.fallbackMarket, 'No Market');
+    assert.equal(adapter.fallbackMarket, 'NO MARKET');
     adapter.config.fallbackMarket = 'Ohne Markt';
-    assert.equal(adapter.fallbackMarket, 'Ohne Markt');
+    assert.equal(adapter.fallbackMarket, 'OHNE MARKT');
     adapter.config.fallbackMarket = 'Mein Laden';
-    assert.equal(adapter.fallbackMarket, 'Mein Laden');
+    assert.equal(adapter.fallbackMarket, 'MEIN LADEN');
 });
