@@ -27,10 +27,13 @@ test('managed catalogues are persisted outside native instance config',()=>{
 
 test('catalogue manager provides all planned management areas and runtime save',()=>{
  const source=fs.readFileSync(path.join(root,'src-admin','catalog-manager.js'),'utf8');
- for(const token of ['products','markets','groups','routes','lists','review']) assert.match(source,new RegExp(token));
+ for(const token of ['shopping','products','markets','groups','routes','lists','review']) assert.match(source,new RegExp(token));
  assert.match(source,/saveManagedConfig/);
  assert.match(source,/getManagedConfig/);
- assert.match(source,/ohne Adapter-Neustart/);
+ assert.match(source,/ShoppingListEditor/);
+ assert.match(source,/position:sticky/);
+ assert.match(source,/srm-logo/);
+ assert.match(source,/shoppingroute\.png/);
 });
 
 test('catalogue manager has a dedicated module federation build',()=>{
