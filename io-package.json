@@ -159,7 +159,25 @@
         "admin": ">=8.0.0"
       }
     ],
-    "readme": "https://github.com/RaviniZib/ioBroker.shoppingroute/blob/main/README.md"
+    "readme": "https://github.com/RaviniZib/ioBroker.shoppingroute/blob/main/README.md",
+    "adminTab": {
+      "singleton": false,
+      "name": {
+        "en": "ShoppingRoute",
+        "de": "ShoppingRoute",
+        "ru": "ShoppingRoute",
+        "pt": "ShoppingRoute",
+        "nl": "ShoppingRoute",
+        "fr": "ShoppingRoute",
+        "it": "ShoppingRoute",
+        "es": "ShoppingRoute",
+        "pl": "ShoppingRoute",
+        "uk": "ShoppingRoute",
+        "zh-cn": "ShoppingRoute"
+      },
+      "link": "jsonTab.json",
+      "order": 120
+    }
   },
   "native": {
     "alexaInstance": "alexa2.0",
@@ -680,6 +698,27 @@
   },
   "objects": [],
   "instanceObjects": [
+    {
+      "_id": "data.managedConfig",
+      "type": "state",
+      "common": {
+        "name": "Runtime-managed ShoppingRoute configuration",
+        "type": "string",
+        "role": "json",
+        "read": true,
+        "write": false,
+        "def": "{}"
+      },
+      "native": {}
+    },
+    {
+      "_id": "data",
+      "type": "channel",
+      "common": {
+        "name": "Persistent data"
+      },
+      "native": {}
+    },
     {
       "_id": "info",
       "type": "channel",
