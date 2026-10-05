@@ -54,6 +54,7 @@ import {
     type ManualItemOverride,
 } from './lib/manual-order';
 import { isAcknowledgedForeignState } from './lib/state-change';
+import { createConfigBackup, isSuspiciousConfigReplacement, parseConfigBackup, restoreProtectedConfig } from './lib/config-protection';
 import {
     beginDirectApply,
     collectDirectInput,
@@ -292,7 +293,26 @@ export class ShoppingRoute extends utils.Adapter {
         return state;
     }
 
+    private async protectConfiguration(): Promise<void> {
+        const instanceId = `system.adapter.${this.namespace}`;
+        const object = await this.getForeignObjectAsync(instanceId);
+        if (!object) return;
+        const current = { ...((object.native || {}) as Record<string, unknown>) };
+        const state = await this.getStateAsync('info.configBackup');
+        const backup = parseConfigBackup(state?.val);
+        let safe = current;
+        if (backup && isSuspiciousConfigReplacement(current, backup)) {
+            safe = restoreProtectedConfig(current, backup);
+            object.native = safe;
+            await this.setForeignObjectAsync(instanceId, object);
+            Object.assign(this.config as unknown as Record<string, unknown>, safe);
+            this.log.error('Protected ShoppingRoute catalogue data was restored from the local backup after a suspicious configuration replacement.');
+        }
+        await this.setStateAsync('info.configBackup', JSON.stringify(createConfigBackup(safe)), true);
+    }
+
     private async onReady(): Promise<void> {
+        await this.protectConfiguration();
         const configuredProducts = (Array.isArray(this.cfg.products) ? this.cfg.products : [])
             .filter(product => product?.name).map(product => ({ ...product }));
         this.runtimeProducts = normalizeProductAvailableMarkets(configuredProducts)
