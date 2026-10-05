@@ -35,6 +35,8 @@ ALDI
 
 ## 3. Erste Einrichtung
 
+Ab Version **0.5.0** sind Grundeinstellungen und laufende Datenpflege bewusst getrennt. Die Adapter-Konfiguration enthält nur noch die grundlegenden Einstellungen. Artikel, Märkte, Produktgruppen, Laufwege, Alexa-Listen, Prüfliste und aktuelle Einkaufsliste werden über den eigenen Eintrag **ShoppingRoute** in der ioBroker-Seitenleiste verwaltet. Änderungen dort werden direkt zur Laufzeit gespeichert und benötigen keinen Adapter-Neustart.
+
 ### Alexa2-Instanz
 
 Im Reiter **Allgemein** wählst du die gewünschte Alexa2-Instanz. Es werden nur installierte und aktivierte Instanzen angeboten. Nach einem Wechsel der Alexa2-Instanz einmal speichern und die Konfigurationsseite neu öffnen, damit die verfügbaren Listen neu geladen werden.
@@ -45,7 +47,7 @@ Mit **Dry-Run (nichts zu Alexa schreiben)** liest und analysiert ShoppingRoute d
 
 ## 4. Alexa-Listen
 
-Im Reiter **Listen** legst du fest, welche Alexa-Listen verwaltet werden.
+Auf der **ShoppingRoute-Verwaltungsseite** im Menüpunkt **Listen** legst du fest, welche Alexa-Listen verwaltet werden.
 
 Für jede Liste gibt es:
 
@@ -57,7 +59,7 @@ Mehrere Listen können gleichzeitig verwaltet werden. Jede Liste kann einen eige
 
 ## 5. Märkte
 
-Im Reiter **Märkte** pflegst du deine Geschäfte.
+Auf der **ShoppingRoute-Verwaltungsseite** im Menüpunkt **Märkte** pflegst du deine Geschäfte. Marktnamen werden beim Anlegen und Umbenennen automatisch in **GROSSBUCHSTABEN** umgewandelt. Auch bestehende Marktverweise werden beim Laden und Speichern konsistent normalisiert.
 
 Jeder Markt besitzt:
 
@@ -75,11 +77,11 @@ Aliase: Rewe, Rewe Markt, Rewe Center
 
 Die Marktreihenfolge ist die oberste Sortierebene. Häufige Varianten von ALDI, LIDL, REWE und PENNY werden zusätzlich automatisch erkannt.
 
-Der Markt **„Ohne Markt“** eignet sich als Auffangbereich für nicht eindeutig zuordenbare Artikel.
+Der Markt **„OHNE MARKT“** eignet sich als Auffangbereich für nicht eindeutig zuordenbare Artikel.
 
 ## 6. Produktgruppen
 
-Im Reiter **Produktgruppen** definierst du die Bereiche, nach denen innerhalb eines Marktes sortiert wird, zum Beispiel:
+Auf der **ShoppingRoute-Verwaltungsseite** im Menüpunkt **Produktgruppen** definierst du die Bereiche, nach denen innerhalb eines Marktes sortiert wird, zum Beispiel:
 
 - Obst/Gemüse
 - Brot/Gebäck
@@ -95,7 +97,7 @@ Im Reiter **Produktgruppen** definierst du die Bereiche, nach denen innerhalb ei
 
 ## 7. Laufwege
 
-Im Reiter **Laufwege** wählst du zunächst einen aktiven Markt. Darunter wird nur der Laufweg dieses Marktes angezeigt.
+Auf der **ShoppingRoute-Verwaltungsseite** im Menüpunkt **Laufwege** wählst du zunächst einen aktiven Markt. Darunter wird nur der Laufweg dieses Marktes angezeigt.
 
 Die sichtbare Reihenfolge entspricht deinem Weg durch das Geschäft. Verschiedene Märkte dürfen völlig unterschiedliche Laufwege besitzen.
 
