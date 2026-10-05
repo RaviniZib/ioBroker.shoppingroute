@@ -1,7 +1,6 @@
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
-const crypto=require('node:crypto');
 const fs=require('node:fs');
 const path=require('node:path');
 const root=path.join(__dirname,'..');
@@ -129,32 +128,18 @@ test('native Admin tabs share the phase-one visual hierarchy',()=>{
   assert.equal(jsonConfig.items.transferTab.items.backupTransfer.md,6);
 });
 
-test('phase-one styling preserves the functional JSON config outside the migrated product groups tab',()=>{
-  const visualProperties=new Set([
-    'label','text','title','width','style','darkStyle','innerStyle','controlStyle',
-    'xs','sm','md','lg','xl','newLine','variant','icon','iconPosition','boxType',
-    'closeable','size','help','tooltip','placeholder',
-  ]);
-  const presentationTypes=new Set(['header','staticText','infoBox','divider']);
-  const stripVisualProperties=value=>{
-    if(Array.isArray(value)) return value.map(stripVisualProperties);
-    if(!value||typeof value!=='object') return value;
-    return Object.fromEntries(Object.entries(value)
-      .filter(([key])=>!visualProperties.has(key))
-      .map(([key,item])=>[key,stripVisualProperties(item)]));
-  };
-  const panels=['general','listsTab','routesTab','productsTab','reviewTab','transferTab'];
-  const projection=Object.fromEntries(panels.map(panel=>[
-    panel,
-    Object.fromEntries(Object.entries(jsonConfig.items[panel].items)
-      .filter(([,item])=>!presentationTypes.has(item.type))
-      .map(([key,item])=>[key,stripVisualProperties(item)])),
-  ]));
-  const hash=crypto.createHash('sha256').update(JSON.stringify(projection)).digest('hex');
-
-  assert.equal(hash,'062194d274caf4a81d167bae60a58856ba861ade0f6e1ef30e9a8774580c114b');
-  const routeHash=crypto.createHash('sha256').update(JSON.stringify(jsonConfig.items.routesTab)).digest('hex');
-  assert.equal(routeHash,'8bb35e144be68a1953ee81a22aa94a445162715354c73eb99e4119747c18c518');
+test('runtime manager is the only visible catalogue maintenance surface',()=>{
+  for(const tab of ['listsTab','marketsTab','productGroupsTab','routesTab','productsTab','reviewTab','shoppingListTab']) {
+    assert.equal(jsonConfig.items[tab].hidden,'true',tab);
+  }
+  assert.notEqual(jsonConfig.items.general.hidden,'true');
+  assert.notEqual(jsonConfig.items.transferTab.hidden,'true');
+  const general=jsonConfig.items.general.items;
+  for(const key of ['fallbackMarket','priorityMarket']) {
+    assert.equal(general[key].type,'selectSendTo',key);
+    assert.equal('jsonData' in general[key],false,key);
+    assert.equal('alsoDependsOn' in general[key],false,key);
+  }
 });
 
 test('known instances, lists, markets and product groups use dropdown controls',()=>{
