@@ -1,42 +1,146 @@
 # ShoppingRoute for ioBroker
 
-![ShoppingRoute](admin/shoppingroute.png)
+<p align="center">
+  <img src="admin/shoppingroute.png" alt="ShoppingRoute" width="160">
+</p>
 
-**Current version: 0.4.4**
+<p align="center">
+  <strong>Smart Alexa shopping lists — sorted by store, product group and your real walking route.</strong>
+</p>
 
-ShoppingRoute sorts Alexa shopping-list entries by market, product group and each store's individual walking route. It assigns visible two-digit keys such as `20> Bananas` and `40> ═════ ALDI ═════`; managed lists must therefore be set to **A–Z** in the Alexa app. ShoppingRoute reuses the local Alexa2 authentication for direct item updates, deletes and batch creates, while Alexa2 list states remain the external change trigger.
+<p align="center">
+  <a href="https://www.npmjs.com/package/iobroker.shoppingroute"><img src="https://img.shields.io/npm/v/iobroker.shoppingroute.svg" alt="npm version"></a>
+  <a href="https://www.npmjs.com/package/iobroker.shoppingroute"><img src="https://img.shields.io/npm/dm/iobroker.shoppingroute.svg" alt="npm downloads"></a>
+  <a href="https://github.com/RaviniZib/ioBroker.shoppingroute/actions/workflows/test-and-release.yml"><img src="https://github.com/RaviniZib/ioBroker.shoppingroute/actions/workflows/test-and-release.yml/badge.svg" alt="Test and Release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT license"></a>
+</p>
 
-## User guide / Bedienungsanleitung
+> **Current version: 0.4.4**  
+> ShoppingRoute is available in the ioBroker **latest** repository.
 
-🇬🇧 [**English user guide**](USER_GUIDE_EN.md)  
-🇩🇪 [**Deutsche Bedienungsanleitung**](BEDIENUNGSANLEITUNG_DE.md)
+## What ShoppingRoute does
 
-## Highlights
+ShoppingRoute turns an ordinary Alexa shopping list into a list that follows the way you actually shop.
 
-- multiple Alexa lists with per-list priority markets
-- global, per-list and temporary market priorities
-- market aliases and common market-name variants
-- optional automatically managed market headings such as `═════ ALDI ═════`
-- optional cross-market consolidation using a minimum-item threshold; explicit market requests are never moved
-- configurable product groups and store-specific routes
-- product catalogue with aliases, preferred and available markets
-- quantity parser for digits, number words, packs, half-kilo and `6x` forms
-- duplicate-resistant product learning
+Instead of keeping items only in the order Alexa received them, the adapter can assign them to stores, product groups and a configurable walking route inside each store. It uses visible two-digit prefixes such as `20> Bananas` and optional market headings such as `40> ═════ ALDI ═════`.
+
+That means a list can automatically become something like:
+
+```text
+10> Apples
+20> Bananas
+30> Bread
+40> ═════ ALDI ═════
+50> Milk
+60> Cheese
+70> Coffee
+```
+
+Managed Alexa lists must be set to **A–Z** in the Alexa app. ShoppingRoute then controls the effective order through its prefixes.
+
+ShoppingRoute reuses the local authentication of the ioBroker **Alexa2** adapter for direct item updates, deletions and batch creation. Alexa2 list states remain the external change trigger.
+
+## Languages and documentation
+
+- 🇬🇧 [English user guide](USER_GUIDE_EN.md)
+- 🇩🇪 [Deutsche Bedienungsanleitung](BEDIENUNGSANLEITUNG_DE.md)
+- 🇩🇪 [Ausführliche deutsche README](README_DE.md)
+- 🧪 [ioBroker tester forum – ShoppingRoute v0.4.4](https://forum.iobroker.net/topic/85510/test-adapter-shoppingroute-v0.4.4)
+- 🐞 [Report an issue on GitHub](https://github.com/RaviniZib/ioBroker.shoppingroute/issues)
+
+The Admin interface itself supports all 11 standard ioBroker Admin languages.
+
+## Main features
+
+### Store and route based sorting
+
+- configurable stores and store aliases
+- individual walking route for every store
+- product groups with independent sort order
+- preferred and available markets per product
+- global, per-list and temporary priority markets
+- optional market headings such as `═════ ALDI ═════`
+- optional cross-market consolidation using a minimum-item threshold
+- explicit market requests are never moved to another store
+
+### Smart product handling
+
+- product catalogue with aliases
+- duplicate-resistant learning
 - review queue for unknown products
-- automatic/review/off learning modes
+- automatic, review and off learning modes
 - category and alias suggestions
-- sorting preview before writes
-- incremental `00>`–`99>` prefix sorting with gap-preserving inserts and suffix-only rebuilds
-- direct Amazon responses plus one final list read as write confirmation
+- quantity parsing for digits, number words, packs, half-kilo expressions and `6x` forms
+- manual per-item market and position overrides
+
+### Alexa-safe list updates
+
+- incremental `00>`–`99>` prefix sorting
+- gap-preserving inserts to avoid unnecessary rewrites
+- suffix-only rebuilds when a numeric gap is exhausted
+- direct Amazon responses used to confirm operations
+- final direct list read for verification
+- exclusive transaction handling to prevent overlapping writes
+- recovery journal for interrupted operations
 - API Safe Mode with configurable write-rate limiting
+- bounded Alexa callbacks and polling with backoff
+
+### Admin and diagnostics
+
+- interactive current shopping-list view
+- drag & drop plus touch-friendly controls
+- sorting preview before writes
 - local-only shopping statistics
-- configuration backup/restore
+- configuration backup and restore
 - shareable market-route profiles
-- privacy-safe diagnostic/feedback report
+- privacy-safe diagnostic and feedback report
 - Alexa2/alexa-remote2 direct-session diagnostics
 - Dry Run safety mode
 
-See `README_DE.md` for the detailed German documentation.
+## Requirements
+
+- ioBroker with **Admin 8 or newer**
+- **js-controller 7.1.0 or newer**
+- a working ioBroker **Alexa2** adapter instance
+- the Alexa shopping list managed by ShoppingRoute must be sorted **A–Z** in the Alexa app
+
+## How it works
+
+1. Alexa2 reports a shopping-list change to ioBroker.
+2. ShoppingRoute reads the affected list and normalizes the item names.
+3. Products are matched against aliases, product groups and market assignments.
+4. The adapter builds the best market and route plan.
+5. Only the required list changes are written back to Amazon.
+6. The final remote list is read again and verified.
+
+The browser-based Admin interface never receives Alexa or Amazon credentials.
+
+## Privacy and safety
+
+ShoppingRoute does not require its own Amazon login. It reuses the locally stored Alexa2 session and does not log authentication secrets.
+
+Statistics are stored locally. The feedback report is designed to be privacy-safe, and Dry Run can be used to inspect planned changes without modifying the shopping list.
+
+## Installation
+
+Install ShoppingRoute from the ioBroker **Adapters** page while using the **latest** repository.
+
+After installation:
+
+1. create an instance of ShoppingRoute,
+2. select/configure the Alexa shopping list,
+3. define markets and product groups,
+4. configure the walking route for each store,
+5. set the managed Alexa list to **A–Z**,
+6. start with **Dry Run** if you want to inspect the result before enabling writes.
+
+For all configuration details, see the [English user guide](USER_GUIDE_EN.md) or the [German user guide](BEDIENUNGSANLEITUNG_DE.md).
+
+## Feedback and support
+
+ShoppingRoute is still young, so real-world feedback is especially valuable.
+
+Please use the [ioBroker tester thread](https://forum.iobroker.net/topic/85510/test-adapter-shoppingroute-v0.4.4) for general testing feedback and the [GitHub issue tracker](https://github.com/RaviniZib/ioBroker.shoppingroute/issues) for reproducible bugs or feature requests.
 
 ## Changelog
 
