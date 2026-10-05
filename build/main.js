@@ -48,6 +48,7 @@ const statistics_1 = require("./lib/statistics");
 const review_tools_1 = require("./lib/review-tools");
 const manual_order_1 = require("./lib/manual-order");
 const state_change_1 = require("./lib/state-change");
+const config_protection_1 = require("./lib/config-protection");
 const direct_sort_lifecycle_1 = require("./lib/direct-sort-lifecycle");
 const VERSION = '0.4.4';
 const COLLECT_WINDOW_MS = 5000;
@@ -211,7 +212,26 @@ class ShoppingRoute extends utils.Adapter {
         }
         return state;
     }
+    async protectConfiguration() {
+        const instanceId = `system.adapter.${this.namespace}`;
+        const object = await this.getForeignObjectAsync(instanceId);
+        if (!object)
+            return;
+        const current = { ...(object.native || {}) };
+        const state = await this.getStateAsync('info.configBackup');
+        const backup = (0, config_protection_1.parseConfigBackup)(state?.val);
+        let safe = current;
+        if (backup && (0, config_protection_1.isSuspiciousConfigReplacement)(current, backup)) {
+            safe = (0, config_protection_1.restoreProtectedConfig)(current, backup);
+            object.native = safe;
+            await this.setForeignObjectAsync(instanceId, object);
+            Object.assign(this.config, safe);
+            this.log.error('Protected ShoppingRoute catalogue data was restored from the local backup after a suspicious configuration replacement.');
+        }
+        await this.setStateAsync('info.configBackup', JSON.stringify((0, config_protection_1.createConfigBackup)(safe)), true);
+    }
     async onReady() {
+        await this.protectConfiguration();
         const configuredProducts = (Array.isArray(this.cfg.products) ? this.cfg.products : [])
             .filter(product => product?.name).map(product => ({ ...product }));
         this.runtimeProducts = (0, review_tools_1.normalizeProductAvailableMarkets)(configuredProducts)
