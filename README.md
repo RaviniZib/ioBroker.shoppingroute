@@ -9,6 +9,8 @@
 </p>
 
 <p align="center">
+  <img src="http://iobroker.live/badges/shoppingroute-installed.svg" alt="ioBroker installations">
+  <img src="http://iobroker.live/badges/shoppingroute-stable.svg" alt="ioBroker stable installations">
   <a href="https://www.npmjs.com/package/iobroker.shoppingroute"><img src="https://img.shields.io/npm/v/iobroker.shoppingroute.svg" alt="npm version"></a>
   <a href="https://www.npmjs.com/package/iobroker.shoppingroute"><img src="https://img.shields.io/npm/dm/iobroker.shoppingroute.svg" alt="npm downloads"></a>
   <a href="https://github.com/RaviniZib/ioBroker.shoppingroute/actions/workflows/test-and-release.yml"><img src="https://github.com/RaviniZib/ioBroker.shoppingroute/actions/workflows/test-and-release.yml/badge.svg" alt="Test and Release"></a>
@@ -40,13 +42,19 @@ Managed Alexa lists must be set to **A–Z** in the Alexa app. ShoppingRoute the
 
 ShoppingRoute reuses the local authentication of the ioBroker **Alexa2** adapter for direct item updates, deletions and batch creation. Alexa2 list states remain the external change trigger.
 
-## Languages and documentation
+**Service / manufacturer reference:** ShoppingRoute works with Amazon Alexa shopping lists. Amazon documents Alexa lists as a customer feature of the Alexa ecosystem; customers can access Alexa shopping and to-do lists through the Alexa app, Amazon app and Amazon retail site. See the [official Amazon Alexa developer documentation](https://www.developer.amazon.com/en-US/docs/alexa/ask-overviews/deprecated-features.html#list-skills-and-alexa-shopping-and-to-do-lists).
 
-- 🇬🇧 [English user guide](USER_GUIDE_EN.md)
-- 🇩🇪 [Deutsche Bedienungsanleitung](BEDIENUNGSANLEITUNG_DE.md)
-- 🇩🇪 [Ausführliche deutsche README](README_DE.md)
+## Documentation
+
+Choose your language:
+
+- 🇬🇧 **English:** [User guide](USER_GUIDE_EN.md)
+- 🇩🇪 **Deutsch:** [Bedienungsanleitung](BEDIENUNGSANLEITUNG_DE.md) · [Ausführliche README](README_DE.md)
+
+Community and support:
+
 - 🧪 [ioBroker tester forum – ShoppingRoute v0.4.4](https://forum.iobroker.net/topic/85510/test-adapter-shoppingroute-v0.4.4)
-- 🐞 [Report an issue on GitHub](https://github.com/RaviniZib/ioBroker.shoppingroute/issues)
+- 🐞 [GitHub issues](https://github.com/RaviniZib/ioBroker.shoppingroute/issues)
 
 The Admin interface itself supports all 11 standard ioBroker Admin languages.
 
