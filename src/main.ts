@@ -63,7 +63,7 @@ import {
     type DirectSortPhase,
 } from './lib/direct-sort-lifecycle';
 
-const VERSION = '0.4.4';
+const VERSION = '0.5.0';
 const COLLECT_WINDOW_MS = 5000;
 const MAX_ACTIVE_ITEMS = 99;
 const OWN_REFRESH_MAX_MS = 30000;
@@ -71,6 +71,9 @@ const DIRECT_POLL_BASE_MS = 60000;
 const DIRECT_POLL_MAX_MS = 15 * 60000;
 const DIRECT_FINAL_VERIFY_ATTEMPTS = 3;
 const DIRECT_FINAL_VERIFY_RETRY_MS = 1500;
+
+const normalizeMarketName = (value: unknown): string =>
+    typeof value === 'string' ? value.trim().toLocaleUpperCase('de-DE') : '';
 
 const DEFAULT_CATEGORIES = [
     'Obst/Gemüse',
@@ -265,12 +268,12 @@ export class ShoppingRoute extends utils.Adapter {
         }).sort((a, b) => a.name.localeCompare(b.name, 'de', { sensitivity: 'base' }));
     }
     private get products(): ProductConfig[] { return this.runtimeProducts.filter(product => product?.name); }
-    private get fallbackMarket(): string { return String(this.cfg.fallbackMarket || 'No Market').trim() || 'No Market'; }
-    private get priorityMarket(): string { return String(this.cfg.priorityMarket || '').trim(); }
+    private get fallbackMarket(): string { return normalizeMarketName(this.cfg.fallbackMarket || 'No Market') || 'NO MARKET'; }
+    private get priorityMarket(): string { return normalizeMarketName(this.cfg.priorityMarket || ''); }
     private priorityMarketForList(listName: string): string {
         if (this.temporaryPriorityMarket) return this.temporaryPriorityMarket;
         const list = this.listConfigs.find(entry => entry.name === listName);
-        return String(list?.priorityMarket || this.priorityMarket || '').trim();
+        return normalizeMarketName(list?.priorityMarket || this.priorityMarket || '');
     }
     private get learningMode(): 'automatic' | 'review' | 'off' {
         const configured = String(this.cfg.learningMode || '').trim();
@@ -294,14 +297,20 @@ export class ShoppingRoute extends utils.Adapter {
     }
 
     private managedConfigData(source: Record<string, unknown> = this.cfg as unknown as Record<string, unknown>): Record<string, unknown> {
-        return {
-            markets: Array.isArray(source.markets) ? source.markets.map((item: any) => ({ ...item })) : [],
-            routes: Array.isArray(source.routes) ? source.routes.map((item: any) => ({ ...item })) : [],
-            products: Array.isArray(source.products) ? source.products.map((item: any) => ({ ...item })) : [],
-            productGroups: Array.isArray(source.productGroups) ? source.productGroups.map((item: any) => ({ ...item })) : [],
-            lists: Array.isArray(source.lists) ? source.lists.map((item: any) => ({ ...item })) : [],
-            reviewItems: Array.isArray(source.reviewItems) ? source.reviewItems.map((item: any) => ({ ...item })) : [],
-        };
+        const up = (v: unknown): string => normalizeMarketName(v);
+        const markets = Array.isArray(source.markets) ? source.markets.map((x: any) => ({ ...x, name: up(x?.name) })) : [];
+        const routes = Array.isArray(source.routes) ? source.routes.map((x: any) => ({ ...x, market: up(x?.market) })) : [];
+        const products = Array.isArray(source.products) ? source.products.map((x: any) => ({ ...x,
+            defaultMarket: up(x?.defaultMarket),
+            availableMarkets: (Array.isArray(x?.availableMarkets) ? x.availableMarkets : String(x?.availableMarkets || '').split(/[;,]/)).map(up).filter(Boolean),
+        })) : [];
+        const lists = Array.isArray(source.lists) ? source.lists.map((x: any) => ({ ...x, priorityMarket: up(x?.priorityMarket) })) : [];
+        const reviewItems = Array.isArray(source.reviewItems) ? source.reviewItems.map((x: any) => ({ ...x,
+            defaultMarket: up(x?.defaultMarket),
+            availableMarkets: (Array.isArray(x?.availableMarkets) ? x.availableMarkets : String(x?.availableMarkets || '').split(/[;,]/)).map(up).filter(Boolean),
+        })) : [];
+        return { markets, routes, products,
+            productGroups: Array.isArray(source.productGroups) ? source.productGroups.map((x: any) => ({ ...x })) : [], lists, reviewItems };
     }
 
     private parseManagedConfig(value: unknown): { savedAt: string; data: Record<string, unknown> } | null {
@@ -331,7 +340,7 @@ export class ShoppingRoute extends utils.Adapter {
         const canonical = this.parseManagedConfig(canonicalState?.val);
         if (canonical) {
             Object.assign(this.config as unknown as Record<string, unknown>, canonical.data);
-            await this.setStateAsync('info.configBackup', JSON.stringify(createConfigBackup(canonical.data)), true);
+            await this.writeManagedConfigState(canonical.data);
             return;
         }
 
@@ -420,7 +429,7 @@ export class ShoppingRoute extends utils.Adapter {
         if (!enabled) await this.setStateAsync('control.enabled', true, true);
         const temp = await this.getStateAsync('control.temporaryPriorityMarket');
         const tempRaw = String(temp?.val ?? this.cfg.temporaryPriorityMarket ?? '').trim();
-        this.temporaryPriorityMarket = tempRaw === '__none__' ? '' : tempRaw;
+        this.temporaryPriorityMarket = tempRaw === '__none__' ? '' : normalizeMarketName(tempRaw);
         await this.setStateAsync('control.temporaryPriorityMarket', this.temporaryPriorityMarket || '__none__', true);
 
         this.subscribeStates('control.*');
@@ -819,7 +828,7 @@ export class ShoppingRoute extends utils.Adapter {
         }
         if (id === `${local}control.temporaryPriorityMarket` && !state.ack) {
             const selected = typeof state.val === 'string' ? state.val.trim() : '';
-            this.temporaryPriorityMarket = selected === '__none__' ? '' : selected;
+            this.temporaryPriorityMarket = selected === '__none__' ? '' : normalizeMarketName(selected);
             await this.setStateAsync('control.temporaryPriorityMarket', this.temporaryPriorityMarket || '__none__', true);
             this.scheduleAll(COLLECT_WINDOW_MS);
             return;
