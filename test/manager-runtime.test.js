@@ -49,3 +49,13 @@ test('catalogue manager has a dedicated module federation build',()=>{
  assert.ok(fs.existsSync(path.join(root,'vite.catalog-manager.config.mjs')));
  assert.ok(fs.existsSync(path.join(root,'src-admin','catalog-manager-components.mjs')));
 });
+
+
+test('runtime normalization uppercases market names and all market references',()=>{
+ const source=fs.readFileSync(path.join(root,'src','main.ts'),'utf8');
+ assert.match(source,/normalizeMarketName/);
+ assert.match(source,/name: up\(x\?\.name\)/);
+ assert.match(source,/market: up\(x\?\.market\)/);
+ assert.match(source,/defaultMarket: up\(x\?\.defaultMarket\)/);
+ assert.match(source,/priorityMarket: up\(x\?\.priorityMarket\)/);
+});
