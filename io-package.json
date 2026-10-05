@@ -780,6 +780,19 @@
       "native": {}
     },
     {
+      "_id": "info.configBackup",
+      "type": "state",
+      "common": {
+        "name": "Protected ShoppingRoute configuration backup",
+        "type": "string",
+        "role": "json",
+        "read": true,
+        "write": false,
+        "def": "{}"
+      },
+      "native": {}
+    },
+    {
       "_id": "info.configExport",
       "type": "state",
       "common": {
