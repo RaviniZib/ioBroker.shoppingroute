@@ -163,3 +163,9 @@ test('delivered markets editor satisfies the ioBroker module federation contract
     rmSync(temporaryRoot, { recursive: true, force: true });
   }
 });
+
+
+test('market names are normalized to uppercase on add and rename', () => {
+  assert.equal(model.addMarket(existing, 'Apotheke').at(-1).name, 'APOTHEKE');
+  assert.equal(model.editMarket(existing, 1, { name: 'Lidl City' })[1].name, 'LIDL CITY');
+});
