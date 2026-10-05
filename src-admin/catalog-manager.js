@@ -5,16 +5,17 @@ const {MarketsEditor}=require('./markets-editor').Components;
 const {ProductGroupsEditor}=require('./product-groups-editor').Components;
 const {RouteEditor}=require('./route-editor').Components;
 const {ReviewEditor}=require('./review-editor').Components;
+const {ShoppingListEditor}=require('./shopping-list-editor').Components;
 const h=React.createElement;
 const t=(de,en)=>typeof navigator!=='undefined'&&String(navigator.language||'').toLowerCase().startsWith('de')?de:en;
 const clone=v=>JSON.parse(JSON.stringify(v));
 const arr=v=>Array.isArray(v)?v:[];
 const css=`
-.srm{padding:16px;max-width:1500px;margin:auto;box-sizing:border-box}.srm h2{margin:0 0 4px}.srm-sub{opacity:.7;margin-bottom:12px}
-.srm-tools,.srm-tabs,.srm-add{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.srm-tools{padding:8px 0}.srm-tabs{margin:8px 0 18px}
+.srm{padding:0 16px 16px;max-width:1500px;margin:auto;box-sizing:border-box}.srm h2{margin:0}.srm-head{position:sticky;top:0;z-index:30;margin:0 -16px 18px;padding:10px 16px 9px;border-bottom:1px solid currentColor;box-shadow:0 2px 7px rgba(0,0,0,.12)}.srm-brand{display:flex;align-items:center;gap:12px;min-height:54px}.srm-logo{width:44px;height:44px;object-fit:contain;flex:0 0 44px}.srm-title{display:flex;flex-direction:column;justify-content:center;min-height:44px}.srm-sub{opacity:.7;font-size:.9rem;line-height:1.25;margin-top:2px}
+.srm-tools,.srm-tabs,.srm-add{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.srm-tabs{min-height:44px;margin:5px 0 3px}.srm-tools{min-height:44px;padding:3px 0 0}
 .srm button{min-height:36px;padding:6px 12px;border:1px solid currentColor;border-radius:5px;background:transparent;color:inherit;cursor:pointer}.srm button:disabled{opacity:.4}.srm .active{font-weight:700;box-shadow:inset 0 -3px currentColor}
-.srm-status{margin-left:auto}.srm-error{color:#d32f2f;font-weight:700}.srm table{width:100%;border-collapse:collapse}.srm th,.srm td{padding:7px;border-bottom:1px solid currentColor;text-align:left}.srm input,.srm select{box-sizing:border-box;width:100%;min-height:34px;padding:5px 7px;border:1px solid currentColor;border-radius:4px;background:transparent;color:inherit}.srm-add{margin-top:10px}.srm-add input{max-width:420px}.srm-x{width:55px}
-@media(max-width:700px){.srm{padding:10px}.srm-status{width:100%;margin:0}.srm table{display:block;overflow:auto}}
+.srm-status{margin-left:auto}.srm-error{color:#d32f2f;font-weight:700}.srm-content{min-height:320px}.srm table{width:100%;border-collapse:collapse}.srm th,.srm td{padding:7px;border-bottom:1px solid currentColor;text-align:left}.srm input,.srm select{box-sizing:border-box;width:100%;min-height:34px;padding:5px 7px;border:1px solid currentColor;border-radius:4px;background:transparent;color:inherit}.srm-add{margin-top:10px}.srm-add input{max-width:420px}.srm-x{width:55px}
+@media(max-width:700px){.srm{padding:0 10px 10px}.srm-head{margin:0 -10px 14px;padding:8px 10px}.srm-brand{min-height:50px}.srm-logo{width:40px;height:40px;flex-basis:40px}.srm-tabs{flex-wrap:nowrap;overflow-x:auto;padding-bottom:3px}.srm-tabs button{flex:0 0 auto}.srm-status{width:100%;margin:0}.srm table{display:block;overflow:auto}}
 `;
 class CatalogManager extends React.Component{
  constructor(p){super(p);this.state={data:null,base:null,tab:'products',loading:true,saving:false,error:'',savedAt:'',newProduct:'',newList:''};}
@@ -49,12 +50,16 @@ class CatalogManager extends React.Component{
    h('td',{key:'p'},h('select',{value:String(p.priorityMarket||''),onChange:e=>this.edit('lists',i,{priorityMarket:e.target.value})},opts)),
    h('td',{key:'x',className:'srm-x'},h('button',{onClick:()=>this.del('lists',i)},'×'))])))]),h('div',{key:'a',className:'srm-add'},[h('input',{key:'i',placeholder:t('Neue Alexa-Liste','New Alexa list'),value:this.state.newList,onChange:e=>this.setState({newList:e.target.value}),onKeyDown:e=>e.key==='Enter'&&this.addList()}),h('button',{key:'b',onClick:()=>this.addList()},t('Hinzufügen','Add'))])]);
  }
- content(){const p={data:this.state.data,onChange:d=>this.setData(d),themeType:this.props.themeType};if(this.state.tab==='markets')return h(MarketsEditor,p);if(this.state.tab==='groups')return h(ProductGroupsEditor,p);if(this.state.tab==='routes')return h(RouteEditor,p);if(this.state.tab==='review')return h(ReviewEditor,p);if(this.state.tab==='lists')return this.lists();return this.products();}
- render(){if(this.state.loading)return h('div',{className:'srm'},t('Wird geladen …','Loading …'));if(!this.state.data)return h('div',{className:'srm srm-error'},this.state.error||'No data');const tabs=[['products','Artikel','Products'],['markets','Märkte','Markets'],['groups','Produktgruppen','Product groups'],['routes','Laufwege','Routes'],['lists','Listen','Lists'],['review','Prüfung','Review']],changed=this.changed();return h('div',{className:'srm'},[h('style',{key:'s'},css),h('h2',{key:'h'},'ShoppingRoute'),h('div',{key:'sub',className:'srm-sub'},t('Kataloge und Listen direkt verwalten – Speichern ohne Adapter-Neustart.','Manage catalogues and lists directly – save without restarting the adapter.')),h('div',{key:'tools',className:'srm-tools'},[
- h('button',{key:'save',disabled:!changed||this.state.saving,onClick:()=>void this.save()},this.state.saving?t('Speichert …','Saving …'):t('Speichern','Save')),
- h('button',{key:'discard',disabled:!changed||this.state.saving,onClick:()=>this.setState({data:clone(this.state.base),error:''})},t('Verwerfen','Discard')),
- h('button',{key:'reload',disabled:this.state.saving,onClick:()=>void this.load()},t('Neu laden','Reload')),
- h('span',{key:'st',className:'srm-status '+(this.state.error?'srm-error':'' )},this.state.error||(changed?t('Ungespeicherte Änderungen','Unsaved changes'):(this.state.savedAt?t('Gespeichert: ','Saved: ')+new Date(this.state.savedAt).toLocaleString():t('Gespeichert','Saved'))))
- ]),h('div',{key:'tabs',className:'srm-tabs'},tabs.map(([id,de,en])=>h('button',{key:id,className:this.state.tab===id?'active':'',onClick:()=>this.setState({tab:id})},t(de,en)))),h('div',{key:'c'},this.content())]);}
+ content(){const p={data:this.state.data,onChange:d=>this.setData(d),themeType:this.props.themeType};if(this.state.tab==='shopping')return h(ShoppingListEditor,{socket:this.props.socket,adapterName:this.props.adapterName,instance:this.props.instance,themeType:this.props.themeType});if(this.state.tab==='markets')return h(MarketsEditor,p);if(this.state.tab==='groups')return h(ProductGroupsEditor,p);if(this.state.tab==='routes')return h(RouteEditor,p);if(this.state.tab==='review')return h(ReviewEditor,p);if(this.state.tab==='lists')return this.lists();return this.products();}
+ render(){if(this.state.loading)return h('div',{className:'srm'},t('Wird geladen …','Loading …'));if(!this.state.data)return h('div',{className:'srm srm-error'},this.state.error||'No data');const tabs=[['shopping','Einkaufsliste','Shopping list'],['products','Artikel','Products'],['markets','Märkte','Markets'],['groups','Produktgruppen','Product groups'],['routes','Laufwege','Routes'],['lists','Listen','Lists'],['review','Prüfung','Review']],changed=this.changed(),dark=String(this.props.themeType||'').toLowerCase()==='dark',headStyle={background:dark?'#1f1f1f':'#fff',color:dark?'#eee':'#222'};return h('div',{className:'srm'},[h('style',{key:'s'},css),h('header',{key:'head',className:'srm-head',style:headStyle},[
+ h('div',{key:'brand',className:'srm-brand'},[h('img',{key:'logo',className:'srm-logo',src:'./adapter/shoppingroute/shoppingroute.png',alt:'ShoppingRoute'}),h('div',{key:'title',className:'srm-title'},[h('h2',{key:'h'},'ShoppingRoute'),h('div',{key:'sub',className:'srm-sub'},t('Kataloge, Listen und Einkauf direkt verwalten','Manage catalogues, lists and shopping directly'))])]),
+ h('nav',{key:'tabs',className:'srm-tabs'},tabs.map(([id,de,en])=>h('button',{key:id,className:this.state.tab===id?'active':'',onClick:()=>this.setState({tab:id})},t(de,en)))),
+ h('div',{key:'tools',className:'srm-tools'},[
+  h('button',{key:'save',disabled:!changed||this.state.saving,onClick:()=>void this.save()},this.state.saving?t('Speichert …','Saving …'):t('Speichern','Save')),
+  h('button',{key:'discard',disabled:!changed||this.state.saving,onClick:()=>this.setState({data:clone(this.state.base),error:''})},t('Verwerfen','Discard')),
+  h('button',{key:'reload',disabled:this.state.saving,onClick:()=>void this.load()},t('Neu laden','Reload')),
+  h('span',{key:'st',className:'srm-status '+(this.state.error?'srm-error':'' )},this.state.error||(changed?t('Ungespeicherte Änderungen','Unsaved changes'):(this.state.savedAt?t('Gespeichert: ','Saved: ')+new Date(this.state.savedAt).toLocaleString():t('Gespeichert','Saved'))))
+ ])
+]),h('main',{key:'c',className:'srm-content'},this.content())]);}
 }
 module.exports={Components:{CatalogManager}};
