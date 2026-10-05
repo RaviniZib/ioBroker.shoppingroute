@@ -32,6 +32,8 @@ test('catalogue manager provides all planned management areas and runtime save',
  assert.match(source,/getManagedConfig/);
  assert.match(source,/ShoppingListEditor/);
  assert.match(source,/position:sticky/);
+ assert.match(source,/\.srm-head\{[^}]*width:100%/);
+ assert.match(source,/\.srm-content\{[^}]*max-width:1500px/);
  assert.match(source,/srm-logo/);
  assert.match(source,/shoppingroute\.png/);
 });
