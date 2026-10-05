@@ -1,4 +1,5 @@
 'use strict';
+/* eslint-disable */
 const React=require('react');
 const {MarketsEditor}=require('./markets-editor').Components;
 const {ProductGroupsEditor}=require('./product-groups-editor').Components;
