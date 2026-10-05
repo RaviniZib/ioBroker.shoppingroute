@@ -1,0 +1,59 @@
+'use strict';
+const React=require('react');
+const {MarketsEditor}=require('./markets-editor').Components;
+const {ProductGroupsEditor}=require('./product-groups-editor').Components;
+const {RouteEditor}=require('./route-editor').Components;
+const {ReviewEditor}=require('./review-editor').Components;
+const h=React.createElement;
+const t=(de,en)=>typeof navigator!=='undefined'&&String(navigator.language||'').toLowerCase().startsWith('de')?de:en;
+const clone=v=>JSON.parse(JSON.stringify(v));
+const arr=v=>Array.isArray(v)?v:[];
+const css=`
+.srm{padding:16px;max-width:1500px;margin:auto;box-sizing:border-box}.srm h2{margin:0 0 4px}.srm-sub{opacity:.7;margin-bottom:12px}
+.srm-tools,.srm-tabs,.srm-add{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.srm-tools{padding:8px 0}.srm-tabs{margin:8px 0 18px}
+.srm button{min-height:36px;padding:6px 12px;border:1px solid currentColor;border-radius:5px;background:transparent;color:inherit;cursor:pointer}.srm button:disabled{opacity:.4}.srm .active{font-weight:700;box-shadow:inset 0 -3px currentColor}
+.srm-status{margin-left:auto}.srm-error{color:#d32f2f;font-weight:700}.srm table{width:100%;border-collapse:collapse}.srm th,.srm td{padding:7px;border-bottom:1px solid currentColor;text-align:left}.srm input,.srm select{box-sizing:border-box;width:100%;min-height:34px;padding:5px 7px;border:1px solid currentColor;border-radius:4px;background:transparent;color:inherit}.srm-add{margin-top:10px}.srm-add input{max-width:420px}.srm-x{width:55px}
+@media(max-width:700px){.srm{padding:10px}.srm-status{width:100%;margin:0}.srm table{display:block;overflow:auto}}
+`;
+class CatalogManager extends React.Component{
+ constructor(p){super(p);this.state={data:null,base:null,tab:'products',loading:true,saving:false,error:'',savedAt:'',newProduct:'',newList:''};}
+ componentDidMount(){void this.load();}
+ instance(){return String(this.props.adapterName||'shoppingroute')+'.'+(Number.isFinite(Number(this.props.instance))?Number(this.props.instance):0);}
+ async send(command,message={}){if(!this.props.socket?.sendTo)throw Error('Admin socket is unavailable.');return this.props.socket.sendTo(this.instance(),command,message);}
+ async load(){this.setState({loading:true,error:''});try{const r=await this.send('getManagedConfig');if(!r?.ok||!r.data)throw Error(r?.error||'Load failed');const d=clone(r.data);this.setState({data:d,base:clone(d),loading:false,savedAt:r.savedAt||''});}catch(e){this.setState({loading:false,error:e.message||String(e)});}}
+ changed(){return JSON.stringify(this.state.data)!==JSON.stringify(this.state.base);}
+ setData(d){this.setState({data:clone(d),error:''});}
+ setKey(k,v){this.setData({...this.state.data,[k]:v});}
+ edit(k,i,p){this.setKey(k,arr(this.state.data[k]).map((x,n)=>n===i?{...x,...p}:{...x}));}
+ del(k,i){this.setKey(k,arr(this.state.data[k]).filter((_,n)=>n!==i).map(x=>({...x})));}
+ async save(){if(this.state.saving)return;this.setState({saving:true,error:''});try{const r=await this.send('saveManagedConfig',{data:this.state.data});if(!r?.ok||!r.data)throw Error(r?.error||'Save failed');const d=clone(r.data);this.setState({data:d,base:clone(d),saving:false,savedAt:r.savedAt||new Date().toISOString()});}catch(e){this.setState({saving:false,error:e.message||String(e)});}}
+ addProduct(){const n=this.state.newProduct.trim();if(!n)return;this.setKey('products',[...arr(this.state.data.products),{name:n,aliases:'',category:'Sonstiges',defaultMarket:'',availableMarkets:[]}]);this.setState({newProduct:''});}
+ addList(){const n=this.state.newList.trim();if(!n)return;this.setKey('lists',[...arr(this.state.data.lists),{name:n,enabled:true,priorityMarket:''}]);this.setState({newList:''});}
+ products(){
+  const groups=arr(this.state.data.productGroups).map(x=>String(x.name||'')).filter(Boolean),markets=arr(this.state.data.markets).filter(x=>x?.name&&x.enabled!==false).map(x=>String(x.name));
+  const opts=v=>['',...v].map(x=>h('option',{key:x,value:x},x||'—'));
+  return h('div',null,[h('table',{key:'t'},[h('thead',{key:'h'},h('tr',null,['Artikel','Aliase','Produktgruppe','Standardmarkt','Verfügbare Märkte',''].map((x,i)=>h('th',{key:i},x)))),h('tbody',{key:'b'},arr(this.state.data.products).map((p,i)=>h('tr',{key:i},[
+   h('td',{key:'n'},h('input',{value:String(p.name||''),onChange:e=>this.edit('products',i,{name:e.target.value})})),
+   h('td',{key:'a'},h('input',{value:String(p.aliases||''),onChange:e=>this.edit('products',i,{aliases:e.target.value})})),
+   h('td',{key:'g'},h('select',{value:String(p.category||''),onChange:e=>this.edit('products',i,{category:e.target.value})},opts(groups))),
+   h('td',{key:'d'},h('select',{value:String(p.defaultMarket||''),onChange:e=>this.edit('products',i,{defaultMarket:e.target.value})},opts(markets))),
+   h('td',{key:'m'},h('input',{value:Array.isArray(p.availableMarkets)?p.availableMarkets.join(', '):String(p.availableMarkets||''),onChange:e=>this.edit('products',i,{availableMarkets:e.target.value.split(',').map(x=>x.trim()).filter(Boolean)})})),
+   h('td',{key:'x',className:'srm-x'},h('button',{onClick:()=>this.del('products',i)},'×'))])))]),h('div',{key:'a',className:'srm-add'},[h('input',{key:'i',placeholder:t('Neuer Artikel','New product'),value:this.state.newProduct,onChange:e=>this.setState({newProduct:e.target.value}),onKeyDown:e=>e.key==='Enter'&&this.addProduct()}),h('button',{key:'b',onClick:()=>this.addProduct()},t('Hinzufügen','Add'))])]);
+ }
+ lists(){
+  const markets=arr(this.state.data.markets).filter(x=>x?.name&&x.enabled!==false).map(x=>String(x.name)),opts=['',...markets].map(x=>h('option',{key:x,value:x},x||'—'));
+  return h('div',null,[h('table',{key:'t'},[h('thead',{key:'h'},h('tr',null,['Aktiv','Alexa-Liste','Prioritätsmarkt',''].map((x,i)=>h('th',{key:i},x)))),h('tbody',{key:'b'},arr(this.state.data.lists).map((p,i)=>h('tr',{key:i},[
+   h('td',{key:'e'},h('input',{type:'checkbox',checked:p.enabled!==false,onChange:e=>this.edit('lists',i,{enabled:e.target.checked})})),
+   h('td',{key:'n'},h('input',{value:String(p.name||''),onChange:e=>this.edit('lists',i,{name:e.target.value})})),
+   h('td',{key:'p'},h('select',{value:String(p.priorityMarket||''),onChange:e=>this.edit('lists',i,{priorityMarket:e.target.value})},opts)),
+   h('td',{key:'x',className:'srm-x'},h('button',{onClick:()=>this.del('lists',i)},'×'))])))]),h('div',{key:'a',className:'srm-add'},[h('input',{key:'i',placeholder:t('Neue Alexa-Liste','New Alexa list'),value:this.state.newList,onChange:e=>this.setState({newList:e.target.value}),onKeyDown:e=>e.key==='Enter'&&this.addList()}),h('button',{key:'b',onClick:()=>this.addList()},t('Hinzufügen','Add'))])]);
+ }
+ content(){const p={data:this.state.data,onChange:d=>this.setData(d),themeType:this.props.themeType};if(this.state.tab==='markets')return h(MarketsEditor,p);if(this.state.tab==='groups')return h(ProductGroupsEditor,p);if(this.state.tab==='routes')return h(RouteEditor,p);if(this.state.tab==='review')return h(ReviewEditor,p);if(this.state.tab==='lists')return this.lists();return this.products();}
+ render(){if(this.state.loading)return h('div',{className:'srm'},t('Wird geladen …','Loading …'));if(!this.state.data)return h('div',{className:'srm srm-error'},this.state.error||'No data');const tabs=[['products','Artikel','Products'],['markets','Märkte','Markets'],['groups','Produktgruppen','Product groups'],['routes','Laufwege','Routes'],['lists','Listen','Lists'],['review','Prüfung','Review']],changed=this.changed();return h('div',{className:'srm'},[h('style',{key:'s'},css),h('h2',{key:'h'},'ShoppingRoute'),h('div',{key:'sub',className:'srm-sub'},t('Kataloge und Listen direkt verwalten – Speichern ohne Adapter-Neustart.','Manage catalogues and lists directly – save without restarting the adapter.')),h('div',{key:'tools',className:'srm-tools'},[
+ h('button',{key:'save',disabled:!changed||this.state.saving,onClick:()=>void this.save()},this.state.saving?t('Speichert …','Saving …'):t('Speichern','Save')),
+ h('button',{key:'discard',disabled:!changed||this.state.saving,onClick:()=>this.setState({data:clone(this.state.base),error:''})},t('Verwerfen','Discard')),
+ h('button',{key:'reload',disabled:this.state.saving,onClick:()=>void this.load()},t('Neu laden','Reload')),
+ h('span',{key:'st',className:'srm-status '+(this.state.error?'srm-error':'' )},this.state.error||(changed?t('Ungespeicherte Änderungen','Unsaved changes'):(this.state.savedAt?t('Gespeichert: ','Saved: ')+new Date(this.state.savedAt).toLocaleString():t('Gespeichert','Saved'))))
+ ]),h('div',{key:'tabs',className:'srm-tabs'},tabs.map(([id,de,en])=>h('button',{key:id,className:this.state.tab===id?'active':'',onClick:()=>this.setState({tab:id})},t(de,en)))),h('div',{key:'c'},this.content())]);}
+}
+module.exports={Components:{CatalogManager}};
