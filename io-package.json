@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "shoppingroute",
-    "version": "0.4.4",
+    "version": "0.5.0",
     "titleLang": {
       "en": "ShoppingRoute",
       "de": "ShoppingRoute",
@@ -159,7 +159,25 @@
         "admin": ">=8.0.0"
       }
     ],
-    "readme": "https://github.com/RaviniZib/ioBroker.shoppingroute/blob/main/README.md"
+    "readme": "https://github.com/RaviniZib/ioBroker.shoppingroute/blob/main/README.md",
+    "adminTab": {
+      "singleton": false,
+      "name": {
+        "en": "ShoppingRoute",
+        "de": "ShoppingRoute",
+        "ru": "ShoppingRoute",
+        "pt": "ShoppingRoute",
+        "nl": "ShoppingRoute",
+        "fr": "ShoppingRoute",
+        "it": "ShoppingRoute",
+        "es": "ShoppingRoute",
+        "pl": "ShoppingRoute",
+        "uk": "ShoppingRoute",
+        "zh-cn": "ShoppingRoute"
+      },
+      "link": "jsonTab.json",
+      "order": 120
+    }
   },
   "native": {
     "alexaInstance": "alexa2.0",
@@ -681,6 +699,27 @@
   "objects": [],
   "instanceObjects": [
     {
+      "_id": "data.managedConfig",
+      "type": "state",
+      "common": {
+        "name": "Runtime-managed ShoppingRoute configuration",
+        "type": "string",
+        "role": "json",
+        "read": true,
+        "write": false,
+        "def": "{}"
+      },
+      "native": {}
+    },
+    {
+      "_id": "data",
+      "type": "channel",
+      "common": {
+        "name": "Persistent data"
+      },
+      "native": {}
+    },
+    {
       "_id": "info",
       "type": "channel",
       "common": {
@@ -776,6 +815,19 @@
         "read": true,
         "write": false,
         "def": 0
+      },
+      "native": {}
+    },
+    {
+      "_id": "info.configBackup",
+      "type": "state",
+      "common": {
+        "name": "Protected ShoppingRoute configuration backup",
+        "type": "string",
+        "role": "json",
+        "read": true,
+        "write": false,
+        "def": "{}"
       },
       "native": {}
     },

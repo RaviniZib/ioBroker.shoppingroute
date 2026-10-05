@@ -35,6 +35,8 @@ ALDI
 
 ## 3. Initial setup
 
+Starting with **0.5.0**, basic settings and day-to-day data maintenance are deliberately separated. The adapter configuration contains only core settings. Products, markets, product groups, routes, Alexa lists, review items and the current shopping list are managed through the dedicated **ShoppingRoute** entry in the ioBroker sidebar. Changes made there are persisted at runtime and do not require an adapter restart.
+
 ### Alexa2 instance
 
 On the **General** tab, select the Alexa2 instance you want to use. Only installed and enabled instances are offered. After changing the Alexa2 instance, save the configuration once and reopen the configuration page so the available lists can be reloaded.
@@ -77,11 +79,11 @@ Aliases: Rewe, Rewe Market, Rewe Center
 
 The market order is the highest sorting level. Common variants of ALDI, LIDL, REWE and PENNY are additionally recognised automatically.
 
-The **“No market”** fallback market is suitable for items that cannot be assigned unambiguously.
+The **“NO MARKET”** fallback market is suitable for items that cannot be assigned unambiguously.
 
 ## 6. Product groups
 
-On the **Product groups** tab, define the sections used to sort items within a market, for example:
+On the dedicated **ShoppingRoute management page**, use **Product groups** to define the sections used to sort items within a market, for example:
 
 - Fruit/vegetables
 - Bread/bakery
@@ -97,7 +99,7 @@ On the **Product groups** tab, define the sections used to sort items within a m
 
 ## 7. Walking routes
 
-On the **Routes** tab, first select an active market. Only the walking route for that market is shown below.
+On the dedicated **ShoppingRoute management page**, use **Routes** and first select an active market. Only the walking route for that market is shown below.
 
 The visible row order represents your path through the store. Different markets may have completely different walking routes.
 

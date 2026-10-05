@@ -40,6 +40,12 @@ const builds = [
         name: 'ShoppingRouteShoppingListSet',
         remoteEntry: 'shoppingListEditor.js',
     },
+    {
+        config: 'vite.catalog-manager.config.mjs',
+        directory: 'catalogManager',
+        name: 'ShoppingRouteCatalogSet',
+        remoteEntry: 'catalogManager.js',
+    },
 ];
 
 function cleanAdminOutput(directory = customOutput) {

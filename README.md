@@ -60,6 +60,11 @@ The Admin interface itself supports all 11 standard ioBroker Admin languages.
 
 ## Main features
 
+- dedicated **ShoppingRoute management page** in the ioBroker sidebar for shopping list, products, markets, product groups, routes, lists and review items
+- catalogue changes are persisted at runtime and do not require an adapter restart
+- market names are always stored in **UPPERCASE**, regardless of how they are entered, with all references normalized consistently
+- defensive protection against accidental catalogue resets during Admin/update flows
+
 ### Store and route based sorting
 
 - configurable stores and store aliases
@@ -151,6 +156,13 @@ ShoppingRoute is still young, so real-world feedback is especially valuable.
 Please use the [ioBroker tester thread](https://forum.iobroker.net/topic/85510/test-adapter-shoppingroute-v0.4.4) for general testing feedback and the [GitHub issue tracker](https://github.com/RaviniZib/ioBroker.shoppingroute/issues) for reproducible bugs or feature requests.
 
 ## Changelog
+
+### 0.5.0 (2026-10-05)
+- Add a dedicated ShoppingRoute management page in the ioBroker sidebar with a fixed header and direct management of shopping list, products, markets, product groups, routes, lists and review queue.
+- Persist large catalogue data outside normal instance configuration so catalogue edits no longer require an adapter restart.
+- Add defensive recovery and regression coverage for the destructive Admin/default reset reported in issue #59, including a successful real-instance reproduction test.
+- Normalize every market name to UPPERCASE on create, rename, load and save, and update market references consistently.
+- Refine the management UI with a stable sticky header, logo and shaded/zebra list blocks.
 
 ### 0.4.4 (2026-09-25)
 - (RaviniZib) Use `No Market` for new fallback-market defaults, add all 11 admin languages to the backup utility, and remove six unused translation keys. Existing market names, routes and product data remain unchanged.

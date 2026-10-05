@@ -75,7 +75,10 @@ tests.integration(path.join(__dirname, '..'), {
                 const saved = await harness.getAdapterConfig();
                 assert.deepEqual(saved.native.reviewItems, []);
                 assert.equal(saved.native.products.length, 1);
-                assert.deepEqual(saved.native.products[0].availableMarkets, ['ALDI', 'LIDL']);
+                const managedState = await harness.states.getStateAsync('shoppingroute.0.data.managedConfig');
+                const managed = JSON.parse(String(managedState?.val || '{}'));
+                assert.equal(managed.data.products.length, 1);
+                assert.deepEqual(managed.data.products[0].availableMarkets, ['ALDI', 'LIDL']);
                 await harness.stopAdapter();
             });
         });

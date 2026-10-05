@@ -54,6 +54,7 @@ import {
     type ManualItemOverride,
 } from './lib/manual-order';
 import { isAcknowledgedForeignState } from './lib/state-change';
+import { createConfigBackup, isSuspiciousConfigReplacement, parseConfigBackup, restoreProtectedConfig } from './lib/config-protection';
 import {
     beginDirectApply,
     collectDirectInput,
@@ -62,7 +63,7 @@ import {
     type DirectSortPhase,
 } from './lib/direct-sort-lifecycle';
 
-const VERSION = '0.4.4';
+const VERSION = '0.5.0';
 const COLLECT_WINDOW_MS = 5000;
 const MAX_ACTIVE_ITEMS = 99;
 const OWN_REFRESH_MAX_MS = 30000;
@@ -70,6 +71,9 @@ const DIRECT_POLL_BASE_MS = 60000;
 const DIRECT_POLL_MAX_MS = 15 * 60000;
 const DIRECT_FINAL_VERIFY_ATTEMPTS = 3;
 const DIRECT_FINAL_VERIFY_RETRY_MS = 1500;
+
+const normalizeMarketName = (value: unknown): string =>
+    typeof value === 'string' ? value.trim().toLocaleUpperCase('de-DE') : '';
 
 const DEFAULT_CATEGORIES = [
     'Obst/Gemüse',
@@ -264,12 +268,12 @@ export class ShoppingRoute extends utils.Adapter {
         }).sort((a, b) => a.name.localeCompare(b.name, 'de', { sensitivity: 'base' }));
     }
     private get products(): ProductConfig[] { return this.runtimeProducts.filter(product => product?.name); }
-    private get fallbackMarket(): string { return String(this.cfg.fallbackMarket || 'No Market').trim() || 'No Market'; }
-    private get priorityMarket(): string { return String(this.cfg.priorityMarket || '').trim(); }
+    private get fallbackMarket(): string { return normalizeMarketName(this.cfg.fallbackMarket || 'No Market') || 'NO MARKET'; }
+    private get priorityMarket(): string { return normalizeMarketName(this.cfg.priorityMarket || ''); }
     private priorityMarketForList(listName: string): string {
         if (this.temporaryPriorityMarket) return this.temporaryPriorityMarket;
         const list = this.listConfigs.find(entry => entry.name === listName);
-        return String(list?.priorityMarket || this.priorityMarket || '').trim();
+        return normalizeMarketName(list?.priorityMarket || this.priorityMarket || '');
     }
     private get learningMode(): 'automatic' | 'review' | 'off' {
         const configured = String(this.cfg.learningMode || '').trim();
@@ -292,7 +296,103 @@ export class ShoppingRoute extends utils.Adapter {
         return state;
     }
 
+    private managedConfigData(source: Record<string, unknown> = this.cfg as unknown as Record<string, unknown>): Record<string, unknown> {
+        const up = (v: unknown): string => normalizeMarketName(v);
+        const markets = Array.isArray(source.markets) ? source.markets.map((x: any) => ({ ...x, name: up(x?.name) })) : [];
+        const routes = Array.isArray(source.routes) ? source.routes.map((x: any) => ({ ...x, market: up(x?.market) })) : [];
+        const products = Array.isArray(source.products) ? source.products.map((x: any) => ({ ...x,
+            defaultMarket: up(x?.defaultMarket),
+            availableMarkets: (Array.isArray(x?.availableMarkets) ? x.availableMarkets : String(x?.availableMarkets || '').split(/[;,]/)).map(up).filter(Boolean),
+        })) : [];
+        const lists = Array.isArray(source.lists) ? source.lists.map((x: any) => ({ ...x, priorityMarket: up(x?.priorityMarket) })) : [];
+        const reviewItems = Array.isArray(source.reviewItems) ? source.reviewItems.map((x: any) => ({ ...x,
+            defaultMarket: up(x?.defaultMarket),
+            availableMarkets: (Array.isArray(x?.availableMarkets) ? x.availableMarkets : String(x?.availableMarkets || '').split(/[;,]/)).map(up).filter(Boolean),
+        })) : [];
+        return { markets, routes, products,
+            productGroups: Array.isArray(source.productGroups) ? source.productGroups.map((x: any) => ({ ...x })) : [], lists, reviewItems };
+    }
+
+    private parseManagedConfig(value: unknown): { savedAt: string; data: Record<string, unknown> } | null {
+        try {
+            const parsed = typeof value === 'string' ? JSON.parse(value) : value;
+            if (!parsed || typeof parsed !== 'object') return null;
+            const envelope = parsed as { version?: unknown; savedAt?: unknown; data?: unknown };
+            if (envelope.version !== 1 || !envelope.data || typeof envelope.data !== 'object') return null;
+            return {
+                savedAt: typeof envelope.savedAt === 'string' ? envelope.savedAt : '',
+                data: this.managedConfigData(envelope.data as Record<string, unknown>),
+            };
+        } catch {
+            return null;
+        }
+    }
+
+    private async writeManagedConfigState(data: Record<string, unknown>): Promise<string> {
+        const savedAt = new Date().toISOString();
+        await this.setStateAsync('data.managedConfig', JSON.stringify({ version: 1, savedAt, data }), true);
+        await this.setStateAsync('info.configBackup', JSON.stringify(createConfigBackup(data)), true);
+        return savedAt;
+    }
+
+    private async protectConfiguration(): Promise<void> {
+        const canonicalState = await this.getStateAsync('data.managedConfig');
+        const canonical = this.parseManagedConfig(canonicalState?.val);
+        if (canonical) {
+            Object.assign(this.config as unknown as Record<string, unknown>, canonical.data);
+            await this.writeManagedConfigState(canonical.data);
+            return;
+        }
+
+        const instanceId = `system.adapter.${this.namespace}`;
+        const object = await this.getForeignObjectAsync(instanceId);
+        if (!object) return;
+        const current = { ...((object.native || {}) as Record<string, unknown>) };
+        const state = await this.getStateAsync('info.configBackup');
+        const backup = parseConfigBackup(state?.val);
+        let safe = current;
+        if (backup && isSuspiciousConfigReplacement(current, backup)) {
+            safe = restoreProtectedConfig(current, backup);
+            object.native = safe;
+            await this.setForeignObjectAsync(instanceId, object);
+            this.log.error('Protected ShoppingRoute catalogue data was restored from the local backup after a suspicious configuration replacement.');
+        }
+        const managed = this.managedConfigData(safe);
+        Object.assign(this.config as unknown as Record<string, unknown>, managed);
+        await this.writeManagedConfigState(managed);
+    }
+
+    private async applyManagedConfig(data: unknown): Promise<{ savedAt: string; data: Record<string, unknown> }> {
+        if (!data || typeof data !== 'object') throw new Error('Invalid managed configuration.');
+        const managed = this.managedConfigData(data as Record<string, unknown>);
+        if (!(managed.lists as any[]).some(list => list?.name && list.enabled !== false)) {
+            throw new Error('At least one enabled Alexa shopping list is required.');
+        }
+        Object.assign(this.config as unknown as Record<string, unknown>, managed);
+        this.runtimeProducts = normalizeProductAvailableMarkets((managed.products as ProductConfig[]).filter(product => product?.name))
+            .sort((a, b) => a.name.localeCompare(b.name, 'de', { sensitivity: 'base' }));
+        this.runtimeReviews = (managed.reviewItems as ReviewItemConfig[]).map(item => ({ ...item }));
+        this.runtimeRoutes = normalizeRoutesForAdmin((managed.routes as RouteConfig[]).filter(Boolean));
+        this.productsDirty = false;
+        this.reviewsDirty = false;
+        this.routesDirty = false;
+        const normalized = this.managedConfigData({
+            ...managed,
+            products: this.runtimeProducts,
+            reviewItems: this.runtimeReviews,
+            routes: this.runtimeRoutes,
+        });
+        Object.assign(this.config as unknown as Record<string, unknown>, normalized);
+        const savedAt = await this.writeManagedConfigState(normalized);
+        for (const list of this.listConfigs) this.subscribeForeignStates(this.listStateId(list.name));
+        await this.updateTemporaryMarketStateOptions();
+        await this.refreshExports();
+        this.scheduleAll(COLLECT_WINDOW_MS);
+        return { savedAt, data: normalized };
+    }
+
     private async onReady(): Promise<void> {
+        await this.protectConfiguration();
         const configuredProducts = (Array.isArray(this.cfg.products) ? this.cfg.products : [])
             .filter(product => product?.name).map(product => ({ ...product }));
         this.runtimeProducts = normalizeProductAvailableMarkets(configuredProducts)
@@ -329,7 +429,7 @@ export class ShoppingRoute extends utils.Adapter {
         if (!enabled) await this.setStateAsync('control.enabled', true, true);
         const temp = await this.getStateAsync('control.temporaryPriorityMarket');
         const tempRaw = String(temp?.val ?? this.cfg.temporaryPriorityMarket ?? '').trim();
-        this.temporaryPriorityMarket = tempRaw === '__none__' ? '' : tempRaw;
+        this.temporaryPriorityMarket = tempRaw === '__none__' ? '' : normalizeMarketName(tempRaw);
         await this.setStateAsync('control.temporaryPriorityMarket', this.temporaryPriorityMarket || '__none__', true);
 
         this.subscribeStates('control.*');
@@ -578,6 +678,27 @@ export class ShoppingRoute extends utils.Adapter {
 
     private async onMessage(obj: { command: string; from: string; callback?: any; message?: any }): Promise<void> {
         if (!obj?.callback) return;
+        if (obj.command === 'getManagedConfig') {
+            const state = await this.getStateAsync('data.managedConfig');
+            const stored = this.parseManagedConfig(state?.val);
+            const data = stored?.data || this.managedConfigData({
+                ...(this.cfg as unknown as Record<string, unknown>),
+                products: this.runtimeProducts,
+                reviewItems: this.runtimeReviews,
+                routes: this.runtimeRoutes,
+            });
+            this.sendTo(obj.from, obj.command, { ok: true, savedAt: stored?.savedAt || '', data }, obj.callback);
+            return;
+        }
+        if (obj.command === 'saveManagedConfig') {
+            try {
+                const result = await this.applyManagedConfig(obj.message?.data);
+                this.sendTo(obj.from, obj.command, { ok: true, ...result }, obj.callback);
+            } catch (error) {
+                this.sendTo(obj.from, obj.command, { ok: false, error: error instanceof Error ? error.message : String(error) }, obj.callback);
+            }
+            return;
+        }
         if (obj.command === 'getShoppingList') {
             try { this.sendTo(obj.from, obj.command, await this.buildShoppingListView(this.configuredListName(obj.message?.listName)), obj.callback); }
             catch (error) { this.sendTo(obj.from, obj.command, { error: error instanceof Error ? error.message : String(error) }, obj.callback); }
@@ -707,7 +828,7 @@ export class ShoppingRoute extends utils.Adapter {
         }
         if (id === `${local}control.temporaryPriorityMarket` && !state.ack) {
             const selected = typeof state.val === 'string' ? state.val.trim() : '';
-            this.temporaryPriorityMarket = selected === '__none__' ? '' : selected;
+            this.temporaryPriorityMarket = selected === '__none__' ? '' : normalizeMarketName(selected);
             await this.setStateAsync('control.temporaryPriorityMarket', this.temporaryPriorityMarket || '__none__', true);
             this.scheduleAll(COLLECT_WINDOW_MS);
             return;

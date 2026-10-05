@@ -106,7 +106,9 @@ function nextMarketOrder(markets) {
 }
 
 function addMarket(markets, name) {
-    const value = String(name || '').trim();
+    const value = String(name || '')
+        .trim()
+        .toLocaleUpperCase('de-DE');
     const result = marketRows(markets);
     if (value) {
         result.push({ enabled: true, order: nextMarketOrder(result), name: value, aliases: '' });
@@ -118,6 +120,11 @@ function editMarket(markets, index, patch) {
     const result = marketRows(markets);
     if (index >= 0 && index < result.length) {
         result[index] = { ...result[index], ...patch };
+        if ('name' in patch) {
+            result[index].name = String(result[index].name || '')
+                .trim()
+                .toLocaleUpperCase('de-DE');
+        }
     }
     return result;
 }
