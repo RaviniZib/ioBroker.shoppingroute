@@ -146,9 +146,11 @@ test('admin build cleanup removes stale manifests and generated cache metadata b
     }
 });
 
-test('the clean build covers every jsonConfig custom component exactly once', () => {
+test('the clean build covers every jsonConfig and jsonTab custom component exactly once', () => {
+    const jsonTab = JSON.parse(fs.readFileSync(path.join(root, 'admin', 'jsonTab.json'), 'utf8'));
+    const tabEntries = findCustomEntries(jsonTab);
     const buildKeys = builds.map(build => `${build.name}/${build.remoteEntry}`).sort();
-    const configKeys = customEntries
+    const configKeys = [...customEntries, ...tabEntries]
         .map(({ config }) => `${config.name.split('/')[0]}/${path.basename(config.url)}`)
         .sort();
 
