@@ -4,6 +4,53 @@
 
 ShoppingRoute hilft dir dabei, eine Alexa-Einkaufsliste so zu ordnen, wie du tatsächlich einkaufst.
 
+## Warum ShoppingRoute beim Einkaufen wirklich hilft
+
+Der größte Vorteil ist nicht einfach nur eine „sortierte Liste“, sondern dass ShoppingRoute deine **echten Einkaufsgewohnheiten** abbildet.
+
+### Alle Märkte in einer einzigen Liste – oder bewusst getrennt
+
+Du kannst **alle Einkäufe für mehrere Märkte in nur einer Alexa-Liste** sammeln. ShoppingRoute trennt die Artikel trotzdem automatisch nach Markt.
+
+Beispiel:
+
+**LIDL**
+- Bananen
+- Milch
+- Joghurt
+
+**REWE**
+- veganes Hack
+- Oliven
+
+**APOTHEKE**
+- Kopfschmerztabletten
+
+So musst du nicht ständig zwischen mehreren Listen wechseln.
+
+Wenn du lieber getrennte Listen verwendest, geht das ebenfalls. Du kannst zum Beispiel eine Liste für Lebensmittel und eine weitere für Baumarkt oder Apotheke verwenden. ShoppingRoute unterstützt **beide Arbeitsweisen**.
+
+### Das Besondere: dein eigener Laufweg durch jeden Markt
+
+Der wichtigste Unterschied zu einer normalen Einkaufsliste ist das **Marktrouting**.
+
+Für jeden Markt legst du selbst fest, in welcher Reihenfolge du durch die Abteilungen gehst.
+
+Wenn du bei LIDL zuerst an Obst und Gemüse vorbeikommst, danach an Brot, dann an Fleisch, Milchprodukten und zuletzt an Tiefkühlware, kannst du genau diesen Weg hinterlegen.
+
+ShoppingRoute sortiert deine Artikel anschließend passend zu **deinem persönlichen Laufweg**.
+
+Das bedeutet beim Einkauf:
+
+- weniger Zurücklaufen,
+- weniger Suchen,
+- weniger vergessen,
+- eine ruhigere, übersichtlichere Einkaufsliste,
+- und vor allem: **schnelleres und effizienteres Einkaufen**.
+
+Jeder Markt kann dabei einen völlig anderen Laufweg haben, weil ein REWE anders aufgebaut ist als ein LIDL oder ALDI. Genau das bildet ShoppingRoute ab.
+
+
 Statt einer langen unsortierten Liste wie:
 
 - Milch

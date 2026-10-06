@@ -4,6 +4,53 @@
 
 ShoppingRoute helps turn a normal Alexa shopping list into a list that follows the way you actually shop.
 
+## Why ShoppingRoute actually makes shopping easier
+
+The main benefit is not simply having a “sorted list”. ShoppingRoute can reflect your **real shopping habits**.
+
+### All stores in one list – or split across several lists
+
+You can keep **all purchases for several stores in one Alexa shopping list**. ShoppingRoute still separates the items automatically by market.
+
+Example:
+
+**LIDL**
+- Bananas
+- Milk
+- Yoghurt
+
+**REWE**
+- Vegan mince
+- Olives
+
+**PHARMACY**
+- Painkillers
+
+That means you do not have to switch between several lists while shopping.
+
+If you prefer separate lists, that works too. For example, you can keep groceries in one list and hardware-store or pharmacy items in another. ShoppingRoute supports **both ways of working**.
+
+### The key feature: your own route through every store
+
+The most important difference compared with a normal shopping list is **market routing**.
+
+For each store, you define the order in which you normally pass its sections.
+
+If your LIDL starts with fruit and vegetables, followed by bakery, meat, dairy and finally frozen food, you can configure exactly that route.
+
+ShoppingRoute then sorts your items to match **your personal walking route**.
+
+The practical result is:
+
+- less walking back and forth,
+- less searching,
+- fewer forgotten items,
+- a calmer and clearer shopping list,
+- and most importantly: **faster and more efficient shopping**.
+
+Every store can have a completely different route because a REWE is not laid out like a LIDL or ALDI. ShoppingRoute is designed to handle exactly that.
+
+
 Instead of one long unsorted list such as:
 
 - Milk

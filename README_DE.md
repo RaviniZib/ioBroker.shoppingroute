@@ -4,6 +4,8 @@
 
 **Aktuelle Version: 0.5.0**
 
+ShoppingRoute macht aus einer normalen Alexa-Einkaufsliste eine praktische Einkaufshilfe: **Alle Märkte können gemeinsam in einer einzigen Liste geführt oder bewusst auf mehrere Listen verteilt werden.** Das besondere Merkmal ist das frei einstellbare **Marktrouting**: Für jeden Markt legst du deinen persönlichen Laufweg durch die Abteilungen fest. Dadurch steht die Einkaufsliste in der Reihenfolge, in der du tatsächlich durch den Laden gehst – für weniger Zurücklaufen, weniger Suchen und **schnelleres, effizienteres Einkaufen**.
+
 ShoppingRoute sortiert Alexa-Einkaufslisteneinträge nach Markt, Produktgruppe und dem individuellen Laufweg durch den jeweiligen Markt. Dazu vergibt es sichtbare zweistellige Schlüssel wie `20> Bananen` und `40> ═════ ALDI ═════`; verwaltete Listen müssen deshalb in der Alexa-App auf **A–Z** stehen. ShoppingRoute übernimmt lokal die Alexa2-Authentifizierung für direkte Updates, Deletes und Batch-Creates; Alexa2-Listenstates bleiben die Triggerquelle für externe Änderungen.
 
 ## Bedienungsanleitung / User guide
