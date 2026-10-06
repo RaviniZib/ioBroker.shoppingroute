@@ -40,6 +40,9 @@ test('catalogue manager provides all planned management areas and runtime save',
  assert.match(source,/nth-child\(odd\)/);
  assert.match(source,/shoppingroute-market-column/);
  assert.match(source,/shoppingroute\.png/);
+ assert.match(source,/BEDIENUNGSANLEITUNG_DE\.md/);
+ assert.match(source,/USER_GUIDE_EN\.md/);
+ assert.match(source,/adminLanguage/);
 });
 
 test('catalogue manager has a dedicated module federation build',()=>{

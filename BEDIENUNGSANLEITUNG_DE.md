@@ -1,390 +1,607 @@
 # ShoppingRoute – Bedienungsanleitung
 
-**Stand: ioBroker.shoppingroute 0.4.1**
+**Gültig ab Version 0.5.0**
 
-ShoppingRoute sortiert aktive Alexa-Einkaufslisteneinträge nach Markt, Produktgruppe und deinem individuellen Laufweg. Sichtbare zweistellige Präfixe von `00>` bis `99>` bilden den Sortierschlüssel. Marktüberschriften erscheinen als `═════ MARKT ═════`. Einzelne Einträge werden direkt aktualisiert; bei ausgeschöpften Nummernlücken wird nur das notwendige Listensuffix gelöscht und in einem Batch neu angelegt. ShoppingRoute hakt keine Artikel automatisch ab.
+ShoppingRoute hilft dir dabei, eine Alexa-Einkaufsliste so zu ordnen, wie du tatsächlich einkaufst.
 
-> **Wichtig:** Jede von ShoppingRoute verwaltete Alexa-Liste muss in der Alexa-App auf **A–Z** stehen. Für die Ersteinrichtung sollte **Dry-Run** aktiviert bleiben.
+Statt einer langen unsortierten Liste wie:
 
-## 1. Voraussetzungen
+- Milch
+- Schrauben
+- Bananen
+- Joghurt
+- Tomaten
 
-- ioBroker mit Admin ab 8.0.0
-- installierte und aktivierte Alexa2-Instanz
-- mindestens eine Alexa-Einkaufsliste
-- ShoppingRoute 0.4.1 oder neuer
+kann ShoppingRoute daraus zum Beispiel machen:
 
-## 2. Grundprinzip
+**LIDL**
+- Bananen
+- Tomaten
+- Milch
+- Joghurt
 
-ShoppingRoute beantwortet für jeden Artikel drei Fragen:
+**BAUMARKT**
+- Schrauben
 
-1. Zu welchem Markt gehört er?
-2. Zu welcher Produktgruppe gehört er?
-3. An welcher Stelle liegt diese Produktgruppe im Laufweg des gewählten Marktes?
+Du musst dafür weder programmieren noch die technischen Abläufe im Hintergrund verstehen.
 
-Beispiel für einen Laufweg:
+---
 
-```text
-ALDI
-1. Obst/Gemüse
-2. Brot/Gebäck
-3. Fleisch/Fisch
-4. Milchprodukte
-5. Getränke
-6. TK-Produkte
-```
+## 1. Das Wichtigste zuerst
 
-## 3. Erste Einrichtung
+Wenn du ShoppingRoute neu einrichtest, brauchst du im Grunde nur fünf Dinge:
 
-Ab Version **0.5.0** sind Grundeinstellungen und laufende Datenpflege bewusst getrennt. Die Adapter-Konfiguration enthält nur noch die grundlegenden Einstellungen. Artikel, Märkte, Produktgruppen, Laufwege, Alexa-Listen, Prüfliste und aktuelle Einkaufsliste werden über den eigenen Eintrag **ShoppingRoute** in der ioBroker-Seitenleiste verwaltet. Änderungen dort werden direkt zur Laufzeit gespeichert und benötigen keinen Adapter-Neustart.
+1. eine funktionierende **Alexa2-Instanz** in ioBroker,
+2. mindestens eine Alexa-Einkaufsliste,
+3. deine Märkte, zum Beispiel **LIDL**, **ALDI** oder **REWE**,
+4. Produktgruppen wie **Obst/Gemüse**, **Milchprodukte** oder **Getränke**,
+5. die Reihenfolge, in der du durch den jeweiligen Markt läufst.
 
-### Alexa2-Instanz
+Danach übernimmt ShoppingRoute die Sortierung.
 
-Im Reiter **Allgemein** wählst du die gewünschte Alexa2-Instanz. Es werden nur installierte und aktivierte Instanzen angeboten. Nach einem Wechsel der Alexa2-Instanz einmal speichern und die Konfigurationsseite neu öffnen, damit die verfügbaren Listen neu geladen werden.
+### Eine wichtige Einstellung in der Alexa-App
 
-### Dry-Run
+Öffne die Einkaufsliste in der Alexa-App und stelle ihre Sortierung auf **A–Z**.
 
-Mit **Dry-Run (nichts zu Alexa schreiben)** liest und analysiert ShoppingRoute die Liste und erzeugt einen Sortierplan, schreibt aber noch keine Änderungen zurück. Erst wenn die Vorschau sinnvoll aussieht, Dry-Run deaktivieren.
+Das wirkt zunächst merkwürdig, ist aber nötig, weil ShoppingRoute die alphabetische Sortierung verwendet, um die gewünschte Reihenfolge abzubilden.
 
-## 4. Alexa-Listen
+Du musst dich nicht darum kümmern, wie das technisch funktioniert.
 
-Auf der **ShoppingRoute-Verwaltungsseite** im Menüpunkt **Listen** legst du fest, welche Alexa-Listen verwaltet werden.
+### Was bedeutet „Dry-Run“?
 
-Für jede Liste gibt es:
+**Dry-Run ist ein Probebetrieb.**
 
-- **Aktiv** – Liste wird verarbeitet oder ignoriert
-- **Alexa-Liste** – Auswahl aus der gewählten Alexa2-Instanz
-- **Standardmarkt dieser Liste** – optionaler bevorzugter Markt nur für diese Liste
+Solange Dry-Run eingeschaltet ist, darf ShoppingRoute deine Alexa-Liste **lesen und planen**, aber **nichts verändern**.
 
-Mehrere Listen können gleichzeitig verwaltet werden. Jede Liste kann einen eigenen Standardmarkt besitzen.
+Das ist ideal für die Ersteinrichtung:
 
-## 5. Märkte
+- Du richtest Märkte, Artikel und Laufwege ein.
+- ShoppingRoute zeigt dir, was es tun würde.
+- Deine echte Alexa-Liste bleibt dabei unverändert.
 
-Auf der **ShoppingRoute-Verwaltungsseite** im Menüpunkt **Märkte** pflegst du deine Geschäfte. Marktnamen werden beim Anlegen und Umbenennen automatisch in **GROSSBUCHSTABEN** umgewandelt. Auch bestehende Marktverweise werden beim Laden und Speichern konsistent normalisiert.
+Wenn alles richtig aussieht, schaltest du Dry-Run aus. Erst dann darf ShoppingRoute die Liste tatsächlich umsortieren.
 
-Jeder Markt besitzt:
+Du kannst dir Dry-Run wie eine Vorschau vor dem Drucken vorstellen.
 
-- **Aktiv**
-- **Reihenfolge**
-- **Markt**
-- **Aliase**
+---
 
-Aliase werden durch Komma getrennt, zum Beispiel:
+## 2. Wo finde ich was?
 
-```text
-REWE
-Aliase: Rewe, Rewe Markt, Rewe Center
-```
+ShoppingRoute hat ab Version 0.5.0 zwei Bereiche.
 
-Die Marktreihenfolge ist die oberste Sortierebene. Häufige Varianten von ALDI, LIDL, REWE und PENNY werden zusätzlich automatisch erkannt.
+### Adapter-Einstellungen
 
-Der Markt **„OHNE MARKT“** eignet sich als Auffangbereich für nicht eindeutig zuordenbare Artikel.
+Unter **Instanzen → ShoppingRoute → Schraubenschlüssel** findest du nur noch die grundlegenden Einstellungen, zum Beispiel:
 
-## 6. Produktgruppen
+- welche Alexa2-Instanz verwendet wird,
+- ob Dry-Run aktiv ist,
+- wie unbekannte Artikel behandelt werden,
+- allgemeine Sicherheits- und API-Einstellungen.
 
-Auf der **ShoppingRoute-Verwaltungsseite** im Menüpunkt **Produktgruppen** definierst du die Bereiche, nach denen innerhalb eines Marktes sortiert wird, zum Beispiel:
+### ShoppingRoute-Verwaltung
+
+In der linken ioBroker-Seitenleiste gibt es einen eigenen Eintrag **ShoppingRoute**.
+
+Dort pflegst du alles, was du im Alltag brauchst:
+
+- **Einkaufsliste**
+- **Artikel**
+- **Märkte**
+- **Produktgruppen**
+- **Laufwege**
+- **Listen**
+- **Prüfung**
+
+Änderungen auf dieser Seite werden direkt gespeichert. Der Adapter muss dafür nicht neu gestartet werden.
+
+---
+
+## 3. Schnellstart – in 10 Minuten zur ersten sortierten Liste
+
+### Schritt 1: Alexa2 auswählen
+
+Öffne die normalen Adapter-Einstellungen von ShoppingRoute.
+
+Wähle unter **Allgemein** deine Alexa2-Instanz aus und speichere.
+
+Wenn du die Instanz gerade erst geändert hast, öffne die Seite danach einmal neu.
+
+### Schritt 2: Dry-Run einschalten
+
+Aktiviere zunächst:
+
+**Dry-Run – nichts zu Alexa schreiben**
+
+Damit kannst du gefahrlos einrichten und testen.
+
+### Schritt 3: Einkaufsliste auswählen
+
+Öffne die neue **ShoppingRoute-Verwaltung** in der Seitenleiste und gehe auf **Listen**.
+
+Wähle die Alexa-Liste aus, die ShoppingRoute verwalten soll.
+
+Für die meisten Nutzer reicht eine Liste, zum Beispiel:
+
+**SHOP**
+
+### Schritt 4: Märkte anlegen
+
+Gehe auf **Märkte** und trage die Geschäfte ein, in denen du normalerweise einkaufst.
+
+Zum Beispiel:
+
+- LIDL
+- ALDI
+- REWE
+- EDEKA
+- APOTHEKE
+- BAUMARKT
+
+ShoppingRoute speichert Marktnamen automatisch in **GROSSBUCHSTABEN**.
+
+Du kannst also auch „Lidl“ oder „Rewe“ eingeben.
+
+### Schritt 5: Produktgruppen prüfen
+
+Unter **Produktgruppen** legst du Bereiche fest, die ungefähr den Abteilungen eines Geschäfts entsprechen.
+
+Zum Beispiel:
 
 - Obst/Gemüse
 - Brot/Gebäck
 - Fleisch/Fisch
 - Milchprodukte
 - Getränke
-- TK-Produkte
+- Tiefkühlprodukte
 - Haushalt/Hygiene
 - Nonfood
 - Sonstiges
 
-`Produktgruppen` ist die zentrale Hauptliste aller bekannten Gruppen. Die Laufwege der einzelnen Märkte werden unabhängig voneinander gespeichert. Im Laufweg-Editor werden zum Hinzufügen nur die Gruppen angeboten, die im gewählten Markt noch fehlen. Das Hinzufügen oder Löschen einer Laufwegzeile verändert weder die Hauptliste noch die Laufwege anderer Märkte.
+Du musst nicht jede denkbare Warengruppe anlegen. Es reicht, wenn die Gruppen für deinen Einkauf sinnvoll sind.
 
-## 7. Laufwege
+### Schritt 6: Laufweg festlegen
 
-Auf der **ShoppingRoute-Verwaltungsseite** im Menüpunkt **Laufwege** wählst du zunächst einen aktiven Markt. Darunter wird nur der Laufweg dieses Marktes angezeigt.
+Gehe auf **Laufwege**.
 
-Die sichtbare Reihenfolge entspricht deinem Weg durch das Geschäft. Verschiedene Märkte dürfen völlig unterschiedliche Laufwege besitzen.
+Wähle einen Markt, zum Beispiel **LIDL**, und ordne die Produktgruppen so an, wie du normalerweise durch den Laden gehst.
 
 Beispiel:
 
-```text
-REWE
-1. Getränke
-2. Obst/Gemüse
-3. Brot/Gebäck
+1. Obst/Gemüse
+2. Brot/Gebäck
+3. Fleisch/Fisch
 4. Milchprodukte
-5. Fleisch/Fisch
-6. TK-Produkte
-```
+5. Getränke
+6. Tiefkühlprodukte
 
-Die internen Ordnungswerte werden automatisch passend neu nummeriert.
+Wenn dein ALDI anders aufgebaut ist, bekommt ALDI einfach einen anderen Laufweg.
 
-## 8. Artikelstamm
+### Schritt 7: Erste Artikel prüfen
 
-Im Reiter **Artikel** werden bekannte Produkte gepflegt.
+Unter **Artikel** siehst du die Produkte, die ShoppingRoute bereits kennt.
 
-### Name
+Ein Artikel kann zum Beispiel so eingestellt sein:
 
-Der Hauptname des Artikels, zum Beispiel `Milch`.
+**Milch**
+- Produktgruppe: Milchprodukte
+- Standardmarkt: LIDL
+- Verfügbare Märkte: LIDL, ALDI, REWE
 
-### Aliase
+### Schritt 8: Testen
 
-Alternative Schreibweisen oder Bezeichnungen. Mehrere Aliase können durch Komma oder Semikolon getrennt werden.
+Füge über Alexa einige Artikel zur Einkaufsliste hinzu, zum Beispiel:
 
-### Produktgruppe
+- Bananen
+- Milch
+- Joghurt
+- Cola
 
-Bestimmt die Position des Artikels innerhalb des Laufwegs.
+Schau anschließend in ShoppingRoute unter **Einkaufsliste**.
 
-### Standardmarkt
+Wenn die Zuordnung stimmt, kannst du Dry-Run in den Adapter-Einstellungen ausschalten.
 
-Optionaler bevorzugter Markt dieses Artikels. Ein Artikel-Standardmarkt hat Vorrang vor allgemeinen Marktprioritäten.
+Ab dann darf ShoppingRoute deine echte Alexa-Liste sortieren.
 
-### Verfügbare Märkte
+---
 
-Mehrere mögliche Märkte werden über die Mehrfachauswahl gewählt. Intern speichert ShoppingRoute diese Auswahl als Array. Ältere Konfigurationen mit Komma- oder Semikolon-Strings werden beim Start automatisch übernommen und vereinheitlicht, zum Beispiel:
+## 4. Die Einkaufsliste
 
-```text
-ALDI, REWE, LIDL
-```
+Unter **Einkaufsliste** siehst du die aktuelle Liste nach Märkten gegliedert.
 
-Mehrere verfügbare Märkte werden erkannt. Flexible Artikel können anhand der konfigurierten Mindestanzahl marktübergreifend optimiert werden; explizite Marktangaben bleiben dabei unverändert.
+Zum Beispiel:
 
-## 9. Markt direkt über Alexa vorgeben
+**LIDL**
+- Bananen
+- Tomaten
+- Milch
+- Joghurt
 
-ShoppingRoute erkennt ausdrücklich genannte Märkte am Ende des Eintrags, insbesondere:
+**REWE**
+- veganes Hack
 
-```text
-Milch von REWE
-Milch bei ALDI
-Cola bei LIDL
-```
+### Artikel verschieben
 
-Eine solche ausdrückliche Angabe hat Vorrang vor Standard- und Prioritätsregeln.
+Wenn ShoppingRoute einen Artikel in den falschen Markt einsortiert hat, kannst du ihn direkt verschieben.
 
-## 10. Mengenangaben
+Je nach Ansicht stehen dafür Drag & Drop, Pfeiltasten oder eine Marktauswahl zur Verfügung.
 
-Viele übliche Mengenangaben werden für die Produkterkennung vom eigentlichen Artikelnamen getrennt, bleiben aber im sichtbaren Alexa-Text erhalten.
+Eine manuelle Änderung hat Vorrang vor der automatischen Zuordnung.
+
+### Artikel löschen
+
+Mit **Löschen** entfernst du den Eintrag aus der aktuellen Alexa-Einkaufsliste.
+
+Der Artikel selbst bleibt im Artikelstamm erhalten und kann später wieder verwendet werden.
+
+---
+
+## 5. Märkte
+
+Unter **Märkte** verwaltest du deine Geschäfte.
+
+Ein Markt besteht im Wesentlichen aus:
+
+- **Name**
+- **Aktiv**
+- **Reihenfolge**
+- **Aliase**
+
+### Was sind Aliase?
+
+Aliase sind alternative Bezeichnungen für denselben Markt.
+
+Beispiel:
+
+**REWE**
+
+Aliase:
+- Rewe Markt
+- Rewe Center
+
+Wenn du später sagst:
+
+„Setze Milch bei Rewe Center auf die Einkaufsliste“
+
+kann ShoppingRoute trotzdem erkennen, dass **REWE** gemeint ist.
+
+### OHNE MARKT
+
+**OHNE MARKT** ist ein Auffangbereich.
+
+Dort können Artikel landen, wenn ShoppingRoute noch nicht weiß, welchem Geschäft sie zugeordnet werden sollen.
+
+---
+
+## 6. Produktgruppen
+
+Produktgruppen beschreiben, **wo im Laden ein Artikel ungefähr zu finden ist**.
 
 Beispiele:
 
-```text
-2 Milch
-3 Packungen Milch
-zwei Flaschen Cola
-1,5 kg Kartoffeln
-6x Wasser
-halbes Kilo Hack
-```
+- Bananen → Obst/Gemüse
+- Milch → Milchprodukte
+- Cola → Getränke
+- Tiefkühlpizza → Tiefkühlprodukte
 
-## 11. Markt-Prioritäten
+Sie sind wichtig, weil ShoppingRoute damit deinen Laufweg durch den Markt nachbildet.
 
-Wenn kein Markt ausdrücklich genannt wurde, gilt grundsätzlich folgende Reihenfolge:
+Du brauchst keine perfekte Warenwirtschaft. Die Gruppen sollen nur beim praktischen Einkauf helfen.
 
-1. ausdrücklich im Alexa-Text genannter Markt
-2. Standardmarkt des Artikels
-3. temporärer Markt für den aktuellen Einkauf
-4. Standardmarkt der jeweiligen Alexa-Liste
-5. allgemeiner Standardmarkt für Einkäufe
-6. erster passender Markt aus „Verfügbare Märkte“
-7. Fallback-Markt
+---
 
-Der temporäre Markt kann über folgenden Datenpunkt gesetzt werden:
+## 7. Laufwege
 
-```text
-shoppingroute.0.control.temporaryPriorityMarket
-```
+Ein Laufweg ist einfach die Reihenfolge, in der du an den Abteilungen eines Marktes vorbeikommst.
 
-Damit lässt sich für einen einzelnen Einkauf ein anderer Markt bevorzugen, ohne die dauerhafte Konfiguration zu ändern.
+Beispiel für LIDL:
 
-## 12. Unbekannte Artikel
+1. Obst/Gemüse
+2. Brot/Gebäck
+3. Fleisch/Fisch
+4. Milchprodukte
+5. Getränke
+6. Tiefkühlprodukte
 
-Unter **Allgemein → Umgang mit unbekannten Artikeln** stehen drei Modi zur Verfügung:
+ShoppingRoute versucht dann, die Artikel in genau dieser Reihenfolge auf deiner Einkaufsliste anzuzeigen.
 
-- **Erst prüfen** – unbekannte Artikel landen in der Prüfliste
-- **Automatisch lernen** – eindeutige unbekannte Artikel werden automatisch übernommen
-- **Nicht lernen** – unbekannte Artikel werden nicht dauerhaft übernommen
+Jeder Markt kann einen eigenen Laufweg haben.
 
-Für den normalen Betrieb empfiehlt sich zunächst **Erst prüfen**.
+---
 
-## 13. Prüfliste
+## 8. Artikel
 
-**Seit 0.4.1:** „Verfügbare Märkte“ öffnet eine Liste mit Kästchen. Jeden gewünschten Markt einzeln anklicken oder antippen. Erneutes Anklicken entfernt nur diesen Markt; andere Häkchen bleiben bestehen. Die gewählten Namen bleiben in der Zusammenfassung sichtbar. Strg/Cmd ist nicht erforderlich. Der Standardmarkt wird unabhängig davon eingestellt. „Übernehmen“ bzw. „Alle übernehmen“ verschiebt die Artikel sofort in den Artikelstamm und entfernt die entsprechenden Prüfzeilen im selben Entwurf. Danach normal speichern. Verwerfen stellt den ursprünglichen Stand wieder her. Die gemeldeten Fehler wurden vom Benutzer als behoben bestätigt.
+Unter **Artikel** verwaltest du den Produktstamm.
 
-Im Reiter **Prüfliste** können unbekannte Artikel kontrolliert werden. Bearbeitbar sind unter anderem Produktname, Produktgruppe, Standardmarkt und Aliase.
+Für jeden Artikel kannst du festlegen:
 
-Mögliche Aktionen:
+### Name
 
-- **Ausstehend**
-- **Übernehmen**
-- **Ignorieren**
+Der normale Name des Produkts.
 
-Beim Übernehmen wird der Artikel in den Artikelstamm aufgenommen beziehungsweise ein bereits bekannter Artikel ergänzt.
+Beispiel:
 
-Für die veröffentlichte 0.4.0 war die Entfernung nach Speichern und Adapterneustart vorgesehen. Dieser Ablauf war in der Admin-Oberfläche nicht zuverlässig: Übernommene Zeilen konnten sichtbar bleiben. Ab 0.4.1 werden diese Zeilen bereits im Entwurf entfernt. **Ignorieren** ist die Aktion zum Verwerfen eines unbekannten Artikels ohne Aufnahme in den Artikelstamm.
+**Milch**
 
-### Aktuelle Einkaufsliste im Admin
+### Aliase
 
-Falls die Liste nicht geladen werden kann oder unvollständige Daten zurückkommen, erscheint eine Fehlermeldung. Mit **Erneut laden** lässt sich eine fehlgeschlagene erste Abfrage wiederholen. War bereits eine Liste geladen, bleibt deren letzter gültiger Stand bei einem Aktualisierungsfehler sichtbar; die Fehlermeldung weist darauf hin, dass er nicht aktuell bestätigt ist.
+Andere Wörter, die dasselbe Produkt meinen.
 
-**Seit 0.4.1:** Eine Verschiebung wird nur einmal verarbeitet. Während einer laufenden Änderung sind weitere Verschiebungen und das Zurücksetzen gesperrt; danach sind sie wieder möglich. Eine Fehlermeldung bleibt auch nach dem Nachladen der Liste sichtbar. Bei einem Sicherheitsstopp wird nicht automatisch erneut geschrieben.
+Beispiel für „Hackfleisch“:
 
-Mit **Löschen** an einer Artikelzeile wird genau dieser Eintrag unmittelbar aus der Alexa-Einkaufsliste entfernt; der Artikelstamm bleibt erhalten. Es ist kein zusätzliches Speichern der Adapterkonfiguration erforderlich. Beim letzten Artikel eines Markts wird dessen Überschrift ebenfalls entfernt. Während der Verarbeitung sind weitere Änderungen gesperrt; in Dry Run ist die Löschtaste deaktiviert. Erst nach direkter Bestätigung durch Amazon gilt die Löschung als erfolgreich. Bei einer Fehlermeldung den angezeigten Listenstand prüfen; es erfolgt kein automatischer Wiederholungsversuch.
+- Hack
+- Rinderhack
 
-Bleibt bei aktivem Sicherheitsstopp am Handy eine leere Marktüberschrift stehen, kann der Adapter diese nicht mehr bei Amazon entfernen: Die Admin-Ansicht blendet leere Märkte unabhängig davon aus. Erst nach Prüfung und Behebung der unterbrochenen Verarbeitung dürfen Schreibzugriffe wieder aktiviert werden.
+### Produktgruppe
 
-Die aktuelle Einkaufsliste erscheint als einspaltige Folge von Marktabschnitten. Artikel lassen sich per Drag&Drop, mit den Pfeiltasten oder über die Marktauswahl verschieben. **Manuelle Reihenfolge zurücksetzen** entfernt diese manuellen Vorgaben.
+Wo der Artikel im Laden zu finden ist.
 
-Einträge im Format `═════ MARKT ═════` und unterstützte ältere Überschriftenformate werden nicht als Artikel angezeigt. Entscheidend ist die Überschriftenstruktur; auch ein unbekannter oder vertippter Name wie `═════ DROGERIEMART ═════` wird ausgefiltert.
+Beispiel:
 
-Enthält ein Markt keine aktiven Artikel mehr, wird seine verwaltete Überschrift beim nächsten Sortierlauf auch aus der Alexa-Einkaufsliste entfernt. Der Lauf kann bei Bedarf über **Jetzt sortieren** ausgelöst werden.
+Milch → Milchprodukte
 
-## 14. Alias-Vorschläge
+### Standardmarkt
 
-Mit **Aliase automatisch vorschlagen** versucht ShoppingRoute, unterschiedliche Schreibweisen bekannter Artikel zu erkennen. Vorschläge stehen unter:
+Der Markt, in dem du diesen Artikel normalerweise kaufst.
 
-```text
-shoppingroute.0.info.aliasSuggestions
-```
+Beispiel:
 
-## 15. Sortiervorschau
+Milch → LIDL
 
-Besonders wichtig während der Einrichtung sind:
+### Verfügbare Märkte
 
-```text
-shoppingroute.0.info.preview
-shoppingroute.0.info.previewText
-shoppingroute.0.info.lastPlan
-```
+Weitere Geschäfte, in denen der Artikel ebenfalls gekauft werden kann.
 
-`previewText` enthält eine lesbare Vorschau mit Position, bisherigem Text, Zieltext, Markt und Produktgruppe.
+Beispiel:
 
-## 16. Manuell sortieren und Automatik schalten
+Milch:
+- LIDL
+- ALDI
+- REWE
 
-Eine Sortierung kann manuell angestoßen werden über:
+So kann ShoppingRoute flexibler entscheiden.
 
-```text
-shoppingroute.0.control.sortNow
-```
+---
 
-Die automatische Sortierung lässt sich über diesen Datenpunkt ein- oder ausschalten:
+## 9. Einen Markt direkt bei Alexa nennen
 
-```text
-shoppingroute.0.control.enabled
-```
+Du kannst ShoppingRoute ausdrücklich sagen, in welchem Markt ein Artikel gekauft werden soll.
 
-## 17. API-Schutz
+Zum Beispiel:
 
-ShoppingRoute besitzt einen API-Schonmodus, damit Alexa nicht unnötig mit vielen direkten Schreibzugriffen belastet wird. Batch-CREATE wird bevorzugt; einzelne PUT- und DELETE-Anfragen laufen seriell.
+- „Milch von REWE“
+- „Cola bei LIDL“
+- „Eier bei ALDI“
 
-Einstellbar sind unter anderem:
+Diese Angabe hat Vorrang vor der normalen automatischen Zuordnung.
 
-- maximale Schreibvorgänge pro Minute
+Wenn du also sonst Milch bei LIDL kaufst, aber diesmal ausdrücklich „Milch von REWE“ sagst, bleibt sie bei REWE.
 
-Für den normalen Betrieb sollte der API-Schonmodus aktiviert bleiben, solange kein konkreter Grund für Änderungen besteht.
+---
 
-Aktuelle Zähler stehen unter:
+## 10. Mengenangaben
 
-```text
-shoppingroute.0.info.traffic
-```
+Du kannst Alexa wie gewohnt Mengen nennen.
 
-## 18. Direkte Alexa-Verbindungsprüfung
+Zum Beispiel:
 
-ShoppingRoute kann prüfen, ob aus der lokalen Alexa2-Anmeldung eine direkte, lesbare alexa-remote2-Sitzung aufgebaut werden kann. Dabei wird kein Test-Write ausgeführt.
+- 2 Milch
+- 3 Packungen Milch
+- zwei Flaschen Cola
+- 1,5 kg Kartoffeln
+- 6x Wasser
+- halbes Kilo Hack
 
-Wichtige Datenpunkte:
+ShoppingRoute versucht dabei, den eigentlichen Artikel zu erkennen und die Mengenangabe sichtbar zu erhalten.
 
-```text
-shoppingroute.0.control.compatibilityTest
-shoppingroute.0.info.compatibility
-shoppingroute.0.info.lastCompatibilityTest
-shoppingroute.0.info.writeCapability
-```
+---
 
-## 19. Sicherung und Wiederherstellung
+## 11. Was passiert mit unbekannten Artikeln?
 
-Im Reiter **Sicherung / Teilen** öffnet **„Sicherung / Teilen öffnen“** eine eigene Oberfläche.
+Wenn du einen Artikel nennst, den ShoppingRoute noch nicht kennt, gibt es drei Möglichkeiten.
 
-Dort kann die komplette ShoppingRoute-Konfiguration als JSON-Datei heruntergeladen und später wiederhergestellt werden. Vor größeren Änderungen an Märkten, Laufwegen oder dem Artikelstamm empfiehlt sich eine Sicherung.
+Diese stellst du in den normalen Adapter-Einstellungen ein.
 
-## 20. Marktprofile teilen
+### Erst prüfen
 
-Ein Marktprofil enthält den Markt und seinen Laufweg. Damit kann ein gepflegter Markt auf eine andere ShoppingRoute-Installation übertragen werden.
+Der neue Artikel landet unter **Prüfung**.
 
-In **Sicherung / Teilen** kannst du:
+Das ist für den Einstieg die beste Einstellung.
 
-1. einen Markt auswählen,
-2. sein Marktprofil herunterladen,
-3. ein vorhandenes Marktprofil importieren.
+Du kannst dort kontrollieren:
 
-Beim Import wird der betreffende Markt mit seinem Laufweg übernommen beziehungsweise ersetzt.
+- Produktname
+- Produktgruppe
+- Standardmarkt
+- weitere verfügbare Märkte
+- Aliase
 
-## 21. Diagnose und Statistiken
+Danach kannst du den Artikel übernehmen.
 
-Hilfreiche Datenpunkte sind:
+### Automatisch lernen
 
-```text
-shoppingroute.0.info.connection
-shoppingroute.0.info.lastError
-shoppingroute.0.info.lastSort
-shoppingroute.0.info.statistics
-shoppingroute.0.info.traffic
-shoppingroute.0.info.feedbackReport
-shoppingroute.0.info.versionInstalled
-```
+ShoppingRoute versucht neue Artikel selbstständig in den Produktstamm aufzunehmen.
 
-Der Diagnose-/Feedbackbericht ist dafür vorgesehen, technische Informationen bereitzustellen, ohne Einkaufsinhalte unnötig offenzulegen.
+Das ist bequem, aber für eine neue Installation weniger übersichtlich.
 
-## 22. Typische Probleme
+### Nicht lernen
 
-### Alexa-Listen werden nicht angeboten
+Unbekannte Artikel werden nicht dauerhaft gespeichert.
 
-Alexa2-Instanz prüfen, in ShoppingRoute auswählen, speichern und die Konfigurationsseite neu öffnen.
+---
 
-### Reihenfolge in Alexa wirkt falsch
+## 12. Prüfung
 
-Prüfen, ob die betreffende Liste in der Alexa-App auf **A–Z** steht und alle aktiven Einträge einen Präfix `00>`–`99>` besitzen.
+Unter **Prüfung** findest du unbekannte oder noch nicht bestätigte Artikel.
 
-### Artikel landet im falschen Markt
+Beispiel:
 
-In dieser Reihenfolge prüfen:
+Alexa hat „Skyr“ aufgenommen, ShoppingRoute kennt Skyr aber noch nicht.
 
-1. ausdrückliche Angabe `bei <Markt>` oder `von <Markt>`
-2. Standardmarkt des Artikels
-3. temporärer Markt
-4. Standardmarkt der Liste
-5. allgemeiner Standardmarkt
-6. verfügbare Märkte
-7. Fallback-Markt
+Dann kannst du dort festlegen:
 
-### Artikel landet an falscher Position
+- Name: Skyr
+- Produktgruppe: Milchprodukte
+- Standardmarkt: LIDL
+- weitere Märkte: ALDI, REWE
 
-Produktgruppe und Laufweg des betreffenden Marktes prüfen.
+Mit **Übernehmen** wird der Artikel dauerhaft in den Artikelstamm aufgenommen.
 
-### Unbekannte Artikel werden nicht übernommen
+Mit **Ignorieren** wird er nicht gelernt.
 
-Den Modus unter **Umgang mit unbekannten Artikeln** prüfen.
+---
 
-### Zu viele Schreibfehler
+## 13. Welcher Markt gewinnt?
 
-API-Schonmodus, konfiguriertes Schreiblimit und `info.traffic`, `info.compatibility` sowie `info.lastError` prüfen.
+Meist musst du dich um diese Regeln nicht kümmern.
 
-## 23. Empfohlene Ersteinrichtung
+Falls du aber wissen möchtest, warum ein Artikel in einem bestimmten Markt gelandet ist, gilt vereinfacht diese Reihenfolge:
 
-1. Alexa2-Instanz auswählen.
-2. Dry-Run eingeschaltet lassen.
-3. Alexa-Liste auswählen und in Alexa auf A–Z stellen.
-4. Märkte anlegen oder kontrollieren.
-5. Produktgruppen kontrollieren.
-6. Für jeden Markt den Laufweg sortieren.
-7. Erste wichtige Artikel im Artikelstamm pflegen.
-8. Lernmodus auf **Erst prüfen** stellen.
-9. Testartikel über Alexa eintragen.
-10. `info.previewText` kontrollieren.
-11. Prüfliste bearbeiten.
-12. Wenn die Vorschau stimmt, Dry-Run deaktivieren.
-13. Konfigurationssicherung erstellen.
+1. Ein Markt, den du ausdrücklich bei Alexa genannt hast
+2. der Standardmarkt des Artikels
+3. ein vorübergehend gewählter Markt für den aktuellen Einkauf
+4. der Standardmarkt der verwendeten Alexa-Liste
+5. der allgemeine Standardmarkt
+6. ein anderer erlaubter Markt
+7. OHNE MARKT
 
-## 24. Versionshinweis
+Ein ausdrücklich genannter Markt gewinnt also immer.
 
-Diese Anleitung beschreibt **ShoppingRoute 0.3.4** mit automatischen Marktüberschriften, marktübergreifender Optimierung und direkter `00>`–`99>`-Präfixsortierung. Jede verwaltete Alexa-Liste muss in der Alexa-App auf **A–Z** gestellt sein.
+---
 
-## Lizenz
+## 14. Sicherheit
 
-MIT-Lizenz. Copyright (c) 2026 RaviniZib.
+ShoppingRoute schreibt nicht beliebig oft auf deine Alexa-Liste.
+
+Wenn etwas unerwartet läuft oder Amazon eine Änderung nicht bestätigt, kann der Adapter einen **Sicherheitsstopp** auslösen.
+
+Das bedeutet:
+
+**ShoppingRoute stoppt weitere Änderungen, statt auf Verdacht weiterzuschreiben.**
+
+Wenn du einen solchen Hinweis siehst, prüfe zuerst die aktuelle Alexa-Liste und die Fehlermeldung.
+
+Ein Sicherheitsstopp ist kein Datenverlust, sondern eine Schutzfunktion.
+
+---
+
+## 15. Was sind diese Zahlen wie „20>“ in Alexa?
+
+Manchmal siehst du auf der Alexa-Liste Einträge wie:
+
+`20> Milch`
+
+oder eine Überschrift wie:
+
+`40> ═════ LIDL ═════`
+
+Diese Zeichen verwendet ShoppingRoute intern, damit Alexa die Liste in der gewünschten Reihenfolge anzeigt.
+
+**Du musst damit nichts tun.**
+
+Bitte ändere oder entferne diese Zahlen nicht manuell, solange ShoppingRoute die Liste verwaltet.
+
+Sie sind nur ein technischer Trick für die Sortierung.
+
+---
+
+## 16. Was ShoppingRoute nicht macht
+
+ShoppingRoute:
+
+- hakt keine Artikel automatisch als erledigt ab,
+- bestellt nichts,
+- kauft nichts,
+- löscht deinen Artikelstamm nicht, wenn du einen Eintrag aus der aktuellen Einkaufsliste entfernst,
+- benötigt für normale Änderungen an Artikeln, Märkten oder Laufwegen keinen Adapter-Neustart.
+
+---
+
+## 17. Wenn etwas nicht funktioniert
+
+### Die Liste wird nicht sortiert
+
+Prüfe:
+
+1. Ist die Alexa-Liste in der Alexa-App auf **A–Z** gestellt?
+2. Ist die richtige Alexa-Liste unter **Listen** aktiviert?
+3. Ist Dry-Run vielleicht noch eingeschaltet?
+4. Läuft die Alexa2-Instanz?
+5. Zeigt ShoppingRoute einen Fehler oder Sicherheitsstopp an?
+
+### Ein Artikel landet im falschen Markt
+
+Prüfe den Artikel unter **Artikel**:
+
+- Standardmarkt
+- verfügbare Märkte
+- Produktgruppe
+
+Oder verschiebe ihn direkt in der Einkaufsliste.
+
+### Ein neuer Artikel fehlt im Artikelstamm
+
+Schau unter **Prüfung**.
+
+Wenn der Lernmodus auf „Erst prüfen“ steht, wartet er dort auf deine Bestätigung.
+
+### Ein Button reagiert nicht
+
+Während ShoppingRoute gerade eine Änderung an Amazon überträgt, werden weitere Änderungen kurz gesperrt. Warte, bis der Vorgang beendet ist, und versuche es dann erneut.
+
+---
+
+## 18. Für Fortgeschrittene
+
+Der folgende Abschnitt ist für den normalen Betrieb **nicht erforderlich**.
+
+### Temporärer Prioritätsmarkt
+
+Für einen einzelnen Einkauf kann ein Markt vorübergehend bevorzugt werden über:
+
+`shoppingroute.0.control.temporaryPriorityMarket`
+
+### Vorschau
+
+Technische Vorschau-Informationen stehen unter anderem in:
+
+`shoppingroute.0.info.preview`
+
+`shoppingroute.0.info.previewText`
+
+`shoppingroute.0.info.lastPlan`
+
+### Konfigurationsschutz
+
+Ab Version 0.5.0 werden die großen Katalogdaten zusätzlich als Laufzeitdaten unter:
+
+`shoppingroute.0.data.managedConfig`
+
+gespeichert.
+
+Das schützt Märkte, Laufwege, Artikel und weitere Verwaltungsdaten davor, bei einem fehlerhaften Admin- oder Update-Vorgang unbemerkt auf Paket-Standardwerte zurückzufallen.
+
+### Sortierpräfixe
+
+Die sichtbaren Zahlen von `00>` bis `99>` sind interne Sortierschlüssel.
+
+ShoppingRoute nutzt sie, weil die Alexa-Liste selbst keine frei definierbare Reihenfolge anbietet. Durch die Einstellung **A–Z** werden diese Zahlen alphabetisch bzw. numerisch in die gewünschte Reihenfolge gebracht.
+
+Für den normalen Betrieb musst du diese Technik nicht kennen.
+
+---
+
+## 19. Empfehlung für neue Nutzer
+
+Für eine neue Installation empfehlen wir:
+
+1. Alexa-Liste auf **A–Z** stellen.
+2. Dry-Run einschalten.
+3. Märkte anlegen.
+4. Produktgruppen prüfen.
+5. Laufwege einrichten.
+6. einige typische Artikel hinzufügen.
+7. unter **Einkaufsliste** und **Prüfung** kontrollieren.
+8. Dry-Run ausschalten.
+9. einen echten Einkauf testen.
+
+Danach erledigt ShoppingRoute den größten Teil der Arbeit automatisch.
