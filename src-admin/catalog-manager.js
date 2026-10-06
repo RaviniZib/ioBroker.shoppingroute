@@ -7,6 +7,16 @@ const {RouteEditor}=require('./route-editor').Components;
 const {ReviewEditor}=require('./review-editor').Components;
 const {ShoppingListEditor}=require('./shopping-list-editor').Components;
 const h=React.createElement;
+const adminLanguage=props=>{
+ const candidates=[
+  props?.language,
+  props?.lang,
+  props?.systemConfig?.common?.language,
+  typeof globalThis!=='undefined'?globalThis.i18n?.language:'',
+  typeof navigator!=='undefined'?navigator.language:'',
+ ];
+ return String(candidates.find(Boolean)||'en').toLowerCase();
+};
 const t=(de,en)=>typeof navigator!=='undefined'&&String(navigator.language||'').toLowerCase().startsWith('de')?de:en;
 const clone=v=>JSON.parse(JSON.stringify(v));
 const arr=v=>Array.isArray(v)?v:[];
@@ -26,6 +36,10 @@ class CatalogManager extends React.Component{
  constructor(p){super(p);this.state={data:null,base:null,tab:'products',loading:true,saving:false,error:'',savedAt:'',newProduct:'',newList:''};}
  componentDidMount(){void this.load();}
  instance(){return String(this.props.adapterName||'shoppingroute')+'.'+(Number.isFinite(Number(this.props.instance))?Number(this.props.instance):0);}
+ manualUrl(){return adminLanguage(this.props).startsWith('de')
+  ?'https://github.com/RaviniZib/ioBroker.shoppingroute/blob/main/BEDIENUNGSANLEITUNG_DE.md'
+  :'https://github.com/RaviniZib/ioBroker.shoppingroute/blob/main/USER_GUIDE_EN.md';}
+ openManual(){if(typeof window!=='undefined')window.open(this.manualUrl(),'_blank','noopener,noreferrer');}
  async send(command,message={}){if(!this.props.socket?.sendTo)throw Error('Admin socket is unavailable.');return this.props.socket.sendTo(this.instance(),command,message);}
  async load(){this.setState({loading:true,error:''});try{const r=await this.send('getManagedConfig');if(!r?.ok||!r.data)throw Error(r?.error||'Load failed');const d=clone(r.data);this.setState({data:d,base:clone(d),loading:false,savedAt:r.savedAt||''});}catch(e){this.setState({loading:false,error:e.message||String(e)});}}
  changed(){return JSON.stringify(this.state.data)!==JSON.stringify(this.state.base);}
@@ -65,6 +79,7 @@ class CatalogManager extends React.Component{
   h('button',{key:'save',disabled:!changed||this.state.saving,onClick:()=>void this.save()},this.state.saving?t('Speichert …','Saving …'):t('Speichern','Save')),
   h('button',{key:'discard',disabled:!changed||this.state.saving,onClick:()=>this.setState({data:clone(this.state.base),error:''})},t('Verwerfen','Discard')),
   h('button',{key:'reload',disabled:this.state.saving,onClick:()=>void this.load()},t('Neu laden','Reload')),
+  h('button',{key:'manual',onClick:()=>this.openManual()},adminLanguage(this.props).startsWith('de')?'Bedienungsanleitung':'User guide'),
   h('span',{key:'st',className:'srm-status '+(this.state.error?'srm-error':'' )},this.state.error||(changed?t('Ungespeicherte Änderungen','Unsaved changes'):(this.state.savedAt?t('Gespeichert: ','Saved: ')+new Date(this.state.savedAt).toLocaleString():t('Gespeichert','Saved'))))
  ])
  ])
