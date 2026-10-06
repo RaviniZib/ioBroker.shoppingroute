@@ -22,6 +22,8 @@
 
 ## What ShoppingRoute does
 
+ShoppingRoute turns an ordinary Alexa shopping list into a practical shopping assistant. **All stores can share one Alexa list, or you can deliberately split them across several lists.** Its key feature is configurable **market routing**: for every store, you define your own walking order through the sections. ShoppingRoute then arranges the list to match the way you actually move through the shop — reducing backtracking and searching for **faster, more efficient shopping**.
+
 ShoppingRoute turns an ordinary Alexa shopping list into a list that follows the way you actually shop.
 
 Instead of keeping items only in the order Alexa received them, the adapter can assign them to stores, product groups and a configurable walking route inside each store. It uses visible two-digit prefixes such as `20> Bananas` and optional market headings such as `40> ═════ ALDI ═════`.
