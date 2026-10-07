@@ -45,10 +45,11 @@ test('dropping on an item does not also dispatch a drop to its market section', 
     const row = tree.find(n => n.props?.className === 'shoppingroute-item-row');
     const section = tree.find(n => n.type === 'section');
     let stopped = false;
+    // Dropping back onto the same slot is a no-op, but must still stop propagation.
     const event = { preventDefault() {}, stopPropagation() { stopped = true; }, dataTransfer: { getData() { return 'gum'; } } };
     row.props.onDrop(event);
     if (!stopped) section.props.onDrop(event);
-    try { assert.equal(stopped, true); assert.equal(calls.length, 1); }
+    try { assert.equal(stopped, true); assert.equal(calls.length, 0); }
     finally { reply.resolve({ ok: true, view: editor.state.view }); await tick(); }
 });
 
@@ -75,13 +76,13 @@ test('direct sorting reserves its lock before awaiting the enabled state', async
 
 test('manual moves reserve the command before any remote read or override persistence', async () => {
     const adapter = runtimeFixture();
-    const view = { listName: 'SHOP', lists: ['SHOP'], markets: ['REWE'], items: [{id: 'gum', text: 'Weckgummis', market: 'REWE', position: 0}] };
+    const view = { listName: 'SHOP', lists: ['SHOP'], markets: ['REWE', 'LIDL'], items: [{id: 'gum', text: 'Weckgummis', market: 'REWE', position: 0}] };
     const read = deferred(); let preparations = 0;
     adapter.buildShoppingListView = () => read.promise;
     adapter.isEnabled = async () => true;
     adapter.persistManualOverrides = async () => { preparations++; };
     adapter.applyDirectSort = async () => {};
-    const message = { listName: 'SHOP', itemId: 'gum', targetMarket: 'REWE', targetPosition: 0 };
+    const message = { listName: 'SHOP', itemId: 'gum', targetMarket: 'LIDL', targetPosition: 0 };
     const first = adapter.applyManualMove(message);
     const second = adapter.applyManualMove(message).then(() => 'accepted', () => 'busy');
     read.resolve(view);
@@ -92,12 +93,12 @@ test('manual moves reserve the command before any remote read or override persis
 
 test('automatic sorting waits for a manual command and remains usable afterwards', async () => {
     const adapter = runtimeFixture(); const read = deferred(); let runs = 0;
-    const view = { listName: 'SHOP', lists: ['SHOP'], markets: ['REWE'], items: [{id: 'gum', text: 'Weckgummis', market: 'REWE', position: 0}] };
+    const view = { listName: 'SHOP', lists: ['SHOP'], markets: ['REWE', 'LIDL'], items: [{id: 'gum', text: 'Weckgummis', market: 'REWE', position: 0}] };
     adapter.buildShoppingListView = () => read.promise;
     adapter.isEnabled = async () => true;
     adapter.applyDirectSort = async () => { runs++; };
     adapter.prepareImmediateApply('SHOP');
-    const manual = adapter.applyManualMove({listName: 'SHOP', itemId: 'gum', targetMarket: 'REWE'});
+    const manual = adapter.applyManualMove({listName: 'SHOP', itemId: 'gum', targetMarket: 'LIDL'});
     await adapter.startApply('SHOP');
     assert.equal(runs, 0);
     await assert.rejects(adapter.clearManualShoppingOrder({listName: 'SHOP'}), /already running/);
@@ -253,4 +254,57 @@ test('runtime normalizes fallback market names to uppercase', () => {
     assert.equal(adapter.fallbackMarket, 'OHNE MARKT');
     adapter.config.fallbackMarket = 'Mein Laden';
     assert.equal(adapter.fallbackMarket, 'MEIN LADEN');
+});
+
+test('a pending mobile move immediately keeps the article at its selected market', async () => {
+    const { editor, reply } = editorFixture();
+    editor.state.view.markets = ['REWE', 'LIDL'];
+    editor.state.view.items.push({ id: 'milk', text: 'Milch', market: 'LIDL', position: 0 });
+    editor.setState = patch => { editor.state = { ...editor.state, ...patch }; };
+    const pending = editor.move('gum', 'LIDL', 1);
+    const moved = editor.state.view.items.find(item => item.id === 'gum');
+    assert.equal(moved.market, 'LIDL');
+    assert.equal(moved.position, 1);
+    assert.equal(moved.manual, true);
+    reply.resolve({ ok: true, view: editor.state.view });
+    await pending;
+});
+
+test('a pending mobile move immediately explains the Alexa wait', async () => {
+    const { editor, calls, reply } = editorFixture();
+    editor.state.view.markets = ['REWE', 'LIDL'];
+    editor.setState = patch => { editor.state = { ...editor.state, ...patch }; };
+    const pending = editor.move('gum', 'LIDL', 0);
+    assert.equal(calls.length, 1);
+    assert.match(editor.state.progress, /Alexa/);
+    assert.match(editor.state.progress, /mehrere Minuten|several minutes/);
+    assert.equal(editor.state.busy, 'gum');
+    const progressNode = elements(editor.render()).find(node => node.key === 'progress');
+    assert.equal(progressNode.props.role, 'status');
+    assert.equal(progressNode.props['aria-live'], 'polite');
+    reply.resolve({ ok: true, view: editor.state.view });
+    await pending;
+    assert.equal(editor.state.progress, '');
+    assert.equal(editor.state.busy, '');
+});
+
+test('long mobile moves acknowledge immediately and return their final result through status polling', async () => {
+    const adapter = runtimeFixture();
+    const operation = deferred();
+    const replies = [];
+    adapter.applyManualMove = () => operation.promise;
+    adapter.sendTo = (...args) => replies.push(args);
+    const request = {
+        command: 'moveShoppingItem',
+        from: 'admin.0',
+        callback: { id: 1 },
+        message: { listName: 'SHOP', itemId: 'gum', targetMarket: 'ALDI', targetPosition: 0, requestId: 'move-1' },
+    };
+    await adapter.onMessage(request);
+    assert.deepEqual(replies[0][2], { ok: true, pending: true, requestId: 'move-1' });
+    operation.resolve({ ok: true, view: { listName: 'SHOP', lists: ['SHOP'], markets: ['ALDI'], items: [] } });
+    await tick();
+    await adapter.onMessage({ command: 'getShoppingMoveStatus', from: 'admin.0', callback: { id: 2 }, message: { requestId: 'move-1' } });
+    assert.equal(replies[1][2].ok, true);
+    assert.equal(replies[1][2].view.markets[0], 'ALDI');
 });

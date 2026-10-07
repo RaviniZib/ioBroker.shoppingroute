@@ -150,3 +150,9 @@ test('reordering changes only the selected market and keeps source routes immuta
   assert.deepEqual(categories(reordered, 'ALDI'), ['Milchprodukte', 'Obst/Gemüse']);
   assert.deepEqual(source, routes);
 });
+
+test('drag-and-drop moves a walking-route group directly to the dropped row', () => {
+  const moved = model.moveMarketRouteTo(routes, 'BAUMARKT', 0, 1);
+  assert.deepEqual(categories(moved, 'BAUMARKT'), ['Werkzeug', 'Milchprodukte']);
+  assert.deepEqual(categories(moved, 'ALDI'), ['Milchprodukte', 'Obst/Gemüse']);
+});

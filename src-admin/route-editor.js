@@ -3,12 +3,13 @@
 /* eslint-disable jsdoc/require-jsdoc */
 
 const React = require('react');
+const { DragHandle, DropZone, dropIndex } = require('./shoppingroute-admin-ui');
 
 const h = React.createElement;
 const routeResponsiveStyles = `
     .shoppingroute-route-row {
         display: grid;
-        grid-template-columns: 48px minmax(160px, 1fr) 144px;
+        grid-template-columns: 64px minmax(160px, 1fr) 144px;
     }
     .shoppingroute-route-actions {
         display: flex;
@@ -17,7 +18,7 @@ const routeResponsiveStyles = `
     }
     @media (max-width: 600px) {
         .shoppingroute-route-row {
-            grid-template-columns: 32px minmax(0, 1fr);
+            grid-template-columns: 56px minmax(0, 1fr);
         }
         .shoppingroute-route-actions {
             grid-column: 2;
@@ -114,6 +115,22 @@ function moveMarketRoute(routes, market, fromIndex, direction) {
     return replaceMarketRoutes(routes, market, selected);
 }
 
+function moveMarketRouteTo(routes, market, fromIndex, toIndex) {
+    const selected = marketRoutes(routes, market);
+    if (
+        fromIndex < 0 ||
+        toIndex < 0 ||
+        fromIndex >= selected.length ||
+        toIndex > selected.length ||
+        fromIndex === toIndex
+    ) {
+        return routes;
+    }
+    const [route] = selected.splice(fromIndex, 1);
+    selected.splice(Math.min(toIndex, selected.length), 0, route);
+    return replaceMarketRoutes(routes, market, selected);
+}
+
 function removeMarketRoute(routes, market, index) {
     const selected = marketRoutes(routes, market);
     if (index < 0 || index >= selected.length) {
@@ -139,7 +156,7 @@ function addMarketRoute(routes, market, category) {
 class RouteEditor extends React.Component {
     constructor(props) {
         super(props);
-        this.state = { selectedMarket: activeMarkets(props.data)[0] || '', selectedAddCategory: '' };
+        this.state = { selectedMarket: activeMarkets(props.data)[0] || '', selectedAddCategory: '', dragIndex: -1 };
     }
 
     componentDidUpdate(prevProps) {
@@ -163,6 +180,21 @@ class RouteEditor extends React.Component {
         this.updateRoutes(
             moveMarketRoute(this.props.data && this.props.data.routes, this.state.selectedMarket, index, direction),
         );
+    }
+
+    drop(index) {
+        if (this.state.dragIndex < 0) {
+            return;
+        }
+        this.updateRoutes(
+            moveMarketRouteTo(
+                this.props.data && this.props.data.routes,
+                this.state.selectedMarket,
+                this.state.dragIndex,
+                index,
+            ),
+        );
+        this.setState({ dragIndex: -1 });
     }
 
     remove(index) {
@@ -297,6 +329,7 @@ class RouteEditor extends React.Component {
                     'div',
                     {
                         key: 'routes',
+                        'data-sort-scope': 'routes',
                         style: {
                             border: `1px solid ${border}`,
                             borderRadius: '6px',
@@ -304,122 +337,161 @@ class RouteEditor extends React.Component {
                             marginBottom: '18px',
                         },
                     },
-                    routes.map((route, index) => {
-                        const historical = !catalog.has(keyOf(route.category));
-                        return h(
-                            'div',
-                            {
-                                key: `${route.market}-${route.category}-${index}`,
-                                className: 'shoppingroute-route-row',
-                                style: {
-                                    alignItems: 'center',
-                                    gap: '8px',
-                                    padding: '9px 12px',
-                                    borderBottom: index < routes.length - 1 ? `1px solid ${border}` : 'none',
-                                    background,
+                    [
+                        ...routes.map((route, index) => {
+                            const historical = !catalog.has(keyOf(route.category));
+                            return h(
+                                'div',
+                                {
+                                    key: `${route.market}-${route.category}-${index}`,
+                                    className: 'shoppingroute-route-row',
+                                    draggable: true,
+                                    'data-drop-index': index,
+                                    onDragEnd: () => this.setState({ dragIndex: -1 }),
+                                    onDragStart: event => {
+                                        this.setState({ dragIndex: index });
+                                        event.dataTransfer.effectAllowed = 'move';
+                                        event.dataTransfer.setData('text/plain', `routes:${index}`);
+                                    },
+                                    onDragOver: event => event.preventDefault(),
+                                    onDrop: event => {
+                                        event.preventDefault();
+                                        event.stopPropagation();
+                                        this.drop(dropIndex(event, index, this.state.dragIndex, routes.length));
+                                    },
+                                    style: {
+                                        alignItems: 'center',
+                                        gap: '8px',
+                                        padding: '9px 12px',
+                                        borderBottom: index < routes.length - 1 ? `1px solid ${border}` : 'none',
+                                        background,
+                                    },
                                 },
-                            },
-                            [
-                                h(
-                                    'div',
-                                    {
-                                        key: 'position',
-                                        style: { color: muted, textAlign: 'right', paddingRight: '6px' },
-                                    },
-                                    String(index + 1),
-                                ),
-                                h('div', { key: 'category', style: { fontWeight: 500 } }, [
-                                    String(route.category || ''),
-                                    historical
-                                        ? h(
-                                              'div',
-                                              {
-                                                  key: 'historical',
-                                                  style: { color: muted, fontSize: '0.8rem', fontWeight: 400 },
-                                              },
-                                              text(
-                                                  'Nicht mehr im globalen Katalog',
-                                                  'No longer in the global catalogue',
-                                              ),
-                                          )
-                                        : null,
-                                ]),
-                                h(
-                                    'div',
-                                    {
-                                        key: 'buttons',
-                                        className: 'shoppingroute-route-actions',
-                                    },
-                                    [
-                                        h(
-                                            'button',
-                                            {
-                                                key: 'up',
-                                                type: 'button',
-                                                disabled: index === 0,
-                                                title: text('Nach oben', 'Move up'),
-                                                onClick: () => this.move(index, -1),
-                                                style: {
-                                                    width: '38px',
-                                                    height: '32px',
-                                                    border: `1px solid ${border}`,
-                                                    borderRadius: '4px',
-                                                    background: buttonBackground,
-                                                    color: 'inherit',
-                                                    cursor: index === 0 ? 'default' : 'pointer',
-                                                    opacity: index === 0 ? 0.4 : 1,
-                                                },
+                                [
+                                    h(
+                                        'div',
+                                        {
+                                            key: 'position',
+                                            style: {
+                                                color: muted,
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                whiteSpace: 'nowrap',
                                             },
-                                            '↑',
-                                        ),
-                                        h(
-                                            'button',
-                                            {
-                                                key: 'down',
-                                                type: 'button',
-                                                disabled: index === routes.length - 1,
-                                                title: text('Nach unten', 'Move down'),
-                                                onClick: () => this.move(index, 1),
-                                                style: {
-                                                    width: '38px',
-                                                    height: '32px',
-                                                    border: `1px solid ${border}`,
-                                                    borderRadius: '4px',
-                                                    background: buttonBackground,
-                                                    color: 'inherit',
-                                                    cursor: index === routes.length - 1 ? 'default' : 'pointer',
-                                                    opacity: index === routes.length - 1 ? 0.4 : 1,
+                                        },
+                                        [
+                                            h(DragHandle, {
+                                                key: 'drag',
+                                                scope: 'routes',
+                                                length: routes.length,
+                                                index,
+                                                onStart: () => this.setState({ dragIndex: index }),
+                                                onDrop: target => this.drop(target),
+                                                onEnd: () => this.setState({ dragIndex: -1 }),
+                                            }),
+                                            String(index + 1),
+                                        ],
+                                    ),
+                                    h('div', { key: 'category', style: { fontWeight: 500 } }, [
+                                        String(route.category || ''),
+                                        historical
+                                            ? h(
+                                                  'div',
+                                                  {
+                                                      key: 'historical',
+                                                      style: { color: muted, fontSize: '0.8rem', fontWeight: 400 },
+                                                  },
+                                                  text(
+                                                      'Nicht mehr im globalen Katalog',
+                                                      'No longer in the global catalogue',
+                                                  ),
+                                              )
+                                            : null,
+                                    ]),
+                                    h(
+                                        'div',
+                                        {
+                                            key: 'buttons',
+                                            className: 'shoppingroute-route-actions',
+                                        },
+                                        [
+                                            h(
+                                                'button',
+                                                {
+                                                    key: 'up',
+                                                    type: 'button',
+                                                    disabled: index === 0,
+                                                    title: text('Nach oben', 'Move up'),
+                                                    onClick: () => this.move(index, -1),
+                                                    style: {
+                                                        width: '38px',
+                                                        height: '32px',
+                                                        border: `1px solid ${border}`,
+                                                        borderRadius: '4px',
+                                                        background: buttonBackground,
+                                                        color: 'inherit',
+                                                        cursor: index === 0 ? 'default' : 'pointer',
+                                                        opacity: index === 0 ? 0.4 : 1,
+                                                    },
                                                 },
-                                            },
-                                            '↓',
-                                        ),
-                                        h(
-                                            'button',
-                                            {
-                                                key: 'remove',
-                                                type: 'button',
-                                                title: text(
-                                                    'Aus diesem Laufweg entfernen',
-                                                    'Remove from this walking route',
-                                                ),
-                                                onClick: () => this.remove(index),
-                                                style: {
-                                                    width: '38px',
-                                                    height: '32px',
-                                                    border: `1px solid ${border}`,
-                                                    borderRadius: '4px',
-                                                    background: buttonBackground,
-                                                    color: 'inherit',
-                                                    cursor: 'pointer',
+                                                '↑',
+                                            ),
+                                            h(
+                                                'button',
+                                                {
+                                                    key: 'down',
+                                                    type: 'button',
+                                                    disabled: index === routes.length - 1,
+                                                    title: text('Nach unten', 'Move down'),
+                                                    onClick: () => this.move(index, 1),
+                                                    style: {
+                                                        width: '38px',
+                                                        height: '32px',
+                                                        border: `1px solid ${border}`,
+                                                        borderRadius: '4px',
+                                                        background: buttonBackground,
+                                                        color: 'inherit',
+                                                        cursor: index === routes.length - 1 ? 'default' : 'pointer',
+                                                        opacity: index === routes.length - 1 ? 0.4 : 1,
+                                                    },
                                                 },
-                                            },
-                                            '×',
-                                        ),
-                                    ],
-                                ),
-                            ],
-                        );
-                    }),
+                                                '↓',
+                                            ),
+                                            h(
+                                                'button',
+                                                {
+                                                    key: 'remove',
+                                                    type: 'button',
+                                                    title: text(
+                                                        'Aus diesem Laufweg entfernen',
+                                                        'Remove from this walking route',
+                                                    ),
+                                                    onClick: () => this.remove(index),
+                                                    style: {
+                                                        width: '38px',
+                                                        height: '32px',
+                                                        border: `1px solid ${border}`,
+                                                        borderRadius: '4px',
+                                                        background: buttonBackground,
+                                                        color: 'inherit',
+                                                        cursor: 'pointer',
+                                                    },
+                                                },
+                                                '×',
+                                            ),
+                                        ],
+                                    ),
+                                ],
+                            );
+                        }),
+                        h(DropZone, {
+                            key: 'drop-end',
+                            length: routes.length,
+                            scope: 'routes',
+                            tokens: { border },
+                            onDrop: () => this.drop(routes.length - 1),
+                        }),
+                    ],
                 ),
             );
         }
@@ -497,6 +569,7 @@ module.exports = {
         availableProductGroups,
         replaceMarketRoutes,
         moveMarketRoute,
+        moveMarketRouteTo,
         removeMarketRoute,
         addMarketRoute,
     },

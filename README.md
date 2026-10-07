@@ -17,14 +17,12 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT license"></a>
 </p>
 
-> **Current version: 0.4.4**  
+> **Current version: 0.5.1**
 > ShoppingRoute is available in the ioBroker **latest** repository.
 
 ## What ShoppingRoute does
 
 ShoppingRoute turns an ordinary Alexa shopping list into a practical shopping assistant. **All stores can share one Alexa list, or you can deliberately split them across several lists.** Its key feature is configurable **market routing**: for every store, you define your own walking order through the sections. ShoppingRoute then arranges the list to match the way you actually move through the shop — reducing backtracking and searching for **faster, more efficient shopping**.
-
-ShoppingRoute turns an ordinary Alexa shopping list into a list that follows the way you actually shop.
 
 Instead of keeping items only in the order Alexa received them, the adapter can assign them to stores, product groups and a configurable walking route inside each store. It uses visible two-digit prefixes such as `20> Bananas` and optional market headings such as `40> ═════ ALDI ═════`.
 
@@ -55,15 +53,31 @@ Choose your language:
 
 Community and support:
 
-- 🧪 [ioBroker tester forum – ShoppingRoute v0.4.4](https://forum.iobroker.net/topic/85510/test-adapter-shoppingroute-v0.4.4)
+- 🧪 [ioBroker tester forum – ShoppingRoute](https://forum.iobroker.net/topic/85510/test-adapter-shoppingroute-v0.4.4)
 - 🐞 [GitHub issues](https://github.com/RaviniZib/ioBroker.shoppingroute/issues)
 
-The Admin interface itself supports all 11 standard ioBroker Admin languages.
+Adapter settings and the backup utility include all 11 standard ioBroker Admin languages. Shopping-list feedback is available in German and English.
+
+## What's new in 0.5.1
+
+This release fixes the saving and moving problems reported with the new management page and makes shopping from a phone more comfortable:
+
+- **Create usable Alexa lists:** a new list is created and confirmed in Alexa before ShoppingRoute uses it. An invalid new binding is rejected before it can affect healthy lists.
+- **Add items while shopping:** add an item directly on the Shopping list page, including to an empty list.
+- **Move to the end and back:** dedicated end-drop areas, touch drag handles, corrected insertion positions and empty return markets make moves easier. Use “Show other markets as drop targets” to reveal additional destinations.
+- **Understand longer updates:** a visible message explains the pending Alexa update immediately. The adapter reports the final result separately, so a longer operation is not mistaken for an immediate failure.
+- **Keep catalogue changes:** deletions, ordering changes and selections on the management page save automatically. Typed edits wait for the **Save** button; **Add** submits a new entry. Saved data survives reopening the page.
+- **Avoid interrupted saves:** local catalogue saves no longer make unnecessary Amazon checks, and learned catalogue data no longer causes an instance restart. Rapid edits are queued, and unsuccessful saves retain your changes for retry.
+- **Move an item back after an Alexa rebuild:** changed Amazon item IDs can be resolved by an unambiguous item name. Duplicate names are never guessed.
+
+Open **ShoppingRoute** in the ioBroker sidebar on your phone. Use the `⋮⋮` handle to drag, or use the arrow buttons and market selector. After updating, fully reload the management page once to load the new interface. Alexa list writes still use the configured rate limits, Dry Run and verification safeguards.
 
 ## Main features
 
 - dedicated **ShoppingRoute management page** in the ioBroker sidebar for shopping list, products, markets, product groups, routes, lists and review items
 - catalogue changes are persisted at runtime and do not require an adapter restart
+- create confirmed Alexa lists and add shopping items directly from the phone
+- automatic saving of structural changes, with explicit Save for typed edits
 - market names are always stored in **UPPERCASE**, regardless of how they are entered, with all references normalized consistently
 - defensive protection against accidental catalogue resets during Admin/update flows
 
@@ -158,6 +172,15 @@ ShoppingRoute is still young, so real-world feedback is especially valuable.
 Please use the [ioBroker tester thread](https://forum.iobroker.net/topic/85510/test-adapter-shoppingroute-v0.4.4) for general testing feedback and the [GitHub issue tracker](https://github.com/RaviniZib/ioBroker.shoppingroute/issues) for reproducible bugs or feature requests.
 
 ## Changelog
+
+### 0.5.1 (2026-10-07)
+- Create new lists in Alexa and verify them before saving their bindings; add shopping items directly, including to empty lists.
+- Show immediate, readable progress for Alexa moves, retain optimistic positions while waiting, and track long operations without the previous UI timeout failure.
+- Fix end-drop targets, row insertion positions, touch dragging and empty return markets in the shopping list; restore drag ordering for markets, product groups and walking routes.
+- Save deletions, ordering and selections immediately on the management page; preserve typed drafts until Save and queue rapid structural changes without a retry loop.
+- Keep local saves independent of unnecessary Amazon list checks; persist learned catalogues in runtime data instead of restarting the instance through native-object writes.
+- Safely resolve uniquely named items after Amazon replaces their IDs, retaining rejection for ambiguous duplicate names and all write safeguards.
+- Provide German and English shopping feedback, a language-aware help button and updated user guides and READMEs.
 
 ### 0.5.0 (2026-10-05)
 - Add a dedicated ShoppingRoute management page in the ioBroker sidebar with a fixed header and direct management of shopping list, products, markets, product groups, routes, lists and review queue.

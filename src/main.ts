@@ -63,8 +63,9 @@ import {
     type DirectSortPhase,
 } from './lib/direct-sort-lifecycle';
 
-const VERSION = '0.5.0';
+const VERSION = '0.5.1';
 const COLLECT_WINDOW_MS = 5000;
+class MissingAlexaListError extends Error {}
 const MAX_ACTIVE_ITEMS = 99;
 const OWN_REFRESH_MAX_MS = 30000;
 const DIRECT_POLL_BASE_MS = 60000;
@@ -205,6 +206,7 @@ export class ShoppingRoute extends utils.Adapter {
     private listStates = new Map<string, ListApplyState>();
     private applyingListName = '';
     private manualCommandPending = false;
+    private shoppingMoveResults = new Map<string, any>();
     private directPollTimer: ioBroker.Timeout | undefined;
     private directPollRunning = false;
     private directPollDelayMs = DIRECT_POLL_BASE_MS;
@@ -368,22 +370,38 @@ export class ShoppingRoute extends utils.Adapter {
         if (!(managed.lists as any[]).some(list => list?.name && list.enabled !== false)) {
             throw new Error('At least one enabled Alexa shopping list is required.');
         }
-        Object.assign(this.config as unknown as Record<string, unknown>, managed);
-        this.runtimeProducts = normalizeProductAvailableMarkets((managed.products as ProductConfig[]).filter(product => product?.name))
+        // Local catalogue edits must not depend on Amazon being available. Only newly
+        // added/enabled bindings need a remote check; existing bindings keep their safeguards.
+        const existing = new Set(this.listConfigs.map(list => list.name.trim().toLocaleLowerCase('de')));
+        const newBindings = (managed.lists as ShoppingListConfig[])
+            .filter(list => list?.name && list.enabled !== false && !existing.has(list.name.trim().toLocaleLowerCase('de')));
+        if (newBindings.length) {
+            await this.initializeDirectClient();
+            await this.refreshDirectListIds();
+        }
+        for (const list of newBindings) {
+            if (!this.directListIds.has(list.name.trim().toLocaleLowerCase('de'))) {
+                throw new MissingAlexaListError(`Alexa list “${list.name}” does not exist. Create it in the Lists page first.`);
+            }
+        }
+        const runtimeProducts = normalizeProductAvailableMarkets((managed.products as ProductConfig[]).filter(product => product?.name))
             .sort((a, b) => a.name.localeCompare(b.name, 'de', { sensitivity: 'base' }));
-        this.runtimeReviews = (managed.reviewItems as ReviewItemConfig[]).map(item => ({ ...item }));
-        this.runtimeRoutes = normalizeRoutesForAdmin((managed.routes as RouteConfig[]).filter(Boolean));
+        const runtimeReviews = (managed.reviewItems as ReviewItemConfig[]).map(item => ({ ...item }));
+        const runtimeRoutes = normalizeRoutesForAdmin((managed.routes as RouteConfig[]).filter(Boolean));
+        const normalized = this.managedConfigData({
+            ...managed,
+            products: runtimeProducts,
+            reviewItems: runtimeReviews,
+            routes: runtimeRoutes,
+        });
+        const savedAt = await this.writeManagedConfigState(normalized);
+        Object.assign(this.config as unknown as Record<string, unknown>, normalized);
+        this.runtimeProducts = runtimeProducts;
+        this.runtimeReviews = runtimeReviews;
+        this.runtimeRoutes = runtimeRoutes;
         this.productsDirty = false;
         this.reviewsDirty = false;
         this.routesDirty = false;
-        const normalized = this.managedConfigData({
-            ...managed,
-            products: this.runtimeProducts,
-            reviewItems: this.runtimeReviews,
-            routes: this.runtimeRoutes,
-        });
-        Object.assign(this.config as unknown as Record<string, unknown>, normalized);
-        const savedAt = await this.writeManagedConfigState(normalized);
         for (const list of this.listConfigs) this.subscribeForeignStates(this.listStateId(list.name));
         await this.updateTemporaryMarketStateOptions();
         await this.refreshExports();
@@ -596,15 +614,21 @@ export class ShoppingRoute extends utils.Adapter {
             if (this.dryRun) return { ok: false, error: 'Dry Run is active. Disable Dry Run before changing the Alexa list.', view: before };
             if (!(await this.isEnabled())) return { ok: false, error: 'ShoppingRoute is disabled.', view: before };
             if (this.applyingListName) return { ok: false, error: 'A shopping-list update is already running. Please try again.', view: before };
-            const itemId = String(message?.itemId || '').trim();
-            const item = before.items.find(entry => entry.id === itemId);
+            const requestedId = String(message?.itemId || '').trim();
+            const text = stripSortPrefix(String(message?.itemText || '').trim());
+            const matches = text ? before.items.filter(entry => stripSortPrefix(entry.text) === text) : [];
+            // Amazon suffix rebuilds replace IDs. Rebind only an unambiguous item,
+            // never guess between duplicate product names.
+            const item = before.items.find(entry => entry.id === requestedId) || (matches.length === 1 ? matches[0] : undefined);
             if (!item) return { ok: false, error: 'The selected shopping-list item no longer exists.', view: before };
+            const itemId = item.id;
             const targetMarket = String(message?.targetMarket || '').trim();
             if (!before.markets.some(market => market.toLocaleLowerCase('de') === targetMarket.toLocaleLowerCase('de'))) {
                 return { ok: false, error: 'The selected target market is not available.', view: before };
             }
             const targetCount = before.items.filter(entry => entry.market === targetMarket && entry.id !== itemId).length;
             const targetPosition = Math.max(0, Math.min(targetCount, Math.floor(Number(message?.targetPosition) || 0)));
+            if (item.market === targetMarket && item.position === targetPosition) return { ok: true, view: before };
             const previous = this.manualOverrides.map(entry => ({ ...entry }));
             this.manualOverrides = moveManualOverride(this.manualOverrides, {
                 listName,
@@ -624,6 +648,57 @@ export class ShoppingRoute extends utils.Adapter {
                 this.manualOverrides = previous;
                 await this.persistManualOverrides();
                 return { ok: false, error, view: await this.buildShoppingListView(listName, true) };
+            }
+            return { ok: true, view: await this.buildShoppingListView(listName) };
+        });
+    }
+
+    private async createAlexaList(message: any): Promise<{ ok: boolean; name: string; listId: string; lists: ShoppingListConfig[]; savedAt: string }> {
+        return this.runManualShoppingCommand(async () => {
+            if (this.dryRun) throw new Error('Dry Run is active. Disable it before creating an Alexa list.');
+            const name = String(message?.name || '').trim();
+            const client = await this.initializeDirectClient();
+            await this.beforeDirectWrite();
+            const existing = (await client.getLists()).some(list => list.name.toLocaleLowerCase('de') === name.toLocaleLowerCase('de'));
+            const list = await client.createList(name);
+            if (!existing) await this.recordDirectWrite();
+            await this.refreshDirectListIds();
+            const data = this.managedConfigData({ ...this.cfg, products: this.runtimeProducts, reviewItems: this.runtimeReviews, routes: this.runtimeRoutes });
+            const lists = data.lists as ShoppingListConfig[];
+            if (!lists.some(row => row.name.toLocaleLowerCase('de') === list.name.toLocaleLowerCase('de'))) {
+                lists.push({ name: list.name, enabled: true, priorityMarket: '' });
+            }
+            const saved = await this.applyManagedConfig(data);
+            return { ok: true, ...list, lists: saved.data.lists as ShoppingListConfig[], savedAt: saved.savedAt };
+        });
+    }
+
+    private async addShoppingItem(message: any): Promise<{ ok: boolean; view: ShoppingListView }> {
+        return this.runManualShoppingCommand(async () => {
+            const listName = String(message?.listName || '').trim();
+            if (!this.listConfigs.some(list => list.name === listName)) throw new Error('The selected shopping list is not configured.');
+            const value = String(message?.text || '').trim();
+            if (!value || value.length > 500 || [...value].some(char => char.charCodeAt(0) < 32) || parseSortPrefix(value) || isMarketHeader(value, this.markets)) {
+                throw new Error('Enter an item with 1 to 500 characters, without a sorting prefix or market heading.');
+            }
+            if (this.dryRun) throw new Error('Dry Run is active. Disable it before adding items.');
+            if (!(await this.isEnabled())) throw new Error('ShoppingRoute is disabled.');
+            const listId = await this.directListId(listName);
+            const snapshot = await this.readDirectItems(listId);
+            if (activeItems(snapshot).length >= MAX_ACTIVE_ITEMS) throw new Error('The list already contains 99 active entries.');
+            const client = await this.initializeDirectClient();
+            await this.beforeDirectWrite();
+            try {
+                const created = await client.batchCreate(listId, [value]);
+                await this.recordDirectWrite();
+                const confirmed = await this.readDirectItems(listId);
+                if (!confirmed.some(item => String(item.id) === created.items[0].itemId && stripSortPrefix(item.value) === value && !item.completed)) {
+                    throw new Error('Item creation was not confirmed. Refresh before trying again.');
+                }
+                this.observeListState(listName, JSON.stringify(confirmed));
+            } catch (error) {
+                await this.activateDirectSafetyStop(listName, englishRuntimeError(error));
+                throw error;
             }
             return { ok: true, view: await this.buildShoppingListView(listName) };
         });
@@ -678,6 +753,17 @@ export class ShoppingRoute extends utils.Adapter {
 
     private async onMessage(obj: { command: string; from: string; callback?: any; message?: any }): Promise<void> {
         if (!obj?.callback) return;
+        if (obj.command === 'createAlexaList' || obj.command === 'addShoppingItem') {
+            try {
+                const result = obj.command === 'createAlexaList'
+                    ? await this.createAlexaList(obj.message)
+                    : await this.addShoppingItem(obj.message);
+                this.sendTo(obj.from, obj.command, result, obj.callback);
+            } catch (error) {
+                this.sendTo(obj.from, obj.command, { ok: false, error: error instanceof Error ? error.message : String(error) }, obj.callback);
+            }
+            return;
+        }
         if (obj.command === 'getManagedConfig') {
             const state = await this.getStateAsync('data.managedConfig');
             const stored = this.parseManagedConfig(state?.val);
@@ -705,10 +791,33 @@ export class ShoppingRoute extends utils.Adapter {
             return;
         }
         if (obj.command === 'moveShoppingItem') {
-            try { this.sendTo(obj.from, obj.command, await this.applyManualMove(obj.message), obj.callback); }
-            catch (error) {
-                const message = error instanceof Error ? error.message : String(error);
-                this.sendTo(obj.from, obj.command, { ok: false, error: message, view: await this.buildShoppingListView(this.configuredListName(obj.message?.listName), true) }, obj.callback);
+            const requestId = String(obj.message?.requestId || '').trim();
+            if (!requestId) {
+                this.sendTo(obj.from, obj.command, { ok: false, error: 'Missing move request ID.' }, obj.callback);
+                return;
+            }
+            if (this.manualCommandPending || this.applyingListName) {
+                this.sendTo(obj.from, obj.command, { ok: false, error: 'A shopping-list update is already running. Please try again.' }, obj.callback);
+                return;
+            }
+            for (const [id, status] of this.shoppingMoveResults) {
+                if (!status.pending && Date.now() - Number(status.updatedAt || 0) > 3_600_000) this.shoppingMoveResults.delete(id);
+            }
+            this.shoppingMoveResults.set(requestId, { pending: true, updatedAt: Date.now() });
+            const operation = this.applyManualMove(obj.message);
+            this.sendTo(obj.from, obj.command, { ok: true, pending: true, requestId }, obj.callback);
+            void operation.then(result => this.shoppingMoveResults.set(requestId, { pending: false, result, updatedAt: Date.now() }))
+                .catch(error => this.shoppingMoveResults.set(requestId, { pending: false, error: error instanceof Error ? error.message : String(error), updatedAt: Date.now() }));
+            return;
+        }
+        if (obj.command === 'getShoppingMoveStatus') {
+            const requestId = String(obj.message?.requestId || '').trim();
+            const status = this.shoppingMoveResults.get(requestId);
+            if (!status) this.sendTo(obj.from, obj.command, { ok: false, error: 'Move status is no longer available.' }, obj.callback);
+            else if (status.pending) this.sendTo(obj.from, obj.command, { ok: true, pending: true }, obj.callback);
+            else {
+                this.shoppingMoveResults.delete(requestId);
+                this.sendTo(obj.from, obj.command, status.error ? { ok: false, error: status.error } : status.result, obj.callback);
             }
             return;
         }
@@ -961,7 +1070,13 @@ export class ShoppingRoute extends utils.Adapter {
                 return;
             }
             for (const list of this.listConfigs) {
-                const listId = await this.directListId(list.name);
+                let listId: string;
+                try { listId = await this.directListId(list.name); }
+                catch (error) {
+                    if (!(error instanceof MissingAlexaListError)) throw error;
+                    this.log.debug(String(error));
+                    continue;
+                }
                 const items = await this.readDirectItems(listId);
                 this.observeListState(list.name, JSON.stringify(items));
             }
@@ -1023,7 +1138,13 @@ export class ShoppingRoute extends utils.Adapter {
             await this.applyDirectSort(listName, state, runtime, deleteItemId);
         } catch (error) {
             const message = englishRuntimeError(error);
-            await this.activateDirectSafetyStop(listName, message);
+            if (error instanceof MissingAlexaListError) {
+                // No write has happened: an unbound list must not disable healthy lists.
+                this.log.warn(message);
+                await this.setStateAsync('info.lastError', message, true);
+            } else {
+                await this.activateDirectSafetyStop(listName, message);
+            }
         } finally {
             this.applyingListName = '';
             if (state.externalDirty && !this.isUnloading) {
@@ -1098,7 +1219,7 @@ export class ShoppingRoute extends utils.Adapter {
             await this.amazonCall(runtime, () => this.refreshDirectListIds());
             listId = this.directListIds.get(listName.toLocaleLowerCase('de'));
         }
-        if (!client || !listId) throw new Error(`Amazon list ID for “${listName}” was not found.`);
+        if (!client || !listId) throw new MissingAlexaListError(`Alexa list “${listName}” does not exist. Create it in the Lists page; other lists remain available.`);
         return listId;
     }
 
@@ -1539,16 +1660,16 @@ export class ShoppingRoute extends utils.Adapter {
     private async persistRuntimeConfig(): Promise<void> {
         if (!this.productsDirty && !this.reviewsDirty && !this.routesDirty) return;
         try {
-            const instanceId = `system.adapter.${this.namespace}`;
-            const object = await this.getForeignObjectAsync(instanceId);
-            if (!object) throw new Error(`Instance object not found: ${instanceId}`);
-            object.native = {
-                ...((object.native || {}) as Record<string, unknown>),
+            const managed = this.managedConfigData({
+                ...(this.cfg as unknown as Record<string, unknown>),
                 ...(this.productsDirty ? { products: this.runtimeProducts.map(product => ({ ...product })) } : {}),
                 ...(this.reviewsDirty ? { reviewItems: this.runtimeReviews.map(item => ({ ...item })) } : {}),
                 ...(this.routesDirty ? { routes: this.runtimeRoutes.map(route => ({ ...route })) } : {}),
-            };
-            await this.setForeignObjectAsync(instanceId, object);
+            });
+            // Writing object.native restarts the adapter and loses active UI requests.
+            // The managed state is already the authoritative, backed-up catalogue.
+            await this.writeManagedConfigState(managed);
+            Object.assign(this.config as unknown as Record<string, unknown>, managed);
             this.productsDirty = false;
             this.reviewsDirty = false;
             this.routesDirty = false;

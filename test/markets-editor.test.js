@@ -169,3 +169,9 @@ test('market names are normalized to uppercase on add and rename', () => {
   assert.equal(model.addMarket(existing, 'Apotheke').at(-1).name, 'APOTHEKE');
   assert.equal(model.editMarket(existing, 1, { name: 'Lidl City' })[1].name, 'LIDL CITY');
 });
+
+test('drag-and-drop can move a market directly to any row', () => {
+  const moved = model.moveMarketTo(existing, 0, 2);
+  assert.deepEqual(moved.map(row => row.name), [existing[1].name, existing[2].name, existing[0].name]);
+  assert.deepEqual(existing.map(row => row.name), model.marketRows(existing).map(row => row.name));
+});

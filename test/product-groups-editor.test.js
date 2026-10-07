@@ -204,10 +204,10 @@ test('delivered walking route editor satisfies the ioBroker module federation co
   }
 });
 
-test('walking route editor sources remain unchanged', () => {
+test('walking route editor sources match the reviewed mobile-enabled implementation', () => {
   const root = join(__dirname, '..');
   const hashes = {
-    'src-admin/route-editor.js': 'cbb6fbc953999c1ac9a5034aadd1934db7fb3ee1671d0fd4b098c34b271c6fa8',
+    'src-admin/route-editor.js': '3dcad6180f3556dd39c461627a252b9f3e5794bcc1bbe32915f7a7367840b436',
     'src-admin/route-editor-components.mjs': 'f0fe127c17f646ccecb87905cb27fe818a91883a49bbd55858beb20cfef970fa',
   };
 
@@ -216,4 +216,10 @@ test('walking route editor sources remain unchanged', () => {
     const actual = crypto.createHash('sha256').update(content).digest('hex');
     assert.equal(actual, expected, file);
   }
+});
+
+test('drag-and-drop can move a product group directly to any row', () => {
+  const moved = model.moveProductGroupTo(existing, 0, 2);
+  assert.deepEqual(moved.map(row => row.name), [existing[1].name, existing[2].name, existing[0].name]);
+  assert.deepEqual(existing.map(row => row.name), model.productGroupRows(existing).map(row => row.name));
 });

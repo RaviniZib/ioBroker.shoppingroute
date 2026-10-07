@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "shoppingroute",
-    "version": "0.5.0",
+    "version": "0.5.1",
     "titleLang": {
       "en": "ShoppingRoute",
       "de": "ShoppingRoute",
@@ -60,6 +60,32 @@
     "icon": "shoppingroute.png",
     "tier": 3,
     "news": {
+      "0.5.1": {
+        "en": "Fixes catalogue saves and drag-and-drop, creates verified Alexa lists, adds shopping items directly, and shows progress for long moves. Local edits no longer restart the adapter.",
+        "de": "Behebt Katalogspeicherung und Drag & Drop, legt bestätigte Alexa-Listen an, ergänzt Artikel direkt und zeigt den Fortschritt langer Verschiebungen. Lokale Änderungen lösen keine Adapter-Neustarts mehr aus.",
+        "ru": "Исправляет сохранение каталогов и перетаскивание, создаёт проверенные списки Alexa, добавляет товары напрямую и показывает ход длительных перемещений. Локальные изменения не перезапускают адаптер.",
+        "pt": "Corrige a gravação dos catálogos e o arrastar e largar, cria listas Alexa verificadas, adiciona artigos diretamente e mostra o progresso dos movimentos longos. Alterações locais não reiniciam o adaptador.",
+        "nl": "Herstelt het opslaan van catalogi en slepen, maakt gecontroleerde Alexa-lijsten, voegt artikelen rechtstreeks toe en toont de voortgang bij langdurig verplaatsen. Lokale wijzigingen herstarten de adapter niet.",
+        "fr": "Corrige l’enregistrement des catalogues et le glisser-déposer, crée des listes Alexa vérifiées, ajoute des articles directement et affiche la progression des déplacements longs. Les modifications locales ne redémarrent plus l’adaptateur.",
+        "it": "Corregge il salvataggio dei cataloghi e il trascinamento, crea liste Alexa verificate, aggiunge articoli direttamente e mostra l’avanzamento degli spostamenti lunghi. Le modifiche locali non riavviano l’adattatore.",
+        "es": "Corrige el guardado de catálogos y el arrastrar y soltar, crea listas Alexa verificadas, añade artículos directamente y muestra el progreso de los movimientos largos. Los cambios locales no reinician el adaptador.",
+        "pl": "Naprawia zapis katalogów i przeciąganie, tworzy zweryfikowane listy Alexa, dodaje produkty bezpośrednio i pokazuje postęp długich przenosin. Lokalne zmiany nie uruchamiają adaptera ponownie.",
+        "uk": "Виправляє збереження каталогів і перетягування, створює перевірені списки Alexa, додає товари безпосередньо та показує перебіг тривалих переміщень. Локальні зміни не перезапускають адаптер.",
+        "zh-cn": "修复目录保存和拖放问题，创建经验证的 Alexa 清单，直接添加商品，并显示长时间移动的进度。本地修改不再重启适配器。"
+      },
+      "0.5.0": {
+        "en": "Adds the ShoppingRoute sidebar management page, runtime catalogue storage, protection against accidental catalogue resets, and consistent uppercase market names.",
+        "de": "Neue ShoppingRoute-Verwaltung in der Seitenleiste, Katalogspeicherung zur Laufzeit, Schutz vor versehentlichen Katalog-Resets und konsistente Marktnamen in Großbuchstaben.",
+        "ru": "Новая страница управления ShoppingRoute в боковой панели, сохранение каталогов во время работы, защита от случайного сброса и названия магазинов в верхнем регистре.",
+        "pt": "Nova página de gestão ShoppingRoute na barra lateral, armazenamento dos catálogos em execução, proteção contra reposições acidentais e nomes de lojas em maiúsculas.",
+        "nl": "Nieuwe ShoppingRoute-beheerpagina in de zijbalk, catalogusopslag tijdens runtime, bescherming tegen onbedoeld resetten en winkelnamen in hoofdletters.",
+        "fr": "Nouvelle page de gestion ShoppingRoute dans la barre latérale, stockage des catalogues en fonctionnement, protection contre les réinitialisations accidentelles et noms de magasins en majuscules.",
+        "it": "Nuova pagina di gestione ShoppingRoute nella barra laterale, salvataggio dei cataloghi durante l’esecuzione, protezione dai ripristini accidentali e nomi dei negozi in maiuscolo.",
+        "es": "Nueva página de gestión ShoppingRoute en la barra lateral, guardado de catálogos en ejecución, protección ante reinicios accidentales de los catálogos y nombres de tiendas en mayúsculas.",
+        "pl": "Nowa strona zarządzania ShoppingRoute na pasku bocznym, zapis katalogów podczas działania, ochrona przed przypadkowym resetem i nazwy sklepów wielkimi literami.",
+        "uk": "Нова сторінка керування ShoppingRoute у бічній панелі, збереження каталогів під час роботи, захист від випадкового скидання та назви магазинів великими літерами.",
+        "zh-cn": "新增侧边栏 ShoppingRoute 管理页面、运行时目录存储、意外目录重置保护，以及统一的大写商店名称。"
+      },
       "0.4.4": {
         "en": "Use No Market as the default fallback market, translate the backup utility into all 11 admin languages, and remove six unused translation keys. Existing configuration is preserved.",
         "de": "No Market als Standard-Ausweichmarkt, Backup-Seite in allen 11 Admin-Sprachen und sechs ungenutzte Übersetzungsschlüssel entfernt. Bestehende Konfigurationen bleiben erhalten.",
@@ -124,32 +150,6 @@
         "pl": "Zapisuje czyszczenie kolejki przy uruchomieniu i normalizuje tablice sklepów. Sprostowanie: pełny proces w Admin nie został naprawiony; zaakceptowane wiersze mogły pozostać widoczne, a wybór sklepów nadal miał błędy interfejsu.",
         "uk": "Зберігає очищення черги перевірки під час запуску та нормалізує масиви магазинів. Уточнення: повний процес в Admin не було виправлено; прийняті рядки могли залишатися видимими, а вибір магазинів мав помилки інтерфейсу.",
         "zh-cn": "保存启动时的审核队列清理结果并规范商店数组。更正：Admin 中的完整审核流程并未修复；已接受的行仍可能显示，商店多选界面仍存在问题。"
-      },
-      "0.3.9": {
-        "en": "Replaces incomplete GitHub-installed 0.3.8 snapshots. Normalizes available-market selections, removes accepted review rows and orphaned market headings, and delivers the corrected single-column shopping-list view.",
-        "de": "Ersetzt unvollständige, direkt von GitHub installierte 0.3.8-Zwischenstände. Vereinheitlicht verfügbare Märkte, entfernt übernommene Prüflistenzeilen und verwaiste Marktüberschriften und liefert die korrigierte einspaltige Einkaufslistenansicht.",
-        "ru": "Заменяет неполные сборки 0.3.8, установленные напрямую с GitHub. Нормализует выбор доступных магазинов, удаляет принятые строки проверки и пустые заголовки магазинов и исправляет одноколоночный список покупок.",
-        "pt": "Substitui versões incompletas 0.3.8 instaladas diretamente do GitHub. Normaliza mercados disponíveis, remove linhas de revisão aceites e cabeçalhos de mercado órfãos e corrige a lista de compras numa coluna.",
-        "nl": "Vervangt onvolledige 0.3.8-versies die rechtstreeks van GitHub zijn geïnstalleerd. Normaliseert beschikbare winkels, verwijdert geaccepteerde controleregels en verweesde winkelkoppen en levert de gecorrigeerde boodschappenlijst in één kolom.",
-        "fr": "Remplace les versions 0.3.8 incomplètes installées directement depuis GitHub. Normalise les magasins disponibles, supprime les lignes de vérification acceptées et les en-têtes orphelins, et corrige la liste de courses sur une colonne.",
-        "it": "Sostituisce le versioni 0.3.8 incomplete installate direttamente da GitHub. Normalizza i negozi disponibili, rimuove le righe di revisione accettate e le intestazioni orfane e corregge la lista della spesa a colonna singola.",
-        "es": "Sustituye versiones 0.3.8 incompletas instaladas directamente desde GitHub. Normaliza los mercados disponibles, elimina filas de revisión aceptadas y encabezados huérfanos y corrige la lista de compra en una sola columna.",
-        "pl": "Zastępuje niepełne wersje 0.3.8 instalowane bezpośrednio z GitHub. Normalizuje dostępne sklepy, usuwa zaakceptowane wiersze weryfikacji i osierocone nagłówki oraz poprawia jednokolumnową listę zakupów.",
-        "uk": "Замінює неповні версії 0.3.8, установлені безпосередньо з GitHub. Нормалізує доступні магазини, видаляє прийняті рядки перевірки й осиротілі заголовки та виправляє одноколонковий список покупок.",
-        "zh-cn": "替换直接从 GitHub 安装的不完整 0.3.8 版本。统一可用商店选择，删除已接受的审核行和孤立商店标题，并修正单列购物清单视图。"
-      },
-      "0.3.7": {
-        "en": "Adds an interactive Admin shopping list with drag-and-drop/manual movement between markets, persistent per-item manual overrides, responsive Admin improvements, and a retained “accepted” review status after normal Save.",
-        "de": "Ergänzt eine interaktive Einkaufsliste im Admin mit Drag&Drop/manuellem Verschieben zwischen Märkten, dauerhaften manuellen Artikel-Overrides, Responsive-Verbesserungen und einem erhaltenen Status „Übernommen“ nach normalem Speichern.",
-        "ru": "Добавлен интерактивный список покупок в Admin с перетаскиванием и ручным перемещением между магазинами, постоянными ручными настройками элементов, улучшенной адаптивностью и сохранением статуса «принято» после обычного сохранения.",
-        "pt": "Adiciona uma lista de compras interativa no Admin com arrastar e soltar/movimento manual entre mercados, substituições manuais persistentes por item, melhorias responsivas e estado “aceite” mantido após guardar normalmente.",
-        "nl": "Voegt een interactieve boodschappenlijst in Admin toe met slepen/handmatig verplaatsen tussen winkels, blijvende handmatige overrides per artikel, responsieve verbeteringen en een behouden status “overgenomen” na normaal opslaan.",
-        "fr": "Ajoute une liste de courses interactive dans Admin avec glisser-déposer/déplacement manuel entre magasins, des priorités manuelles persistantes par article, des améliorations responsive et un statut « accepté » conservé après un enregistrement normal.",
-        "it": "Aggiunge una lista della spesa interattiva in Admin con drag&drop/spostamento manuale tra negozi, override manuali persistenti per articolo, miglioramenti responsive e stato “accettato” mantenuto dopo il normale salvataggio.",
-        "es": "Añade una lista de compra interactiva en Admin con arrastrar y soltar/movimiento manual entre tiendas, ajustes manuales persistentes por artículo, mejoras responsivas y un estado «aceptado» conservado tras guardar normalmente.",
-        "pl": "Dodaje interaktywną listę zakupów w Adminie z przeciąganiem/ręcznym przenoszeniem między sklepami, trwałymi ręcznymi nadpisaniami pozycji, poprawkami responsywności oraz zachowanym statusem „zaakceptowano” po zwykłym zapisie.",
-        "uk": "Додано інтерактивний список покупок в Admin із перетягуванням і ручним переміщенням між магазинами, постійними ручними налаштуваннями елементів, покращеною адаптивністю та збереженням статусу «прийнято» після звичайного збереження.",
-        "zh-cn": "新增 Admin 交互式购物清单，可拖放/手动在商店之间移动商品，保存逐项手动覆盖，改进响应式布局，并在普通保存后保留“已接受”状态。"
       }
     },
     "extIcon": "https://raw.githubusercontent.com/RaviniZib/ioBroker.shoppingroute/main/admin/shoppingroute.png",

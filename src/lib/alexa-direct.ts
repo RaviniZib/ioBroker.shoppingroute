@@ -226,6 +226,22 @@ export class AlexaDirectClient {
         })).filter(list => list.listId && list.name);
     }
 
+    public async createList(name: string): Promise<DirectAlexaList> {
+        const trimmed = name.trim();
+        if (!trimmed || trimmed.length > 100 || [...trimmed].some(char => char.charCodeAt(0) < 32)) throw new Error('Enter a list name with 1 to 100 characters.');
+        const existing = (await this.getLists()).find(list => list.name.toLocaleLowerCase('de') === trimmed.toLocaleLowerCase('de'));
+        if (existing) return existing;
+        // One POST only: ambiguous responses must never cause duplicate creation.
+        let failure: unknown;
+        let result: any;
+        try {
+            result = await this.request(`https://www.${this.amazonPage}/alexashoppinglists/api/v2/lists`, 'POST', { listName: trimmed, listType: 'CUSTOM' });
+        } catch (error) { failure = error; }
+        const confirmed = (await this.getLists()).find(list => list.name.toLocaleLowerCase('de') === trimmed.toLocaleLowerCase('de'));
+        if (confirmed && (!result?.listInfo?.listId || result.listInfo.listId === confirmed.listId)) return confirmed;
+        throw (failure instanceof Error ? failure : undefined) || new DirectAlexaError('remote', 'Alexa list creation was not confirmed. Refresh before trying again.');
+    }
+
     public async getItems(listId: string): Promise<DirectAmazonItem[]> {
         const items = await callbackPromise<any[]>(
             this.timerApi,

@@ -2,7 +2,7 @@
 
 ![ShoppingRoute](admin/shoppingroute.png)
 
-**Aktuelle Version: 0.5.0**
+**Aktuelle Version: 0.5.1**
 
 ShoppingRoute macht aus einer normalen Alexa-Einkaufsliste eine praktische Einkaufshilfe: **Alle Märkte können gemeinsam in einer einzigen Liste geführt oder bewusst auf mehrere Listen verteilt werden.** Das besondere Merkmal ist das frei einstellbare **Marktrouting**: Für jeden Markt legst du deinen persönlichen Laufweg durch die Abteilungen fest. Dadurch steht die Einkaufsliste in der Reihenfolge, in der du tatsächlich durch den Laden gehst – für weniger Zurücklaufen, weniger Suchen und **schnelleres, effizienteres Einkaufen**.
 
@@ -13,10 +13,28 @@ ShoppingRoute sortiert Alexa-Einkaufslisteneinträge nach Markt, Produktgruppe u
 🇩🇪 [**Deutsche Bedienungsanleitung**](BEDIENUNGSANLEITUNG_DE.md)  
 🇬🇧 [**English user guide**](USER_GUIDE_EN.md)
 
+## Neu in 0.5.1: bequem am Handy einkaufen
+
+Diese Version behebt die gemeldeten Speicher- und Verschiebefehler der neuen Verwaltungsseite. Im Mittelpunkt steht die Bedienung am Handy während des Einkaufs:
+
+- **Neue Listen tatsächlich in Alexa anlegen:** ShoppingRoute erstellt und bestätigt die Liste in Alexa, bevor sie verwendet wird. Eine ungültige neue Listenverknüpfung wird vor dem Speichern zurückgewiesen und beeinträchtigt keine funktionierenden Listen.
+- **Artikel direkt hinzufügen:** Auf der Seite **Einkaufsliste** kannst du neue Artikel eintragen, auch wenn die Alexa-Liste noch leer ist.
+- **Bis ans Ende und wieder zurück verschieben:** Eigene Ablageflächen am Listenende, Touch-Griffe, korrigierte Einfügepositionen und leere Rückkehr-Märkte erleichtern das Verschieben. Mit **Weitere Märkte als Ablageziel anzeigen** werden zusätzliche Zielmärkte eingeblendet.
+- **Längere Vorgänge verstehen:** Ein gut lesbarer Hinweis erklärt sofort, dass Alexa gerade aktualisiert wird. Das endgültige Ergebnis wird gesondert abgefragt; ein längerer Vorgang wird nicht mehr durch den bisherigen Oberflächen-Timeout als fehlgeschlagen angezeigt.
+- **Änderungen behalten:** Löschen, Umordnen und Auswahlen auf der Verwaltungsseite werden sofort gespeichert. Texteingaben bleiben bis zum Druck auf **Speichern** ein Entwurf; **Hinzufügen** übernimmt einen neuen Eintrag. Gespeicherte Änderungen bleiben beim erneuten Öffnen erhalten.
+- **Unterbrochene Speicheraktionen vermeiden:** Lokale Katalogänderungen benötigen keine unnötige Amazon-Abfrage mehr. Lerndaten werden ohne Adapter-Neustart gespeichert. Schnelle Änderungen werden nacheinander verarbeitet; bei einem echten Speicherfehler bleiben die Eingaben für einen erneuten Versuch erhalten.
+- **Artikel nach einer Alexa-Neunummerierung zurückschieben:** Geänderte Amazon-Artikel-IDs werden bei eindeutigem Artikelnamen sicher zugeordnet. Bei gleichnamigen Artikeln wird keine Zuordnung geraten.
+
+Öffne **ShoppingRoute** in der ioBroker-Seitenleiste auf dem Handy. Zum Ziehen verwendest du den Griff `⋮⋮`; Pfeiltasten und Marktauswahl stehen weiterhin zur Verfügung. Nach dem Update bitte die Verwaltungsseite einmal vollständig neu laden. Alexa-Schreibzugriffe verwenden weiterhin die eingestellten Limits, Dry-Run und Ergebnisprüfungen.
+
+Rückmeldungen zu 0.5.1 bitte im bestehenden [Tester-Thread](https://forum.iobroker.net/topic/85510/test-adapter-shoppingroute-v0.4.4) oder als [GitHub-Issue](https://github.com/RaviniZib/ioBroker.shoppingroute/issues) melden.
+
 ## Funktionen
 
 - eigene **ShoppingRoute-Verwaltungsseite** in der ioBroker-Seitenleiste für Einkaufsliste, Artikel, Märkte, Produktgruppen, Laufwege, Listen und Prüfung
 - Katalogänderungen werden zur Laufzeit gespeichert und benötigen keinen Adapter-Neustart
+- bestätigte Alexa-Listen und neue Einkaufsartikel direkt am Handy anlegen
+- sofortiges Speichern von Strukturänderungen; Texteingaben über den Button **Speichern** übernehmen
 - Marktnamen werden unabhängig von der Eingabe automatisch in **GROSSBUCHSTABEN** gespeichert; alle Marktverweise werden konsistent mit normalisiert
 - Schutz vor versehentlichem Zurücksetzen großer Katalogdaten durch Admin-/Update-Vorgänge
 
@@ -57,7 +75,7 @@ Bei der Marktzuordnung gilt:
 6. erster erlaubter Markt aus „Verfügbare Märkte“
 7. Fallback-Markt
 
-Anschließend kann 0.3.0 flexible Artikel marktübergreifend zusammenlegen, wenn ein zusätzlicher Markt die konfigurierte Mindestanzahl nicht erreicht. Dafür werden ausschließlich im Artikelstamm hinterlegte alternative verfügbare Märkte verwendet. Explizite Angaben wie `Milch von LIDL` oder `Eier bei ALDI` werden niemals verschoben.
+Anschließend kann ShoppingRoute flexible Artikel marktübergreifend zusammenlegen, wenn ein zusätzlicher Markt die konfigurierte Mindestanzahl nicht erreicht. Dafür werden ausschließlich im Artikelstamm hinterlegte alternative verfügbare Märkte verwendet. Explizite Angaben wie `Milch von LIDL` oder `Eier bei ALDI` werden niemals verschoben.
 
 ## Wichtige Datenpunkte
 
@@ -79,6 +97,15 @@ Anschließend kann 0.3.0 flexible Artikel marktübergreifend zusammenlegen, wenn
 ShoppingRoute wird unter der **[MIT-Lizenz](LICENSE)** veröffentlicht. Frühere bereits veröffentlichte Versionen bleiben unter der jeweils damals gültigen Lizenz.
 
 ## Changelog
+
+### 0.5.1 (2026-10-07)
+- Neue Listen werden in Alexa angelegt und vor dem Speichern ihrer Verknüpfung bestätigt; Einkaufsartikel können direkt hinzugefügt werden, auch in leeren Listen.
+- Alexa-Verschiebungen zeigen sofort eine gut lesbare Rückmeldung. Die gewählte Position bleibt während des Wartens sichtbar; lange Vorgänge werden ohne den bisherigen Oberflächen-Timeout verfolgt.
+- Ablageflächen am Listenende, Einfügepositionen, Touch-Ziehen und leere Rückkehr-Märkte in der Einkaufsliste korrigiert; Drag & Drop für Märkte, Produktgruppen und Laufwege wiederhergestellt.
+- Löschen, Umordnen und Auswahlen auf der Verwaltungsseite werden sofort gespeichert. Texteingaben bleiben bis zum Speichern erhalten; schnelle Strukturänderungen werden ohne Wiederholungsschleife verarbeitet.
+- Unnötige Amazon-Listenprüfungen bei lokalen Speicheraktionen entfernt. Lerndaten werden als Laufzeitdaten gespeichert und lösen keine Neustarts über das Instanzobjekt mehr aus.
+- Eindeutig benannte Artikel werden nach geänderten Amazon-IDs sicher wiedererkannt. Mehrdeutige Zuordnungen bleiben gesperrt; Schutzmechanismen für Alexa-Schreibzugriffe bleiben erhalten.
+- Deutsche und englische Einkaufslisten-Rückmeldungen, sprachabhängigen Hilfe-Button, Bedienungsanleitungen und beide READMEs aktualisiert.
 
 ### 0.5.0 (2026-10-05)
 - Neue eigenständige ShoppingRoute-Verwaltungsseite in der ioBroker-Seitenleiste mit fester Kopfzeile sowie Einkaufsliste, Artikel-, Markt-, Produktgruppen-, Laufweg-, Listen- und Prüfverwaltung.

@@ -9,7 +9,7 @@ const h = React.createElement;
 const responsiveStyles = `
     .shoppingroute-editor-row {
         display: grid;
-        grid-template-columns: 48px minmax(160px, 1fr) 144px;
+        grid-template-columns: 64px minmax(160px, 1fr) 144px;
         align-items: center;
         gap: 8px;
         padding: 9px 12px;
@@ -35,7 +35,7 @@ const responsiveStyles = `
     }
     @media (max-width: 600px) {
         .shoppingroute-editor-row {
-            grid-template-columns: 32px minmax(0, 1fr);
+            grid-template-columns: 56px minmax(0, 1fr);
         }
         .shoppingroute-editor-row-actions {
             grid-column: 2;
@@ -89,10 +89,11 @@ function SectionHeading({ title, hint, tokens, titleKey = 'title', hintKey = 'hi
     ];
 }
 
-function BorderedList({ children, tokens, marginBottom = '18px' }) {
+function BorderedList({ children, tokens, marginBottom = '18px', scope }) {
     return h(
         'div',
         {
+            'data-sort-scope': scope,
             style: {
                 border: `1px solid ${tokens.border}`,
                 borderRadius: '6px',
@@ -104,11 +105,160 @@ function BorderedList({ children, tokens, marginBottom = '18px' }) {
     );
 }
 
-function EditorRow({ position, children, actions, last, tokens }) {
+function dropIndex(event, index, from, length) {
+    const rect = event.currentTarget?.getBoundingClientRect?.();
+    let slot = index;
+    if (rect && event.clientY >= rect.top + rect.height / 2) {
+        slot++;
+    }
+    if (from >= 0 && from < slot) {
+        slot--;
+    }
+    return Math.max(0, Math.min(length - 1, slot));
+}
+
+function DropZone({ onDrop, tokens, length, scope }) {
+    return h(
+        'div',
+        {
+            className: 'shoppingroute-drop-end',
+            'data-sort-scope': scope,
+            'data-drop-index': length,
+            'data-drop-end': true,
+            onDragOver: event => {
+                event.preventDefault();
+                event.dataTransfer.dropEffect = 'move';
+            },
+            onDrop: event => {
+                event.preventDefault();
+                event.stopPropagation();
+                onDrop();
+            },
+            style: {
+                minHeight: '48px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '6px 12px',
+                borderTop: `1px dashed ${tokens?.border || '#888'}`,
+                opacity: 0.75,
+            },
+        },
+        text('Hier ans Ende ziehen', 'Drop here at the end'),
+    );
+}
+
+class DragHandle extends React.Component {
+    render() {
+        return h(
+            'span',
+            {
+                role: 'button',
+                tabIndex: 0,
+                'aria-label': text(
+                    'Ziehen zum Verschieben; Pfeile als Alternative',
+                    'Drag to move; arrows are also available',
+                ),
+                style: {
+                    display: 'inline-flex',
+                    minWidth: '44px',
+                    minHeight: '44px',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    touchAction: 'none',
+                    cursor: 'grab',
+                    userSelect: 'none',
+                },
+                onPointerDown: event => {
+                    if (event.pointerType === 'mouse' || this.props.disabled) {
+                        return;
+                    }
+                    event.preventDefault();
+                    event.stopPropagation();
+                    this.target = null;
+                    this.pointer = event.pointerId;
+                    event.currentTarget.setPointerCapture?.(event.pointerId);
+                    this.props.onStart();
+                },
+                onPointerMove: event => {
+                    if (this.pointer !== event.pointerId) {
+                        return;
+                    }
+                    const element = event.currentTarget.ownerDocument.elementFromPoint(event.clientX, event.clientY);
+                    const row = element?.closest?.('[data-drop-index]');
+                    if (
+                        !row ||
+                        row.closest('[data-sort-scope]')?.getAttribute('data-sort-scope') !== this.props.scope
+                    ) {
+                        this.target = null;
+                        return;
+                    }
+                    const index = Number(row.getAttribute('data-drop-index'));
+                    const market = row.closest('[data-drop-market]')?.getAttribute('data-drop-market');
+                    const length = Number(
+                        row.closest('[data-drop-length]')?.getAttribute('data-drop-length') ?? this.props.length,
+                    );
+                    const crossMarket = market && this.props.market && market !== this.props.market;
+                    this.target = {
+                        market,
+                        index: row.getAttribute('data-drop-end')
+                            ? Math.max(0, length - (crossMarket ? 0 : 1))
+                            : dropIndex(
+                                  { currentTarget: row, clientY: event.clientY },
+                                  index,
+                                  crossMarket ? -1 : this.props.index,
+                                  length + (crossMarket ? 1 : 0),
+                              ),
+                    };
+                },
+                onPointerUp: event => {
+                    if (this.pointer !== event.pointerId) {
+                        return;
+                    }
+                    this.pointer = null;
+                    if (this.target !== null) {
+                        this.props.onDrop(this.target.index, this.target.market);
+                    }
+                    this.props.onEnd?.();
+                    this.target = null;
+                },
+                onPointerCancel: () => {
+                    this.pointer = null;
+                    this.target = null;
+                    this.props.onEnd?.();
+                },
+            },
+            '⋮⋮',
+        );
+    }
+}
+
+function EditorRow({
+    position,
+    children,
+    actions,
+    last,
+    tokens,
+    draggable = false,
+    onDragStart,
+    onDragOver,
+    onDrop,
+    onDragEnd,
+    scope,
+    length,
+    onSortDrop,
+    onSortStart,
+}) {
     return h(
         'div',
         {
             className: 'shoppingroute-editor-row',
+            draggable,
+            onDragStart,
+            onDragOver,
+            onDrop,
+            onDragEnd,
+            'data-drop-index': position - 1,
             style: {
                 borderBottom: last ? 'none' : `1px solid ${tokens.border}`,
                 background: tokens.background,
@@ -117,8 +267,24 @@ function EditorRow({ position, children, actions, last, tokens }) {
         [
             h(
                 'div',
-                { key: 'position', style: { color: tokens.muted, textAlign: 'right', paddingRight: '6px' } },
-                String(position),
+                {
+                    key: 'position',
+                    style: { color: tokens.muted, display: 'flex', alignItems: 'center', whiteSpace: 'nowrap' },
+                },
+                [
+                    draggable
+                        ? h(DragHandle, {
+                              key: 'drag',
+                              scope,
+                              length,
+                              index: position - 1,
+                              onStart: onSortStart,
+                              onDrop: onSortDrop,
+                              onEnd: onDragEnd,
+                          })
+                        : null,
+                    String(position),
+                ],
             ),
             h('div', { key: 'content', style: { minWidth: 0 } }, children),
             h('div', { key: 'actions', className: 'shoppingroute-editor-row-actions' }, actions),
@@ -200,6 +366,9 @@ function AddControls({ children }) {
 }
 
 module.exports = {
+    DragHandle,
+    DropZone,
+    dropIndex,
     ActionButton,
     AddControls,
     BorderedList,
