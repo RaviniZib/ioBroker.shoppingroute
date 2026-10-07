@@ -97,7 +97,7 @@ const responsiveStyles = `
 .shoppingroute-list-button{min-width:30px;min-height:30px;padding:4px 8px;border:1px solid currentColor;border-radius:4px;background:transparent;color:inherit;cursor:pointer}
 .shoppingroute-list-button:disabled{cursor:default;opacity:.35}
 .shoppingroute-item-actions select{min-width:92px;max-width:125px;min-height:30px;border:1px solid currentColor;border-radius:4px;background:transparent;color:inherit;padding:3px 5px}
-.shoppingroute-empty{opacity:.58;padding:18px 11px;text-align:center}
+.shoppingroute-empty{opacity:.58;padding:18px 11px;text-align:center}\n.shoppingroute-progress-spinner{display:inline-block;width:16px;height:16px;margin-right:9px;vertical-align:-3px;border:3px solid currentColor;border-right-color:transparent;border-radius:50%;animation:shoppingroute-spin .8s linear infinite}\n@keyframes shoppingroute-spin{to{transform:rotate(360deg)}}
 @media (max-width: 600px) {
  .shoppingroute-list-toolbar>*{width:100%;max-width:none;min-height:44px}
  .shoppingroute-list-button,.shoppingroute-item-actions select{min-height:44px;min-width:44px}
@@ -111,7 +111,7 @@ const responsiveStyles = `
 class ShoppingListEditor extends React.Component {
     constructor(props) {
         super(props);
-        this.state = { view: null, loading: true, busy: '', error: '', newItem: '' };
+        this.state = { view: null, loading: true, busy: '', error: '', newItem: '', progress: '' };
         this.commandPending = false;
     }
 
@@ -170,8 +170,17 @@ class ShoppingListEditor extends React.Component {
         if (!view || this.commandPending || this.state.busy) {
             return;
         }
+        const item = view.items.find(entry => entry.id === itemId);
+        const sourceMarket = item?.market || '';
         this.commandPending = true;
-        this.setState({ busy: itemId, error: '' });
+        this.setState({
+            busy: itemId,
+            error: '',
+            progress: text(
+                `„${item?.text || 'Artikel'}“ wird von ${sourceMarket || 'der bisherigen Zuordnung'} nach ${targetMarket} verschoben. Alexa sortiert und bestätigt jetzt die Einkaufsliste. Das kann mehrere Minuten dauern – bitte diese Seite geöffnet lassen.`,
+                `Moving “${item?.text || 'item'}” from ${sourceMarket || 'its current assignment'} to ${targetMarket}. Alexa is sorting and confirming the shopping list now. This can take several minutes — please keep this page open.`,
+            ),
+        });
         try {
             const result = await this.send('moveShoppingItem', {
                 listName: view.listName,
@@ -185,11 +194,11 @@ class ShoppingListEditor extends React.Component {
             if (!result?.ok) {
                 throw new Error(result?.error || 'The item could not be moved.');
             }
-            this.setState({ busy: '' });
+            this.setState({ busy: '', progress: '' });
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
             await this.load(view.listName);
-            this.setState({ busy: '', error: message });
+            this.setState({ busy: '', progress: '', error: message });
         } finally {
             this.commandPending = false;
         }
@@ -369,6 +378,35 @@ class ShoppingListEditor extends React.Component {
                 ),
             ]),
         );
+        if (this.state.progress) {
+            children.push(
+                h(
+                    'div',
+                    {
+                        key: 'progress',
+                        role: 'status',
+                        'aria-live': 'polite',
+                        style: {
+                            padding: '12px',
+                            border: '2px solid #1976d2',
+                            borderRadius: '8px',
+                            marginBottom: '12px',
+                            background: 'rgba(25,118,210,.12)',
+                            fontWeight: 700,
+                            lineHeight: 1.45,
+                        },
+                    },
+                    [
+                        h('span', {
+                            key: 'spinner',
+                            className: 'shoppingroute-progress-spinner',
+                            'aria-hidden': 'true',
+                        }),
+                        this.state.progress,
+                    ],
+                ),
+            );
+        }
         if (this.state.error) {
             children.push(
                 h(
