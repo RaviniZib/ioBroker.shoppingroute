@@ -2,7 +2,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { ShoppingListEditor } = require('../src-admin/shopping-list-editor');
-const view = { listName: 'SHOP', lists: ['SHOP'], markets: ['REWE'], items: [{ id: 'gum', text: 'Weckgummis', market: 'REWE', position: 0 }], dryRun: false };
+const view = { listName: 'SHOP', lists: ['SHOP'], markets: ['REWE', 'LIDL'], items: [{ id: 'gum', text: 'Weckgummis', market: 'REWE', position: 0 }], dryRun: false };
 function editor(send) {
     const instance = new ShoppingListEditor({ socket: { sendTo: async (_instance, command, message) => send(command, message) } });
     instance.setState = patch => { instance.state = { ...instance.state, ...patch }; };
@@ -42,7 +42,7 @@ test('malformed mutation views never replace the last usable view', async () => 
     for (const command of ['moveShoppingItem', 'deleteShoppingItem', 'clearManualShoppingOrder']) {
         const instance = editor(name => name === 'getShoppingList' ? view : { ok: true, view: { items: [] } });
         await instance.load();
-        if (command === 'moveShoppingItem') await instance.move('gum', 'REWE', 0);
+        if (command === 'moveShoppingItem') await instance.move('gum', 'LIDL', 0);
         else if (command === 'deleteShoppingItem') await instance.remove('gum');
         else await instance.clearManual();
         assert.ok(instance.state.error, command);

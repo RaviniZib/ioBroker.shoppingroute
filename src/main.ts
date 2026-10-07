@@ -370,30 +370,38 @@ export class ShoppingRoute extends utils.Adapter {
         if (!(managed.lists as any[]).some(list => list?.name && list.enabled !== false)) {
             throw new Error('At least one enabled Alexa shopping list is required.');
         }
-        // Validate every enabled binding before changing the running configuration.
-        await this.initializeDirectClient();
-        await this.refreshDirectListIds();
-        for (const list of managed.lists as ShoppingListConfig[]) {
-            if (list?.name && list.enabled !== false && !this.directListIds.has(list.name.trim().toLocaleLowerCase('de'))) {
+        // Local catalogue edits must not depend on Amazon being available. Only newly
+        // added/enabled bindings need a remote check; existing bindings keep their safeguards.
+        const existing = new Set(this.listConfigs.map(list => list.name.trim().toLocaleLowerCase('de')));
+        const newBindings = (managed.lists as ShoppingListConfig[])
+            .filter(list => list?.name && list.enabled !== false && !existing.has(list.name.trim().toLocaleLowerCase('de')));
+        if (newBindings.length) {
+            await this.initializeDirectClient();
+            await this.refreshDirectListIds();
+        }
+        for (const list of newBindings) {
+            if (!this.directListIds.has(list.name.trim().toLocaleLowerCase('de'))) {
                 throw new MissingAlexaListError(`Alexa list “${list.name}” does not exist. Create it in the Lists page first.`);
             }
         }
-        Object.assign(this.config as unknown as Record<string, unknown>, managed);
-        this.runtimeProducts = normalizeProductAvailableMarkets((managed.products as ProductConfig[]).filter(product => product?.name))
+        const runtimeProducts = normalizeProductAvailableMarkets((managed.products as ProductConfig[]).filter(product => product?.name))
             .sort((a, b) => a.name.localeCompare(b.name, 'de', { sensitivity: 'base' }));
-        this.runtimeReviews = (managed.reviewItems as ReviewItemConfig[]).map(item => ({ ...item }));
-        this.runtimeRoutes = normalizeRoutesForAdmin((managed.routes as RouteConfig[]).filter(Boolean));
+        const runtimeReviews = (managed.reviewItems as ReviewItemConfig[]).map(item => ({ ...item }));
+        const runtimeRoutes = normalizeRoutesForAdmin((managed.routes as RouteConfig[]).filter(Boolean));
+        const normalized = this.managedConfigData({
+            ...managed,
+            products: runtimeProducts,
+            reviewItems: runtimeReviews,
+            routes: runtimeRoutes,
+        });
+        const savedAt = await this.writeManagedConfigState(normalized);
+        Object.assign(this.config as unknown as Record<string, unknown>, normalized);
+        this.runtimeProducts = runtimeProducts;
+        this.runtimeReviews = runtimeReviews;
+        this.runtimeRoutes = runtimeRoutes;
         this.productsDirty = false;
         this.reviewsDirty = false;
         this.routesDirty = false;
-        const normalized = this.managedConfigData({
-            ...managed,
-            products: this.runtimeProducts,
-            reviewItems: this.runtimeReviews,
-            routes: this.runtimeRoutes,
-        });
-        Object.assign(this.config as unknown as Record<string, unknown>, normalized);
-        const savedAt = await this.writeManagedConfigState(normalized);
         for (const list of this.listConfigs) this.subscribeForeignStates(this.listStateId(list.name));
         await this.updateTemporaryMarketStateOptions();
         await this.refreshExports();
@@ -606,15 +614,21 @@ export class ShoppingRoute extends utils.Adapter {
             if (this.dryRun) return { ok: false, error: 'Dry Run is active. Disable Dry Run before changing the Alexa list.', view: before };
             if (!(await this.isEnabled())) return { ok: false, error: 'ShoppingRoute is disabled.', view: before };
             if (this.applyingListName) return { ok: false, error: 'A shopping-list update is already running. Please try again.', view: before };
-            const itemId = String(message?.itemId || '').trim();
-            const item = before.items.find(entry => entry.id === itemId);
+            const requestedId = String(message?.itemId || '').trim();
+            const text = stripSortPrefix(String(message?.itemText || '').trim());
+            const matches = text ? before.items.filter(entry => stripSortPrefix(entry.text) === text) : [];
+            // Amazon suffix rebuilds replace IDs. Rebind only an unambiguous item,
+            // never guess between duplicate product names.
+            const item = before.items.find(entry => entry.id === requestedId) || (matches.length === 1 ? matches[0] : undefined);
             if (!item) return { ok: false, error: 'The selected shopping-list item no longer exists.', view: before };
+            const itemId = item.id;
             const targetMarket = String(message?.targetMarket || '').trim();
             if (!before.markets.some(market => market.toLocaleLowerCase('de') === targetMarket.toLocaleLowerCase('de'))) {
                 return { ok: false, error: 'The selected target market is not available.', view: before };
             }
             const targetCount = before.items.filter(entry => entry.market === targetMarket && entry.id !== itemId).length;
             const targetPosition = Math.max(0, Math.min(targetCount, Math.floor(Number(message?.targetPosition) || 0)));
+            if (item.market === targetMarket && item.position === targetPosition) return { ok: true, view: before };
             const previous = this.manualOverrides.map(entry => ({ ...entry }));
             this.manualOverrides = moveManualOverride(this.manualOverrides, {
                 listName,
@@ -1646,16 +1660,16 @@ export class ShoppingRoute extends utils.Adapter {
     private async persistRuntimeConfig(): Promise<void> {
         if (!this.productsDirty && !this.reviewsDirty && !this.routesDirty) return;
         try {
-            const instanceId = `system.adapter.${this.namespace}`;
-            const object = await this.getForeignObjectAsync(instanceId);
-            if (!object) throw new Error(`Instance object not found: ${instanceId}`);
-            object.native = {
-                ...((object.native || {}) as Record<string, unknown>),
+            const managed = this.managedConfigData({
+                ...(this.cfg as unknown as Record<string, unknown>),
                 ...(this.productsDirty ? { products: this.runtimeProducts.map(product => ({ ...product })) } : {}),
                 ...(this.reviewsDirty ? { reviewItems: this.runtimeReviews.map(item => ({ ...item })) } : {}),
                 ...(this.routesDirty ? { routes: this.runtimeRoutes.map(route => ({ ...route })) } : {}),
-            };
-            await this.setForeignObjectAsync(instanceId, object);
+            });
+            // Writing object.native restarts the adapter and loses active UI requests.
+            // The managed state is already the authoritative, backed-up catalogue.
+            await this.writeManagedConfigState(managed);
+            Object.assign(this.config as unknown as Record<string, unknown>, managed);
             this.productsDirty = false;
             this.reviewsDirty = false;
             this.routesDirty = false;

@@ -7,6 +7,8 @@ const {
     ActionButton,
     AddControls,
     BorderedList,
+    DropZone,
+    dropIndex,
     EditorFrame,
     EditorRow,
     IconButton,
@@ -67,13 +69,13 @@ function moveProductGroupTo(productGroups, fromIndex, toIndex) {
         fromIndex < 0 ||
         toIndex < 0 ||
         fromIndex >= result.length ||
-        toIndex >= result.length ||
+        toIndex > result.length ||
         fromIndex === toIndex
     ) {
         return result;
     }
     const [row] = result.splice(fromIndex, 1);
-    result.splice(toIndex, 0, row);
+    result.splice(Math.min(toIndex, result.length), 0, row);
     return result;
 }
 
@@ -148,10 +150,8 @@ class ProductGroupsEditor extends React.Component {
             );
         } else {
             children.push(
-                h(
-                    BorderedList,
-                    { key: 'groups', tokens },
-                    groups.map((group, index) =>
+                h(BorderedList, { key: 'groups', tokens, scope: 'groups' }, [
+                    ...groups.map((group, index) =>
                         h(
                             EditorRow,
                             {
@@ -159,15 +159,22 @@ class ProductGroupsEditor extends React.Component {
                                 position: index + 1,
                                 last: index === groups.length - 1,
                                 tokens,
+                                scope: 'groups',
+                                length: groups.length,
+                                onSortStart: () => this.setState({ dragIndex: index }),
+                                onSortDrop: target => this.drop(target),
+                                onDragEnd: () => this.setState({ dragIndex: -1 }),
                                 draggable: true,
                                 onDragStart: event => {
                                     this.setState({ dragIndex: index });
                                     event.dataTransfer.effectAllowed = 'move';
+                                    event.dataTransfer.setData('text/plain', `groups:${index}`);
                                 },
                                 onDragOver: event => event.preventDefault(),
                                 onDrop: event => {
                                     event.preventDefault();
-                                    this.drop(index);
+                                    event.stopPropagation();
+                                    this.drop(dropIndex(event, index, this.state.dragIndex, groups.length));
                                 },
                                 actions: [
                                     h(
@@ -212,7 +219,14 @@ class ProductGroupsEditor extends React.Component {
                             }),
                         ),
                     ),
-                ),
+                    h(DropZone, {
+                        key: 'drop-end',
+                        tokens,
+                        length: groups.length,
+                        scope: 'groups',
+                        onDrop: () => this.drop(groups.length - 1),
+                    }),
+                ]),
             );
         }
 

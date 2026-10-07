@@ -3,6 +3,7 @@
 /* eslint-disable jsdoc/require-jsdoc */
 
 const React = require('react');
+const { DragHandle } = require('./shoppingroute-admin-ui');
 const h = React.createElement;
 
 const text = (de, en) => {
@@ -48,7 +49,12 @@ function visibleItems(view) {
     const markets = Array.isArray(view?.markets) ? view.markets : [];
     return (Array.isArray(view?.items) ? view.items : [])
         .filter(item => item?.id && !headerMarket(item.text, markets))
-        .map(item => ({ ...item, text: stripVisiblePrefix(item.text) }));
+        .map(item => ({ ...item, text: stripVisiblePrefix(item.text) }))
+        .sort(
+            (a, b) =>
+                markets.indexOf(a.market) - markets.indexOf(b.market) ||
+                Number(a.position || 0) - Number(b.position || 0),
+        );
 }
 
 function optimisticMove(view, itemId, targetMarket, targetPosition) {
@@ -115,7 +121,7 @@ const responsiveStyles = `
 .shoppingroute-market-title{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:9px 11px;font-weight:700;border-bottom:1px solid currentColor}
 .shoppingroute-market-count{font-size:.82rem;opacity:.65;font-weight:500}
 .shoppingroute-item-list{display:flex;flex-direction:column}
-.shoppingroute-item-row{display:grid;grid-template-columns:20px minmax(0,1fr) auto;gap:8px;align-items:center;padding:7px 9px;border-bottom:1px solid currentColor}
+.shoppingroute-item-row{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:8px;align-items:center;padding:7px 9px;border-bottom:1px solid currentColor}
 .shoppingroute-item-row:last-child{border-bottom:0}
 .shoppingroute-drag-handle{font-size:16px;opacity:.5;cursor:grab;user-select:none;text-align:center}
 .shoppingroute-item-name{font-weight:600;word-break:break-word}
@@ -128,7 +134,7 @@ const responsiveStyles = `
 @media (max-width: 600px) {
  .shoppingroute-list-toolbar>*{width:100%;max-width:none;min-height:44px}
  .shoppingroute-list-button,.shoppingroute-item-actions select{min-height:44px;min-width:44px}
- .shoppingroute-item-row{grid-template-columns:18px minmax(0,1fr)}
+ .shoppingroute-item-row{grid-template-columns:44px minmax(0,1fr)}
  .shoppingroute-item-actions{grid-column:2;justify-content:flex-start;flex-wrap:wrap;margin-top:3px}
  .shoppingroute-item-actions select{flex:1 1 120px;max-width:none}
  .shoppingroute-drag-handle{cursor:default}
@@ -158,6 +164,7 @@ class ShoppingListEditor extends React.Component {
         super(props);
         this.state = { view: null, loading: true, busy: '', error: '', newItem: '', progress: '' };
         this.commandPending = false;
+        this.visitedMarkets = new Set();
     }
 
     componentDidMount() {
@@ -205,6 +212,7 @@ class ShoppingListEditor extends React.Component {
                 throw new Error(result?.error || 'Shopping list could not be loaded.');
             }
             this.setState({ view: checkedView(result), loading: false, busy: '' });
+            result.items.forEach(item => this.visitedMarkets.add(item.market));
         } catch (error) {
             this.setState({ loading: false, busy: '', error: error instanceof Error ? error.message : String(error) });
         }
@@ -228,6 +236,11 @@ class ShoppingListEditor extends React.Component {
         }
         const item = view.items.find(entry => entry.id === itemId);
         const sourceMarket = item?.market || '';
+        if (!item || (sourceMarket === targetMarket && Number(item.position) === Number(targetPosition))) {
+            return;
+        }
+        this.visitedMarkets.add(sourceMarket);
+        this.visitedMarkets.add(targetMarket);
         this.commandPending = true;
         this.setState({
             view: optimisticMove(view, itemId, targetMarket, targetPosition),
@@ -243,6 +256,7 @@ class ShoppingListEditor extends React.Component {
             let result = await this.send('moveShoppingItem', {
                 listName: view.listName,
                 itemId,
+                itemText: item.text,
                 targetMarket,
                 targetPosition,
                 requestId,
@@ -317,6 +331,7 @@ class ShoppingListEditor extends React.Component {
     }
 
     onDragStart(event, itemId) {
+        this.dragItemId = itemId;
         event.dataTransfer.effectAllowed = 'move';
         event.dataTransfer.setData('text/plain', itemId);
     }
@@ -324,7 +339,8 @@ class ShoppingListEditor extends React.Component {
     onDrop(event, market, position) {
         event.preventDefault();
         event.stopPropagation();
-        const itemId = event.dataTransfer.getData('text/plain');
+        const itemId = event.dataTransfer?.getData('text/plain') || this.dragItemId;
+        this.dragItemId = null;
         if (itemId) {
             void this.move(itemId, market, position);
         }
@@ -338,9 +354,19 @@ class ShoppingListEditor extends React.Component {
                 key: item.id,
                 className: 'shoppingroute-item-row',
                 draggable: !busy,
+                'data-drop-index': index,
+                onDragEnd: () => {
+                    this.dragItemId = null;
+                },
                 onDragStart: event => this.onDragStart(event, item.id),
                 onDragOver: event => event.preventDefault(),
-                onDrop: event => this.onDrop(event, item.market, index),
+                onDrop: event => {
+                    const moving = view.items.find(entry => entry.id === this.dragItemId);
+                    const from = moving?.market === item.market ? moving.position : -1;
+                    const rect = event.currentTarget?.getBoundingClientRect?.();
+                    const slot = rect && event.clientY >= rect.top + rect.height / 2 ? index + 1 : index;
+                    this.onDrop(event, item.market, Math.max(0, slot - (from >= 0 && from < slot ? 1 : 0)));
+                },
             },
             [
                 h(
@@ -351,7 +377,22 @@ class ShoppingListEditor extends React.Component {
                         title: text('Ziehen', 'Drag'),
                         'aria-hidden': true,
                     },
-                    '⋮⋮',
+                    h(DragHandle, {
+                        scope: 'shopping',
+                        length: marketItems.length,
+                        index,
+                        market: item.market,
+                        disabled: busy || view.dryRun,
+                        onStart: () => {
+                            this.dragItemId = item.id;
+                        },
+                        onDrop: (target, market) => {
+                            void this.move(item.id, market || item.market, target);
+                        },
+                        onEnd: () => {
+                            this.dragItemId = null;
+                        },
+                    }),
                 ),
                 h('div', { key: 'main' }, [
                     h('div', { key: 'name', className: 'shoppingroute-item-name' }, stripVisiblePrefix(item.text)),
@@ -588,7 +629,27 @@ class ShoppingListEditor extends React.Component {
             ]),
         );
 
-        const visibleMarkets = view.markets.filter(market => items.some(item => item.market === market));
+        children.push(
+            h(
+                'button',
+                {
+                    key: 'empty-markets',
+                    className: 'shoppingroute-list-button',
+                    style: { marginBottom: '12px' },
+                    disabled: busy,
+                    onClick: () => this.setState({ showEmptyMarkets: !this.state.showEmptyMarkets }),
+                },
+                this.state.showEmptyMarkets
+                    ? text('Leere Märkte ausblenden', 'Hide empty markets')
+                    : text('Weitere Märkte als Ablageziel anzeigen', 'Show other markets as drop targets'),
+            ),
+        );
+        const visibleMarkets = view.markets.filter(
+            market =>
+                this.state.showEmptyMarkets ||
+                this.visitedMarkets.has(market) ||
+                items.some(item => item.market === market),
+        );
         if (!visibleMarkets.length) {
             children.push(
                 h(
@@ -605,6 +666,9 @@ class ShoppingListEditor extends React.Component {
                 'section',
                 {
                     key: market,
+                    'data-sort-scope': 'shopping',
+                    'data-drop-market': market,
+                    'data-drop-length': marketItems.length,
                     className: 'shoppingroute-market-column',
                     onDragOver: event => event.preventDefault(),
                     onDrop: event => this.onDrop(event, market, marketItems.length),
@@ -619,14 +683,37 @@ class ShoppingListEditor extends React.Component {
                         ),
                     ]),
                     marketItems.length
-                        ? h(
-                              'div',
-                              { key: 'items', className: 'shoppingroute-item-list' },
-                              marketItems.map((item, index) => this.renderRow(item, marketItems, index, view, items)),
-                          )
+                        ? h('div', { key: 'items', className: 'shoppingroute-item-list' }, [
+                              ...marketItems.map((item, index) =>
+                                  this.renderRow(item, marketItems, index, view, items),
+                              ),
+                              h(
+                                  'div',
+                                  {
+                                      key: 'drop-end',
+                                      className: 'shoppingroute-empty',
+                                      'data-drop-index': marketItems.length,
+                                      'data-drop-end': true,
+                                      style: { minHeight: '48px', borderTop: '1px dashed currentColor' },
+                                      onDragOver: event => event.preventDefault(),
+                                      onDrop: event =>
+                                          this.onDrop(
+                                              event,
+                                              market,
+                                              marketItems.filter(item => item.id !== this.dragItemId).length,
+                                          ),
+                                  },
+                                  text('Hier ans Ende ziehen', 'Drop here at the end'),
+                              ),
+                          ])
                         : h(
                               'div',
-                              { key: 'empty', className: 'shoppingroute-empty' },
+                              {
+                                  key: 'empty',
+                                  className: 'shoppingroute-empty',
+                                  'data-drop-index': 0,
+                                  'data-drop-end': true,
+                              },
                               text('Hierher ziehen', 'Drop here'),
                           ),
                 ],

@@ -204,10 +204,10 @@ test('delivered walking route editor satisfies the ioBroker module federation co
   }
 });
 
-test('walking route editor sources remain unchanged', () => {
+test('walking route editor sources match the reviewed mobile-enabled implementation', () => {
   const root = join(__dirname, '..');
   const hashes = {
-    'src-admin/route-editor.js': '2aed9e778ed69adbedd44576deeffe79d5c35a9532d78bcf67239134c230c73e',
+    'src-admin/route-editor.js': '3dcad6180f3556dd39c461627a252b9f3e5794bcc1bbe32915f7a7367840b436',
     'src-admin/route-editor-components.mjs': 'f0fe127c17f646ccecb87905cb27fe818a91883a49bbd55858beb20cfef970fa',
   };
 

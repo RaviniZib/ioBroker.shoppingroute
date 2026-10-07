@@ -45,10 +45,11 @@ test('dropping on an item does not also dispatch a drop to its market section', 
     const row = tree.find(n => n.props?.className === 'shoppingroute-item-row');
     const section = tree.find(n => n.type === 'section');
     let stopped = false;
+    // Dropping back onto the same slot is a no-op, but must still stop propagation.
     const event = { preventDefault() {}, stopPropagation() { stopped = true; }, dataTransfer: { getData() { return 'gum'; } } };
     row.props.onDrop(event);
     if (!stopped) section.props.onDrop(event);
-    try { assert.equal(stopped, true); assert.equal(calls.length, 1); }
+    try { assert.equal(stopped, true); assert.equal(calls.length, 0); }
     finally { reply.resolve({ ok: true, view: editor.state.view }); await tick(); }
 });
 
@@ -75,13 +76,13 @@ test('direct sorting reserves its lock before awaiting the enabled state', async
 
 test('manual moves reserve the command before any remote read or override persistence', async () => {
     const adapter = runtimeFixture();
-    const view = { listName: 'SHOP', lists: ['SHOP'], markets: ['REWE'], items: [{id: 'gum', text: 'Weckgummis', market: 'REWE', position: 0}] };
+    const view = { listName: 'SHOP', lists: ['SHOP'], markets: ['REWE', 'LIDL'], items: [{id: 'gum', text: 'Weckgummis', market: 'REWE', position: 0}] };
     const read = deferred(); let preparations = 0;
     adapter.buildShoppingListView = () => read.promise;
     adapter.isEnabled = async () => true;
     adapter.persistManualOverrides = async () => { preparations++; };
     adapter.applyDirectSort = async () => {};
-    const message = { listName: 'SHOP', itemId: 'gum', targetMarket: 'REWE', targetPosition: 0 };
+    const message = { listName: 'SHOP', itemId: 'gum', targetMarket: 'LIDL', targetPosition: 0 };
     const first = adapter.applyManualMove(message);
     const second = adapter.applyManualMove(message).then(() => 'accepted', () => 'busy');
     read.resolve(view);
@@ -92,12 +93,12 @@ test('manual moves reserve the command before any remote read or override persis
 
 test('automatic sorting waits for a manual command and remains usable afterwards', async () => {
     const adapter = runtimeFixture(); const read = deferred(); let runs = 0;
-    const view = { listName: 'SHOP', lists: ['SHOP'], markets: ['REWE'], items: [{id: 'gum', text: 'Weckgummis', market: 'REWE', position: 0}] };
+    const view = { listName: 'SHOP', lists: ['SHOP'], markets: ['REWE', 'LIDL'], items: [{id: 'gum', text: 'Weckgummis', market: 'REWE', position: 0}] };
     adapter.buildShoppingListView = () => read.promise;
     adapter.isEnabled = async () => true;
     adapter.applyDirectSort = async () => { runs++; };
     adapter.prepareImmediateApply('SHOP');
-    const manual = adapter.applyManualMove({listName: 'SHOP', itemId: 'gum', targetMarket: 'REWE'});
+    const manual = adapter.applyManualMove({listName: 'SHOP', itemId: 'gum', targetMarket: 'LIDL'});
     await adapter.startApply('SHOP');
     assert.equal(runs, 0);
     await assert.rejects(adapter.clearManualShoppingOrder({listName: 'SHOP'}), /already running/);

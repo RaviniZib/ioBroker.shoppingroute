@@ -7,6 +7,8 @@ const {
     ActionButton,
     AddControls,
     BorderedList,
+    DropZone,
+    dropIndex,
     EditorFrame,
     EditorRow,
     IconButton,
@@ -152,13 +154,13 @@ function moveMarketTo(markets, fromIndex, toIndex) {
         fromIndex < 0 ||
         toIndex < 0 ||
         fromIndex >= result.length ||
-        toIndex >= result.length ||
+        toIndex > result.length ||
         fromIndex === toIndex
     ) {
         return result;
     }
     const [row] = result.splice(fromIndex, 1);
-    result.splice(toIndex, 0, row);
+    result.splice(Math.min(toIndex, result.length), 0, row);
     return result;
 }
 
@@ -182,7 +184,7 @@ class MarketsEditor extends React.Component {
     }
 
     edit(index, patch) {
-        this.updateMarkets(editMarket(this.props.data && this.props.data.markets, index, patch), false);
+        this.updateMarkets(editMarket(this.props.data && this.props.data.markets, index, patch), 'enabled' in patch);
     }
 
     remove(index) {
@@ -190,14 +192,25 @@ class MarketsEditor extends React.Component {
     }
 
     move(index, direction) {
-        this.updateMarkets(moveMarket(this.props.data && this.props.data.markets, index, direction), true);
+        this.updateMarkets(
+            moveMarket(this.props.data && this.props.data.markets, index, direction).map((market, position) => ({
+                ...market,
+                order: (position + 1) * 10,
+            })),
+            true,
+        );
     }
 
     drop(index) {
         if (this.state.dragIndex < 0) {
             return;
         }
-        this.updateMarkets(moveMarketTo(this.props.data && this.props.data.markets, this.state.dragIndex, index), true);
+        this.updateMarkets(
+            moveMarketTo(this.props.data && this.props.data.markets, this.state.dragIndex, index).map(
+                (market, position) => ({ ...market, order: (position + 1) * 10 }),
+            ),
+            true,
+        );
         this.setState({ dragIndex: -1 });
     }
 
@@ -209,15 +222,22 @@ class MarketsEditor extends React.Component {
                 position: index + 1,
                 last: index === markets.length - 1,
                 tokens,
+                scope: 'markets',
+                length: markets.length,
+                onSortStart: () => this.setState({ dragIndex: index }),
+                onSortDrop: target => this.drop(target),
+                onDragEnd: () => this.setState({ dragIndex: -1 }),
                 draggable: true,
                 onDragStart: event => {
                     this.setState({ dragIndex: index });
                     event.dataTransfer.effectAllowed = 'move';
+                    event.dataTransfer.setData('text/plain', `markets:${index}`);
                 },
                 onDragOver: event => event.preventDefault(),
                 onDrop: event => {
                     event.preventDefault();
-                    this.drop(index);
+                    event.stopPropagation();
+                    this.drop(dropIndex(event, index, this.state.dragIndex, markets.length));
                 },
                 actions: [
                     h(
@@ -327,11 +347,16 @@ class MarketsEditor extends React.Component {
             );
         } else {
             children.push(
-                h(
-                    BorderedList,
-                    { key: 'markets', tokens },
-                    markets.map((market, index) => this.renderMarketRow(market, index, markets, tokens)),
-                ),
+                h(BorderedList, { key: 'markets', tokens, scope: 'markets' }, [
+                    ...markets.map((market, index) => this.renderMarketRow(market, index, markets, tokens)),
+                    h(DropZone, {
+                        key: 'drop-end',
+                        tokens,
+                        length: markets.length,
+                        scope: 'markets',
+                        onDrop: () => this.drop(markets.length - 1),
+                    }),
+                ]),
             );
         }
 
