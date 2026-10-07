@@ -85,6 +85,9 @@ tests.integration(path.join(__dirname, '..'), {
                 assert.deepEqual(managed.data.products[0].availableMarkets, ['ALDI', 'LIDL']);
                 await harness.stopAdapter();
             });
+        });
+        // The integration harness has one adapter lifetime per suite.
+        suite('Managed catalogue startup reload', getHarness => {
             it('loads a persisted cleaned catalogue instead of stale native reviews on startup', async function () {
                 this.timeout(30000);
                 const harness = getHarness();
