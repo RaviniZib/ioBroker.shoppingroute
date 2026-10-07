@@ -135,6 +135,24 @@ const responsiveStyles = `
 }
 `;
 
+function localizedMoveError(message) {
+    const value = String(message || '');
+    const known = {
+        'Dry Run is active. Disable Dry Run before changing the Alexa list.':
+            'Der Testmodus ist aktiv. Bitte vor dem Verschieben deaktivieren.',
+        'ShoppingRoute is disabled.': 'ShoppingRoute ist deaktiviert.',
+        'A shopping-list update is already running. Please try again.':
+            'Die Einkaufsliste wird bereits bearbeitet. Bitte danach erneut versuchen.',
+        'The selected shopping-list item no longer exists.': 'Der ausgewählte Artikel ist nicht mehr vorhanden.',
+        'The selected target market is not available.': 'Der ausgewählte Zielmarkt ist nicht verfügbar.',
+        'Move status is no longer available.': 'Der Status der Verschiebung ist nicht mehr verfügbar.',
+    };
+    return text(
+        known[value] || 'Der Artikel konnte nicht verschoben werden. Bitte die Liste neu laden und erneut versuchen.',
+        value || 'The item could not be moved. Please reload the list and try again.',
+    );
+}
+
 class ShoppingListEditor extends React.Component {
     constructor(props) {
         super(props);
@@ -192,6 +210,17 @@ class ShoppingListEditor extends React.Component {
         }
     }
 
+    async waitForMove(requestId) {
+        for (let attempt = 0; attempt < 300; attempt++) {
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            const status = await this.send('getShoppingMoveStatus', { requestId });
+            if (!status?.pending) {
+                return status;
+            }
+        }
+        throw new Error('Move status timed out.');
+    }
+
     async move(itemId, targetMarket, targetPosition) {
         const view = this.state.view;
         if (!view || this.commandPending || this.state.busy) {
@@ -210,12 +239,17 @@ class ShoppingListEditor extends React.Component {
             ),
         });
         try {
-            const result = await this.send('moveShoppingItem', {
+            const requestId = `${String(Date.now())}-${Math.random().toString(36).slice(2)}`;
+            let result = await this.send('moveShoppingItem', {
                 listName: view.listName,
                 itemId,
                 targetMarket,
                 targetPosition,
+                requestId,
             });
+            if (result?.pending) {
+                result = await this.waitForMove(requestId);
+            }
             if (result?.view) {
                 this.setState({ view: checkedView(result.view) });
             }
@@ -224,7 +258,7 @@ class ShoppingListEditor extends React.Component {
             }
             this.setState({ busy: '', progress: '' });
         } catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
+            const message = localizedMoveError(error instanceof Error ? error.message : String(error));
             await this.load(view.listName);
             this.setState({ busy: '', progress: '', error: message });
         } finally {

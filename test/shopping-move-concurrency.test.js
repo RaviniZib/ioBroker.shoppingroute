@@ -286,3 +286,24 @@ test('a pending mobile move immediately explains the Alexa wait', async () => {
     assert.equal(editor.state.progress, '');
     assert.equal(editor.state.busy, '');
 });
+
+test('long mobile moves acknowledge immediately and return their final result through status polling', async () => {
+    const adapter = runtimeFixture();
+    const operation = deferred();
+    const replies = [];
+    adapter.applyManualMove = () => operation.promise;
+    adapter.sendTo = (...args) => replies.push(args);
+    const request = {
+        command: 'moveShoppingItem',
+        from: 'admin.0',
+        callback: { id: 1 },
+        message: { listName: 'SHOP', itemId: 'gum', targetMarket: 'ALDI', targetPosition: 0, requestId: 'move-1' },
+    };
+    await adapter.onMessage(request);
+    assert.deepEqual(replies[0][2], { ok: true, pending: true, requestId: 'move-1' });
+    operation.resolve({ ok: true, view: { listName: 'SHOP', lists: ['SHOP'], markets: ['ALDI'], items: [] } });
+    await tick();
+    await adapter.onMessage({ command: 'getShoppingMoveStatus', from: 'admin.0', callback: { id: 2 }, message: { requestId: 'move-1' } });
+    assert.equal(replies[1][2].ok, true);
+    assert.equal(replies[1][2].view.markets[0], 'ALDI');
+});

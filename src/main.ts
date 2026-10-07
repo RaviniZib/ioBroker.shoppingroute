@@ -206,6 +206,7 @@ export class ShoppingRoute extends utils.Adapter {
     private listStates = new Map<string, ListApplyState>();
     private applyingListName = '';
     private manualCommandPending = false;
+    private shoppingMoveResults = new Map<string, any>();
     private directPollTimer: ioBroker.Timeout | undefined;
     private directPollRunning = false;
     private directPollDelayMs = DIRECT_POLL_BASE_MS;
@@ -776,10 +777,33 @@ export class ShoppingRoute extends utils.Adapter {
             return;
         }
         if (obj.command === 'moveShoppingItem') {
-            try { this.sendTo(obj.from, obj.command, await this.applyManualMove(obj.message), obj.callback); }
-            catch (error) {
-                const message = error instanceof Error ? error.message : String(error);
-                this.sendTo(obj.from, obj.command, { ok: false, error: message, view: await this.buildShoppingListView(this.configuredListName(obj.message?.listName), true) }, obj.callback);
+            const requestId = String(obj.message?.requestId || '').trim();
+            if (!requestId) {
+                this.sendTo(obj.from, obj.command, { ok: false, error: 'Missing move request ID.' }, obj.callback);
+                return;
+            }
+            if (this.manualCommandPending || this.applyingListName) {
+                this.sendTo(obj.from, obj.command, { ok: false, error: 'A shopping-list update is already running. Please try again.' }, obj.callback);
+                return;
+            }
+            for (const [id, status] of this.shoppingMoveResults) {
+                if (!status.pending && Date.now() - Number(status.updatedAt || 0) > 3_600_000) this.shoppingMoveResults.delete(id);
+            }
+            this.shoppingMoveResults.set(requestId, { pending: true, updatedAt: Date.now() });
+            const operation = this.applyManualMove(obj.message);
+            this.sendTo(obj.from, obj.command, { ok: true, pending: true, requestId }, obj.callback);
+            void operation.then(result => this.shoppingMoveResults.set(requestId, { pending: false, result, updatedAt: Date.now() }))
+                .catch(error => this.shoppingMoveResults.set(requestId, { pending: false, error: error instanceof Error ? error.message : String(error), updatedAt: Date.now() }));
+            return;
+        }
+        if (obj.command === 'getShoppingMoveStatus') {
+            const requestId = String(obj.message?.requestId || '').trim();
+            const status = this.shoppingMoveResults.get(requestId);
+            if (!status) this.sendTo(obj.from, obj.command, { ok: false, error: 'Move status is no longer available.' }, obj.callback);
+            else if (status.pending) this.sendTo(obj.from, obj.command, { ok: true, pending: true }, obj.callback);
+            else {
+                this.shoppingMoveResults.delete(requestId);
+                this.sendTo(obj.from, obj.command, status.error ? { ok: false, error: status.error } : status.result, obj.callback);
             }
             return;
         }
