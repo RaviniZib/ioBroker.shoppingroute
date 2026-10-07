@@ -650,3 +650,9 @@ For a new installation, we recommend:
 9. Try one real shopping trip.
 
 After that, ShoppingRoute should handle most of the work automatically.
+
+### Create lists and add items on your phone
+
+**Lists → Create in Alexa** creates a real Alexa list, verifies Amazon's confirmation and immediately saves its ShoppingRoute binding. Existing names are reused. The list is then available in the Alexa mobile app.
+
+In **Shopping list**, enter an item and tap **Add**, including on an empty list. ShoppingRoute adds it to the selected Alexa list and schedules sorting. Failed submissions retain your input; repeated taps do not create duplicate requests. Dry Run and write protection remain effective. Missing Alexa bindings do not stop healthy lists.

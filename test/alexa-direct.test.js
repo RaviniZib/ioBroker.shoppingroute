@@ -182,3 +182,16 @@ test('adapter shutdown refuses requests when ioBroker cannot create a timeout', 
     const client = new AlexaDirectClient(remote, timers);
     await assert.rejects(client.deleteItem('list-1', 'item-1', 1), /adapter is stopping/);
 });
+
+test('list creation confirms Alexa discovery and reuses existing lists', async()=>{
+ let lists=[{name:'SHOP',listId:'shop'}],posts=0;const remote=fakeRemote((url,flags,cb)=>{posts++;assert.match(url,/api\/v2\/lists$/);assert.deepEqual(JSON.parse(flags.data),{listName:'Popel',listType:'CUSTOM'});lists.push({name:'Popel',listId:'popel'});cb(null,{listInfo:{listId:'popel'}})});
+ remote.getLists=cb=>cb(null,lists);const c=new AlexaDirectClient(remote,timerApi);assert.equal((await c.createList(' Popel ')).listId,'popel');assert.equal((await c.createList('popel')).listId,'popel');assert.equal(posts,1);
+});
+test('ambiguous list POST is reconciled by discovery without a retry',async()=>{
+ let lists=[],posts=0;const remote=fakeRemote((url,flags,cb)=>{posts++;lists=[{name:'Popel',listId:'popel'}];cb(Error('timeout'))});remote.getLists=cb=>cb(null,lists);
+ const c=new AlexaDirectClient(remote,timerApi);assert.equal((await c.createList('Popel')).listId,'popel');assert.equal(posts,1);
+});
+test('unconfirmed list creation and invalid names never appear successful',async()=>{
+ let posts=0;const remote=fakeRemote((url,flags,cb)=>{posts++;cb(null,{})});remote.getLists=cb=>cb(null,[]);const c=new AlexaDirectClient(remote,timerApi);
+ await assert.rejects(c.createList(''),/list name/);assert.equal(posts,0);await assert.rejects(c.createList('Popel'),/not confirmed/);assert.equal(posts,1);
+});

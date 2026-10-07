@@ -65,6 +65,7 @@ import {
 
 const VERSION = '0.5.0';
 const COLLECT_WINDOW_MS = 5000;
+class MissingAlexaListError extends Error {}
 const MAX_ACTIVE_ITEMS = 99;
 const OWN_REFRESH_MAX_MS = 30000;
 const DIRECT_POLL_BASE_MS = 60000;
@@ -368,6 +369,14 @@ export class ShoppingRoute extends utils.Adapter {
         if (!(managed.lists as any[]).some(list => list?.name && list.enabled !== false)) {
             throw new Error('At least one enabled Alexa shopping list is required.');
         }
+        // Validate every enabled binding before changing the running configuration.
+        await this.initializeDirectClient();
+        await this.refreshDirectListIds();
+        for (const list of managed.lists as ShoppingListConfig[]) {
+            if (list?.name && list.enabled !== false && !this.directListIds.has(list.name.trim().toLocaleLowerCase('de'))) {
+                throw new MissingAlexaListError(`Alexa list “${list.name}” does not exist. Create it in the Lists page first.`);
+            }
+        }
         Object.assign(this.config as unknown as Record<string, unknown>, managed);
         this.runtimeProducts = normalizeProductAvailableMarkets((managed.products as ProductConfig[]).filter(product => product?.name))
             .sort((a, b) => a.name.localeCompare(b.name, 'de', { sensitivity: 'base' }));
@@ -629,6 +638,57 @@ export class ShoppingRoute extends utils.Adapter {
         });
     }
 
+    private async createAlexaList(message: any): Promise<{ ok: boolean; name: string; listId: string; lists: ShoppingListConfig[]; savedAt: string }> {
+        return this.runManualShoppingCommand(async () => {
+            if (this.dryRun) throw new Error('Dry Run is active. Disable it before creating an Alexa list.');
+            const name = String(message?.name || '').trim();
+            const client = await this.initializeDirectClient();
+            await this.beforeDirectWrite();
+            const existing = (await client.getLists()).some(list => list.name.toLocaleLowerCase('de') === name.toLocaleLowerCase('de'));
+            const list = await client.createList(name);
+            if (!existing) await this.recordDirectWrite();
+            await this.refreshDirectListIds();
+            const data = this.managedConfigData({ ...this.cfg, products: this.runtimeProducts, reviewItems: this.runtimeReviews, routes: this.runtimeRoutes });
+            const lists = data.lists as ShoppingListConfig[];
+            if (!lists.some(row => row.name.toLocaleLowerCase('de') === list.name.toLocaleLowerCase('de'))) {
+                lists.push({ name: list.name, enabled: true, priorityMarket: '' });
+            }
+            const saved = await this.applyManagedConfig(data);
+            return { ok: true, ...list, lists: saved.data.lists as ShoppingListConfig[], savedAt: saved.savedAt };
+        });
+    }
+
+    private async addShoppingItem(message: any): Promise<{ ok: boolean; view: ShoppingListView }> {
+        return this.runManualShoppingCommand(async () => {
+            const listName = String(message?.listName || '').trim();
+            if (!this.listConfigs.some(list => list.name === listName)) throw new Error('The selected shopping list is not configured.');
+            const value = String(message?.text || '').trim();
+            if (!value || value.length > 500 || [...value].some(char => char.charCodeAt(0) < 32) || parseSortPrefix(value) || isMarketHeader(value, this.markets)) {
+                throw new Error('Enter an item with 1 to 500 characters, without a sorting prefix or market heading.');
+            }
+            if (this.dryRun) throw new Error('Dry Run is active. Disable it before adding items.');
+            if (!(await this.isEnabled())) throw new Error('ShoppingRoute is disabled.');
+            const listId = await this.directListId(listName);
+            const snapshot = await this.readDirectItems(listId);
+            if (activeItems(snapshot).length >= MAX_ACTIVE_ITEMS) throw new Error('The list already contains 99 active entries.');
+            const client = await this.initializeDirectClient();
+            await this.beforeDirectWrite();
+            try {
+                const created = await client.batchCreate(listId, [value]);
+                await this.recordDirectWrite();
+                const confirmed = await this.readDirectItems(listId);
+                if (!confirmed.some(item => String(item.id) === created.items[0].itemId && stripSortPrefix(item.value) === value && !item.completed)) {
+                    throw new Error('Item creation was not confirmed. Refresh before trying again.');
+                }
+                this.observeListState(listName, JSON.stringify(confirmed));
+            } catch (error) {
+                await this.activateDirectSafetyStop(listName, englishRuntimeError(error));
+                throw error;
+            }
+            return { ok: true, view: await this.buildShoppingListView(listName) };
+        });
+    }
+
     private async deleteShoppingItem(message: any): Promise<{ ok: boolean; error?: string; view: ShoppingListView }> {
         return this.runManualShoppingCommand(async () => {
             const listName = String(message?.listName || '').trim();
@@ -678,6 +738,17 @@ export class ShoppingRoute extends utils.Adapter {
 
     private async onMessage(obj: { command: string; from: string; callback?: any; message?: any }): Promise<void> {
         if (!obj?.callback) return;
+        if (obj.command === 'createAlexaList' || obj.command === 'addShoppingItem') {
+            try {
+                const result = obj.command === 'createAlexaList'
+                    ? await this.createAlexaList(obj.message)
+                    : await this.addShoppingItem(obj.message);
+                this.sendTo(obj.from, obj.command, result, obj.callback);
+            } catch (error) {
+                this.sendTo(obj.from, obj.command, { ok: false, error: error instanceof Error ? error.message : String(error) }, obj.callback);
+            }
+            return;
+        }
         if (obj.command === 'getManagedConfig') {
             const state = await this.getStateAsync('data.managedConfig');
             const stored = this.parseManagedConfig(state?.val);
@@ -961,7 +1032,13 @@ export class ShoppingRoute extends utils.Adapter {
                 return;
             }
             for (const list of this.listConfigs) {
-                const listId = await this.directListId(list.name);
+                let listId: string;
+                try { listId = await this.directListId(list.name); }
+                catch (error) {
+                    if (!(error instanceof MissingAlexaListError)) throw error;
+                    this.log.debug(String(error));
+                    continue;
+                }
                 const items = await this.readDirectItems(listId);
                 this.observeListState(list.name, JSON.stringify(items));
             }
@@ -1023,7 +1100,13 @@ export class ShoppingRoute extends utils.Adapter {
             await this.applyDirectSort(listName, state, runtime, deleteItemId);
         } catch (error) {
             const message = englishRuntimeError(error);
-            await this.activateDirectSafetyStop(listName, message);
+            if (error instanceof MissingAlexaListError) {
+                // No write has happened: an unbound list must not disable healthy lists.
+                this.log.warn(message);
+                await this.setStateAsync('info.lastError', message, true);
+            } else {
+                await this.activateDirectSafetyStop(listName, message);
+            }
         } finally {
             this.applyingListName = '';
             if (state.externalDirty && !this.isUnloading) {
@@ -1098,7 +1181,7 @@ export class ShoppingRoute extends utils.Adapter {
             await this.amazonCall(runtime, () => this.refreshDirectListIds());
             listId = this.directListIds.get(listName.toLocaleLowerCase('de'));
         }
-        if (!client || !listId) throw new Error(`Amazon list ID for “${listName}” was not found.`);
+        if (!client || !listId) throw new MissingAlexaListError(`Alexa list “${listName}” does not exist. Create it in the Lists page; other lists remain available.`);
         return listId;
     }
 

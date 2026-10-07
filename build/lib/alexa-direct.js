@@ -172,6 +172,27 @@ class AlexaDirectClient {
             name: String(list?.name || list?.listName || list?.type || '').trim(),
         })).filter(list => list.listId && list.name);
     }
+    async createList(name) {
+        const trimmed = name.trim();
+        if (!trimmed || trimmed.length > 100 || [...trimmed].some(char => char.charCodeAt(0) < 32))
+            throw new Error('Enter a list name with 1 to 100 characters.');
+        const existing = (await this.getLists()).find(list => list.name.toLocaleLowerCase('de') === trimmed.toLocaleLowerCase('de'));
+        if (existing)
+            return existing;
+        // One POST only: ambiguous responses must never cause duplicate creation.
+        let failure;
+        let result;
+        try {
+            result = await this.request(`https://www.${this.amazonPage}/alexashoppinglists/api/v2/lists`, 'POST', { listName: trimmed, listType: 'CUSTOM' });
+        }
+        catch (error) {
+            failure = error;
+        }
+        const confirmed = (await this.getLists()).find(list => list.name.toLocaleLowerCase('de') === trimmed.toLocaleLowerCase('de'));
+        if (confirmed && (!result?.listInfo?.listId || result.listInfo.listId === confirmed.listId))
+            return confirmed;
+        throw (failure instanceof Error ? failure : undefined) || new DirectAlexaError('remote', 'Alexa list creation was not confirmed. Refresh before trying again.');
+    }
     async getItems(listId) {
         const items = await callbackPromise(this.timerApi, callback => this.remote.getListItemsV2(listId, { limit: 100 }, callback), 'Alexa list item lookup', this.timeoutMs);
         return (Array.isArray(items) ? items : []).map(mapItem).filter(item => item.itemId);

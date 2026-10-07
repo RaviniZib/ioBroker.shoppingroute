@@ -99,7 +99,8 @@ const responsiveStyles = `
 .shoppingroute-item-actions select{min-width:92px;max-width:125px;min-height:30px;border:1px solid currentColor;border-radius:4px;background:transparent;color:inherit;padding:3px 5px}
 .shoppingroute-empty{opacity:.58;padding:18px 11px;text-align:center}
 @media (max-width: 600px) {
- .shoppingroute-list-toolbar>*{width:100%;max-width:none}
+ .shoppingroute-list-toolbar>*{width:100%;max-width:none;min-height:44px}
+ .shoppingroute-list-button,.shoppingroute-item-actions select{min-height:44px;min-width:44px}
  .shoppingroute-item-row{grid-template-columns:18px minmax(0,1fr)}
  .shoppingroute-item-actions{grid-column:2;justify-content:flex-start;flex-wrap:wrap;margin-top:3px}
  .shoppingroute-item-actions select{flex:1 1 120px;max-width:none}
@@ -110,7 +111,7 @@ const responsiveStyles = `
 class ShoppingListEditor extends React.Component {
     constructor(props) {
         super(props);
-        this.state = { view: null, loading: true, busy: '', error: '' };
+        this.state = { view: null, loading: true, busy: '', error: '', newItem: '' };
         this.commandPending = false;
     }
 
@@ -129,6 +130,26 @@ class ShoppingListEditor extends React.Component {
             throw new Error('Admin socket is unavailable.');
         }
         return this.props.socket.sendTo(this.instanceName(), command, message || {});
+    }
+
+    async addItem() {
+        const value = String(this.state.newItem || '').trim();
+        if (!value || this.commandPending || !this.state.view || this.state.view.dryRun) {
+            return;
+        }
+        this.commandPending = true;
+        this.setState({ busy: 'add', error: '' });
+        try {
+            const result = await this.send('addShoppingItem', { listName: this.state.view.listName, text: value });
+            if (!result?.ok) {
+                throw new Error(result?.error || 'Adding the item failed.');
+            }
+            this.setState({ view: checkedView(result.view), newItem: '', busy: '' });
+        } catch (error) {
+            this.setState({ busy: '', error: error instanceof Error ? error.message : String(error) });
+        } finally {
+            this.commandPending = false;
+        }
     }
 
     async load(listName) {
@@ -397,6 +418,33 @@ class ShoppingListEditor extends React.Component {
         const items = visibleItems(view);
         children.push(
             h('div', { key: 'toolbar', className: 'shoppingroute-list-toolbar' }, [
+                h('input', {
+                    key: 'new-item',
+                    type: 'text',
+                    value: this.state.newItem || '',
+                    maxLength: 500,
+                    disabled: busy || view.dryRun,
+                    placeholder: text('Neuen Artikel hinzufügen', 'Add a new item'),
+                    'aria-label': text('Neuer Artikel', 'New item'),
+                    onChange: event => this.setState({ newItem: event.target.value }),
+                    onKeyDown: event => {
+                        if (event.key === 'Enter') {
+                            event.preventDefault();
+                            void this.addItem();
+                        }
+                    },
+                }),
+                h(
+                    'button',
+                    {
+                        key: 'add-item',
+                        type: 'button',
+                        className: 'shoppingroute-list-button',
+                        disabled: busy || view.dryRun || !String(this.state.newItem || '').trim(),
+                        onClick: () => void this.addItem(),
+                    },
+                    text('Hinzufügen', 'Add'),
+                ),
                 h(
                     'select',
                     {

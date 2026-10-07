@@ -652,3 +652,9 @@ Für eine neue Installation empfehlen wir:
 9. einen echten Einkauf testen.
 
 Danach erledigt ShoppingRoute den größten Teil der Arbeit automatisch.
+
+### Listen und Artikel unterwegs anlegen
+
+Unter **Listen → In Alexa anlegen** erstellt ShoppingRoute eine echte Alexa-Liste und speichert ihre Zuordnung direkt. Erst die Bestätigung von Amazon zählt als Erfolg. Die Liste steht anschließend auch in der Alexa-App auf dem Handy zur Verfügung. Bereits vorhandene Namen werden wiederverwendet.
+
+Im Bereich **Einkaufsliste** kannst du über **Neuen Artikel hinzufügen → Hinzufügen** direkt in die ausgewählte Alexa-Liste schreiben, auch wenn diese noch leer ist. Der Adapter übernimmt die anschließende Sortierung. Bei einem Fehler bleibt deine Eingabe erhalten. Dry-Run und Schreibschutz gelten auch hier. Fehlende Alexa-Listen blockieren keine anderen Listen.
