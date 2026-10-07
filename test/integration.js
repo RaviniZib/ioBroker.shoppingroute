@@ -61,8 +61,8 @@ tests.integration(path.join(__dirname, '..'), {
             });
         }
         suite('Legacy accepted review cleanup', getHarness => {
-            it('writes cleanup to the database even when the product is already present', async function () {
-                this.timeout(30000);
+            it('persists cleanup in managed data without rewriting native and survives restart', async function () {
+                this.timeout(60000);
                 const harness = getHarness();
                 const original = await harness.getAdapterConfig();
                 await harness.objects.setObjectAsync('system.adapter.shoppingroute.0', { ...original, native: {
@@ -73,12 +73,21 @@ tests.integration(path.join(__dirname, '..'), {
                 } });
                 await startThroughConfigPersistence(harness);
                 const saved = await harness.getAdapterConfig();
-                assert.deepEqual(saved.native.reviewItems, []);
+                assert.deepEqual(saved.native.reviewItems, [
+                    { key: 'existing-probe', product: 'Existing probe', action: 'accepted' },
+                ], 'runtime cleanup must not rewrite the instance object and trigger a restart');
                 assert.equal(saved.native.products.length, 1);
                 const managedState = await harness.states.getStateAsync('shoppingroute.0.data.managedConfig');
                 const managed = JSON.parse(String(managedState?.val || '{}'));
+                assert.equal(managed.version, 1);
+                assert.deepEqual(managed.data.reviewItems, []);
                 assert.equal(managed.data.products.length, 1);
                 assert.deepEqual(managed.data.products[0].availableMarkets, ['ALDI', 'LIDL']);
+                await harness.stopAdapter();
+                await startThroughConfigPersistence(harness);
+                const reloadedState = await harness.states.getStateAsync('shoppingroute.0.data.managedConfig');
+                const reloaded = JSON.parse(String(reloadedState?.val || '{}'));
+                assert.deepEqual(reloaded.data, managed.data, 'cleaned catalogue must survive a real restart');
                 await harness.stopAdapter();
             });
         });
