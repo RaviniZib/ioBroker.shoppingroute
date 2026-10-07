@@ -61,7 +61,7 @@ tests.integration(path.join(__dirname, '..'), {
             });
         }
         suite('Legacy accepted review cleanup', getHarness => {
-            it('persists cleanup in managed data without rewriting native and survives restart', async function () {
+            it('persists cleanup in managed data without rewriting native', async function () {
                 this.timeout(60000);
                 const harness = getHarness();
                 const original = await harness.getAdapterConfig();
@@ -84,10 +84,28 @@ tests.integration(path.join(__dirname, '..'), {
                 assert.equal(managed.data.products.length, 1);
                 assert.deepEqual(managed.data.products[0].availableMarkets, ['ALDI', 'LIDL']);
                 await harness.stopAdapter();
+            });
+            it('loads a persisted cleaned catalogue instead of stale native reviews on startup', async function () {
+                this.timeout(30000);
+                const harness = getHarness();
+                const original = await harness.getAdapterConfig();
+                const product = { name: 'Persisted probe', category: 'Sonstiges', availableMarkets: ['ALDI', 'LIDL'] };
+                const legacyReviews = [{ key: 'stale-probe', product: 'Stale native probe', action: 'accepted' }];
+                await harness.objects.setObjectAsync('system.adapter.shoppingroute.0', { ...original, native: {
+                    ...original.native, dryRun: true, products: [], reviewItems: legacyReviews,
+                } });
+                const data = { ...original.native, products: [product], reviewItems: [] };
+                await harness.states.setStateAsync('shoppingroute.0.data.managedConfig', {
+                    val: JSON.stringify({ version: 1, savedAt: '2026-10-07T00:00:00.000Z', data }), ack: true,
+                });
                 await startThroughConfigPersistence(harness);
-                const reloadedState = await harness.states.getStateAsync('shoppingroute.0.data.managedConfig');
-                const reloaded = JSON.parse(String(reloadedState?.val || '{}'));
-                assert.deepEqual(reloaded.data, managed.data, 'cleaned catalogue must survive a real restart');
+                const state = await harness.states.getStateAsync('shoppingroute.0.data.managedConfig');
+                const managed = JSON.parse(String(state?.val || '{}'));
+                assert.deepEqual(managed.data.reviewItems, []);
+                assert.deepEqual(managed.data.products.map(row => row.name), ['Persisted probe']);
+                assert.deepEqual(managed.data.products[0].availableMarkets, ['ALDI', 'LIDL']);
+                const saved = await harness.getAdapterConfig();
+                assert.deepEqual(saved.native.reviewItems, legacyReviews);
                 await harness.stopAdapter();
             });
         });
