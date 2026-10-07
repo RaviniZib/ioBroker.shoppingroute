@@ -255,6 +255,20 @@ test('runtime normalizes fallback market names to uppercase', () => {
     assert.equal(adapter.fallbackMarket, 'MEIN LADEN');
 });
 
+test('a pending mobile move immediately keeps the article at its selected market', async () => {
+    const { editor, reply } = editorFixture();
+    editor.state.view.markets = ['REWE', 'LIDL'];
+    editor.state.view.items.push({ id: 'milk', text: 'Milch', market: 'LIDL', position: 0 });
+    editor.setState = patch => { editor.state = { ...editor.state, ...patch }; };
+    const pending = editor.move('gum', 'LIDL', 1);
+    const moved = editor.state.view.items.find(item => item.id === 'gum');
+    assert.equal(moved.market, 'LIDL');
+    assert.equal(moved.position, 1);
+    assert.equal(moved.manual, true);
+    reply.resolve({ ok: true, view: editor.state.view });
+    await pending;
+});
+
 test('a pending mobile move immediately explains the Alexa wait', async () => {
     const { editor, calls, reply } = editorFixture();
     editor.state.view.markets = ['REWE', 'LIDL'];

@@ -51,6 +51,33 @@ function visibleItems(view) {
         .map(item => ({ ...item, text: stripVisiblePrefix(item.text) }));
 }
 
+function optimisticMove(view, itemId, targetMarket, targetPosition) {
+    const items = Array.isArray(view?.items) ? view.items.map(item => ({ ...item })) : [];
+    const moving = items.find(item => item.id === itemId);
+    if (!moving) {
+        return view;
+    }
+    const sourceMarket = moving.market;
+    const byPosition = (left, right) => Number(left.position || 0) - Number(right.position || 0);
+    const sourceItems = items.filter(item => item.id !== itemId && item.market === sourceMarket).sort(byPosition);
+    const targetItems =
+        sourceMarket === targetMarket
+            ? sourceItems
+            : items.filter(item => item.id !== itemId && item.market === targetMarket).sort(byPosition);
+    const requested = Number(targetPosition);
+    const position = Math.max(
+        0,
+        Math.min(Number.isFinite(requested) ? requested : targetItems.length, targetItems.length),
+    );
+    targetItems.splice(position, 0, { ...moving, market: targetMarket, position, manual: true });
+    const orderedById = new Map();
+    if (sourceMarket !== targetMarket) {
+        sourceItems.forEach((item, index) => orderedById.set(item.id, { ...item, position: index }));
+    }
+    targetItems.forEach((item, index) => orderedById.set(item.id, { ...item, position: index }));
+    return { ...view, items: items.map(item => orderedById.get(item.id) || item) };
+}
+
 function validView(view) {
     return Boolean(
         view &&
@@ -174,6 +201,7 @@ class ShoppingListEditor extends React.Component {
         const sourceMarket = item?.market || '';
         this.commandPending = true;
         this.setState({
+            view: optimisticMove(view, itemId, targetMarket, targetPosition),
             busy: itemId,
             error: '',
             progress: text(
@@ -577,6 +605,6 @@ class ShoppingListEditor extends React.Component {
 
 module.exports = {
     Components: { ShoppingListEditor },
-    ShoppingListEditorModel: { stripVisiblePrefix, headerMarket, visibleItems },
+    ShoppingListEditorModel: { stripVisiblePrefix, headerMarket, visibleItems, optimisticMove },
     ShoppingListEditor,
 };
