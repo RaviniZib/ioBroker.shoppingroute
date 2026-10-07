@@ -114,6 +114,22 @@ function moveMarketRoute(routes, market, fromIndex, direction) {
     return replaceMarketRoutes(routes, market, selected);
 }
 
+function moveMarketRouteTo(routes, market, fromIndex, toIndex) {
+    const selected = marketRoutes(routes, market);
+    if (
+        fromIndex < 0 ||
+        toIndex < 0 ||
+        fromIndex >= selected.length ||
+        toIndex >= selected.length ||
+        fromIndex === toIndex
+    ) {
+        return routes;
+    }
+    const [route] = selected.splice(fromIndex, 1);
+    selected.splice(toIndex, 0, route);
+    return replaceMarketRoutes(routes, market, selected);
+}
+
 function removeMarketRoute(routes, market, index) {
     const selected = marketRoutes(routes, market);
     if (index < 0 || index >= selected.length) {
@@ -139,7 +155,7 @@ function addMarketRoute(routes, market, category) {
 class RouteEditor extends React.Component {
     constructor(props) {
         super(props);
-        this.state = { selectedMarket: activeMarkets(props.data)[0] || '', selectedAddCategory: '' };
+        this.state = { selectedMarket: activeMarkets(props.data)[0] || '', selectedAddCategory: '', dragIndex: -1 };
     }
 
     componentDidUpdate(prevProps) {
@@ -163,6 +179,21 @@ class RouteEditor extends React.Component {
         this.updateRoutes(
             moveMarketRoute(this.props.data && this.props.data.routes, this.state.selectedMarket, index, direction),
         );
+    }
+
+    drop(index) {
+        if (this.state.dragIndex < 0) {
+            return;
+        }
+        this.updateRoutes(
+            moveMarketRouteTo(
+                this.props.data && this.props.data.routes,
+                this.state.selectedMarket,
+                this.state.dragIndex,
+                index,
+            ),
+        );
+        this.setState({ dragIndex: -1 });
     }
 
     remove(index) {
@@ -311,6 +342,16 @@ class RouteEditor extends React.Component {
                             {
                                 key: `${route.market}-${route.category}-${index}`,
                                 className: 'shoppingroute-route-row',
+                                draggable: true,
+                                onDragStart: event => {
+                                    this.setState({ dragIndex: index });
+                                    event.dataTransfer.effectAllowed = 'move';
+                                },
+                                onDragOver: event => event.preventDefault(),
+                                onDrop: event => {
+                                    event.preventDefault();
+                                    this.drop(index);
+                                },
                                 style: {
                                     alignItems: 'center',
                                     gap: '8px',
@@ -497,6 +538,7 @@ module.exports = {
         availableProductGroups,
         replaceMarketRoutes,
         moveMarketRoute,
+        moveMarketRouteTo,
         removeMarketRoute,
         addMarketRoute,
     },

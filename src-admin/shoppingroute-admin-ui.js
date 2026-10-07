@@ -104,11 +104,15 @@ function BorderedList({ children, tokens, marginBottom = '18px' }) {
     );
 }
 
-function EditorRow({ position, children, actions, last, tokens }) {
+function EditorRow({ position, children, actions, last, tokens, draggable = false, onDragStart, onDragOver, onDrop }) {
     return h(
         'div',
         {
             className: 'shoppingroute-editor-row',
+            draggable,
+            onDragStart,
+            onDragOver,
+            onDrop,
             style: {
                 borderBottom: last ? 'none' : `1px solid ${tokens.border}`,
                 background: tokens.background,
@@ -118,7 +122,7 @@ function EditorRow({ position, children, actions, last, tokens }) {
             h(
                 'div',
                 { key: 'position', style: { color: tokens.muted, textAlign: 'right', paddingRight: '6px' } },
-                String(position),
+                (draggable ? '⋮⋮ ' : '') + String(position),
             ),
             h('div', { key: 'content', style: { minWidth: 0 } }, children),
             h('div', { key: 'actions', className: 'shoppingroute-editor-row-actions' }, actions),

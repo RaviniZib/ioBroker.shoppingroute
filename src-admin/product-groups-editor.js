@@ -61,14 +61,30 @@ function moveProductGroup(productGroups, fromIndex, direction) {
     return result;
 }
 
+function moveProductGroupTo(productGroups, fromIndex, toIndex) {
+    const result = productGroupRows(productGroups);
+    if (
+        fromIndex < 0 ||
+        toIndex < 0 ||
+        fromIndex >= result.length ||
+        toIndex >= result.length ||
+        fromIndex === toIndex
+    ) {
+        return result;
+    }
+    const [row] = result.splice(fromIndex, 1);
+    result.splice(toIndex, 0, row);
+    return result;
+}
+
 class ProductGroupsEditor extends React.Component {
     constructor(props) {
         super(props);
-        this.state = { newName: '' };
+        this.state = { newName: '', dragIndex: -1 };
     }
 
-    updateProductGroups(productGroups) {
-        this.props.onChange({ ...(this.props.data || {}), productGroups }, true);
+    updateProductGroups(productGroups, immediate = true) {
+        this.props.onChange({ ...(this.props.data || {}), productGroups }, immediate);
     }
 
     add() {
@@ -76,20 +92,36 @@ class ProductGroupsEditor extends React.Component {
         if (next.length === productGroupRows(this.props.data && this.props.data.productGroups).length) {
             return;
         }
-        this.updateProductGroups(next);
+        this.updateProductGroups(next, true);
         this.setState({ newName: '' });
     }
 
     edit(index, name) {
-        this.updateProductGroups(editProductGroup(this.props.data && this.props.data.productGroups, index, name));
+        this.updateProductGroups(
+            editProductGroup(this.props.data && this.props.data.productGroups, index, name),
+            false,
+        );
     }
 
     remove(index) {
-        this.updateProductGroups(removeProductGroup(this.props.data && this.props.data.productGroups, index));
+        this.updateProductGroups(removeProductGroup(this.props.data && this.props.data.productGroups, index), true);
     }
 
     move(index, direction) {
-        this.updateProductGroups(moveProductGroup(this.props.data && this.props.data.productGroups, index, direction));
+        this.updateProductGroups(
+            moveProductGroup(this.props.data && this.props.data.productGroups, index, direction),
+            true,
+        );
+    }
+
+    drop(index) {
+        if (this.state.dragIndex < 0) {
+            return;
+        }
+        this.updateProductGroups(
+            moveProductGroupTo(this.props.data && this.props.data.productGroups, this.state.dragIndex, index),
+        );
+        this.setState({ dragIndex: -1 });
     }
 
     render() {
@@ -127,6 +159,16 @@ class ProductGroupsEditor extends React.Component {
                                 position: index + 1,
                                 last: index === groups.length - 1,
                                 tokens,
+                                draggable: true,
+                                onDragStart: event => {
+                                    this.setState({ dragIndex: index });
+                                    event.dataTransfer.effectAllowed = 'move';
+                                },
+                                onDragOver: event => event.preventDefault(),
+                                onDrop: event => {
+                                    event.preventDefault();
+                                    this.drop(index);
+                                },
                                 actions: [
                                     h(
                                         IconButton,
@@ -220,6 +262,7 @@ module.exports = {
         addProductGroup,
         editProductGroup,
         moveProductGroup,
+        moveProductGroupTo,
         productGroupRows,
         removeProductGroup,
     },

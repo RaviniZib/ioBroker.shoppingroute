@@ -4,6 +4,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 const root=path.join(__dirname,'..');
+const {Components:{CatalogManager}}=require('../src-admin/catalog-manager');
 
 test('ShoppingRoute exposes a per-instance JSON admin tab for runtime management',()=>{
  const io=JSON.parse(fs.readFileSync(path.join(root,'io-package.json'),'utf8'));
@@ -61,4 +62,20 @@ test('runtime normalization uppercases market names and all market references',(
  assert.match(source,/market: up\(x\?\.market\)/);
  assert.match(source,/defaultMarket: up\(x\?\.defaultMarket\)/);
  assert.match(source,/priorityMarket: up\(x\?\.priorityMarket\)/);
+});
+
+test('catalogue changes save automatically instead of remaining local drafts',async()=>{
+ for(const key of ['lists','markets','productGroups','products']){
+  const calls=[],data={lists:[{name:'SHOP'}],markets:[{name:'ALDI'}],productGroups:[{name:'Food'}],products:[{name:'Milk'}]};
+  const manager=new CatalogManager({socket:{sendTo:async(_instance,command,message)=>{calls.push({command,message});return {ok:true,data:message.data,savedAt:'now'};}}});
+  manager.state={...manager.state,data:structuredClone(data),base:structuredClone(data),loading:false};
+  manager.setState=(patch,done)=>{manager.state={...manager.state,...(typeof patch==='function'?patch(manager.state):patch)};if(done)done();};
+  manager.del(key,0);
+  await new Promise(resolve=>setTimeout(resolve,10));
+  assert.equal(calls.length,1,key);
+  assert.equal(calls[0].command,'saveManagedConfig');
+  assert.deepEqual(calls[0].message.data[key],[]);
+  assert.equal(manager.changed(),false);
+  manager.componentWillUnmount();
+ }
 });

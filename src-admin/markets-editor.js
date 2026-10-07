@@ -146,14 +146,30 @@ function moveMarket(markets, fromIndex, direction) {
     return result;
 }
 
+function moveMarketTo(markets, fromIndex, toIndex) {
+    const result = marketRows(markets);
+    if (
+        fromIndex < 0 ||
+        toIndex < 0 ||
+        fromIndex >= result.length ||
+        toIndex >= result.length ||
+        fromIndex === toIndex
+    ) {
+        return result;
+    }
+    const [row] = result.splice(fromIndex, 1);
+    result.splice(toIndex, 0, row);
+    return result;
+}
+
 class MarketsEditor extends React.Component {
     constructor(props) {
         super(props);
-        this.state = { newName: '' };
+        this.state = { newName: '', dragIndex: -1 };
     }
 
-    updateMarkets(markets) {
-        this.props.onChange({ ...(this.props.data || {}), markets }, true);
+    updateMarkets(markets, immediate = true) {
+        this.props.onChange({ ...(this.props.data || {}), markets }, immediate);
     }
 
     add() {
@@ -161,20 +177,28 @@ class MarketsEditor extends React.Component {
         if (next.length === marketRows(this.props.data && this.props.data.markets).length) {
             return;
         }
-        this.updateMarkets(next);
+        this.updateMarkets(next, true);
         this.setState({ newName: '' });
     }
 
     edit(index, patch) {
-        this.updateMarkets(editMarket(this.props.data && this.props.data.markets, index, patch));
+        this.updateMarkets(editMarket(this.props.data && this.props.data.markets, index, patch), false);
     }
 
     remove(index) {
-        this.updateMarkets(removeMarket(this.props.data && this.props.data.markets, index));
+        this.updateMarkets(removeMarket(this.props.data && this.props.data.markets, index), true);
     }
 
     move(index, direction) {
-        this.updateMarkets(moveMarket(this.props.data && this.props.data.markets, index, direction));
+        this.updateMarkets(moveMarket(this.props.data && this.props.data.markets, index, direction), true);
+    }
+
+    drop(index) {
+        if (this.state.dragIndex < 0) {
+            return;
+        }
+        this.updateMarkets(moveMarketTo(this.props.data && this.props.data.markets, this.state.dragIndex, index), true);
+        this.setState({ dragIndex: -1 });
     }
 
     renderMarketRow(market, index, markets, tokens) {
@@ -185,6 +209,16 @@ class MarketsEditor extends React.Component {
                 position: index + 1,
                 last: index === markets.length - 1,
                 tokens,
+                draggable: true,
+                onDragStart: event => {
+                    this.setState({ dragIndex: index });
+                    event.dataTransfer.effectAllowed = 'move';
+                },
+                onDragOver: event => event.preventDefault(),
+                onDrop: event => {
+                    event.preventDefault();
+                    this.drop(index);
+                },
                 actions: [
                     h(
                         IconButton,
@@ -348,6 +382,7 @@ module.exports = {
         editMarket,
         marketRows,
         moveMarket,
+        moveMarketTo,
         nextMarketOrder,
         removeMarket,
     },
