@@ -50,7 +50,7 @@ const manual_order_1 = require("./lib/manual-order");
 const state_change_1 = require("./lib/state-change");
 const config_protection_1 = require("./lib/config-protection");
 const direct_sort_lifecycle_1 = require("./lib/direct-sort-lifecycle");
-const VERSION = '0.5.0';
+const VERSION = '0.5.1';
 const COLLECT_WINDOW_MS = 5000;
 class MissingAlexaListError extends Error {
 }
