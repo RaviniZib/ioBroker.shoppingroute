@@ -8,6 +8,8 @@ ShoppingRoute helps turn a normal Alexa shopping list into a list that follows t
 
 No additional mobile app is needed. Add a normal Alexa list entry such as `13WNETTO` for a **temporary move for this shopping trip**, or `13DNETTO` to **permanently assign the product** to NETTO. The two-digit number must be the **current visible prefix of the product**. `W` means temporary move, `D` means permanent assignment; the remainder is a configured destination store.
 
+**Reorder items within the same store:** `25H3` moves item 25 three **product positions up**; `25R3` moves it three positions down. Only real items in the same store count, never store headings. Moves stop at the first or last position of that store. These changes apply only to the current shopping trip; they do not alter walking routes or product groups. Use the currently visible item number.
+
 Several commands may be added before sorting. Case is ignored, and small unambiguous market-name typos (such as `ALSI` for `ALDI`) are corrected. `W` moves do **not** modify learned product assignments. Only `D` permanently updates the product's preferred store.
 
 **Important — please be patient:** Sorting **never happens immediately**. Depending on your internet connection, connection speed and Alexa processing, it can take **up to five minutes** for a command to be applied and disappear from the shopping list. Seeing the command in the list during that time is **normal**. Only if it is **still there after five minutes**, check the internet/Alexa connection and the command (item number, `W` or `D`, and store name). If the command is incorrect, mark it completed in Alexa and enter it again correctly. Ambiguous item numbers or unknown stores can also prevent execution.
