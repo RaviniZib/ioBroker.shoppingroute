@@ -7,6 +7,7 @@ export interface MobileMarketMove {
     target: AlexaListItem;
     market: string;
     number: number;
+    mode: 'W' | 'D';
 }
 
 export type MobileMoveResolution =
@@ -14,7 +15,7 @@ export type MobileMoveResolution =
     | { status: 'invalid'; moves: []; reason: string }
     | { status: 'ready'; moves: MobileMarketMove[] };
 
-const COMMAND_PATTERN = /^(\d{2})W(.+)$/i;
+const COMMAND_PATTERN = /^(\d{2})([WD])(.+)$/i;
 
 function normalized(value: string): string {
     return value.trim().normalize('NFKC').toLocaleUpperCase('de-DE');
@@ -70,7 +71,7 @@ export function resolveMobileMoves(snapshot: AlexaListItem[], markets: MarketCon
     const moves: MobileMarketMove[] = [];
     for (const { item: command, match } of commands) {
         const number = Number(match[1]);
-        const market = resolveMobileMarket(match[2], markets);
+        const market = resolveMobileMarket(match[3], markets);
         const candidates = active.filter(item =>
             !commandIds.has(String(item.id)) &&
             !isMarketHeader(stripSortPrefix(item.value), markets) &&
@@ -81,7 +82,7 @@ export function resolveMobileMoves(snapshot: AlexaListItem[], markets: MarketCon
             return { status: 'invalid', moves: [], reason: `Cannot uniquely resolve mobile move ${stripSortPrefix(command.value)}.` };
         }
         usedTargets.add(String(candidates[0].id));
-        moves.push({ command, target: candidates[0], market, number });
+        moves.push({ command, target: candidates[0], market, number, mode: match[2].toUpperCase() as 'W' | 'D' });
     }
     return { status: 'ready', moves };
 }
