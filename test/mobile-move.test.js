@@ -30,10 +30,11 @@ test('two independent mobile commands resolve against one numbered list snapshot
         item('a', '13> Camembert'),
         item('b', '16> Joghurt'),
         item('c', '13WNETTO'),
-        item('d', '16wneto'),
+        item('d', '16dneto'),
     ];
     const resolved = resolveMobileMoves(snapshot, markets);
     assert.equal(resolved.status, 'ready');
+    assert.deepEqual(resolved.moves.map(move => move.mode), ['W', 'D']);
     assert.deepEqual(resolved.moves.map(move => [move.target.id, move.market]), [
         ['a', 'NETTO'], ['b', 'NETTO'],
     ]);
