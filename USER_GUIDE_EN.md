@@ -10,6 +10,8 @@ No additional mobile app is needed. Add a normal Alexa list entry in the format 
 
 Several commands may be added before sorting. Case is ignored, and small unambiguous market-name typos (such as `ALSI` for `ALDI`) are corrected. These temporary changes do **not** modify learned product assignments.
 
+**Important — please be patient:** Sorting **never happens immediately**. Depending on your internet connection, connection speed and Alexa processing, it can take **up to five minutes** for a command to be applied and disappear from the shopping list. Seeing the command in the list during that time is **normal**. Only if it is **still there after five minutes**, check the internet/Alexa connection and the command (item number, `W` or `D`, and store name). If the command is incorrect, mark it completed in Alexa and enter it again correctly. Ambiguous item numbers or unknown stores can also prevent execution.
+
 Successful commands disappear from the Alexa list. **If a command remains**, check whether its number refers to a product rather than a market heading, and whether the destination market is known and unambiguous. Mark the invalid command completed in Alexa and enter a corrected one. No item is moved when a command cannot be safely resolved.
 
 **Note:** This feature is prepared for the not-yet-published 0.5.2 version.
