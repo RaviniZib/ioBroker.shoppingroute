@@ -6,7 +6,7 @@ ShoppingRoute helps turn a normal Alexa shopping list into a list that follows t
 
 ## New in 0.5.2: Move items between stores directly in the Alexa phone app
 
-No additional mobile app is needed. Add a normal Alexa list entry in the format `NNWMARKET`, for example `13WNETTO`. The two-digit number must be the **current visible prefix of the product**, `W` means temporary move, and the rest is a configured destination store.
+No additional mobile app is needed. Add a normal Alexa list entry such as `13WNETTO` for a **temporary move for this shopping trip**, or `13DNETTO` to **permanently assign the product** to NETTO. The two-digit number must be the **current visible prefix of the product**. `W` means temporary move, `D` means permanent assignment; the remainder is a configured destination store.
 
 Several commands may be added before sorting. Case is ignored, and small unambiguous market-name typos (such as `ALSI` for `ALDI`) are corrected. These temporary changes do **not** modify learned product assignments.
 
