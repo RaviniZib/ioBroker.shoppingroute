@@ -10,6 +10,8 @@ Ohne zusätzliche Handy-App kannst du einen vorhandenen Artikel für **diesen Ei
 
 Du kannst mehrere Befehle gleichzeitig eingeben. Die Groß-/Kleinschreibung ist egal, und eindeutige kleine Tippfehler wie `ALSI` statt `ALDI` werden erkannt. Der Adapter ändert dabei **keine dauerhaften Artikelzuordnungen** und lernt diese kurzfristige Änderung nicht an.
 
+**Wichtig – bitte Geduld:** Ein neuer Sortiervorgang erfolgt **niemals sofort**. Je nach Internetverbindung, Geschwindigkeit und Verarbeitung durch Alexa kann es **bis zu fünf Minuten** dauern, bis ein Wechselbefehl umgesetzt wird und aus der Einkaufsliste verschwindet. Dass der Befehl währenddessen noch sichtbar ist, ist **kein Grund zur Sorge**. Erst wenn er **nach fünf Minuten immer noch dort steht**, prüfe die Internet-/Alexa-Verbindung und die Eingabe (Artikelnummer, `W` oder `D`, Marktname). Ist der Befehl falsch, hake ihn in Alexa ab und gib ihn korrigiert erneut ein. Auch eine mehrdeutige Artikelnummer oder ein unbekannter Markt kann die Ausführung verhindern.
+
 Ein erfolgreich ausgeführter Befehl wird aus der Alexa-Liste entfernt. **Bleibt er stehen**, ist die Nummer möglicherweise falsch, bezeichnet eine Marktüberschrift oder der Zielmarkt ist unbekannt bzw. nicht eindeutig. Hake den fehlerhaften Befehl in Alexa ab und gib ihn korrigiert erneut ein. Bei unsicheren Befehlen wird kein Artikel verschoben.
 
 **Hinweis:** Diese Funktion ist in der noch unveröffentlichten Version 0.5.2 vorbereitet.
