@@ -17,7 +17,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT license"></a>
 </p>
 
-> **Current version: 0.5.1**
+> **Next version under preparation: 0.5.2 (not published)**
 > ShoppingRoute is available in the ioBroker **latest** repository.
 
 ## What ShoppingRoute does
@@ -57,6 +57,16 @@ Community and support:
 - 🐞 [GitHub issues](https://github.com/RaviniZib/ioBroker.shoppingroute/issues)
 
 Adapter settings and the backup utility include all 11 standard ioBroker Admin languages. Shopping-list feedback is available in German and English.
+
+## What's new in 0.5.2 (unpublished)
+
+**Control market assignments from the regular Alexa shopping list on your phone — no extra app and no access to the ioBroker Admin interface required.**
+
+Add a temporary command as a normal list item using `NNWMARKET`, for example `13WNETTO`: `13` is the two-digit prefix currently shown before the product, `W` means move, and `NETTO` is a configured destination market. Several commands may be entered before the next sort. Case does not matter; unambiguous small typos in market names are corrected.
+
+The move affects only the current shopping item, **not** its learned default market or catalogue assignment. Successfully processed commands disappear from the Alexa list. If a command remains, check the number and market; mark the incorrect command as completed in Alexa and enter a corrected one. **Market-heading numbers cannot be used to move products.** Ambiguous or invalid commands are never guessed.
+
+This functionality is being prepared in 0.5.2; the released 0.5.1 remains unchanged on npm.
 
 ## What's new in 0.5.1
 
@@ -187,6 +197,13 @@ ShoppingRoute is still young, so real-world feedback is especially valuable.
 Please use the [ioBroker tester thread](https://forum.iobroker.net/topic/85510/test-adapter-shoppingroute-v0.4.4) for general testing feedback and the [GitHub issue tracker](https://github.com/RaviniZib/ioBroker.shoppingroute/issues) for reproducible bugs or feature requests.
 
 ## Changelog
+
+### 0.5.2 (2026-10-16, unpublished)
+
+- Add temporary market moves directly from the standard Alexa mobile shopping list via `NNWMARKET`.
+- Process multiple commands, correct unambiguous market typos, and protect market headings and ambiguous item numbers.
+- Keep permanent product learning and existing sorting behavior unchanged.
+
 
 ### 0.5.1 (2026-10-07)
 - Create new lists in Alexa and verify them before saving their bindings; add shopping items directly, including to empty lists.
