@@ -62,6 +62,8 @@ Adapter settings and the backup utility include all 11 standard ioBroker Admin l
 
 **Control market assignments from the regular Alexa shopping list on your phone — no extra app and no access to the ioBroker Admin interface required.**
 
+**Four mobile commands:** `13WNETTO` moves item 13 **temporarily** to NETTO, while `13DNETTO` assigns it there **permanently**. `25H3` moves item 25 **three real product positions up**, and `25R3` moves it **three down**, within the same store only. Store headings are not counted; H/R do not modify stored walking routes or product groups.
+
 Add a temporary command as a normal list item using `NNWMARKET`, for example `13WNETTO`: `13` is the two-digit prefix currently shown before the product, `W` means move, and `NETTO` is a configured destination market. Several commands may be entered before the next sort. Case does not matter; unambiguous small typos in market names are corrected.
 
 **Please be patient:** A new sort **never happens immediately**. Depending on internet connection, speed and Alexa processing, it may take **up to five minutes**. It is normal for the command to remain visible while processing. **If it is still present after five minutes**, check the internet/Alexa connection and the item number and store name. Mark an incorrect command completed in Alexa and enter it again correctly.
