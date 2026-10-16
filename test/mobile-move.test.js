@@ -69,3 +69,30 @@ test('unknown or ambiguous markets and missing versions remain unprocessed', () 
 test('no mobile commands means normal sorting remains unchanged', () => {
     assert.deepEqual(resolveMobileMoves([item('a', '13> Käse')], markets), { status: 'none', moves: [] });
 });
+
+test('H and R commands identify the correct product and relative step count', () => {
+    const resolved = resolveMobileMoves([
+        item('a', '25> Käse'),
+        item('b', '31> Milch'),
+        item('c', '25H3'),
+        item('d', '31r2'),
+    ], markets);
+    assert.equal(resolved.status, 'ready');
+    assert.deepEqual(resolved.moves.map(move => [move.mode, move.number, move.steps, move.target.id]), [
+        ['H', 25, 3, 'a'], ['R', 31, 2, 'b'],
+    ]);
+});
+
+test('H/R invalid step counts and market-heading references remain visible', () => {
+    for (const command of ['25H0', '25R100', '25HXYZ']) {
+        const result = resolveMobileMoves([item('a', '25> Käse'), item('b', command)], markets);
+        if (command === '25HXYZ') {
+            assert.equal(result.status, 'invalid');
+        } else {
+            assert.equal(result.status, 'invalid');
+        }
+    }
+    assert.equal(resolveMobileMoves([
+        item('a', '35> ═════ ALDI ═════'), item('b', '35H2'),
+    ], markets).status, 'invalid');
+});
