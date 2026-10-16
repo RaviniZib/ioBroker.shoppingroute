@@ -1255,19 +1255,27 @@ export class ShoppingRoute extends utils.Adapter {
                 return;
             }
             for (const move of mobile.moves) {
+                // D modifies the product catalogue; W only creates a temporary list override.
+                const parsed = parseItem(stripSortPrefix(move.target.value), this.markets, this.products, this.fallbackMarket, this.priorityMarketForList(listName));
+                if (move.mode === 'D' && (!parsed.productText || parsed.explicitMarket)) {
+                    this.log.warn(`${listName}: permanent move needs an unambiguous product without an explicit market suffix.`);
+                    return;
+                }
                 const previous = this.manualOverrides.map(entry => ({ ...entry }));
-                this.manualOverrides = normalizeManualOverrides([
-                    ...this.manualOverrides.filter(entry => !(entry.listName === listName && entry.itemId === String(move.target.id))),
-                    {
-                        listName,
-                        itemId: String(move.target.id),
-                        originalText: stripSortPrefix(move.target.value),
-                        market: move.market,
-                        position: 0,
-                        updatedAt: new Date().toISOString(),
-                    },
-                ]);
-                await this.persistManualOverrides();
+                if (move.mode === 'W') {
+                    this.manualOverrides = normalizeManualOverrides([
+                        ...this.manualOverrides.filter(entry => !(entry.listName === listName && entry.itemId === String(move.target.id))),
+                        {
+                            listName,
+                            itemId: String(move.target.id),
+                            originalText: stripSortPrefix(move.target.value),
+                            market: move.market,
+                            position: 0,
+                            updatedAt: new Date().toISOString(),
+                        },
+                    ]);
+                    await this.persistManualOverrides();
+                }
                 try {
                     const client = await this.initializeDirectClient();
                     await this.beforeDirectWrite();
@@ -1290,7 +1298,32 @@ export class ShoppingRoute extends utils.Adapter {
                     this.log.warn(`${listName}: mobile move failed; remaining commands were left intact: ${String(error)}`);
                     return;
                 }
-                this.log.info(`${listName}: mobile move ${String(move.number).padStart(2, '0')} -> ${move.market} confirmed.`);
+                if (move.mode === 'D') {
+                    const product = findProduct(parsed.productText, this.products);
+                    if (product) {
+                        this.runtimeProducts = this.runtimeProducts.map(entry =>
+                            entry === product ? { ...entry, defaultMarket: move.market } : entry,
+                        );
+                    } else {
+                        this.runtimeProducts = [...this.runtimeProducts, {
+                            name: parsed.productName,
+                            category: parsed.category,
+                            defaultMarket: move.market,
+                        }];
+                    }
+                    this.productsDirty = true;
+                    await this.persistRuntimeConfig();
+                    if (this.productsDirty) {
+                        this.log.warn(`${listName}: permanent market assignment could not be persisted.`);
+                        return;
+                    }
+                    // A previous temporary override must not supersede the permanent assignment.
+                    this.manualOverrides = normalizeManualOverrides(this.manualOverrides.filter(entry =>
+                        !(entry.listName === listName && entry.itemId === String(move.target.id)),
+                    ));
+                    await this.persistManualOverrides();
+                }
+                this.log.info(`${listName}: mobile ${move.mode} move ${String(move.number).padStart(2, '0')} -> ${move.market} confirmed.`);
             }
         }
         if (activeItems(snapshot).length > MAX_ACTIVE_ITEMS) throw new Error(`${listName}: more than 99 active entries.`);
