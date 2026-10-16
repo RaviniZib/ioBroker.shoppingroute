@@ -54,6 +54,7 @@ import {
     type ManualItemOverride,
 } from './lib/manual-order';
 import { isAcknowledgedForeignState } from './lib/state-change';
+import { resolveMobileMoves } from './lib/mobile-move';
 import { createConfigBackup, isSuspiciousConfigReplacement, parseConfigBackup, restoreProtectedConfig } from './lib/config-protection';
 import {
     beginDirectApply,
@@ -1241,7 +1242,57 @@ export class ShoppingRoute extends utils.Adapter {
         await this.persistTrafficMetrics();
         const listId = await this.directListId(listName, runtime);
         // A direct planning snapshot supplies the current Amazon versions; the Alexa2 state remains trigger-only.
-        const snapshot = await this.readDirectItems(listId, runtime);
+        let snapshot = await this.readDirectItems(listId, runtime);
+        // Resolve all mobile commands against the same numbered snapshot before writing.
+        const mobile = resolveMobileMoves(snapshot, this.markets);
+        if (mobile.status === 'invalid') {
+            this.log.warn(`${listName}: ${mobile.reason} Leave the command in Alexa to correct it.`);
+            return;
+        }
+        if (mobile.status === 'ready') {
+            if (this.dryRun) {
+                this.log.warn(`${listName}: mobile move commands are ignored in Dry Run; nothing was changed.`);
+                return;
+            }
+            for (const move of mobile.moves) {
+                const previous = this.manualOverrides.map(entry => ({ ...entry }));
+                this.manualOverrides = normalizeManualOverrides([
+                    ...this.manualOverrides.filter(entry => !(entry.listName === listName && entry.itemId === String(move.target.id))),
+                    {
+                        listName,
+                        itemId: String(move.target.id),
+                        originalText: stripSortPrefix(move.target.value),
+                        market: move.market,
+                        position: 0,
+                        updatedAt: new Date().toISOString(),
+                    },
+                ]);
+                await this.persistManualOverrides();
+                try {
+                    const client = await this.initializeDirectClient();
+                    await this.beforeDirectWrite();
+                    await this.amazonCall(runtime, () => client.deleteItem(listId, move.command.id, Number(move.command.version)));
+                    runtime.deleteRequests += 1;
+                    await this.recordDirectWrite();
+                    // Amazon list reads may lag briefly after a confirmed deletion.
+                    for (let attempt = 0; attempt < 3; attempt++) {
+                        snapshot = await this.readDirectItems(listId, runtime);
+                        if (!snapshot.some(item => String(item.id) === String(move.command.id) && !item.completed)) break;
+                        if (attempt < 2) await this.wait(500);
+                    }
+                    if (snapshot.some(item => String(item.id) === String(move.command.id) && !item.completed)) {
+                        this.log.warn(`${listName}: mobile command deletion not yet visible; postponing sort.`);
+                        return;
+                    }
+                } catch (error) {
+                    this.manualOverrides = previous;
+                    await this.persistManualOverrides();
+                    this.log.warn(`${listName}: mobile move failed; remaining commands were left intact: ${String(error)}`);
+                    return;
+                }
+                this.log.info(`${listName}: mobile move ${String(move.number).padStart(2, '0')} -> ${move.market} confirmed.`);
+            }
+        }
         if (activeItems(snapshot).length > MAX_ACTIVE_ITEMS) throw new Error(`${listName}: more than 99 active entries.`);
         if (deleteItemId && !activeItems(snapshot).some(item => String(item.id) === deleteItemId && !isMarketHeader(stripSortPrefix(item.value), this.markets))) {
             throw new Error('The item selected for deletion is no longer active.');
