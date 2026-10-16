@@ -4,6 +4,17 @@
 
 ShoppingRoute helps turn a normal Alexa shopping list into a list that follows the way you actually shop.
 
+## New in 0.5.2: Move items between stores directly in the Alexa phone app
+
+No additional mobile app is needed. Add a normal Alexa list entry in the format `NNWMARKET`, for example `13WNETTO`. The two-digit number must be the **current visible prefix of the product**, `W` means temporary move, and the rest is a configured destination store.
+
+Several commands may be added before sorting. Case is ignored, and small unambiguous market-name typos (such as `ALSI` for `ALDI`) are corrected. These temporary changes do **not** modify learned product assignments.
+
+Successful commands disappear from the Alexa list. **If a command remains**, check whether its number refers to a product rather than a market heading, and whether the destination market is known and unambiguous. Mark the invalid command completed in Alexa and enter a corrected one. No item is moved when a command cannot be safely resolved.
+
+**Note:** This feature is prepared for the not-yet-published 0.5.2 version.
+
+
 ## Why ShoppingRoute actually makes shopping easier
 
 The main benefit is not simply having a “sorted list”. ShoppingRoute can reflect your **real shopping habits**.
