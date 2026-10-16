@@ -1262,6 +1262,45 @@ export class ShoppingRoute extends utils.Adapter {
                     return;
                 }
                 const previous = this.manualOverrides.map(entry => ({ ...entry }));
+                if (move.mode === 'H' || move.mode === 'R') {
+                    // Derive the current route, ignoring command entries. Only real products in the
+                    // target's existing market count as steps; headings never count.
+                    const commandIds = new Set(mobile.moves.map(entry => String(entry.command.id)));
+                    const routeSnapshot = snapshot.filter(entry => !commandIds.has(String(entry.id)));
+                    const ordered = buildPrefixTargets(
+                        routeSnapshot, this.markets, this.routes, this.products,
+                        this.fallbackMarket, this.priorityMarketForList(listName),
+                        this.minimumItemsPerMarket, this.marketHeadersEnabled,
+                        this.manualOverrides, listName,
+                    ).filter(entry => entry.id && !isMarketHeader(entry.originalText, this.markets));
+                    const target = ordered.find(entry => String(entry.id) === String(move.target.id));
+                    if (!target) {
+                        this.log.warn(`${listName}: mobile position target is no longer in the current route.`);
+                        return;
+                    }
+                    const group = ordered.filter(entry => entry.market === target.market);
+                    const from = group.findIndex(entry => String(entry.id) === String(move.target.id));
+                    const direction = move.mode === 'H' ? -1 : 1;
+                    const to = Math.max(0, Math.min(group.length - 1, from + direction * move.steps!));
+                    if (from !== to) {
+                        const reordered = [...group];
+                        const [moving] = reordered.splice(from, 1);
+                        reordered.splice(to, 0, moving);
+                        const groupIds = new Set(reordered.map(entry => String(entry.id)));
+                        this.manualOverrides = normalizeManualOverrides([
+                            ...this.manualOverrides.filter(entry => !(entry.listName === listName && groupIds.has(entry.itemId))),
+                            ...reordered.map((entry, position) => ({
+                                listName,
+                                itemId: String(entry.id),
+                                originalText: stripSortPrefix(entry.originalText),
+                                market: target.market,
+                                position,
+                                updatedAt: new Date().toISOString(),
+                            })),
+                        ]);
+                        await this.persistManualOverrides();
+                    }
+                }
                 if (move.mode === 'W') {
                     this.manualOverrides = normalizeManualOverrides([
                         ...this.manualOverrides.filter(entry => !(entry.listName === listName && entry.itemId === String(move.target.id))),
@@ -1269,7 +1308,7 @@ export class ShoppingRoute extends utils.Adapter {
                             listName,
                             itemId: String(move.target.id),
                             originalText: stripSortPrefix(move.target.value),
-                            market: move.market,
+                            market: move.market!,
                             position: 0,
                             updatedAt: new Date().toISOString(),
                         },
@@ -1302,7 +1341,7 @@ export class ShoppingRoute extends utils.Adapter {
                     const product = findProduct(parsed.productText, this.products);
                     if (product) {
                         this.runtimeProducts = this.runtimeProducts.map(entry =>
-                            entry === product ? { ...entry, defaultMarket: move.market } : entry,
+                            entry === product ? { ...entry, defaultMarket: move.market! } : entry,
                         );
                     } else {
                         this.runtimeProducts = [...this.runtimeProducts, {
@@ -1323,7 +1362,7 @@ export class ShoppingRoute extends utils.Adapter {
                     ));
                     await this.persistManualOverrides();
                 }
-                this.log.info(`${listName}: mobile ${move.mode} move ${String(move.number).padStart(2, '0')} -> ${move.market} confirmed.`);
+                this.log.info(`${listName}: mobile ${move.mode} move ${String(move.number).padStart(2, '0')} -> ${move.market ?? `${move.steps} positions`} confirmed.`);
             }
         }
         if (activeItems(snapshot).length > MAX_ACTIVE_ITEMS) throw new Error(`${listName}: more than 99 active entries.`);
