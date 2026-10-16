@@ -5,9 +5,10 @@ import { parseSortPrefix, stripSortPrefix } from './prefix-sort';
 export interface MobileMarketMove {
     command: AlexaListItem;
     target: AlexaListItem;
-    market: string;
+    market?: string;
+    steps?: number;
     number: number;
-    mode: 'W' | 'D';
+    mode: 'W' | 'D' | 'H' | 'R';
 }
 
 export type MobileMoveResolution =
@@ -15,7 +16,7 @@ export type MobileMoveResolution =
     | { status: 'invalid'; moves: []; reason: string }
     | { status: 'ready'; moves: MobileMarketMove[] };
 
-const COMMAND_PATTERN = /^(\d{2})([WD])(.+)$/i;
+const COMMAND_PATTERN = /^(\d{2})([WDHR])(.+)$/i;
 
 function normalized(value: string): string {
     return value.trim().normalize('NFKC').toLocaleUpperCase('de-DE');
@@ -71,18 +72,21 @@ export function resolveMobileMoves(snapshot: AlexaListItem[], markets: MarketCon
     const moves: MobileMarketMove[] = [];
     for (const { item: command, match } of commands) {
         const number = Number(match[1]);
-        const market = resolveMobileMarket(match[3], markets);
+        const mode = match[2].toUpperCase() as 'W' | 'D' | 'H' | 'R';
+        const market = mode === 'W' || mode === 'D' ? resolveMobileMarket(match[3], markets) : undefined;
+        const steps = mode === 'H' || mode === 'R' ? Number(match[3]) : undefined;
+        const validArgument = mode === 'W' || mode === 'D' ? Boolean(market) : /^\d{1,2}$/.test(match[3]) && Number.isInteger(steps) && steps! > 0;
         const candidates = active.filter(item =>
             !commandIds.has(String(item.id)) &&
             !isMarketHeader(stripSortPrefix(item.value), markets) &&
             parseSortPrefix(item.value)?.number === number,
         );
-        if (!market || candidates.length !== 1 || usedTargets.has(String(candidates[0].id)) ||
+        if (!validArgument || candidates.length !== 1 || usedTargets.has(String(candidates[0].id)) ||
             !Number.isInteger(Number(command.version)) || Number(command.version) <= 0) {
             return { status: 'invalid', moves: [], reason: `Cannot uniquely resolve mobile move ${stripSortPrefix(command.value)}.` };
         }
         usedTargets.add(String(candidates[0].id));
-        moves.push({ command, target: candidates[0], market, number, mode: match[2].toUpperCase() as 'W' | 'D' });
+        moves.push({ command, target: candidates[0], market, steps, number, mode });
     }
     return { status: 'ready', moves };
 }
