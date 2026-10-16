@@ -17,6 +17,8 @@ ShoppingRoute sortiert Alexa-Einkaufslisteneinträge nach Markt, Produktgruppe u
 
 **Marktwechsel direkt in der normalen Alexa-Einkaufsliste auf dem Handy – ohne zusätzliche App und ohne Zugriff auf die ioBroker-Verwaltung.**
 
+**Vier Handy-Befehle:** `13WNETTO` wechselt Artikel 13 **vorübergehend** zu NETTO, `13DNETTO` ordnet ihn **dauerhaft** NETTO zu. `25H3` verschiebt Artikel 25 **drei echte Artikelpositionen nach oben**, `25R3` **drei nach unten** – jeweils nur innerhalb desselben Marktes, ohne Marktüberschriften mitzuzählen. H/R verändern keine gespeicherten Laufwege oder Produktgruppen.
+
 Füge einen Steuerbefehl wie `13WNETTO` als normalen Listeneintrag hinzu: `13` ist die **aktuell sichtbare zweistellige Nummer vor dem Artikel**, `W` bedeutet Wechsel und `NETTO` ist ein bereits angelegter Zielmarkt. Du kannst mehrere Befehle hintereinander eingeben. Groß-/Kleinschreibung ist egal; eindeutige kleine Tippfehler im Marktnamen werden korrigiert.
 
 **Bitte Geduld:** Ein neuer Sortiervorgang erfolgt **niemals sofort**. Abhängig von Internetverbindung, Geschwindigkeit und Alexa kann es **bis zu fünf Minuten** dauern. Solange der Befehl noch in der Einkaufsliste steht, ist das zunächst normal. **Erst nach fünf Minuten** Internet-/Alexa-Verbindung sowie Artikelnummer und Marktnamen prüfen. Bei einem Eingabefehler den Befehl in Alexa abhaken und korrigiert neu eingeben.
