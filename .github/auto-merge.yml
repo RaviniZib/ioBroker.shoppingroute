@@ -1,9 +1,11 @@
-# Conservative ioBroker Dependabot auto-merge policy.
+# Only patch updates may be merged automatically after successful checks.
+# The workflow independently blocks minor and major updates, including lockfile-only PRs.
 - match:
-    # Production dependencies: patch updates only.
     dependency_type: production
     update_type: "semver:patch"
 - match:
-    # Development dependencies: patch and minor updates.
     dependency_type: development
-    update_type: "semver:minor"
+    update_type: "semver:patch"
+- match:
+    dependency_type: package-lock
+    update_type: "semver:patch"
