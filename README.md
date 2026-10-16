@@ -64,6 +64,8 @@ Adapter settings and the backup utility include all 11 standard ioBroker Admin l
 
 Add a temporary command as a normal list item using `NNWMARKET`, for example `13WNETTO`: `13` is the two-digit prefix currently shown before the product, `W` means move, and `NETTO` is a configured destination market. Several commands may be entered before the next sort. Case does not matter; unambiguous small typos in market names are corrected.
 
+**Please be patient:** A new sort **never happens immediately**. Depending on internet connection, speed and Alexa processing, it may take **up to five minutes**. It is normal for the command to remain visible while processing. **If it is still present after five minutes**, check the internet/Alexa connection and the item number and store name. Mark an incorrect command completed in Alexa and enter it again correctly.
+
 The move affects only the current shopping item, **not** its learned default market or catalogue assignment. Successfully processed commands disappear from the Alexa list. If a command remains, check the number and market; mark the incorrect command as completed in Alexa and enter a corrected one. **Market-heading numbers cannot be used to move products.** Ambiguous or invalid commands are never guessed.
 
 This functionality is being prepared in 0.5.2; the released 0.5.1 remains unchanged on npm.
