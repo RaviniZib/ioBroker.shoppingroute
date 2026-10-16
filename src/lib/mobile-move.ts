@@ -34,7 +34,10 @@ function editDistance(left: string, right: string): number {
     return previous[right.length];
 }
 
-/** Match configured, enabled markets only; never guess between equally plausible names. */
+/** Match configured, enabled markets only; never guess between equally plausible names.
+ * @param input User-entered destination market.
+ * @param markets Configured markets.
+ */
 export function resolveMobileMarket(input: string, markets: MarketConfig[]): string | undefined {
     const requested = normalized(input);
     if (!requested) return undefined;
@@ -52,7 +55,10 @@ export function resolveMobileMarket(input: string, markets: MarketConfig[]): str
     return candidates[0].market.name;
 }
 
-/** Resolve all commands against one unchanged Amazon snapshot, before any writes. */
+/** Resolve all commands against one unchanged Amazon snapshot, before any writes.
+ * @param snapshot Current direct Amazon list snapshot.
+ * @param markets Configured markets.
+ */
 export function resolveMobileMoves(snapshot: AlexaListItem[], markets: MarketConfig[]): MobileMoveResolution {
     const active = snapshot.filter(item => item && item.completed === false && item.id);
     const commands = active
