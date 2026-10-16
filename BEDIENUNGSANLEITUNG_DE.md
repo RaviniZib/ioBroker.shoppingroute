@@ -4,6 +4,17 @@
 
 ShoppingRoute hilft dir dabei, eine Alexa-Einkaufsliste so zu ordnen, wie du tatsächlich einkaufst.
 
+## Neu ab 0.5.2: Marktwechsel direkt in der Alexa-Handy-App
+
+Ohne zusätzliche Handy-App kannst du einen vorhandenen Artikel für **diesen Einkauf** in einen anderen Markt verschieben. Gib dazu einen normalen Alexa-Listeneintrag in der Form `NNWMARKT` ein, beispielsweise `13WNETTO`. Die zweistellige Nummer muss vor dem **Artikel** in der aktuellen Liste stehen; `W` ist der Wechselbefehl, danach folgt ein bereits konfigurierter Markt.
+
+Du kannst mehrere Befehle gleichzeitig eingeben. Die Groß-/Kleinschreibung ist egal, und eindeutige kleine Tippfehler wie `ALSI` statt `ALDI` werden erkannt. Der Adapter ändert dabei **keine dauerhaften Artikelzuordnungen** und lernt diese kurzfristige Änderung nicht an.
+
+Ein erfolgreich ausgeführter Befehl wird aus der Alexa-Liste entfernt. **Bleibt er stehen**, ist die Nummer möglicherweise falsch, bezeichnet eine Marktüberschrift oder der Zielmarkt ist unbekannt bzw. nicht eindeutig. Hake den fehlerhaften Befehl in Alexa ab und gib ihn korrigiert erneut ein. Bei unsicheren Befehlen wird kein Artikel verschoben.
+
+**Hinweis:** Diese Funktion ist in der noch unveröffentlichten Version 0.5.2 vorbereitet.
+
+
 ## Warum ShoppingRoute beim Einkaufen wirklich hilft
 
 Der größte Vorteil ist nicht einfach nur eine „sortierte Liste“, sondern dass ShoppingRoute deine **echten Einkaufsgewohnheiten** abbildet.
