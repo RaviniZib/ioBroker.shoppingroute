@@ -19,6 +19,8 @@ ShoppingRoute sortiert Alexa-Einkaufslisteneinträge nach Markt, Produktgruppe u
 
 Füge einen Steuerbefehl wie `13WNETTO` als normalen Listeneintrag hinzu: `13` ist die **aktuell sichtbare zweistellige Nummer vor dem Artikel**, `W` bedeutet Wechsel und `NETTO` ist ein bereits angelegter Zielmarkt. Du kannst mehrere Befehle hintereinander eingeben. Groß-/Kleinschreibung ist egal; eindeutige kleine Tippfehler im Marktnamen werden korrigiert.
 
+**Bitte Geduld:** Ein neuer Sortiervorgang erfolgt **niemals sofort**. Abhängig von Internetverbindung, Geschwindigkeit und Alexa kann es **bis zu fünf Minuten** dauern. Solange der Befehl noch in der Einkaufsliste steht, ist das zunächst normal. **Erst nach fünf Minuten** Internet-/Alexa-Verbindung sowie Artikelnummer und Marktnamen prüfen. Bei einem Eingabefehler den Befehl in Alexa abhaken und korrigiert neu eingeben.
+
 Der Marktwechsel gilt **nur für diesen Einkauf**. Die gespeicherte Produktzuordnung und die Lernfunktion bleiben unverändert. Erfolgreiche Steuerbefehle verschwinden aus der Liste. Bleibt ein Befehl stehen, Nummer und Markt prüfen, den falschen Befehl in Alexa abhaken und richtig neu eingeben. **Nummern vor Marktüberschriften können nicht zum Verschieben von Artikeln verwendet werden.** Bei mehrdeutigen Befehlen wird nichts geraten.
 
 Die Funktion ist für 0.5.2 vorbereitet; die veröffentlichte 0.5.1 bleibt auf npm unverändert.
