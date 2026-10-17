@@ -17,7 +17,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT license"></a>
 </p>
 
-> **Current release: 0.5.2**
+> **Current release: 0.5.3**
 > ShoppingRoute is available in the ioBroker **latest** repository.
 
 ## What ShoppingRoute does
@@ -58,7 +58,7 @@ Community and support:
 
 Adapter settings and the backup utility include all 11 standard ioBroker Admin languages. Shopping-list feedback is available in German and English.
 
-## What's new in 0.5.2
+## What's new in 0.5.3
 
 **Control market assignments from the regular Alexa shopping list on your phone — no extra app and no access to the ioBroker Admin interface required.**
 
@@ -199,6 +199,11 @@ ShoppingRoute is still young, so real-world feedback is especially valuable.
 Please use the [ioBroker tester thread](https://forum.iobroker.net/topic/85510/test-adapter-shoppingroute-v0.4.4) for general testing feedback and the [GitHub issue tracker](https://github.com/RaviniZib/ioBroker.shoppingroute/issues) for reproducible bugs or feature requests.
 
 ## Changelog
+
+### 0.5.3 (2026-10-17)
+
+- Adds bilingual command aliases: W/C temporary store, F/E permanent store, H/U up, R/D down.
+- D now means down, while F replaces the former permanent D.
 
 ### 0.5.2 (2026-10-17)
 

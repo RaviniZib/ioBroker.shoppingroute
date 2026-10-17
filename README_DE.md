@@ -2,7 +2,7 @@
 
 ![ShoppingRoute](admin/shoppingroute.png)
 
-**Aktuelle Version: 0.5.2 (veröffentlicht)**
+**Aktuelle Version: 0.5.3 (veröffentlicht)**
 
 ShoppingRoute macht aus einer normalen Alexa-Einkaufsliste eine praktische Einkaufshilfe: **Alle Märkte können gemeinsam in einer einzigen Liste geführt oder bewusst auf mehrere Listen verteilt werden.** Das besondere Merkmal ist das frei einstellbare **Marktrouting**: Für jeden Markt legst du deinen persönlichen Laufweg durch die Abteilungen fest. Dadurch steht die Einkaufsliste in der Reihenfolge, in der du tatsächlich durch den Laden gehst – für weniger Zurücklaufen, weniger Suchen und **schnelleres, effizienteres Einkaufen**.
 
@@ -13,7 +13,7 @@ ShoppingRoute sortiert Alexa-Einkaufslisteneinträge nach Markt, Produktgruppe u
 🇩🇪 [**Deutsche Bedienungsanleitung**](BEDIENUNGSANLEITUNG_DE.md)  
 🇬🇧 [**English user guide**](USER_GUIDE_EN.md)
 
-## Neu in 0.5.2: Direktsteuerung in der Alexa-App
+## Neu in 0.5.3: Direktsteuerung in der Alexa-App
 
 **Marktwechsel direkt in der normalen Alexa-Einkaufsliste auf dem Handy – ohne zusätzliche App und ohne Zugriff auf die ioBroker-Verwaltung.**
 
@@ -124,6 +124,11 @@ Die Optimierung ist optional und abhängig von der eingestellten Mindestartikelz
 ShoppingRoute wird unter der **[MIT-Lizenz](LICENSE)** veröffentlicht. Frühere bereits veröffentlichte Versionen bleiben unter der jeweils damals gültigen Lizenz.
 
 ## Changelog
+
+### 0.5.3 (2026-10-17)
+
+- Deutsche und englische Befehle: W/C temporär, F/E dauerhaft, H/U hoch, R/D runter.
+- D bedeutet nun Runter; F ersetzt das bisherige dauerhafte D.
 
 ### 0.5.2 (2026-10-17)
 

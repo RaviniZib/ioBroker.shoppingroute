@@ -4,7 +4,7 @@
 
 ShoppingRoute hilft dir dabei, eine Alexa-Einkaufsliste so zu ordnen, wie du tatsächlich einkaufst.
 
-## Neu in 0.5.2: Einkäufe direkt in der Alexa-App ändern
+## Neu in 0.5.3: Einkäufe direkt in der Alexa-App ändern
 
 **Du bist unterwegs, siehst ein Angebot und willst deine Einkaufsliste ändern? Das geht jetzt direkt auf dem Handy.** Du brauchst dafür nur die normale Alexa-App.
 

@@ -4,7 +4,7 @@
 
 ShoppingRoute helps turn a normal Alexa shopping list into a list that follows the way you actually shop.
 
-## New in 0.5.2: Change your shopping list right in the Alexa app
+## New in 0.5.3: Change your shopping list right in the Alexa app
 
 **You're out shopping, spot a special offer and want to change your list? You can do it right on your phone.** All you need is the regular Alexa app.
 

@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "shoppingroute",
-    "version": "0.5.2",
+    "version": "0.5.3",
     "titleLang": {
       "en": "ShoppingRoute",
       "de": "ShoppingRoute",
@@ -61,6 +61,19 @@
     "icon": "shoppingroute.png",
     "tier": 3,
     "news": {
+      "0.5.3": {
+        "en": "Adds English command aliases C/E/U/D alongside German W/F/H/R for temporary store changes, permanent assignments and item reordering. D now means Down; F replaces the former permanent D.",
+        "de": "Englische Befehle C/E/U/D ergänzen W/F/H/R für temporäre und dauerhafte Marktwechsel sowie Artikelverschiebungen. D bedeutet jetzt Runter, F ersetzt das bisherige dauerhafte D.",
+        "ru": "Adds English command aliases C/E/U/D alongside German W/F/H/R for temporary store changes, permanent assignments and item reordering. D now means Down; F replaces the former permanent D.",
+        "pt": "Adds English command aliases C/E/U/D alongside German W/F/H/R for temporary store changes, permanent assignments and item reordering. D now means Down; F replaces the former permanent D.",
+        "nl": "Adds English command aliases C/E/U/D alongside German W/F/H/R for temporary store changes, permanent assignments and item reordering. D now means Down; F replaces the former permanent D.",
+        "fr": "Adds English command aliases C/E/U/D alongside German W/F/H/R for temporary store changes, permanent assignments and item reordering. D now means Down; F replaces the former permanent D.",
+        "it": "Adds English command aliases C/E/U/D alongside German W/F/H/R for temporary store changes, permanent assignments and item reordering. D now means Down; F replaces the former permanent D.",
+        "es": "Adds English command aliases C/E/U/D alongside German W/F/H/R for temporary store changes, permanent assignments and item reordering. D now means Down; F replaces the former permanent D.",
+        "pl": "Adds English command aliases C/E/U/D alongside German W/F/H/R for temporary store changes, permanent assignments and item reordering. D now means Down; F replaces the former permanent D.",
+        "uk": "Adds English command aliases C/E/U/D alongside German W/F/H/R for temporary store changes, permanent assignments and item reordering. D now means Down; F replaces the former permanent D.",
+        "zh-cn": "Adds English command aliases C/E/U/D alongside German W/F/H/R for temporary store changes, permanent assignments and item reordering. D now means Down; F replaces the former permanent D."
+      },
       "0.5.2": {
         "en": "Adds temporary market moves directly from the standard Alexa mobile shopping list using NNWMARKET, including multiple commands, safe item-number matching, and typo-tolerant market names. No extra mobile app required.",
         "de": "Temporäre Marktwechsel direkt in der normalen Alexa-Einkaufsliste per NNWMARKT: mehrere Befehle, sichere Artikelnummern-Zuordnung und Tippfehlerkorrektur bei Märkten. Keine zusätzliche Handy-App nötig.",

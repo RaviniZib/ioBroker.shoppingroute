@@ -80,7 +80,7 @@ export function resolveMobileMoves(snapshot: AlexaListItem[], markets: MarketCon
         const mode = ({ W: 'W', C: 'W', F: 'F', E: 'F', H: 'H', U: 'H', R: 'R', D: 'R' } as Record<string, 'W' | 'F' | 'H' | 'R'>)[letter];
         const market = mode === 'W' || mode === 'F' ? resolveMobileMarket(match[3], markets) : undefined;
         const steps = mode === 'H' || mode === 'R' ? Number(match[3]) : undefined;
-        const validArgument = mode === 'W' || mode === 'D' ? Boolean(market) : /^\d{1,2}$/.test(match[3]) && Number.isInteger(steps) && steps! > 0;
+        const validArgument = mode === 'W' || mode === 'F' ? Boolean(market) : /^\d{1,2}$/.test(match[3]) && Number.isInteger(steps) && steps! > 0;
         const candidates = active.filter(item =>
             !commandIds.has(String(item.id)) &&
             !isMarketHeader(stripSortPrefix(item.value), markets) &&
