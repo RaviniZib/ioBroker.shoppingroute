@@ -17,7 +17,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT license"></a>
 </p>
 
-> **Next version under preparation: 0.5.2 (not published)**
+> **Current release: 0.5.2**
 > ShoppingRoute is available in the ioBroker **latest** repository.
 
 ## What ShoppingRoute does
@@ -58,7 +58,7 @@ Community and support:
 
 Adapter settings and the backup utility include all 11 standard ioBroker Admin languages. Shopping-list feedback is available in German and English.
 
-## What's new in 0.5.2 (unpublished)
+## What's new in 0.5.2
 
 **Control market assignments from the regular Alexa shopping list on your phone — no extra app and no access to the ioBroker Admin interface required.**
 
@@ -70,7 +70,7 @@ Add a temporary command as a normal list item using `NNWMARKET`, for example `13
 
 The move affects only the current shopping item, **not** its learned default market or catalogue assignment. Successfully processed commands disappear from the Alexa list. If a command remains, check the number and market; mark the incorrect command as completed in Alexa and enter a corrected one. **Market-heading numbers cannot be used to move products.** Ambiguous or invalid commands are never guessed.
 
-This functionality is being prepared in 0.5.2; the released 0.5.1 remains unchanged on npm.
+These features are available in the published 0.5.2 release.
 
 ## What's new in 0.5.1
 
@@ -202,7 +202,7 @@ Please use the [ioBroker tester thread](https://forum.iobroker.net/topic/85510/t
 
 ## Changelog
 
-### 0.5.2 (2026-10-16, unpublished)
+### 0.5.2 (2026-10-17)
 
 - Add temporary market moves directly from the standard Alexa mobile shopping list via `NNWMARKET`.
 - Process multiple commands, correct unambiguous market typos, and protect market headings and ambiguous item numbers.
