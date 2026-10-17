@@ -16,7 +16,7 @@ Several commands may be added before sorting. Case is ignored, and small unambig
 
 **Invalid or ambiguous commands do not move any items.** Market-heading numbers cannot be used as product numbers.
 
-**Note:** This feature is prepared for the not-yet-published 0.5.2 version.
+**Note:** This feature is available starting with the published 0.5.2 release.
 
 
 ## Why ShoppingRoute actually makes shopping easier
