@@ -30,11 +30,11 @@ test('two independent mobile commands resolve against one numbered list snapshot
         item('a', '13> Camembert'),
         item('b', '16> Joghurt'),
         item('c', '13WNETTO'),
-        item('d', '16dneto'),
+        item('d', '16eneto'),
     ];
     const resolved = resolveMobileMoves(snapshot, markets);
     assert.equal(resolved.status, 'ready');
-    assert.deepEqual(resolved.moves.map(move => move.mode), ['W', 'D']);
+    assert.deepEqual(resolved.moves.map(move => move.mode), ['W', 'F']);
     assert.deepEqual(resolved.moves.map(move => [move.target.id, move.market]), [
         ['a', 'NETTO'], ['b', 'NETTO'],
     ]);
@@ -75,7 +75,7 @@ test('H and R commands identify the correct product and relative step count', ()
         item('a', '25> Käse'),
         item('b', '31> Milch'),
         item('c', '25H3'),
-        item('d', '31r2'),
+        item('d', '31d2'),
     ], markets);
     assert.equal(resolved.status, 'ready');
     assert.deepEqual(resolved.moves.map(move => [move.mode, move.number, move.steps, move.target.id]), [
@@ -84,7 +84,7 @@ test('H and R commands identify the correct product and relative step count', ()
 });
 
 test('H/R invalid step counts and market-heading references remain visible', () => {
-    for (const command of ['25H0', '25R100', '25HXYZ']) {
+    for (const command of ['25H0', '25D100', '25HXYZ']) {
         const result = resolveMobileMoves([item('a', '25> Käse'), item('b', command)], markets);
         if (command === '25HXYZ') {
             assert.equal(result.status, 'invalid');
@@ -95,4 +95,19 @@ test('H/R invalid step counts and market-heading references remain visible', () 
     assert.equal(resolveMobileMoves([
         item('a', '35> ═════ ALDI ═════'), item('b', '35H2'),
     ], markets).status, 'invalid');
+});
+
+test('bilingual letters have exactly four meanings and D always means down', () => {
+    const cases = [
+        ['25WNETTO', 'W'], ['25CNETTO', 'W'],
+        ['25FNETTO', 'F'], ['25ENETTO', 'F'],
+        ['25H2', 'H'], ['25U2', 'H'],
+        ['25R2', 'R'], ['25D2', 'R'],
+    ];
+    for (const [command, mode] of cases) {
+        const result = resolveMobileMoves([item('product', '25> Käse'), item('command', command)], markets);
+        assert.equal(result.status, 'ready', command);
+        assert.equal(result.moves[0].mode, mode, command);
+    }
+    assert.equal(resolveMobileMoves([item('p', '25> Käse'), item('c', '25DNETTO')], markets).status, 'invalid');
 });

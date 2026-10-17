@@ -4,7 +4,7 @@
 
 ShoppingRoute hilft dir dabei, eine Alexa-Einkaufsliste so zu ordnen, wie du tatsächlich einkaufst.
 
-## Neu in 0.5.2: Einkäufe direkt in der Alexa-App ändern
+## Neu in 0.5.3: Einkäufe direkt in der Alexa-App ändern
 
 **Du bist unterwegs, siehst ein Angebot und willst deine Einkaufsliste ändern? Das geht jetzt direkt auf dem Handy.** Du brauchst dafür nur die normale Alexa-App.
 
@@ -31,10 +31,10 @@ Eigentlich kaufst du Käse bei ALDI. Heute ist er aber bei LIDL im Angebot.
 Du möchtest Käse grundsätzlich bei LIDL kaufen? Dann füge stattdessen diesen Eintrag hinzu:
 
 ```text
-25DLIDL
+25FLIDL
 ```
 
-**Der Unterschied:** **W** gilt nur für diesen Einkauf. **D** merkt sich LIDL dauerhaft für diesen Artikel.
+**Der Unterschied:** **W** gilt nur für diesen Einkauf. **F** merkt sich LIDL dauerhaft für diesen Artikel.
 
 ### Beispiel 3: Einen Artikel auf der Liste nach oben schieben
 
@@ -82,7 +82,7 @@ Du kannst **mehrere Befehle** in die Liste schreiben. Groß- und Kleinschreibung
 
 **Steht der Befehl nach fünf Minuten immer noch da?** Prüfe die Internet-/Alexa-Verbindung und ob Nummer, Buchstabe und Markt richtig sind. Einen falschen Befehl einfach **abhaken und neu eingeben**. Wenn ShoppingRoute einen Befehl nicht eindeutig versteht, lässt es ihn stehen, statt den falschen Artikel zu verschieben.
 
-**Das sind alle vier Befehle:** `W` (heute anderer Markt), `D` (dauerhaft anderer Markt), `H` (hoch) und `R` (runter).
+**Vier Funktionen, jeweils auf Deutsch oder Englisch:** `W/C` (Wechsel/Change), `F/E` (Fest/Ever), `H/U` (Hoch/Up) und `R/D` (Runter/Down). Zum Beispiel sind `25WLIDL` und `25CLIDL` gleichwertig. Für dauerhaft verwende `25FLIDL` oder `25ELIDL`. `25D2` bedeutet **zwei Plätze nach unten**, nicht dauerhaft wechseln.
 
 ## Warum ShoppingRoute beim Einkaufen wirklich hilft
 

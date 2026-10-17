@@ -17,7 +17,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT license"></a>
 </p>
 
-> **Current release: 0.5.2**
+> **Current release: 0.5.3**
 > ShoppingRoute is available in the ioBroker **latest** repository.
 
 ## What ShoppingRoute does
@@ -58,17 +58,17 @@ Community and support:
 
 Adapter settings and the backup utility include all 11 standard ioBroker Admin languages. Shopping-list feedback is available in German and English.
 
-## What's new in 0.5.2
+## What's new in 0.5.3
 
 **Control market assignments from the regular Alexa shopping list on your phone — no extra app and no access to the ioBroker Admin interface required.**
 
-**Four mobile commands:** `13WNETTO` moves item 13 **temporarily** to NETTO, while `13DNETTO` assigns it there **permanently**. `25H3` moves item 25 **three real product positions up**, and `25R3` moves it **three down**, within the same store only. Store headings are not counted; H/R do not modify stored walking routes or product groups.
+**Four actions (German/English letters: W/C, F/E, H/U, R/D):** `13WNETTO` moves item 13 **temporarily** to NETTO, while `13FNETTO` assigns it there **permanently**. `25H3` moves item 25 **three real product positions up**, and `25R3` moves it **three down**, within the same store only. Store headings are not counted; H/R do not modify stored walking routes or product groups.
 
-Add a temporary command as a normal list item using `NNWMARKET`, for example `13WNETTO`: `13` is the two-digit prefix currently shown before the product, `W` means move, and `NETTO` is a configured destination market. Several commands may be entered before the next sort. Case does not matter; unambiguous small typos in market names are corrected.
+Add a temporary command as a normal list item using `NNWMARKET`, for example `13WNETTO`: `13` is the two-digit prefix currently shown before the product, `W/C` means temporary move, and `NETTO` is a configured destination market. Several commands may be entered before the next sort. Case does not matter; unambiguous small typos in market names are corrected.
 
 **Please be patient:** A new sort **never happens immediately**. Depending on internet connection, speed and Alexa processing, it may take **up to five minutes**. It is normal for the command to remain visible while processing. **If it is still present after five minutes**, check the internet/Alexa connection and the item number and store name. Mark an incorrect command completed in Alexa and enter it again correctly.
 
-A **W** move affects only the current shopping item and does not change its learned default market. A **D** command permanently updates the product's default market. Successfully processed commands disappear from the Alexa list. If a command remains, check the number and market; mark the incorrect command as completed in Alexa and enter a corrected one. **Market-heading numbers cannot be used to move products.** Ambiguous or invalid commands are never guessed.
+A **W** move affects only the current shopping item and does not change its learned default market. A **F** command permanently updates the product's default market. Successfully processed commands disappear from the Alexa list. If a command remains, check the number and market; mark the incorrect command as completed in Alexa and enter a corrected one. **Market-heading numbers cannot be used to move products.** Ambiguous or invalid commands are never guessed.
 
 ## Previous improvements (0.5.1)
 
@@ -199,6 +199,11 @@ ShoppingRoute is still young, so real-world feedback is especially valuable.
 Please use the [ioBroker tester thread](https://forum.iobroker.net/topic/85510/test-adapter-shoppingroute-v0.4.4) for general testing feedback and the [GitHub issue tracker](https://github.com/RaviniZib/ioBroker.shoppingroute/issues) for reproducible bugs or feature requests.
 
 ## Changelog
+
+### 0.5.3 (2026-10-17)
+
+- Adds bilingual command aliases: W/C temporary store, F/E permanent store, H/U up, R/D down.
+- D now means down, while F replaces the former permanent D.
 
 ### 0.5.2 (2026-10-17)
 

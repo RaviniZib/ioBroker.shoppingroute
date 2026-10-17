@@ -64,7 +64,7 @@ import {
     type DirectSortPhase,
 } from './lib/direct-sort-lifecycle';
 
-const VERSION = '0.5.2';
+const VERSION = '0.5.3';
 const COLLECT_WINDOW_MS = 5000;
 class MissingAlexaListError extends Error {}
 const MAX_ACTIVE_ITEMS = 99;
@@ -1257,7 +1257,7 @@ export class ShoppingRoute extends utils.Adapter {
             for (const move of mobile.moves) {
                 // D modifies the product catalogue; W only creates a temporary list override.
                 const parsed = parseItem(stripSortPrefix(move.target.value), this.markets, this.products, this.fallbackMarket, this.priorityMarketForList(listName));
-                if (move.mode === 'D' && (!parsed.productText || parsed.explicitMarket)) {
+                if (move.mode === 'F' && (!parsed.productText || parsed.explicitMarket)) {
                     this.log.warn(`${listName}: permanent move needs an unambiguous product without an explicit market suffix.`);
                     return;
                 }
@@ -1337,7 +1337,7 @@ export class ShoppingRoute extends utils.Adapter {
                     this.log.warn(`${listName}: mobile move failed; remaining commands were left intact: ${String(error)}`);
                     return;
                 }
-                if (move.mode === 'D') {
+                if (move.mode === 'F') {
                     const product = findProduct(parsed.productText, this.products);
                     if (product) {
                         this.runtimeProducts = this.runtimeProducts.map(entry =>
