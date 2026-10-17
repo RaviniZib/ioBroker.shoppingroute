@@ -68,11 +68,9 @@ Add a temporary command as a normal list item using `NNWMARKET`, for example `13
 
 **Please be patient:** A new sort **never happens immediately**. Depending on internet connection, speed and Alexa processing, it may take **up to five minutes**. It is normal for the command to remain visible while processing. **If it is still present after five minutes**, check the internet/Alexa connection and the item number and store name. Mark an incorrect command completed in Alexa and enter it again correctly.
 
-The move affects only the current shopping item, **not** its learned default market or catalogue assignment. Successfully processed commands disappear from the Alexa list. If a command remains, check the number and market; mark the incorrect command as completed in Alexa and enter a corrected one. **Market-heading numbers cannot be used to move products.** Ambiguous or invalid commands are never guessed.
+A **W** move affects only the current shopping item and does not change its learned default market. A **D** command permanently updates the product's default market. Successfully processed commands disappear from the Alexa list. If a command remains, check the number and market; mark the incorrect command as completed in Alexa and enter a corrected one. **Market-heading numbers cannot be used to move products.** Ambiguous or invalid commands are never guessed.
 
-These features are available in the published 0.5.2 release.
-
-## What's new in 0.5.1
+## Previous improvements (0.5.1)
 
 This release fixes the saving and moving problems reported with the new management page and makes shopping from a phone more comfortable:
 
