@@ -31,10 +31,10 @@ You normally buy cheese at ALDI, but today LIDL has a better offer.
 Want LIDL to be the default store for cheese? Add this instead:
 
 ```text
-25DLIDL
+25FLIDL
 ```
 
-**The difference:** **W** is for this trip only. **D** remembers the new store permanently.
+**The difference:** **W** is for this trip only. **F** remembers the new store permanently.
 
 ### Example 3: Move an item higher up the list
 
@@ -82,7 +82,7 @@ You can add **several commands** at once. Uppercase or lowercase makes no differ
 
 **Still there after five minutes?** Check your internet/Alexa connection and the item number, letter and store name. Simply **mark an incorrect command as completed and enter it again**. If ShoppingRoute cannot understand a command unambiguously, it leaves it in place rather than moving the wrong item.
 
-**That's all four commands:** `W` (change store for this trip), `D` (change store permanently), `H` (higher) and `R` (lower).
+**Four actions, with German and English letters:** `W/C` (temporary Change), `F/E` (permanent change), `H/U` (Up), `R/D` (Down). For example, `25WLIDL` and `25CLIDL` do the same thing; `25FLIDL` and `25ELIDL` save the store permanently. `25D2` means **two positions down**, not a permanent change.
 
 ## Why ShoppingRoute actually makes shopping easier
 
