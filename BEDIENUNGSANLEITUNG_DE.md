@@ -4,6 +4,21 @@
 
 ShoppingRoute hilft dir dabei, eine Alexa-Einkaufsliste so zu ordnen, wie du tatsächlich einkaufst.
 
+## Neu ab 0.5.2: Marktwechsel direkt in der Alexa-Handy-App
+
+Ohne zusätzliche Handy-App kannst du einen vorhandenen Artikel in einen anderen Markt verschieben. Gib dazu einen normalen Alexa-Listeneintrag ein, beispielsweise `13WNETTO` für einen **temporären Wechsel nur bei diesem Einkauf** oder `13DNETTO` für eine **dauerhafte Marktzuordnung**. Die zweistellige Nummer muss vor dem **Artikel** in der aktuellen Liste stehen; `W` bedeutet temporär wechseln, `D` dauerhaft zuordnen. Danach folgt ein bereits konfigurierter Markt.
+
+**Reihenfolge innerhalb eines Marktes:** Mit `25H3` verschiebst du Artikel 25 um drei **Artikelpositionen nach oben**, mit `25R3` um drei Positionen nach unten. Dabei zählen nur echte Artikel desselben Marktes, keine Marktüberschriften. Am Anfang oder Ende des Marktes wird die Verschiebung begrenzt. Beide Befehle gelten nur für den aktuellen Einkauf und verändern weder Laufwege noch Produktgruppen. Die Nummer vor `H` oder `R` ist immer die aktuelle sichtbare Artikelnummer.
+
+Du kannst mehrere Befehle gleichzeitig eingeben. Die Groß-/Kleinschreibung ist egal, und eindeutige kleine Tippfehler wie `ALSI` statt `ALDI` werden erkannt. Bei `W` ändert der Adapter **keine dauerhaften Artikelzuordnungen** und lernt den kurzfristigen Wechsel nicht an. Nur `D` speichert die neue Marktzuordnung dauerhaft.
+
+**Wichtig – bitte Geduld:** Ein neuer Sortiervorgang erfolgt **niemals sofort**. Je nach Internetverbindung, Geschwindigkeit und Verarbeitung durch Alexa kann es **bis zu fünf Minuten** dauern, bis ein Wechselbefehl umgesetzt wird und aus der Einkaufsliste verschwindet. Dass der Befehl währenddessen noch sichtbar ist, ist **kein Grund zur Sorge**. Erst wenn er **nach fünf Minuten immer noch dort steht**, prüfe die Internet-/Alexa-Verbindung und die Eingabe (Artikelnummer, `W` oder `D`, Marktname). Ist der Befehl falsch, hake ihn in Alexa ab und gib ihn korrigiert erneut ein. Auch eine mehrdeutige Artikelnummer oder ein unbekannter Markt kann die Ausführung verhindern.
+
+**Bei ungültigen oder mehrdeutigen Befehlen wird kein Artikel verschoben.** Nummern vor Marktüberschriften sind keine Artikelnummern.
+
+**Hinweis:** Diese Funktion ist in der noch unveröffentlichten Version 0.5.2 vorbereitet.
+
+
 ## Warum ShoppingRoute beim Einkaufen wirklich hilft
 
 Der größte Vorteil ist nicht einfach nur eine „sortierte Liste“, sondern dass ShoppingRoute deine **echten Einkaufsgewohnheiten** abbildet.

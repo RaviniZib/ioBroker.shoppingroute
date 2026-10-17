@@ -2,7 +2,7 @@
 
 ![ShoppingRoute](admin/shoppingroute.png)
 
-**Aktuelle Version: 0.5.1**
+**Nächste Version in Vorbereitung: 0.5.2 (noch nicht veröffentlicht)**
 
 ShoppingRoute macht aus einer normalen Alexa-Einkaufsliste eine praktische Einkaufshilfe: **Alle Märkte können gemeinsam in einer einzigen Liste geführt oder bewusst auf mehrere Listen verteilt werden.** Das besondere Merkmal ist das frei einstellbare **Marktrouting**: Für jeden Markt legst du deinen persönlichen Laufweg durch die Abteilungen fest. Dadurch steht die Einkaufsliste in der Reihenfolge, in der du tatsächlich durch den Laden gehst – für weniger Zurücklaufen, weniger Suchen und **schnelleres, effizienteres Einkaufen**.
 
@@ -12,6 +12,20 @@ ShoppingRoute sortiert Alexa-Einkaufslisteneinträge nach Markt, Produktgruppe u
 
 🇩🇪 [**Deutsche Bedienungsanleitung**](BEDIENUNGSANLEITUNG_DE.md)  
 🇬🇧 [**English user guide**](USER_GUIDE_EN.md)
+
+## Neu in 0.5.2 (noch nicht veröffentlicht): Direktsteuerung in der Alexa-App
+
+**Marktwechsel direkt in der normalen Alexa-Einkaufsliste auf dem Handy – ohne zusätzliche App und ohne Zugriff auf die ioBroker-Verwaltung.**
+
+**Vier Handy-Befehle:** `13WNETTO` wechselt Artikel 13 **vorübergehend** zu NETTO, `13DNETTO` ordnet ihn **dauerhaft** NETTO zu. `25H3` verschiebt Artikel 25 **drei echte Artikelpositionen nach oben**, `25R3` **drei nach unten** – jeweils nur innerhalb desselben Marktes, ohne Marktüberschriften mitzuzählen. H/R verändern keine gespeicherten Laufwege oder Produktgruppen.
+
+Füge einen Steuerbefehl wie `13WNETTO` als normalen Listeneintrag hinzu: `13` ist die **aktuell sichtbare zweistellige Nummer vor dem Artikel**, `W` bedeutet Wechsel und `NETTO` ist ein bereits angelegter Zielmarkt. Du kannst mehrere Befehle hintereinander eingeben. Groß-/Kleinschreibung ist egal; eindeutige kleine Tippfehler im Marktnamen werden korrigiert.
+
+**Bitte Geduld:** Ein neuer Sortiervorgang erfolgt **niemals sofort**. Abhängig von Internetverbindung, Geschwindigkeit und Alexa kann es **bis zu fünf Minuten** dauern. Solange der Befehl noch in der Einkaufsliste steht, ist das zunächst normal. **Erst nach fünf Minuten** Internet-/Alexa-Verbindung sowie Artikelnummer und Marktnamen prüfen. Bei einem Eingabefehler den Befehl in Alexa abhaken und korrigiert neu eingeben.
+
+Der Marktwechsel gilt **nur für diesen Einkauf**. Die gespeicherte Produktzuordnung und die Lernfunktion bleiben unverändert. Erfolgreiche Steuerbefehle verschwinden aus der Liste. Bleibt ein Befehl stehen, Nummer und Markt prüfen, den falschen Befehl in Alexa abhaken und richtig neu eingeben. **Nummern vor Marktüberschriften können nicht zum Verschieben von Artikeln verwendet werden.** Bei mehrdeutigen Befehlen wird nichts geraten.
+
+Die Funktion ist für 0.5.2 vorbereitet; die veröffentlichte 0.5.1 bleibt auf npm unverändert.
 
 ## Neu in 0.5.1: bequem am Handy einkaufen
 
@@ -110,6 +124,13 @@ Die Optimierung ist optional und abhängig von der eingestellten Mindestartikelz
 ShoppingRoute wird unter der **[MIT-Lizenz](LICENSE)** veröffentlicht. Frühere bereits veröffentlichte Versionen bleiben unter der jeweils damals gültigen Lizenz.
 
 ## Changelog
+
+### 0.5.2 (2026-10-16, noch nicht veröffentlicht)
+
+- Temporärer Marktwechsel über `NNWMARKT` direkt in der normalen Alexa-Handy-App.
+- Mehrere Befehle pro Sortierlauf, eindeutige Tippfehlerkorrektur und Schutz vor ungültigen Artikelnummern.
+- Dauerhafte Artikelzuordnungen, Lernfunktion und bisherige Sortierlogik bleiben erhalten.
+
 
 ### 0.5.1 (2026-10-07)
 - Neue Listen werden in Alexa angelegt und vor dem Speichern ihrer Verknüpfung bestätigt; Einkaufsartikel können direkt hinzugefügt werden, auch in leeren Listen.

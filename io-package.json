@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "shoppingroute",
-    "version": "0.5.1",
+    "version": "0.5.2",
     "titleLang": {
       "en": "ShoppingRoute",
       "de": "ShoppingRoute",
@@ -61,6 +61,19 @@
     "icon": "shoppingroute.png",
     "tier": 3,
     "news": {
+      "0.5.2": {
+        "en": "Adds temporary market moves directly from the standard Alexa mobile shopping list using NNWMARKET, including multiple commands, safe item-number matching, and typo-tolerant market names. No extra mobile app required.",
+        "de": "Temporäre Marktwechsel direkt in der normalen Alexa-Einkaufsliste per NNWMARKT: mehrere Befehle, sichere Artikelnummern-Zuordnung und Tippfehlerkorrektur bei Märkten. Keine zusätzliche Handy-App nötig.",
+        "ru": "Временное перемещение товаров между магазинами прямо в обычном списке Alexa с помощью NNWMARKT: несколько команд, проверка номера товара и исправление опечаток в названиях магазинов.",
+        "pt": "Permite mudar temporariamente artigos de loja na lista Alexa normal com NNWMARKT, incluindo vários comandos, validação do número do artigo e correção de erros no nome da loja.",
+        "nl": "Tijdelijke winkelwissels rechtstreeks in de gewone Alexa-boodschappenlijst via NNWMARKT, met meerdere opdrachten, veilige artikelnummers en correctie van typefouten in winkelnamen.",
+        "fr": "Déplacement temporaire d’articles entre magasins depuis la liste Alexa habituelle via NNWMARKT, avec plusieurs commandes, vérification des numéros et correction des fautes de frappe.",
+        "it": "Spostamenti temporanei tra negozi direttamente nella normale lista Alexa con NNWMARKT, più comandi, verifica dei numeri degli articoli e correzione dei refusi nei negozi.",
+        "es": "Cambios temporales de tienda desde la lista Alexa habitual mediante NNWMARKT, con varios comandos, validación de números de artículo y corrección de errores tipográficos.",
+        "pl": "Tymczasowa zmiana sklepu bezpośrednio na zwykłej liście Alexa przez NNWMARKT, z obsługą wielu poleceń, sprawdzaniem numerów i korektą literówek.",
+        "uk": "Тимчасове перенесення товарів між магазинами у звичайному списку Alexa через NNWMARKT: кілька команд, перевірка номерів і виправлення помилок у назвах.",
+        "zh-cn": "可直接在普通 Alexa 购物清单中使用 NNWMARKT 临时切换商店，支持多条命令、商品编号校验和商店名称拼写纠错。"
+      },
       "0.5.1": {
         "en": "Fixes catalogue saves and drag-and-drop, creates verified Alexa lists, adds shopping items directly, and shows progress for long moves. Local edits no longer restart the adapter.",
         "de": "Behebt Katalogspeicherung und Drag & Drop, legt bestätigte Alexa-Listen an, ergänzt Artikel direkt und zeigt den Fortschritt langer Verschiebungen. Lokale Änderungen lösen keine Adapter-Neustarts mehr aus.",
@@ -138,19 +151,6 @@
         "pl": "Naprawia zatwierdzanie produktów i wybór sklepów na liście do sprawdzenia, zapobiega równoczesnym zapisom i duplikatom na liście zakupów, dodaje usuwanie z weryfikacją, obsługuje niepełne odpowiedzi Admin i poprawia metadane wskazane przez kontrolę repozytorium.",
         "uk": "Виправлено прийняття товарів із черги перевірки та вибір магазинів; усунено паралельні записи до списку покупок і дублікати; додано видалення з перевіркою результату, обробку неповних відповідей Admin та виправлення метаданих за зауваженнями перевірки репозиторію.",
         "zh-cn": "修复审核列表中的商品接受和商店选择问题，防止购物清单并发写入和重复条目，新增经验证的商品删除，处理不完整的 Admin 响应，并修复仓库检查器指出的元数据问题。"
-      },
-      "0.4.0": {
-        "en": "Persists startup review cleanup and normalizes market arrays. Correction: the complete Admin review workflow was not fixed; accepted rows could remain visible and multi-market selection still had UI defects.",
-        "de": "Speichert die Prüflistenbereinigung beim Start und normalisiert Markt-Arrays. Korrektur: Der vollständige Admin-Prüflistenablauf war nicht behoben; übernommene Zeilen konnten sichtbar bleiben und die Marktauswahl hatte weiterhin Bedienfehler.",
-        "ru": "Сохраняет очистку очереди проверки при запуске и нормализует массивы магазинов. Уточнение: полный процесс в Admin не был исправлен; принятые строки могли оставаться видимыми, а выбор магазинов имел ошибки интерфейса.",
-        "pt": "Guarda a limpeza da revisão no arranque e normaliza arrays de lojas. Correção: o processo completo no Admin não foi corrigido; linhas aceites podiam continuar visíveis e a seleção de lojas ainda tinha problemas de interface.",
-        "nl": "Slaat opschoning van de controlelijst bij het opstarten op en normaliseert winkelarrays. Correctie: de volledige Admin-werkwijze was niet hersteld; geaccepteerde regels konden zichtbaar blijven en de winkelselectie had nog bedieningsproblemen.",
-        "fr": "Enregistre le nettoyage de la liste de vérification au démarrage et normalise les tableaux de magasins. Rectification : le processus complet dans Admin restait défectueux ; des lignes acceptées pouvaient rester visibles et la sélection des magasins présentait encore des problèmes.",
-        "it": "Salva la pulizia della coda di revisione all’avvio e normalizza gli array dei negozi. Rettifica: il processo completo in Admin non era corretto; le righe accettate potevano restare visibili e la selezione dei negozi presentava ancora problemi.",
-        "es": "Guarda la limpieza de la lista de revisión al iniciar y normaliza los arrays de tiendas. Corrección: el proceso completo en Admin no estaba corregido; las filas aceptadas podían seguir visibles y la selección de tiendas aún tenía problemas de interfaz.",
-        "pl": "Zapisuje czyszczenie kolejki przy uruchomieniu i normalizuje tablice sklepów. Sprostowanie: pełny proces w Admin nie został naprawiony; zaakceptowane wiersze mogły pozostać widoczne, a wybór sklepów nadal miał błędy interfejsu.",
-        "uk": "Зберігає очищення черги перевірки під час запуску та нормалізує масиви магазинів. Уточнення: повний процес в Admin не було виправлено; прийняті рядки могли залишатися видимими, а вибір магазинів мав помилки інтерфейсу.",
-        "zh-cn": "保存启动时的审核队列清理结果并规范商店数组。更正：Admin 中的完整审核流程并未修复；已接受的行仍可能显示，商店多选界面仍存在问题。"
       }
     },
     "extIcon": "https://raw.githubusercontent.com/RaviniZib/ioBroker.shoppingroute/main/admin/shoppingroute.png",

@@ -48,9 +48,10 @@ const statistics_1 = require("./lib/statistics");
 const review_tools_1 = require("./lib/review-tools");
 const manual_order_1 = require("./lib/manual-order");
 const state_change_1 = require("./lib/state-change");
+const mobile_move_1 = require("./lib/mobile-move");
 const config_protection_1 = require("./lib/config-protection");
 const direct_sort_lifecycle_1 = require("./lib/direct-sort-lifecycle");
-const VERSION = '0.5.1';
+const VERSION = '0.5.2';
 const COLLECT_WINDOW_MS = 5000;
 class MissingAlexaListError extends Error {
 }
@@ -1217,7 +1218,90 @@ class ShoppingRoute extends utils.Adapter {
         await this.persistTrafficMetrics();
         const listId = await this.directListId(listName, runtime);
         // A direct planning snapshot supplies the current Amazon versions; the Alexa2 state remains trigger-only.
-        const snapshot = await this.readDirectItems(listId, runtime);
+        let snapshot = await this.readDirectItems(listId, runtime);
+        // Resolve all mobile commands against the same numbered snapshot before writing.
+        const mobile = (0, mobile_move_1.resolveMobileMoves)(snapshot, this.markets);
+        if (mobile.status === 'invalid') {
+            this.log.warn(`${listName}: ${mobile.reason} Leave the command in Alexa to correct it.`);
+            return;
+        }
+        if (mobile.status === 'ready') {
+            if (this.dryRun) {
+                this.log.warn(`${listName}: mobile move commands are ignored in Dry Run; nothing was changed.`);
+                return;
+            }
+            for (const move of mobile.moves) {
+                // D modifies the product catalogue; W only creates a temporary list override.
+                const parsed = (0, parser_1.parseItem)((0, prefix_sort_1.stripSortPrefix)(move.target.value), this.markets, this.products, this.fallbackMarket, this.priorityMarketForList(listName));
+                if (move.mode === 'D' && (!parsed.productText || parsed.explicitMarket)) {
+                    this.log.warn(`${listName}: permanent move needs an unambiguous product without an explicit market suffix.`);
+                    return;
+                }
+                const previous = this.manualOverrides.map(entry => ({ ...entry }));
+                if (move.mode === 'W') {
+                    this.manualOverrides = (0, manual_order_1.normalizeManualOverrides)([
+                        ...this.manualOverrides.filter(entry => !(entry.listName === listName && entry.itemId === String(move.target.id))),
+                        {
+                            listName,
+                            itemId: String(move.target.id),
+                            originalText: (0, prefix_sort_1.stripSortPrefix)(move.target.value),
+                            market: move.market,
+                            position: 0,
+                            updatedAt: new Date().toISOString(),
+                        },
+                    ]);
+                    await this.persistManualOverrides();
+                }
+                try {
+                    const client = await this.initializeDirectClient();
+                    await this.beforeDirectWrite();
+                    await this.amazonCall(runtime, () => client.deleteItem(listId, move.command.id, Number(move.command.version)));
+                    runtime.deleteRequests += 1;
+                    await this.recordDirectWrite();
+                    // Amazon list reads may lag briefly after a confirmed deletion.
+                    for (let attempt = 0; attempt < 3; attempt++) {
+                        snapshot = await this.readDirectItems(listId, runtime);
+                        if (!snapshot.some(item => String(item.id) === String(move.command.id) && !item.completed))
+                            break;
+                        if (attempt < 2)
+                            await this.wait(500);
+                    }
+                    if (snapshot.some(item => String(item.id) === String(move.command.id) && !item.completed)) {
+                        this.log.warn(`${listName}: mobile command deletion not yet visible; postponing sort.`);
+                        return;
+                    }
+                }
+                catch (error) {
+                    this.manualOverrides = previous;
+                    await this.persistManualOverrides();
+                    this.log.warn(`${listName}: mobile move failed; remaining commands were left intact: ${String(error)}`);
+                    return;
+                }
+                if (move.mode === 'D') {
+                    const product = (0, parser_1.findProduct)(parsed.productText, this.products);
+                    if (product) {
+                        this.runtimeProducts = this.runtimeProducts.map(entry => entry === product ? { ...entry, defaultMarket: move.market } : entry);
+                    }
+                    else {
+                        this.runtimeProducts = [...this.runtimeProducts, {
+                                name: parsed.productName,
+                                category: parsed.category,
+                                defaultMarket: move.market,
+                            }];
+                    }
+                    this.productsDirty = true;
+                    await this.persistRuntimeConfig();
+                    if (this.productsDirty) {
+                        this.log.warn(`${listName}: permanent market assignment could not be persisted.`);
+                        return;
+                    }
+                    // A previous temporary override must not supersede the permanent assignment.
+                    this.manualOverrides = (0, manual_order_1.normalizeManualOverrides)(this.manualOverrides.filter(entry => !(entry.listName === listName && entry.itemId === String(move.target.id))));
+                    await this.persistManualOverrides();
+                }
+                this.log.info(`${listName}: mobile ${move.mode} move ${String(move.number).padStart(2, '0')} -> ${move.market} confirmed.`);
+            }
+        }
         if ((0, sorter_1.activeItems)(snapshot).length > MAX_ACTIVE_ITEMS)
             throw new Error(`${listName}: more than 99 active entries.`);
         if (deleteItemId && !(0, sorter_1.activeItems)(snapshot).some(item => String(item.id) === deleteItemId && !(0, market_plan_1.isMarketHeader)((0, prefix_sort_1.stripSortPrefix)(item.value), this.markets))) {

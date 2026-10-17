@@ -71,7 +71,7 @@ test('bounded final Amazon verification retries and queues harmless additional i
 
 test('planning uses one fresh direct Amazon snapshot so every PUT/DELETE has the current version', () => {
     const apply = main.slice(main.indexOf('private async applyDirectSort'), main.indexOf('private buildOwnObservation'));
-    assert.match(apply, /const snapshot = await this\.readDirectItems\(listId, runtime\)/);
+    assert.match(apply, /(?:const|let) snapshot = await this\.readDirectItems\(listId, runtime\)/);
     assert.doesNotMatch(apply, /getForeignStateAsync/);
 });
 

@@ -1,0 +1,96 @@
+import type { AlexaListItem, MarketConfig } from './model';
+import { isMarketHeader } from './market-plan';
+import { parseSortPrefix, stripSortPrefix } from './prefix-sort';
+
+export interface MobileMarketMove {
+    command: AlexaListItem;
+    target: AlexaListItem;
+    market?: string;
+    steps?: number;
+    number: number;
+    mode: 'W' | 'D' | 'H' | 'R';
+}
+
+export type MobileMoveResolution =
+    | { status: 'none'; moves: [] }
+    | { status: 'invalid'; moves: []; reason: string }
+    | { status: 'ready'; moves: MobileMarketMove[] };
+
+const COMMAND_PATTERN = /^(\d{2})([WDHR])(.+)$/i;
+
+function normalized(value: string): string {
+    return value.trim().normalize('NFKC').toLocaleUpperCase('de-DE');
+}
+
+function editDistance(left: string, right: string): number {
+    const previous = Array.from({ length: right.length + 1 }, (_, i) => i);
+    for (let i = 1; i <= left.length; i++) {
+        let diagonal = previous[0];
+        previous[0] = i;
+        for (let j = 1; j <= right.length; j++) {
+            const old = previous[j];
+            previous[j] = Math.min(previous[j] + 1, previous[j - 1] + 1, diagonal + (left[i - 1] === right[j - 1] ? 0 : 1));
+            diagonal = old;
+        }
+    }
+    return previous[right.length];
+}
+
+/**
+ * Match configured, enabled markets only; never guess between equally plausible names.
+ *
+ * @param input User-entered destination market.
+ * @param markets Configured markets.
+ */
+export function resolveMobileMarket(input: string, markets: MarketConfig[]): string | undefined {
+    const requested = normalized(input);
+    if (!requested) return undefined;
+    const enabled = markets.filter(market => market.enabled !== false && normalized(market.name));
+    const exact = enabled.filter(market => normalized(market.name) === requested);
+    if (exact.length === 1) return exact[0].name;
+    if (exact.length > 1) return undefined;
+    const tolerance = requested.length > 6 ? 2 : 1;
+    const candidates = enabled
+        .map(market => ({ market, distance: editDistance(requested, normalized(market.name)) }))
+        .filter(entry => entry.distance <= tolerance)
+        .sort((a, b) => a.distance - b.distance);
+    if (!candidates.length) return undefined;
+    if (candidates.length > 1 && candidates[0].distance === candidates[1].distance) return undefined;
+    return candidates[0].market.name;
+}
+
+/**
+ * Resolve all commands against one unchanged Amazon snapshot, before any writes.
+ *
+ * @param snapshot Current direct Amazon list snapshot.
+ * @param markets Configured markets.
+ */
+export function resolveMobileMoves(snapshot: AlexaListItem[], markets: MarketConfig[]): MobileMoveResolution {
+    const active = snapshot.filter(item => item && item.completed === false && item.id);
+    const commands = active
+        .map(item => ({ item, match: stripSortPrefix(item.value).match(COMMAND_PATTERN) }))
+        .filter((entry): entry is { item: AlexaListItem; match: RegExpMatchArray } => entry.match !== null);
+    if (!commands.length) return { status: 'none', moves: [] };
+    const commandIds = new Set(commands.map(entry => String(entry.item.id)));
+    const usedTargets = new Set<string>();
+    const moves: MobileMarketMove[] = [];
+    for (const { item: command, match } of commands) {
+        const number = Number(match[1]);
+        const mode = match[2].toUpperCase() as 'W' | 'D' | 'H' | 'R';
+        const market = mode === 'W' || mode === 'D' ? resolveMobileMarket(match[3], markets) : undefined;
+        const steps = mode === 'H' || mode === 'R' ? Number(match[3]) : undefined;
+        const validArgument = mode === 'W' || mode === 'D' ? Boolean(market) : /^\d{1,2}$/.test(match[3]) && Number.isInteger(steps) && steps! > 0;
+        const candidates = active.filter(item =>
+            !commandIds.has(String(item.id)) &&
+            !isMarketHeader(stripSortPrefix(item.value), markets) &&
+            parseSortPrefix(item.value)?.number === number,
+        );
+        if (!validArgument || candidates.length !== 1 || usedTargets.has(String(candidates[0].id)) ||
+            !Number.isInteger(Number(command.version)) || Number(command.version) <= 0) {
+            return { status: 'invalid', moves: [], reason: `Cannot uniquely resolve mobile move ${stripSortPrefix(command.value)}.` };
+        }
+        usedTargets.add(String(candidates[0].id));
+        moves.push({ command, target: candidates[0], market, steps, number, mode });
+    }
+    return { status: 'ready', moves };
+}
