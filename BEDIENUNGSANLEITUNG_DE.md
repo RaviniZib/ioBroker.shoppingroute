@@ -16,7 +16,7 @@ Du kannst mehrere Befehle gleichzeitig eingeben. Die Groß-/Kleinschreibung ist 
 
 **Bei ungültigen oder mehrdeutigen Befehlen wird kein Artikel verschoben.** Nummern vor Marktüberschriften sind keine Artikelnummern.
 
-**Hinweis:** Diese Funktion ist in der noch unveröffentlichten Version 0.5.2 vorbereitet.
+**Hinweis:** Diese Funktion ist ab der veröffentlichten Version 0.5.2 verfügbar.
 
 
 ## Warum ShoppingRoute beim Einkaufen wirklich hilft
