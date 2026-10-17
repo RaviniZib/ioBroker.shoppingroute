@@ -8,7 +8,7 @@ export interface MobileMarketMove {
     market?: string;
     steps?: number;
     number: number;
-    mode: 'W' | 'D' | 'H' | 'R';
+    mode: 'W' | 'F' | 'H' | 'R';
 }
 
 export type MobileMoveResolution =
@@ -16,7 +16,7 @@ export type MobileMoveResolution =
     | { status: 'invalid'; moves: []; reason: string }
     | { status: 'ready'; moves: MobileMarketMove[] };
 
-const COMMAND_PATTERN = /^(\d{2})([WDHR])(.+)$/i;
+const COMMAND_PATTERN = /^(\d{2})([WCFEHUDR])(.+)$/i;
 
 function normalized(value: string): string {
     return value.trim().normalize('NFKC').toLocaleUpperCase('de-DE');
@@ -76,8 +76,9 @@ export function resolveMobileMoves(snapshot: AlexaListItem[], markets: MarketCon
     const moves: MobileMarketMove[] = [];
     for (const { item: command, match } of commands) {
         const number = Number(match[1]);
-        const mode = match[2].toUpperCase() as 'W' | 'D' | 'H' | 'R';
-        const market = mode === 'W' || mode === 'D' ? resolveMobileMarket(match[3], markets) : undefined;
+        const letter = match[2].toUpperCase();
+        const mode = ({ W: 'W', C: 'W', F: 'F', E: 'F', H: 'H', U: 'H', R: 'R', D: 'R' } as Record<string, 'W' | 'F' | 'H' | 'R'>)[letter];
+        const market = mode === 'W' || mode === 'F' ? resolveMobileMarket(match[3], markets) : undefined;
         const steps = mode === 'H' || mode === 'R' ? Number(match[3]) : undefined;
         const validArgument = mode === 'W' || mode === 'D' ? Boolean(market) : /^\d{1,2}$/.test(match[3]) && Number.isInteger(steps) && steps! > 0;
         const candidates = active.filter(item =>
