@@ -4,20 +4,85 @@
 
 ShoppingRoute hilft dir dabei, eine Alexa-Einkaufsliste so zu ordnen, wie du tatsächlich einkaufst.
 
-## Neu ab 0.5.2: Marktwechsel direkt in der Alexa-Handy-App
+## Neu in 0.5.2: Einkäufe direkt in der Alexa-App ändern
 
-Ohne zusätzliche Handy-App kannst du einen vorhandenen Artikel in einen anderen Markt verschieben. Gib dazu einen normalen Alexa-Listeneintrag ein, beispielsweise `13WNETTO` für einen **temporären Wechsel nur bei diesem Einkauf** oder `13DNETTO` für eine **dauerhafte Marktzuordnung**. Die zweistellige Nummer muss vor dem **Artikel** in der aktuellen Liste stehen; `W` bedeutet temporär wechseln, `D` dauerhaft zuordnen. Danach folgt ein bereits konfigurierter Markt.
+**Du bist unterwegs, siehst ein Angebot und willst deine Einkaufsliste ändern? Das geht jetzt direkt auf dem Handy.** Du brauchst dafür nur die normale Alexa-App.
 
-**Reihenfolge innerhalb eines Marktes:** Mit `25H3` verschiebst du Artikel 25 um drei **Artikelpositionen nach oben**, mit `25R3` um drei Positionen nach unten. Dabei zählen nur echte Artikel desselben Marktes, keine Marktüberschriften. Am Anfang oder Ende des Marktes wird die Verschiebung begrenzt. Beide Befehle gelten nur für den aktuellen Einkauf und verändern weder Laufwege noch Produktgruppen. Die Nummer vor `H` oder `R` ist immer die aktuelle sichtbare Artikelnummer.
+### Beispiel 1: Käse heute lieber bei LIDL kaufen
 
-Du kannst mehrere Befehle gleichzeitig eingeben. Die Groß-/Kleinschreibung ist egal, und eindeutige kleine Tippfehler wie `ALSI` statt `ALDI` werden erkannt. Bei `W` ändert der Adapter **keine dauerhaften Artikelzuordnungen** und lernt den kurzfristigen Wechsel nicht an. Nur `D` speichert die neue Marktzuordnung dauerhaft.
+Auf deiner Einkaufsliste steht:
 
-**Wichtig – bitte Geduld:** Ein neuer Sortiervorgang erfolgt **niemals sofort**. Je nach Internetverbindung, Geschwindigkeit und Verarbeitung durch Alexa kann es **bis zu fünf Minuten** dauern, bis ein Wechselbefehl umgesetzt wird und aus der Einkaufsliste verschwindet. Dass der Befehl währenddessen noch sichtbar ist, ist **kein Grund zur Sorge**. Erst wenn er **nach fünf Minuten immer noch dort steht**, prüfe die Internet-/Alexa-Verbindung und die Eingabe (Artikelnummer, `W` oder `D`, Marktname). Ist der Befehl falsch, hake ihn in Alexa ab und gib ihn korrigiert erneut ein. Auch eine mehrdeutige Artikelnummer oder ein unbekannter Markt kann die Ausführung verhindern.
+```text
+25> Käse
+```
 
-**Bei ungültigen oder mehrdeutigen Befehlen wird kein Artikel verschoben.** Nummern vor Marktüberschriften sind keine Artikelnummern.
+Eigentlich kaufst du Käse bei ALDI. Heute ist er aber bei LIDL im Angebot.
 
-**Hinweis:** Diese Funktion ist ab der veröffentlichten Version 0.5.2 verfügbar.
+**So geht's:** Tippe in der Alexa-Einkaufsliste auf **Eintrag hinzufügen** und schreibe:
 
+```text
+25WLIDL
+```
+
+**Fertig.** ShoppingRoute verschiebt den Käse für **diesen Einkauf** zu LIDL. Beim nächsten Einkauf wird er wieder seinem normalen Markt zugeordnet.
+
+### Beispiel 2: Käse ab jetzt immer bei LIDL kaufen
+
+Du möchtest Käse grundsätzlich bei LIDL kaufen? Dann füge stattdessen diesen Eintrag hinzu:
+
+```text
+25DLIDL
+```
+
+**Der Unterschied:** **W** gilt nur für diesen Einkauf. **D** merkt sich LIDL dauerhaft für diesen Artikel.
+
+### Beispiel 3: Einen Artikel auf der Liste nach oben schieben
+
+Stell dir vor, deine Liste bei LIDL sieht so aus:
+
+```text
+10> Gurken
+20> Bananen
+25> Käse
+30> Milch
+40> Butter
+```
+
+Du möchtest den Käse **zwei Plätze weiter oben** haben. Füge diesen Eintrag hinzu:
+
+```text
+25H2
+```
+
+Danach steht Käse vor Gurken und Bananen:
+
+```text
+Käse
+Gurken
+Bananen
+Milch
+Butter
+```
+
+Möchtest du Käse stattdessen **zwei Plätze nach unten** schieben, verwendest du:
+
+```text
+25R2
+```
+
+**H = hoch, R = runter.** Es zählen die Artikel, nicht die Abstände zwischen den Nummern. Ein Artikel bleibt immer in seinem Markt; an der ersten oder letzten Stelle ist Schluss. Deine festgelegten Laufwege und Produktgruppen werden dadurch nicht geändert.
+
+### Das solltest du wissen
+
+**Die Nummer ist nur ein Beispiel.** Schau vor jedem Befehl nach, welche **zweistellige Nummer gerade vor deinem Artikel** steht. Bei einem anderen Einkauf kann Käse eine andere Nummer haben. Nummern vor Marktüberschriften zählen nicht als Artikelnummern.
+
+Du kannst **mehrere Befehle** in die Liste schreiben. Groß- und Kleinschreibung ist egal: `25wlidl` funktioniert genauso. Kleine, eindeutig erkennbare Tippfehler bei Marktnamen werden korrigiert.
+
+**Bitte nicht ungeduldig werden:** ShoppingRoute sortiert **nicht sofort**. Je nach Internetverbindung und Alexa kann es **bis zu fünf Minuten** dauern. Solange der Befehl noch in der Liste steht, ist das erst einmal normal. Nach erfolgreicher Verarbeitung verschwindet er automatisch.
+
+**Steht der Befehl nach fünf Minuten immer noch da?** Prüfe die Internet-/Alexa-Verbindung und ob Nummer, Buchstabe und Markt richtig sind. Einen falschen Befehl einfach **abhaken und neu eingeben**. Wenn ShoppingRoute einen Befehl nicht eindeutig versteht, lässt es ihn stehen, statt den falschen Artikel zu verschieben.
+
+**Das sind alle vier Befehle:** `W` (heute anderer Markt), `D` (dauerhaft anderer Markt), `H` (hoch) und `R` (runter).
 
 ## Warum ShoppingRoute beim Einkaufen wirklich hilft
 
