@@ -4,20 +4,85 @@
 
 ShoppingRoute helps turn a normal Alexa shopping list into a list that follows the way you actually shop.
 
-## New in 0.5.2: Move items between stores directly in the Alexa phone app
+## New in 0.5.2: Change your shopping list right in the Alexa app
 
-No additional mobile app is needed. Add a normal Alexa list entry such as `13WNETTO` for a **temporary move for this shopping trip**, or `13DNETTO` to **permanently assign the product** to NETTO. The two-digit number must be the **current visible prefix of the product**. `W` means temporary move, `D` means permanent assignment; the remainder is a configured destination store.
+**You're out shopping, spot a special offer and want to change your list? You can do it right on your phone.** All you need is the regular Alexa app.
 
-**Reorder items within the same store:** `25H3` moves item 25 three **product positions up**; `25R3` moves it three positions down. Only real items in the same store count, never store headings. Moves stop at the first or last position of that store. These changes apply only to the current shopping trip; they do not alter walking routes or product groups. Use the currently visible item number.
+### Example 1: Buy cheese at LIDL just this time
 
-Several commands may be added before sorting. Case is ignored, and small unambiguous market-name typos (such as `ALSI` for `ALDI`) are corrected. `W` moves do **not** modify learned product assignments. Only `D` permanently updates the product's preferred store.
+Your shopping list shows:
 
-**Important — please be patient:** Sorting **never happens immediately**. Depending on your internet connection, connection speed and Alexa processing, it can take **up to five minutes** for a command to be applied and disappear from the shopping list. Seeing the command in the list during that time is **normal**. Only if it is **still there after five minutes**, check the internet/Alexa connection and the command (item number, `W` or `D`, and store name). If the command is incorrect, mark it completed in Alexa and enter it again correctly. Ambiguous item numbers or unknown stores can also prevent execution.
+```text
+25> Cheese
+```
 
-**Invalid or ambiguous commands do not move any items.** Market-heading numbers cannot be used as product numbers.
+You normally buy cheese at ALDI, but today LIDL has a better offer.
 
-**Note:** This feature is available starting with the published 0.5.2 release.
+**Here's what to do:** Tap **Add item** in your Alexa shopping list and type:
 
+```text
+25WLIDL
+```
+
+**That's it.** ShoppingRoute moves the cheese to LIDL **for this shopping trip only**. Next time, it goes back to its usual store.
+
+### Example 2: Always buy cheese at LIDL from now on
+
+Want LIDL to be the default store for cheese? Add this instead:
+
+```text
+25DLIDL
+```
+
+**The difference:** **W** is for this trip only. **D** remembers the new store permanently.
+
+### Example 3: Move an item higher up the list
+
+Imagine your LIDL list looks like this:
+
+```text
+10> Cucumbers
+20> Bananas
+25> Cheese
+30> Milk
+40> Butter
+```
+
+You want cheese **two places higher**. Add:
+
+```text
+25H2
+```
+
+Cheese will now come before cucumbers and bananas:
+
+```text
+Cheese
+Cucumbers
+Bananas
+Milk
+Butter
+```
+
+To move cheese **two places lower** instead, add:
+
+```text
+25R2
+```
+
+**H = higher, R = lower.** The number of **items** counts, not the difference between their displayed numbers. Items stay in their current store; a move stops at the top or bottom. Your saved walking routes and product groups do not change.
+
+### Good to know
+
+**The item number is only an example.** Always check the **two-digit number currently shown before your item**. Cheese may have a different number next time. Numbers on store headings cannot be used to move products.
+
+You can add **several commands** at once. Uppercase or lowercase makes no difference: `25wlidl` works too. Small, unambiguous typos in store names are corrected automatically.
+
+**Give it a moment:** ShoppingRoute **does not sort immediately**. Depending on your connection and Alexa, it may take **up to five minutes**. Seeing the command in the list during that time is normal. Once processed, the command disappears automatically.
+
+**Still there after five minutes?** Check your internet/Alexa connection and the item number, letter and store name. Simply **mark an incorrect command as completed and enter it again**. If ShoppingRoute cannot understand a command unambiguously, it leaves it in place rather than moving the wrong item.
+
+**That's all four commands:** `W` (change store for this trip), `D` (change store permanently), `H` (higher) and `R` (lower).
 
 ## Why ShoppingRoute actually makes shopping easier
 
