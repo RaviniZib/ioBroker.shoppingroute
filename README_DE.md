@@ -2,7 +2,7 @@
 
 ![ShoppingRoute](admin/shoppingroute.png)
 
-**Nächste Version in Vorbereitung: 0.5.2 (noch nicht veröffentlicht)**
+**Aktuelle Version: 0.5.2 (veröffentlicht)**
 
 ShoppingRoute macht aus einer normalen Alexa-Einkaufsliste eine praktische Einkaufshilfe: **Alle Märkte können gemeinsam in einer einzigen Liste geführt oder bewusst auf mehrere Listen verteilt werden.** Das besondere Merkmal ist das frei einstellbare **Marktrouting**: Für jeden Markt legst du deinen persönlichen Laufweg durch die Abteilungen fest. Dadurch steht die Einkaufsliste in der Reihenfolge, in der du tatsächlich durch den Laden gehst – für weniger Zurücklaufen, weniger Suchen und **schnelleres, effizienteres Einkaufen**.
 
@@ -13,7 +13,7 @@ ShoppingRoute sortiert Alexa-Einkaufslisteneinträge nach Markt, Produktgruppe u
 🇩🇪 [**Deutsche Bedienungsanleitung**](BEDIENUNGSANLEITUNG_DE.md)  
 🇬🇧 [**English user guide**](USER_GUIDE_EN.md)
 
-## Neu in 0.5.2 (noch nicht veröffentlicht): Direktsteuerung in der Alexa-App
+## Neu in 0.5.2: Direktsteuerung in der Alexa-App
 
 **Marktwechsel direkt in der normalen Alexa-Einkaufsliste auf dem Handy – ohne zusätzliche App und ohne Zugriff auf die ioBroker-Verwaltung.**
 
@@ -25,7 +25,7 @@ Füge einen Steuerbefehl wie `13WNETTO` als normalen Listeneintrag hinzu: `13` i
 
 Der Marktwechsel gilt **nur für diesen Einkauf**. Die gespeicherte Produktzuordnung und die Lernfunktion bleiben unverändert. Erfolgreiche Steuerbefehle verschwinden aus der Liste. Bleibt ein Befehl stehen, Nummer und Markt prüfen, den falschen Befehl in Alexa abhaken und richtig neu eingeben. **Nummern vor Marktüberschriften können nicht zum Verschieben von Artikeln verwendet werden.** Bei mehrdeutigen Befehlen wird nichts geraten.
 
-Die Funktion ist für 0.5.2 vorbereitet; die veröffentlichte 0.5.1 bleibt auf npm unverändert.
+Die Funktion ist seit der veröffentlichten Version 0.5.2 verfügbar.
 
 ## Neu in 0.5.1: bequem am Handy einkaufen
 
@@ -125,7 +125,7 @@ ShoppingRoute wird unter der **[MIT-Lizenz](LICENSE)** veröffentlicht. Frühere
 
 ## Changelog
 
-### 0.5.2 (2026-10-16, noch nicht veröffentlicht)
+### 0.5.2 (2026-10-17)
 
 - Temporärer Marktwechsel über `NNWMARKT` direkt in der normalen Alexa-Handy-App.
 - Mehrere Befehle pro Sortierlauf, eindeutige Tippfehlerkorrektur und Schutz vor ungültigen Artikelnummern.
