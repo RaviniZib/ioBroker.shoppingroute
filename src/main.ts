@@ -539,6 +539,32 @@ export class ShoppingRoute extends utils.Adapter {
     }
 
     private async buildShoppingListView(listName: string, confirmedOrder = false): Promise<ShoppingListView> {
+        if (this.bringMode === 'bring-only') {
+            if (!/^[\da-f-]{36}$/i.test(this.bringListId)) throw new Error('Select a Bring! list first.');
+            const state = await this.getForeignStateAsync(this.bringInstance + '.' + this.bringListId + '.content');
+            if (!state?.ack) throw new Error('No confirmed Bring! list snapshot.');
+            const bringItems = parseBringContent(state.val);
+            const source: AlexaListItem[] = bringItems.map((entry, index) => ({
+                id: 'bring-' + index, value: entry.text, completed: false, version: 1,
+            }));
+            const desired = buildPrefixTargets(source, this.markets, this.routes, this.products,
+                this.fallbackMarket, this.priorityMarket, this.minimumItemsPerMarket,
+                this.marketHeadersEnabled, [], 'BRING');
+            const markets = [...this.markets.map(entry => entry.name)];
+            if (!markets.includes(this.fallbackMarket)) markets.push(this.fallbackMarket);
+            const positions = new Map<string, number>();
+            const items = desired.filter(entry => entry.id && !isMarketHeader(entry.originalText, this.markets))
+                .map(entry => {
+                    const market = entry.market || this.fallbackMarket;
+                    const position = positions.get(market) || 0;
+                    positions.set(market, position + 1);
+                    return {
+                        id: String(entry.id), text: entry.originalText, market,
+                        category: entry.category, position, manual: false,
+                    };
+                });
+            return { listName: 'BRING', lists: ['BRING'], markets, items, dryRun: true };
+        }
         const resolvedList = this.configuredListName(listName);
         if (!resolvedList) throw new Error('No managed Alexa shopping list is configured.');
         const listId = await this.directListId(resolvedList);
@@ -960,6 +986,11 @@ export class ShoppingRoute extends utils.Adapter {
 
     private async onMessage(obj: { command: string; from: string; callback?: any; message?: any }): Promise<void> {
         if (!obj?.callback) return;
+        if (this.bringMode === 'bring-only' && ['createAlexaList', 'addShoppingItem', 'moveShoppingItem',
+            'deleteShoppingItem', 'clearManualShoppingOrder'].includes(obj.command)) {
+            this.sendTo(obj.from, obj.command, { ok: false, error: 'Bring! route preview is read-only.' }, obj.callback);
+            return;
+        }
         if (obj.command === 'createAlexaList' || obj.command === 'addShoppingItem') {
             try {
                 const result = obj.command === 'createAlexaList'
