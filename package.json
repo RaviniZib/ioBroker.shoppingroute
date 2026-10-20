@@ -1,7 +1,7 @@
 {
   "name": "iobroker.shoppingroute",
-  "version": "0.5.3",
-  "description": "Smart Alexa shopping-list routing by market, product group and individual store walking route with learning, multi-list support and API protection.",
+  "version": "0.6.0",
+  "description": "ShoppingRoute for Alexa and Bring! with market routing, safe list synchronization and personal shopping routes.",
   "author": "RaviniZib <zib@ravini.org>",
   "license": "MIT",
   "homepage": "https://github.com/RaviniZib/ioBroker.shoppingroute",
