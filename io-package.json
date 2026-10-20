@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "shoppingroute",
-    "version": "0.5.3",
+    "version": "0.6.0",
     "titleLang": {
       "en": "ShoppingRoute",
       "de": "ShoppingRoute",
@@ -61,6 +61,19 @@
     "icon": "shoppingroute.png",
     "tier": 3,
     "news": {
+      "0.6.0": {
+        "en": "Optional Bring! integration: one-way import, bidirectional Alexa/Bring! synchronization with verification and conflict safeguards, and a Bring!-only route preview. Disabled by default; Bring! item order cannot be changed.",
+        "de": "Optionale Bring!-Integration: einseitige Übernahme, bidirektionaler Alexa-/Bring!-Abgleich mit Konfliktschutz und Bring!-Laufwegvorschau. Standardmäßig aus; Bring! erlaubt keine freie Artikelsortierung.",
+        "ru": "Optional Bring! integration: one-way import, bidirectional Alexa/Bring! synchronization with verification and conflict safeguards, and a Bring!-only route preview. Disabled by default; Bring! item order cannot be changed.",
+        "pt": "Optional Bring! integration: one-way import, bidirectional Alexa/Bring! synchronization with verification and conflict safeguards, and a Bring!-only route preview. Disabled by default; Bring! item order cannot be changed.",
+        "nl": "Optional Bring! integration: one-way import, bidirectional Alexa/Bring! synchronization with verification and conflict safeguards, and a Bring!-only route preview. Disabled by default; Bring! item order cannot be changed.",
+        "fr": "Optional Bring! integration: one-way import, bidirectional Alexa/Bring! synchronization with verification and conflict safeguards, and a Bring!-only route preview. Disabled by default; Bring! item order cannot be changed.",
+        "it": "Optional Bring! integration: one-way import, bidirectional Alexa/Bring! synchronization with verification and conflict safeguards, and a Bring!-only route preview. Disabled by default; Bring! item order cannot be changed.",
+        "es": "Optional Bring! integration: one-way import, bidirectional Alexa/Bring! synchronization with verification and conflict safeguards, and a Bring!-only route preview. Disabled by default; Bring! item order cannot be changed.",
+        "pl": "Optional Bring! integration: one-way import, bidirectional Alexa/Bring! synchronization with verification and conflict safeguards, and a Bring!-only route preview. Disabled by default; Bring! item order cannot be changed.",
+        "uk": "Optional Bring! integration: one-way import, bidirectional Alexa/Bring! synchronization with verification and conflict safeguards, and a Bring!-only route preview. Disabled by default; Bring! item order cannot be changed.",
+        "zh-cn": "Optional Bring! integration: one-way import, bidirectional Alexa/Bring! synchronization with verification and conflict safeguards, and a Bring!-only route preview. Disabled by default; Bring! item order cannot be changed."
+      },
       "0.5.3": {
         "en": "Adds English command aliases C/E/U/D alongside German W/F/H/R for temporary store changes, permanent assignments and item reordering. D now means Down; F replaces the former permanent D.",
         "de": "Englische Befehle C/E/U/D ergänzen W/F/H/R für temporäre und dauerhafte Marktwechsel sowie Artikelverschiebungen. D bedeutet jetzt Runter, F ersetzt das bisherige dauerhafte D.",
@@ -138,32 +151,6 @@
         "pl": "Używa timerów zarządzanych przez ioBroker dla limitów czasu Alexa i ogranicza news do siedmiu wpisów.",
         "uk": "Використовує таймери ioBroker для тайм-аутів Alexa та обмежує news сімома підтримуваними записами.",
         "zh-cn": "使用 ioBroker 管理的计时器处理 Alexa 超时，并将 news 限制为支持的七个条目。"
-      },
-      "0.4.2": {
-        "en": "Prevents stalled Alexa callbacks, adds direct Amazon list polling, and safely handles additional items and delayed verification without unnecessary sorting stops.",
-        "de": "Verhindert hängende Alexa-Aufrufe, ergänzt den direkten Amazon-Listenabgleich und behandelt zusätzliche Artikel sowie verzögerte Bestätigungen ohne unnötige Sortierstopps.",
-        "ru": "Предотвращает зависание вызовов Alexa, добавляет прямой опрос списков Amazon и обработку новых товаров без лишних остановок сортировки.",
-        "pt": "Evita chamadas Alexa bloqueadas, consulta listas Amazon diretamente e trata artigos adicionais sem paragens desnecessárias.",
-        "nl": "Voorkomt vastlopende Alexa-aanroepen, controleert Amazon-lijsten rechtstreeks en verwerkt extra artikelen zonder onnodige sorteeronderbrekingen.",
-        "fr": "Évite les appels Alexa bloqués, interroge directement les listes Amazon et gère les articles supplémentaires sans arrêt inutile du tri.",
-        "it": "Evita chiamate Alexa bloccate, controlla direttamente le liste Amazon e gestisce articoli aggiuntivi senza arresti inutili.",
-        "es": "Evita llamadas Alexa bloqueadas, consulta listas Amazon directamente y gestiona artículos adicionales sin detener innecesariamente la ordenación.",
-        "pl": "Zapobiega zawieszaniu wywołań Alexa, bezpośrednio sprawdza listy Amazon i obsługuje dodatkowe produkty bez zbędnego zatrzymywania sortowania.",
-        "uk": "Запобігає зависанню викликів Alexa, додає пряме опитування списків Amazon та обробку нових товарів без зайвих зупинок сортування.",
-        "zh-cn": "防止 Alexa 调用挂起，直接轮询 Amazon 清单，并安全处理新增商品和延迟确认，避免不必要的排序停止。"
-      },
-      "0.4.1": {
-        "en": "Fixes review acceptance and market selection, prevents concurrent shopping-list writes and duplicates, adds verified item deletion, handles incomplete Admin responses, and resolves repository checker metadata findings.",
-        "de": "Korrigiert Prüflistenübernahme und Marktauswahl, verhindert parallele Schreibläufe und Duplikate, ergänzt geprüftes Löschen, behandelt unvollständige Admin-Antworten und behebt Metadaten-Beanstandungen des Repository-Checkers.",
-        "ru": "Исправлены принятие товаров из очереди проверки и выбор магазинов; предотвращены параллельные записи в список покупок и дубликаты; добавлено удаление с проверкой результата, обработка неполных ответов Admin и исправления метаданных по замечаниям проверки репозитория.",
-        "pt": "Corrige a aceitação de artigos na revisão e a seleção de lojas, impede escritas simultâneas na lista de compras e duplicados, acrescenta eliminação verificada, trata respostas incompletas do Admin e resolve os problemas de metadados detetados pelo verificador do repositório.",
-        "nl": "Herstelt het accepteren van artikelen en de winkelselectie in de controlelijst, voorkomt gelijktijdige schrijfacties en dubbele artikelen, voegt gecontroleerd verwijderen toe, verwerkt onvolledige Admin-antwoorden en verhelpt de metadatafouten van de repositorycontrole.",
-        "fr": "Corrige l’acceptation des articles à vérifier et la sélection des magasins, empêche les écritures simultanées et les doublons dans la liste de courses, ajoute une suppression vérifiée, gère les réponses Admin incomplètes et corrige les métadonnées signalées par le vérificateur du dépôt.",
-        "it": "Corregge l’accettazione degli articoli da verificare e la selezione dei negozi, impedisce scritture simultanee e duplicati nella lista della spesa, aggiunge l’eliminazione verificata, gestisce le risposte Admin incomplete e risolve i problemi di metadati segnalati dal controllo del repository.",
-        "es": "Corrige la aceptación de artículos en revisión y la selección de tiendas, evita escrituras simultáneas y duplicados en la lista de compras, añade la eliminación verificada, gestiona respuestas incompletas de Admin y corrige los metadatos señalados por el verificador del repositorio.",
-        "pl": "Naprawia zatwierdzanie produktów i wybór sklepów na liście do sprawdzenia, zapobiega równoczesnym zapisom i duplikatom na liście zakupów, dodaje usuwanie z weryfikacją, obsługuje niepełne odpowiedzi Admin i poprawia metadane wskazane przez kontrolę repozytorium.",
-        "uk": "Виправлено прийняття товарів із черги перевірки та вибір магазинів; усунено паралельні записи до списку покупок і дублікати; додано видалення з перевіркою результату, обробку неповних відповідей Admin та виправлення метаданих за зауваженнями перевірки репозиторію.",
-        "zh-cn": "修复审核列表中的商品接受和商店选择问题，防止购物清单并发写入和重复条目，新增经验证的商品删除，处理不完整的 Admin 响应，并修复仓库检查器指出的元数据问题。"
       }
     },
     "extIcon": "https://raw.githubusercontent.com/RaviniZib/ioBroker.shoppingroute/main/admin/shoppingroute.png",
@@ -708,7 +695,11 @@
     "temporaryPriorityMarket": "",
     "reviewItems": [],
     "marketHeaders": false,
-    "minItemsPerMarket": 1
+    "minItemsPerMarket": 1,
+    "bringSyncMode": "off",
+    "bringInstance": "bring.0",
+    "bringListId": "",
+    "bringAlexaList": "SHOP"
   },
   "objects": [],
   "instanceObjects": [
