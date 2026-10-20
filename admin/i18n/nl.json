@@ -57,5 +57,16 @@
   "ui.items.general.items.minitemspermarket.label": "Minimum aantal artikelen per extra winkel",
   "ui.items.general.items.minitemspermarket.help": "1 schakelt samenvoegen uit. Onder de grens worden alleen artikelen met ingestelde alternatieve winkels verplaatst. Expliciete winkelvermeldingen worden nooit verplaatst.",
   "ui.items.shoppinglisttab.label": "Boodschappenlijst",
-  "ui.items.reviewtab.items.reviewitems.items.5.options.3.label": "Overgenomen"
+  "ui.items.reviewtab.items.reviewitems.items.5.options.3.label": "Overgenomen",
+  "ui.items.bringtab.label": "Bring!-integratie",
+  "ui.items.bringtab.info": "Standaard uitgeschakeld. Bring! ondersteunt geen vrije volgorde van afzonderlijke artikelen; ShoppingRoute biedt een winkelroutevoorbeeld. Bij de eerste samenvoeging wordt niets verwijderd.",
+  "ui.items.bringtab.mode.label": "Bring!-modus",
+  "ui.items.bringtab.mode.off": "Uit (alleen Alexa)",
+  "ui.items.bringtab.mode.import": "Bring! → ShoppingRoute/Alexa (één richting)",
+  "ui.items.bringtab.mode.bringonly": "Alleen Bring! (routevoorbeeld)",
+  "ui.items.bringtab.mode.both": "Bring! ↔ Alexa (twee richtingen)",
+  "ui.items.bringtab.instance.label": "Bring!-adapterinstantie",
+  "ui.items.bringtab.list.label": "Bring!-boodschappenlijst",
+  "ui.items.bringtab.alexalist.label": "Alexa-doellijst",
+  "ui.items.bringtab.warning": "Sla eerst de instantie op en kies daarna een lijst. Bij conflicten stopt de synchronisatie zonder gegevens te wissen. Status: shoppingroute.0.info.bringSyncStatus."
 }
