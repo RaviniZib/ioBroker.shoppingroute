@@ -1,5 +1,5 @@
 export interface BringStateWriter {
-    setForeignStateAsync(id: string, value: string, ack: boolean): Promise<void>;
+    setForeignStateAsync(id: string, value: string, ack: boolean): Promise<unknown>;
 }
 
 /** Writes exclusively to documented Bring! adapter commands; never to Alexa2 states. */
