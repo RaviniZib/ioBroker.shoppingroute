@@ -43,8 +43,11 @@ export function itemKey(name: string, specification = ''): string {
     return JSON.stringify([compact(name), compact(specification)]);
 }
 function item(name: unknown, specification: unknown, alexaId?: string, alexaVersion?: number): BridgeItem {
-    const n = String(name ?? '').trim();
-    const spec = String(specification ?? '').trim();
+    if (typeof name !== 'string' || (specification != null && typeof specification !== 'string')) {
+        throw new Error('Item must contain string name and specification.');
+    }
+    const n = name.trim();
+    const spec = typeof specification === 'string' ? specification.trim() : '';
     if (!n || n.length > 250 || spec.length > 1000) throw new Error('Invalid or oversized shopping item.');
     return { key: itemKey(n, spec), name: n, specification: spec,
         text: spec ? n + ', ' + spec : n, alexaId, alexaVersion };
