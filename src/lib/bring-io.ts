@@ -4,6 +4,7 @@ export interface BringStateWriter {
 
 /**
  * Writes exclusively to documented Bring! commands; never to Alexa2 states.
+ *
  * @param adapter An ioBroker adapter with foreign state write access.
  * @param bringNamespace A validated Bring! list state namespace.
  * @param command A supported Bring! adapter command.
