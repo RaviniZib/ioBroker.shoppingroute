@@ -1,8 +1,10 @@
-import * as utils from '@iobroker/adapter-core';
+export interface BringStateWriter {
+    setForeignStateAsync(id: string, value: string, ack: boolean): Promise<void>;
+}
 
 /** Writes exclusively to documented Bring! adapter commands; never to Alexa2 states. */
 export async function sendBringCommand(
-    adapter: utils.Adapter, bringNamespace: string,
+    adapter: BringStateWriter, bringNamespace: string,
     command: 'saveItem' | 'moveToRecentContent', value: string,
 ): Promise<void> {
     if (!/^bring\.\d+\.[\da-f-]{36}$/i.test(bringNamespace)) {
