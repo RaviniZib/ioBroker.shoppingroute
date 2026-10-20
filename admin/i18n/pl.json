@@ -57,5 +57,16 @@
   "ui.items.general.items.minitemspermarket.label": "Minimalna liczba artykułów na dodatkowy sklep",
   "ui.items.general.items.minitemspermarket.help": "1 wyłącza konsolidację. Poniżej progu przenoszone są tylko artykuły z skonfigurowanymi alternatywnymi sklepami. Jawne wskazania sklepu nigdy nie są zmieniane.",
   "ui.items.shoppinglisttab.label": "Lista zakupów",
-  "ui.items.reviewtab.items.reviewitems.items.5.options.3.label": "Zaakceptowano"
+  "ui.items.reviewtab.items.reviewitems.items.5.options.3.label": "Zaakceptowano",
+  "ui.items.bringtab.label": "Integracja Bring!",
+  "ui.items.bringtab.info": "Domyślnie wyłączona. Bring! nie umożliwia dowolnego ustawiania kolejności produktów; ShoppingRoute wyświetla podgląd trasy. Pierwsza synchronizacja niczego nie usuwa.",
+  "ui.items.bringtab.mode.label": "Tryb Bring!",
+  "ui.items.bringtab.mode.off": "Wyłączone (tylko Alexa)",
+  "ui.items.bringtab.mode.import": "Bring! → ShoppingRoute/Alexa (jednokierunkowo)",
+  "ui.items.bringtab.mode.bringonly": "Tylko Bring! (podgląd trasy)",
+  "ui.items.bringtab.mode.both": "Bring! ↔ Alexa (dwukierunkowo)",
+  "ui.items.bringtab.instance.label": "Instancja adaptera Bring!",
+  "ui.items.bringtab.list.label": "Lista zakupów Bring!",
+  "ui.items.bringtab.alexalist.label": "Docelowa lista Alexa",
+  "ui.items.bringtab.warning": "Najpierw zapisz instancję, a następnie wybierz listę. W razie konfliktu synchronizacja zatrzymuje się bez usuwania danych. Status: shoppingroute.0.info.bringSyncStatus."
 }
