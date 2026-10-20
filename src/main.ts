@@ -55,6 +55,9 @@ import {
 } from './lib/manual-order';
 import { isAcknowledgedForeignState } from './lib/state-change';
 import { resolveMobileMoves } from './lib/mobile-move';
+import { parseBringContent, parseAlexaContent, indexBridgeItems, reconcileBring,
+    itemsMatchExpected, parseBridgeBaseline, serializeBridgeBaseline,
+    type BringSyncMode, type BridgeBaseline, type BridgeItem } from './lib/bring-sync';
 import { createConfigBackup, isSuspiciousConfigReplacement, parseConfigBackup, restoreProtectedConfig } from './lib/config-protection';
 import {
     beginDirectApply,
@@ -64,7 +67,7 @@ import {
     type DirectSortPhase,
 } from './lib/direct-sort-lifecycle';
 
-const VERSION = '0.5.3';
+const VERSION = '0.6.0';
 const COLLECT_WINDOW_MS = 5000;
 class MissingAlexaListError extends Error {}
 const MAX_ACTIVE_ITEMS = 99;
@@ -233,6 +236,8 @@ export class ShoppingRoute extends utils.Adapter {
     private alexaRemote2Version = 'unknown';
     private compatibilityDetail = 'Direct Alexa session has not been initialized yet.';
     private lastCompatibilityTest = 'Not executed yet.';
+    private bringPollTimer: ioBroker.Timeout | undefined;
+    private bringSyncRunning = false;
 
     public constructor(options: Partial<utils.AdapterOptions> = {}) {
         super({ ...options, name: 'shoppingroute' });
@@ -253,6 +258,13 @@ export class ShoppingRoute extends utils.Adapter {
             : [{ name: String(this.cfg.listName || 'SHOP').trim() || 'SHOP', enabled: true, priorityMarket: '' }];
     }
     private listStateId(listName: string): string { return `${this.alexaInstance}.Lists.${listName}.json`; }
+    private get bringMode(): BringSyncMode {
+        const raw = String(this.cfg.bringSyncMode || 'off');
+        return raw === 'import' || raw === 'bring-only' || raw === 'bidirectional' ? raw : 'off';
+    }
+    private get bringInstance(): string { return String(this.cfg.bringInstance || 'bring.0').trim(); }
+    private get bringListId(): string { return String(this.cfg.bringListId || '').trim(); }
+    private get bringAlexaList(): string { return String(this.cfg.bringAlexaList || this.cfg.listName || 'SHOP').trim(); }
     private get markets(): MarketConfig[] {
         return (Array.isArray(this.cfg.markets) ? this.cfg.markets : []).filter(market => market?.name && market.enabled !== false);
     }
@@ -452,6 +464,13 @@ export class ShoppingRoute extends utils.Adapter {
         await this.setStateAsync('control.temporaryPriorityMarket', this.temporaryPriorityMarket || '__none__', true);
 
         this.subscribeStates('control.*');
+        await this.ensureBringSyncStates();
+        if (this.bringMode === 'bring-only') {
+            await this.refreshExports();
+            await this.updateFeedbackReport();
+            this.armBringPoll(1000);
+            return;
+        }
         for (const list of this.listConfigs) this.subscribeForeignStates(this.listStateId(list.name));
         let stateConnected = false;
         for (const list of this.listConfigs) {
@@ -489,6 +508,7 @@ export class ShoppingRoute extends utils.Adapter {
         this.log.debug('Direct sorting uses visible prefixes 00>–99>; Alexa2 list states are used only as an external trigger source.');
         this.scheduleAll(COLLECT_WINDOW_MS);
         this.armDirectPoll(DIRECT_POLL_BASE_MS);
+        this.armBringPoll(1000);
     }
 
     private async discoverAlexaLists(instanceName = this.alexaInstance): Promise<string[]> {
@@ -980,6 +1000,7 @@ export class ShoppingRoute extends utils.Adapter {
 
     private onUnload(callback: () => void): void {
         this.isUnloading = true;
+        if (this.bringPollTimer) this.clearTimeout(this.bringPollTimer);
         if (this.directPollTimer) this.clearTimeout(this.directPollTimer);
         for (const state of this.listStates.values()) if (state.timer) this.clearTimeout(state.timer);
         this.listStates.clear();
