@@ -17,7 +17,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT license"></a>
 </p>
 
-> **Current release: 0.5.3**
+> **Unpublished development version: 0.6.0. Current public release: 0.5.3.**
 > ShoppingRoute is available in the ioBroker **latest** repository.
 
 ## What ShoppingRoute does
@@ -57,6 +57,23 @@ Community and support:
 - 🐞 [GitHub issues](https://github.com/RaviniZib/ioBroker.shoppingroute/issues)
 
 Adapter settings and the backup utility include all 11 standard ioBroker Admin languages. Shopping-list feedback is available in German and English.
+
+## Bring! integration in 0.6.0 (development only – NOT published)
+
+ShoppingRoute 0.6.0 adds an optional bridge to the existing ioBroker **Bring!** adapter. Existing Alexa users are unaffected because the feature defaults to **Off**. Configure the integration under the new **Bring! integration** settings tab.
+
+- **Off:** Original ShoppingRoute behaviour; Alexa only.
+- **Bring! → ShoppingRoute/Alexa:** One-way import/mirroring from a selected Bring! list to a selected Alexa list, including propagation of subsequently completed Bring! items that were previously mirrored.
+- **Bring! only:** Use the existing ShoppingRoute list view for a read-only preview grouped by market and walking route, even without Alexa.
+- **Bring! ↔ Alexa:** Two-way propagation of new and completed items. The initial merge is additive only; existing entries are never deleted on first connection.
+
+Bring! cannot freely rearrange individual shopping items inside its own app. Category order is configurable **in Bring! settings**, but ShoppingRoute's exact route order is available only in the ShoppingRoute view or Alexa. This restriction cannot be bypassed reliably with the documented Bring! adapter API.
+
+Both provider snapshots are checked before writes. Ambiguous duplicates, mismatching specifications, stale Bring! data, write limits or conflicting concurrent changes trigger a safety stop instead of guessed deletions. A persisted transaction journal requires positive confirmation from both providers before accepting the next set of changes. Dry Run prevents **all writes to both apps**. Status and route preview are available in `info.bringSyncStatus` and `info.bringSyncPreview`; recovery details are stored in `data.bringSyncJournal`.
+
+To try it in a test environment: save a connected Bring! adapter instance, choose its list, optionally select an enabled Alexa target list, verify the Dry Run first, and only then enable the desired mode. No additional Bring! credentials are required by ShoppingRoute.
+
+**Testing:** The pure reconciliation logic has automated tests; a two-provider live end-to-end test is still outstanding. Version 0.6.0 has not been released or installed in the running ioBroker instance.
 
 ## What's new in 0.5.3
 
@@ -199,6 +216,14 @@ ShoppingRoute is still young, so real-world feedback is especially valuable.
 Please use the [ioBroker tester thread](https://forum.iobroker.net/topic/85510/test-adapter-shoppingroute-v0.4.4) for general testing feedback and the [GitHub issue tracker](https://github.com/RaviniZib/ioBroker.shoppingroute/issues) for reproducible bugs or feature requests.
 
 ## Changelog
+
+### 0.6.0 (development; unpublished)
+
+- Opt-in Bring! bridge: one-way import, bidirectional item/completion sync, Bring!-only read-only route view.
+- Crash-safe journal, verified remote snapshots, duplicate and specification conflict checks, bounded writes, full Dry Run support.
+- Bring! integration tab translated into all eleven Admin languages, additional unit tests and updated bilingual documentation.
+- Bring! app still sorts within its own categories and cannot accept arbitrary per-item walking-route order.
+
 
 ### 0.5.3 (2026-10-17)
 
