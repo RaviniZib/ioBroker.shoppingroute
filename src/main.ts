@@ -772,6 +772,191 @@ export class ShoppingRoute extends utils.Adapter {
         });
     }
 
+
+    private async ensureBringSyncStates(): Promise<void> {
+        for (const id of ['info.bringSyncStatus', 'info.bringSyncPreview', 'data.bringSyncJournal']) {
+            await this.setObjectNotExistsAsync(id, {
+                type: 'state',
+                common: { name: id, type: 'string', role: 'json', read: true, write: false },
+                native: {},
+            });
+        }
+    }
+
+    private armBringPoll(delay: number): void {
+        if (this.isUnloading || this.bringMode === 'off') return;
+        if (this.bringPollTimer) this.clearTimeout(this.bringPollTimer);
+        this.bringPollTimer = this.setTimeout(() => {
+            this.bringPollTimer = undefined;
+            void this.runBringSync();
+        }, delay);
+    }
+
+    private async bringStatus(status: string, message: string, details: Record<string, unknown> = {}): Promise<void> {
+        await this.setStateAsync('info.bringSyncStatus', JSON.stringify({
+            time: new Date().toISOString(), mode: this.bringMode, status, message, ...details,
+        }), true);
+    }
+
+    private async bringRoutePreview(items: BridgeItem[]): Promise<void> {
+        const source: AlexaListItem[] = items.map((entry, index) => ({
+            id: 'bring-' + index, value: entry.text, completed: false, version: 1,
+        }));
+        const desired = buildPrefixTargets(
+            source, this.markets, this.routes, this.products, this.fallbackMarket,
+            this.priorityMarket, this.minimumItemsPerMarket, this.marketHeadersEnabled,
+            [], 'BRING',
+        );
+        const rows = desired.filter(entry => entry.id && !isMarketHeader(entry.originalText, this.markets))
+            .map(entry => ({ text: entry.originalText, market: entry.market, category: entry.category }));
+        await this.setStateAsync('info.bringSyncPreview', JSON.stringify(rows, null, 2), true);
+    }
+
+    private async runBringSync(): Promise<void> {
+        if (this.bringSyncRunning || this.isUnloading || this.bringMode === 'off') return;
+        this.bringSyncRunning = true;
+        try {
+            if (!/^bring\.\d+$/.test(this.bringInstance) || !/^[\da-f-]{36}$/i.test(this.bringListId)) {
+                throw new Error('Select a valid Bring! instance and list before enabling sync.');
+            }
+            const namespace = this.bringInstance + '.' + this.bringListId;
+            const connected = await this.getForeignStateAsync(this.bringInstance + '.info.connection');
+            if (connected?.val !== true) throw new Error('Bring! is not connected.');
+            const state = await this.getForeignStateAsync(namespace + '.content');
+            if (!state || !state.ack || Date.now() - Number(state.ts || 0) > 300_000) {
+                throw new Error('Bring! content is stale or unconfirmed.');
+            }
+            const bringItems = parseBringContent(state.val);
+            await this.bringRoutePreview(bringItems);
+            if (this.bringMode === 'bring-only') {
+                await this.setStateAsync('info.connection', true, true);
+                await this.bringStatus('preview', 'Route preview refreshed; Bring! controls its own item ordering.', {
+                    items: bringItems.length,
+                });
+                return;
+            }
+            const target = this.listConfigs.find(entry => entry.name === this.bringAlexaList);
+            if (!target) throw new Error('Selected Alexa shopping list is not enabled.');
+            if (this.applyingListName || this.manualCommandPending || this.directPollRunning) {
+                await this.bringStatus('busy', 'Another Alexa operation is running; synchronization deferred.');
+                return;
+            }
+            const listId = await this.directListId(target.name);
+            const alexaSnapshot = await this.readDirectItems(listId);
+            const alexaItems = parseAlexaContent(alexaSnapshot, this.markets);
+            indexBridgeItems(bringItems, 'Bring!');
+            indexBridgeItems(alexaItems, 'Alexa');
+            const scope = [this.bringInstance, this.bringListId, target.name, this.bringMode].join('|');
+            const journalState = await this.getStateAsync('data.bringSyncJournal');
+            const previous = parseBridgeBaseline(journalState?.val);
+            if (previous && (previous.scope !== scope || previous.mode !== this.bringMode)) {
+                throw new Error('Bridge settings changed; previous journal must be reviewed before reinitializing.');
+            }
+            if (previous?.pending) {
+                const pending = previous.pending;
+                const confirmed = itemsMatchExpected(bringItems, pending.bring) &&
+                    itemsMatchExpected(alexaItems, pending.alexa);
+                if (confirmed) {
+                    await this.setStateAsync('data.bringSyncJournal', serializeBridgeBaseline({
+                        version: 1, scope, mode: this.bringMode,
+                        bring: pending.bring, alexa: pending.alexa,
+                    }), true);
+                    await this.bringStatus('synced', 'Provider snapshots verified.', {
+                        bringItems: bringItems.length, alexaItems: alexaItems.length,
+                    });
+                } else {
+                    const timedOut = Date.now() - Date.parse(pending.createdAt) > 600_000;
+                    await this.bringStatus(timedOut ? 'blocked' : 'verifying',
+                        timedOut ? 'Sync timed out. Check both lists and the journal; no further writes.'
+                            : 'Waiting for confirmation of the previous bridge transaction.');
+                }
+                return;
+            }
+            const plan = reconcileBring(this.bringMode, previous, bringItems, alexaItems);
+            const count = plan.addToBring.length + plan.removeFromBring.length +
+                plan.addToAlexa.length + plan.removeFromAlexa.length;
+            if (!count) {
+                await this.setStateAsync('data.bringSyncJournal', serializeBridgeBaseline({
+                    version: 1, scope, mode: this.bringMode,
+                    bring: plan.expectedBring, alexa: plan.expectedAlexa,
+                }), true);
+                await this.bringStatus('synced', 'No changes needed.', {
+                    bringItems: bringItems.length, alexaItems: alexaItems.length,
+                });
+                return;
+            }
+            if (count > 30 || plan.expectedAlexa.length +
+                (this.marketHeadersEnabled ? this.markets.length : 0) > MAX_ACTIVE_ITEMS) {
+                throw new Error('Too many bridge writes or Alexa list items; no write.');
+            }
+            for (const entry of plan.removeFromAlexa) {
+                if (!entry.alexaId || !Number.isInteger(entry.alexaVersion) || Number(entry.alexaVersion) < 1) {
+                    throw new Error('Cannot remove an Alexa entry without its current version.');
+                }
+            }
+            if (this.dryRun || !(await this.isEnabled())) {
+                await this.bringStatus('preview', 'Dry Run or sorting disabled; no changes made.', {
+                    addToBring: plan.addToBring.length, addToAlexa: plan.addToAlexa.length,
+                    removeFromBring: plan.removeFromBring.length, removeFromAlexa: plan.removeFromAlexa.length,
+                });
+                return;
+            }
+            if (this.applyingListName || this.manualCommandPending || this.isUnloading) return;
+            // Acquire the same writer mutex used by the ShoppingRoute Admin.
+            this.manualCommandPending = true;
+            try {
+                // Persist the recovery barrier BEFORE any provider write.
+                const pending: BridgeBaseline = {
+                    version: 1, scope, mode: this.bringMode,
+                    bring: previous?.bring || [...indexBridgeItems(bringItems, 'Bring!').keys()].sort(),
+                    alexa: previous?.alexa || [...indexBridgeItems(alexaItems, 'Alexa').keys()].sort(),
+                    pending: {
+                        createdAt: new Date().toISOString(),
+                        bring: plan.expectedBring,
+                        alexa: plan.expectedAlexa,
+                    },
+                };
+                await this.setStateAsync('data.bringSyncJournal', serializeBridgeBaseline(pending), true);
+                const client = await this.initializeDirectClient();
+                // Additions first: on partial failure at least one source still owns each item.
+                for (const entry of plan.addToBring) {
+                    await this.setForeignStateAsync(namespace + '.saveItem', entry.text, false);
+                }
+                if (plan.addToAlexa.length) {
+                    await this.beforeDirectWrite();
+                    await this.amazonCall(undefined, () => client.batchCreate(listId,
+                        plan.addToAlexa.map(entry => entry.text)));
+                    await this.recordDirectWrite();
+                }
+                for (const entry of plan.removeFromBring) {
+                    await this.setForeignStateAsync(namespace + '.moveToRecentContent', entry.name, false);
+                }
+                for (const entry of plan.removeFromAlexa) {
+                    await this.beforeDirectWrite();
+                    await this.amazonCall(undefined, () =>
+                        client.deleteItem(listId, entry.alexaId!, Number(entry.alexaVersion)));
+                    await this.recordDirectWrite();
+                }
+                await this.bringStatus('verifying', 'Writes submitted, waiting for provider confirmation.', {
+                    addToBring: plan.addToBring.length, addToAlexa: plan.addToAlexa.length,
+                    removeFromBring: plan.removeFromBring.length, removeFromAlexa: plan.removeFromAlexa.length,
+                });
+                if (plan.addToAlexa.length || plan.removeFromAlexa.length) {
+                    this.scheduleAll(COLLECT_WINDOW_MS);
+                }
+            } finally {
+                this.manualCommandPending = false;
+            }
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            this.log.warn('Bring! bridge: ' + message);
+            await this.bringStatus('blocked', message);
+        } finally {
+            this.bringSyncRunning = false;
+            this.armBringPoll(90_000);
+        }
+    }
+
     private async onMessage(obj: { command: string; from: string; callback?: any; message?: any }): Promise<void> {
         if (!obj?.callback) return;
         if (obj.command === 'createAlexaList' || obj.command === 'addShoppingItem') {
