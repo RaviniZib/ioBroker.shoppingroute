@@ -58,6 +58,7 @@ import { resolveMobileMoves } from './lib/mobile-move';
 import { parseBringContent, parseAlexaContent, indexBridgeItems, reconcileBring,
     itemsMatchExpected, parseBridgeBaseline, serializeBridgeBaseline,
     type BringSyncMode, type BridgeBaseline, type BridgeItem } from './lib/bring-sync';
+import { sendBringCommand } from './lib/bring-io';
 import { createConfigBackup, isSuspiciousConfigReplacement, parseConfigBackup, restoreProtectedConfig } from './lib/config-protection';
 import {
     beginDirectApply,
@@ -920,7 +921,7 @@ export class ShoppingRoute extends utils.Adapter {
                 const client = await this.initializeDirectClient();
                 // Additions first: on partial failure at least one source still owns each item.
                 for (const entry of plan.addToBring) {
-                    await this.setForeignStateAsync(namespace + '.saveItem', entry.text, false);
+                    await sendBringCommand(this, namespace, 'saveItem', entry.text);
                 }
                 if (plan.addToAlexa.length) {
                     await this.beforeDirectWrite();
@@ -929,7 +930,7 @@ export class ShoppingRoute extends utils.Adapter {
                     await this.recordDirectWrite();
                 }
                 for (const entry of plan.removeFromBring) {
-                    await this.setForeignStateAsync(namespace + '.moveToRecentContent', entry.name, false);
+                    await sendBringCommand(this, namespace, 'moveToRecentContent', entry.name);
                 }
                 for (const entry of plan.removeFromAlexa) {
                     await this.beforeDirectWrite();
