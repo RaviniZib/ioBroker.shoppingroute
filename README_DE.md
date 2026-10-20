@@ -2,7 +2,7 @@
 
 ![ShoppingRoute](admin/shoppingroute.png)
 
-**Aktuelle Version: 0.5.3 (veröffentlicht)**
+**Entwicklungsstand: 0.6.0 (unveröffentlicht). Letzte veröffentlichte Version: 0.5.3.**
 
 ShoppingRoute macht aus einer normalen Alexa-Einkaufsliste eine praktische Einkaufshilfe: **Alle Märkte können gemeinsam in einer einzigen Liste geführt oder bewusst auf mehrere Listen verteilt werden.** Das besondere Merkmal ist das frei einstellbare **Marktrouting**: Für jeden Markt legst du deinen persönlichen Laufweg durch die Abteilungen fest. Dadurch steht die Einkaufsliste in der Reihenfolge, in der du tatsächlich durch den Laden gehst – für weniger Zurücklaufen, weniger Suchen und **schnelleres, effizienteres Einkaufen**.
 
@@ -12,6 +12,34 @@ ShoppingRoute sortiert Alexa-Einkaufslisteneinträge nach Markt, Produktgruppe u
 
 🇩🇪 [**Deutsche Bedienungsanleitung**](BEDIENUNGSANLEITUNG_DE.md)  
 🇬🇧 [**English user guide**](USER_GUIDE_EN.md)
+
+## Neu in 0.6.0 (Entwicklungszweig – nicht veröffentlicht): Bring!-Anbindung
+
+ShoppingRoute unterstützt zusätzlich den ioBroker-Adapter **bring.0** (Bring! 1.9.1) und kann eine ausgewählte Bring!-Liste mit einer Alexa-Einkaufsliste verknüpfen. Die Funktion ist **standardmäßig ausgeschaltet** und verändert bei einem normalen Update keine bestehenden Listen.
+
+Die vier Betriebsarten stehen unter **Instanz-Einstellungen → Bring!-Integration**:
+
+- **Aus:** ShoppingRoute arbeitet wie bisher ausschließlich mit Alexa.
+- **Bring! → ShoppingRoute/Alexa:** Bring! ist die Quelle. Neue Bring!-Artikel werden nach Alexa übernommen; zuvor gespiegelte und anschließend in Bring! erledigte Artikel werden auch in Alexa entfernt. Alexa-eigene Artikel bleiben erhalten.
+- **Nur Bring!:** ShoppingRoute zeigt die Bring!-Artikel auf seiner Verwaltungsseite nach Märkten, Produktgruppen und persönlichen Laufwegen sortiert an, ohne Alexa zu benötigen. Diese Ansicht ist absichtlich schreibgeschützt.
+- **Bring! ↔ Alexa:** Neue Artikel und abgeschlossene Artikel werden in beide Richtungen abgeglichen. Beim **allerersten Abgleich** werden ausschließlich fehlende Einträge ergänzt; kein vorhandener Artikel wird gelöscht.
+
+### Wichtige Einschränkung von Bring!
+
+**Bring! erlaubt keine freie Reihenfolge einzelner Artikel.** Seine App verwendet eigene Produktkategorien, deren Reihenfolge Nutzer dort einstellen können. ShoppingRoute zeigt daher die optimierte Reihenfolge in seiner eigenen Verwaltungsoberfläche, **nicht** als frei sortierte Reihenfolge innerhalb der Bring!-App. Eine identische Darstellung beider Apps wird nicht versprochen.
+
+### Schutzmechanismen der Synchronisierung
+
+- Vor jedem Abgleich werden bestätigte Bring!- und aktuelle Amazon-Listenstände geprüft. Bei nicht verfügbaren oder veralteten Daten wird **nicht geschrieben**.
+- Bei doppelten Artikelnamen, widersprüchlichen Mengen/Spezifikationen oder uneindeutigen Änderungen stoppt der Abgleich. Unklarheiten werden nicht erraten.
+- Ein dauerhaftes lokales Journal verhindert, dass ein unterbrochener Schreibvorgang nach Neustart unkontrolliert wiederholt wird. Vor einem neuen Schreiblauf müssen beide Seiten das Ergebnis des vorherigen bestätigen.
+- Ein Schreiblauf verarbeitet höchstens 30 Aktionen; die bisherige Alexa-Grenze von 99 Einträgen und die eingestellten Amazon-Zugriffslimits gelten weiterhin.
+- **Dry-Run** zeigt geplante Aktionen an, ohne etwas in Alexa oder Bring! zu verändern.
+- Status: `shoppingroute.0.info.bringSyncStatus`; Bring!-Laufwegvorschau: `shoppingroute.0.info.bringSyncPreview`; Wiederherstellungsjournal: `shoppingroute.0.data.bringSyncJournal`.
+
+Für die Einrichtung: Bring!-Instanz auswählen und speichern, Bring!-Liste auswählen, bei Verbindung zu Alexa eine aktivierte Zielliste angeben, zuerst Dry-Run prüfen und erst danach bewusst aktivieren. Die Bring!-Daten kommen aus der vorhandenen lokalen ioBroker-Instanz; ShoppingRoute benötigt kein eigenes Bring!-Passwort.
+
+**Wichtiger Testhinweis:** Die reine Abgleichlogik wird automatisiert getestet. Ein vollständiger Live-Test mit beiden Cloud-Anbietern ist für diesen Entwicklungsstand noch ausstehend; deshalb ist 0.6.0 weder veröffentlicht noch auf der laufenden ioBroker-Instanz installiert.
 
 ## Neu in 0.5.3: Direktsteuerung in der Alexa-App
 
@@ -124,6 +152,14 @@ Die Optimierung ist optional und abhängig von der eingestellten Mindestartikelz
 ShoppingRoute wird unter der **[MIT-Lizenz](LICENSE)** veröffentlicht. Frühere bereits veröffentlichte Versionen bleiben unter der jeweils damals gültigen Lizenz.
 
 ## Changelog
+
+### 0.6.0 (Entwicklung, unveröffentlicht)
+
+- Optionale Bring!-Integration in vier Betriebsarten einschließlich einseitigem Import und bidirektionaler Synchronisierung.
+- Sicherheit: Journal, Konflikt- und Duplikatprüfung, Dry-Run und begrenzte Schreibaktionen.
+- Bring!-Laufwege als schreibgeschützte Ansicht für Nutzer ohne Alexa; Bring!-App kann einzelne Artikel nicht frei umsortieren.
+- Adapter-Konfiguration in allen elf Admin-Sprachen, neue Regressionstests und aktualisierte deutsche/englische Dokumentation.
+
 
 ### 0.5.3 (2026-10-17)
 
