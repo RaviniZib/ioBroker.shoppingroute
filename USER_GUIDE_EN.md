@@ -1,8 +1,29 @@
 # ShoppingRoute – User Guide
 
-**Applies to version 0.5.0 and newer**
+**For versions 0.5.0+; the Bring! section refers to unpublished development 0.6.0**
 
 ShoppingRoute helps turn a normal Alexa shopping list into a list that follows the way you actually shop.
+
+## Under development: ShoppingRoute + Bring! (0.6.0, not released)
+
+The Bring! bridge is **disabled by default**. Existing Alexa users will notice no change.
+
+**Setup:** Open **ShoppingRoute instance settings → Bring! integration**, select your installed ioBroker Bring! instance, **save** and then select the desired Bring! list. For one-way or two-way synchronization also select the already enabled Alexa shopping list. First leave **Dry Run** enabled.
+
+Choose a mode:
+
+1. **Off:** Existing Alexa behaviour is unchanged.
+2. **Bring! → Alexa:** Use Bring! as the source. New Bring! entries appear in Alexa; items previously mirrored and later completed in Bring! are also removed from Alexa. Alexa-only entries are preserved.
+3. **Bring! only:** No Alexa installation is required. ShoppingRoute displays Bring! items in its own **Shopping list** page, grouped by store and your configured walking route. This view is read-only; edit items in Bring!.
+4. **Bring! ↔ Alexa:** New and completed items are mirrored both ways. On the **very first synchronization**, each list keeps everything it already contains; only missing items are added.
+
+Bring! groups items into its own categories and **does not support arbitrary individual item order**. For precise ShoppingRoute walking order use the ShoppingRoute page or the Alexa app. Inside Bring!, you can arrange the existing category order manually.
+
+**Safety:** A confirmed, sufficiently recent Bring! snapshot is required. Duplicate names, conflicting quantities/specifications, oversized batches and unsafe remote states block writes. Interrupted transactions are saved in a persistent journal and not automatically retried until both providers confirm the expected list contents. Never clear a pending journal without checking both lists. Dry Run blocks writes on **both** services.
+
+Status: `shoppingroute.0.info.bringSyncStatus`. Bring! route preview: `shoppingroute.0.info.bringSyncPreview`. Journal: `shoppingroute.0.data.bringSyncJournal`.
+
+Bring! normally polls its list about every 90 seconds, so bidirectional changes are not instantaneous. Pure logic tests are available; full two-cloud-provider end-to-end validation is still outstanding. Do not replace a productive 0.5.3 installation with this development build yet.
 
 ## New in 0.5.3: Change your shopping list right in the Alexa app
 
