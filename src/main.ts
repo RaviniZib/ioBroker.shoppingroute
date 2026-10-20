@@ -1092,6 +1092,24 @@ export class ShoppingRoute extends utils.Adapter {
             this.sendTo(obj.from, obj.command, options, obj.callback);
             return;
         }
+        if (obj.command === 'getBringLists') {
+            try {
+                const instance = String(obj.message?.bringInstance || this.bringInstance).trim();
+                if (!/^bring\.\d+$/.test(instance)) throw new Error('Invalid Bring! instance.');
+                const objects = await this.getForeignObjectsAsync(instance + '.*', 'channel');
+                const options = Object.entries(objects).filter(([id]) =>
+                    id.startsWith(instance + '.') && /^[0-9a-f-]{36}$/i.test(id.slice(instance.length + 1)))
+                    .map(([id, entry]) => ({
+                        value: id.slice(instance.length + 1),
+                        label: typeof entry.common?.name === 'string' ? entry.common.name : id,
+                    }));
+                this.sendTo(obj.from, obj.command, options, obj.callback);
+            } catch (error) {
+                this.log.warn('Bring! list discovery failed: ' + String(error));
+                this.sendTo(obj.from, obj.command, [], obj.callback);
+            }
+            return;
+        }
         if (obj.command === 'getAlexaLists' || obj.command === 'getLists') {
             const instance = String(obj.message?.alexaInstance || this.alexaInstance).trim() || this.alexaInstance;
             const lists = await this.discoverAlexaLists(instance);
