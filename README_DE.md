@@ -41,6 +41,10 @@ Für die Einrichtung: Bring!-Instanz auswählen und speichern, Bring!-Liste ausw
 
 **Wichtiger Testhinweis:** Die reine Abgleichlogik wird automatisiert getestet. Ein vollständiger Live-Test mit beiden Cloud-Anbietern ist für diesen Entwicklungsstand noch ausstehend; deshalb ist 0.6.0 weder veröffentlicht noch auf der laufenden ioBroker-Instanz installiert.
 
+## Manuelle Einkaufslistenänderungen
+
+Manuelle Verschiebungen in der Einkaufsliste bleiben zunächst als Entwurf im Browser. Verschiebe alle gewünschten Artikel und drücke dann **Änderungen an Alexa übertragen**. Erst dieser Button startet einen gemeinsamen, geprüften Alexa-Sortierlauf. Bei einem Fehler bleibt der Entwurf erhalten; **Änderungen verwerfen** lädt die aktuelle Liste neu. Solange Änderungen offen sind, sind Listenwechsel, Hinzufügen, Löschen und Zurücksetzen gesperrt, damit der Entwurf erhalten bleibt. Ein Neuladen desselben Browser-Tabs stellt den Entwurf bei verfügbarem Sitzungsspeicher wieder her.
+
 ## Neu in 0.5.3: Direktsteuerung in der Alexa-App
 
 **Marktwechsel direkt in der normalen Alexa-Einkaufsliste auf dem Handy – ohne zusätzliche App und ohne Zugriff auf die ioBroker-Verwaltung.**
@@ -154,6 +158,8 @@ ShoppingRoute wird unter der **[MIT-Lizenz](LICENSE)** veröffentlicht. Frühere
 ## Changelog
 
 ### 0.6.0 (Entwicklung, unveröffentlicht)
+
+- Manuelle Einkaufslisten-Verschiebungen sammeln und mit **Änderungen an Alexa übertragen** gemeinsam senden. Entwürfe bleiben bei Fehlern erhalten; der ganze Auftrag wird vor dem Schreiben geprüft.
 
 - Optionale Bring!-Integration in vier Betriebsarten einschließlich einseitigem Import und bidirektionaler Synchronisierung.
 - Sicherheit: Journal, Konflikt- und Duplikatprüfung, Dry-Run und begrenzte Schreibaktionen.

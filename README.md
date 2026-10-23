@@ -101,6 +101,10 @@ This release fixes the saving and moving problems reported with the new manageme
 
 Open **ShoppingRoute** in the ioBroker sidebar on your phone. Use the `⋮⋮` handle to drag, or use the arrow buttons and market selector. After updating, fully reload the management page once to load the new interface. Alexa list writes still use the configured rate limits, Dry Run and verification safeguards.
 
+## Manual shopping-list changes
+
+Manual shopping-list moves stay in a browser draft. Move all required items, then press **Transfer changes to Alexa**. Only this button starts one verified Alexa sorting transaction for the complete batch. A failed transfer keeps the draft; **Discard changes** reloads the current list. While a draft is pending, switching lists, adding, deleting and resetting are disabled to preserve the draft. Reloading the same browser tab restores the draft when session storage is available.
+
 ## Main features
 
 - dedicated **ShoppingRoute management page** in the ioBroker sidebar for shopping list, products, markets, product groups, routes, lists and review items
@@ -218,6 +222,8 @@ Please use the [ioBroker tester thread](https://forum.iobroker.net/topic/85510/t
 ## Changelog
 
 ### 0.6.0 (development; unpublished)
+
+- Collect manual shopping-list moves locally and transfer them together using **Transfer changes to Alexa**. Failed transfers retain the draft; batches are validated before writing.
 
 - Opt-in Bring! bridge: one-way import, bidirectional item/completion sync, Bring!-only read-only route view.
 - Crash-safe journal, verified remote snapshots, duplicate and specification conflict checks, bounded writes, full Dry Run support.

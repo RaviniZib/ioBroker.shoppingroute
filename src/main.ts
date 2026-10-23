@@ -661,43 +661,54 @@ export class ShoppingRoute extends utils.Adapter {
             const before = await this.buildShoppingListView(listName);
             if (this.dryRun) return { ok: false, error: 'Dry Run is active. Disable Dry Run before changing the Alexa list.', view: before };
             if (!(await this.isEnabled())) return { ok: false, error: 'ShoppingRoute is disabled.', view: before };
-            if (this.applyingListName) return { ok: false, error: 'A shopping-list update is already running. Please try again.', view: before };
-            const requestedId = String(message?.itemId || '').trim();
-            const text = stripSortPrefix(String(message?.itemText || '').trim());
-            const matches = text ? before.items.filter(entry => stripSortPrefix(entry.text) === text) : [];
-            // Amazon suffix rebuilds replace IDs. Rebind only an unambiguous item,
-            // never guess between duplicate product names.
-            const item = before.items.find(entry => entry.id === requestedId) || (matches.length === 1 ? matches[0] : undefined);
-            if (!item) return { ok: false, error: 'The selected shopping-list item no longer exists.', view: before };
-            const itemId = item.id;
-            const targetMarket = String(message?.targetMarket || '').trim();
-            if (!before.markets.some(market => market.toLocaleLowerCase('de') === targetMarket.toLocaleLowerCase('de'))) {
-                return { ok: false, error: 'The selected target market is not available.', view: before };
-            }
-            const targetCount = before.items.filter(entry => entry.market === targetMarket && entry.id !== itemId).length;
-            const targetPosition = Math.max(0, Math.min(targetCount, Math.floor(Number(message?.targetPosition) || 0)));
-            if (item.market === targetMarket && item.position === targetPosition) return { ok: true, view: before };
+            const moves = Array.isArray(message?.moves) ? message.moves : [message];
+            if (!moves.length) return { ok: false, error: 'Invalid number of shopping-list changes.', view: before };
             const previous = this.manualOverrides.map(entry => ({ ...entry }));
-            this.manualOverrides = moveManualOverride(this.manualOverrides, {
-                listName,
-                itemId,
-                originalText: item.text,
-                fromMarket: item.market,
-                fromPosition: item.position,
-                toMarket: targetMarket,
-                toPosition: targetPosition,
-            });
-            await this.persistManualOverrides();
-            await this.setStateAsync('info.lastError', '', true);
-            this.prepareImmediateApply(listName);
-            await this.startApply(listName, true);
-            const error = String((await this.getStateAsync('info.lastError'))?.val || '');
-            if (error) {
+            let overrides = previous.map(entry => ({ ...entry }));
+            const draft = before.items.map(entry => ({ ...entry }));
+            // Validate the entire batch against a fresh list before persisting or writing to Alexa.
+            for (const move of moves) {
+                const requestedId = String(move?.itemId || '').trim();
+                const text = stripSortPrefix(String(move?.itemText || '').trim());
+                const matches = text ? draft.filter(entry => stripSortPrefix(entry.text) === text) : [];
+                const item = draft.find(entry => entry.id === requestedId && (!text || stripSortPrefix(entry.text) === text))
+                    || (matches.length === 1 ? matches[0] : undefined);
+                if (!item) return { ok: false, error: 'The selected shopping-list item no longer exists.', view: before };
+                const targetMarket = before.markets.find(market =>
+                    market.toLocaleLowerCase('de') === String(move?.targetMarket || '').trim().toLocaleLowerCase('de'));
+                if (!targetMarket) return { ok: false, error: 'The selected target market is not available.', view: before };
+                const byPosition = (a: typeof item, b: typeof item): number => a.position - b.position;
+                const source = draft.filter(entry => entry.market === item.market && entry.id !== item.id).sort(byPosition);
+                const target = item.market === targetMarket ? source :
+                    draft.filter(entry => entry.market === targetMarket && entry.id !== item.id).sort(byPosition);
+                const targetPosition = Math.max(0, Math.min(target.length, Math.floor(Number(move?.targetPosition) || 0)));
+                if (item.market === targetMarket && item.position === targetPosition) continue;
+                overrides = moveManualOverride(overrides, {
+                    listName, itemId: item.id, originalText: item.text,
+                    fromMarket: item.market, fromPosition: item.position,
+                    toMarket: targetMarket, toPosition: targetPosition,
+                });
+                source.forEach((entry, index) => { entry.position = index; });
+                item.market = targetMarket;
+                item.manual = true;
+                target.splice(targetPosition, 0, item);
+                target.forEach((entry, index) => { entry.position = index; });
+            }
+            if (JSON.stringify(overrides) === JSON.stringify(previous)) return { ok: true, view: before };
+            this.manualOverrides = overrides;
+            try {
+                await this.persistManualOverrides();
+                await this.setStateAsync('info.lastError', '', true);
+                this.prepareImmediateApply(listName);
+                await this.startApply(listName, true);
+                const error = String((await this.getStateAsync('info.lastError'))?.val || '');
+                if (error) throw new Error(error);
+                return { ok: true, view: await this.buildShoppingListView(listName) };
+            } catch (error) {
                 this.manualOverrides = previous;
                 await this.persistManualOverrides();
-                return { ok: false, error, view: await this.buildShoppingListView(listName, true) };
+                return { ok: false, error: error instanceof Error ? error.message : String(error), view: before };
             }
-            return { ok: true, view: await this.buildShoppingListView(listName) };
         });
     }
 
@@ -987,7 +998,7 @@ export class ShoppingRoute extends utils.Adapter {
     private async onMessage(obj: { command: string; from: string; callback?: any; message?: any }): Promise<void> {
         if (!obj?.callback) return;
         if (this.bringMode === 'bring-only' && ['createAlexaList', 'addShoppingItem', 'moveShoppingItem',
-            'deleteShoppingItem', 'clearManualShoppingOrder'].includes(obj.command)) {
+            'deleteShoppingItem', 'clearManualShoppingOrder', 'applyShoppingChanges'].includes(obj.command)) {
             this.sendTo(obj.from, obj.command, { ok: false, error: 'Bring! route preview is read-only.' }, obj.callback);
             return;
         }
@@ -1028,7 +1039,7 @@ export class ShoppingRoute extends utils.Adapter {
             catch (error) { this.sendTo(obj.from, obj.command, { error: error instanceof Error ? error.message : String(error) }, obj.callback); }
             return;
         }
-        if (obj.command === 'moveShoppingItem') {
+        if (obj.command === 'moveShoppingItem' || obj.command === 'applyShoppingChanges') {
             const requestId = String(obj.message?.requestId || '').trim();
             if (!requestId) {
                 this.sendTo(obj.from, obj.command, { ok: false, error: 'Missing move request ID.' }, obj.callback);

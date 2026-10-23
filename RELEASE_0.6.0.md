@@ -1,7 +1,7 @@
 # ShoppingRoute 0.6.0 – Bring! integration (unpublished development candidate)
 
 **Status: Development branch only. NOT published to npm, ioBroker latest/stable or GitHub Releases.**
-Public users remain on 0.5.3. The current ioBroker instance was not modified or restarted.
+Public users remain on 0.5.3. The Bring! integration has not been deployed to the running instance. The manual shopping-list batch fix is also prepared as a targeted 0.5.3 hotfix.
 
 ## Features
 
@@ -53,4 +53,10 @@ Base revision: `7d00a274110848f1cd0151d63409f2489a0febfb` (0.5.3).
 Timestamped backup branch: `backup/shoppingroute-0.5.3-before-bring-sync-20261020`.
 Working branch: `feature/bring-sync-0.6.0`.
 
-No tag, release, npm upload, ioBroker adapter installation or running configuration change has been made.
+No tag, public release or npm upload has been made. Bring! remains a development candidate.
+
+## Manual shopping-list batch fix (2026-10-23)
+
+Manual shopping-list moves stay in a browser draft. Move all required items, then press **Transfer changes to Alexa**. Only this button starts one verified Alexa sorting transaction for the complete batch. A failed transfer keeps the draft; **Discard changes** reloads the current list. While a draft is pending, switching lists, adding, deleting and resetting are disabled to preserve the draft. Reloading the same browser tab restores the draft when session storage is available.
+
+The backend validates every requested move against a fresh list before storing overrides and starting one existing verified transaction. Existing item identity, concurrency and write safeguards remain in effect. Regression tests cover local-only edits, rapid clicks, accumulated order, stale IDs, whole-batch validation, failure retention and draft restoration.
