@@ -123,7 +123,7 @@ Manual shopping-list moves stay in a browser draft. Move all required items, the
 - global, per-list and temporary priority markets
 - optional market headings such as `═════ ALDI ═════`
 - optional cross-market consolidation using a minimum-item threshold
-- explicit market requests are never moved to another store
+- a configured, enabled store name anywhere in an item (as a complete term) overrides the product's default store, with or without prepositions; explicit requests are never moved by store consolidation
 
 #### Smart store consolidation – fewer stops, shorter shopping trips
 
@@ -222,6 +222,8 @@ Please use the [ioBroker tester thread](https://forum.iobroker.net/topic/85510/t
 ## Changelog
 
 ### 0.6.0 (development; unpublished)
+
+- Detect explicit store names anywhere in shopping-item text, without requiring prepositions; avoid guessing when multiple different stores are named.
 
 - Collect manual shopping-list moves locally and transfer them together using **Transfer changes to Alexa**. Failed transfers retain the draft; batches are validated before writing.
 
