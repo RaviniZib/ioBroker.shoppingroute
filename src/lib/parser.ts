@@ -102,6 +102,8 @@ function escapeMarketRegex(value: string): string {
  * as a complete term in a shopping item. No prepositions are required.
  * Overlapping aliases are resolved by longest match; two different markets are
  * deliberately treated as ambiguous rather than silently choosing a store.
+ * @param text Unmodified shopping item value.
+ * @param markets Configured stores and aliases.
  */
 function extractMarket(text: string, markets: MarketConfig[]): { productText: string; market?: string; explicit: boolean; ambiguousMarketSuffix?: string } {
     const matches: Array<{ market: string; start: number; end: number }> = [];
@@ -131,7 +133,7 @@ function extractMarket(text: string, markets: MarketConfig[]): { productText: st
         const before = text.slice(0, match.start).replace(/\b(?:von|vom|bei|beim|aus|im|für)\s*$/iu, '');
         const after = text.slice(match.end);
         const productText = [before, after].join(' ')
-            .replace(/^[\s,;:()\[\]–—-]+|[\s,;:()\[\]–—-]+$/gu, '')
+            .replace(/^[\s,;:()[\]–—-]+|[\s,;:()[\]–—-]+$/gu, '')
             .replace(/\s+/g, ' ')
             .trim();
         return { productText: productText || text.trim(), market: namedMarkets[0], explicit: true };
