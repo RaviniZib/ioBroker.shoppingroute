@@ -113,7 +113,7 @@ Rückmeldungen zu 0.5.1 bitte im bestehenden [Tester-Thread](https://forum.iobro
 
 Bei der Marktzuordnung gilt:
 
-1. ausdrücklich genannter Markt (`Milch von REWE`)
+1. ausdrücklich genannter Markt an beliebiger Stelle im Artikelnamen (`Milch REWE`, `REWE Milch`, `Milch vom REWE`); ohne fest vorgeschriebene Bindewörter
 2. Artikel-Standardmarkt
 3. temporärer Prioritätsmarkt
 4. Prioritätsmarkt der jeweiligen Alexa-Liste
@@ -158,6 +158,8 @@ ShoppingRoute wird unter der **[MIT-Lizenz](LICENSE)** veröffentlicht. Frühere
 ## Changelog
 
 ### 0.6.0 (Entwicklung, unveröffentlicht)
+
+- Explizite Marktnamen werden als vollständige Begriffe an beliebiger Position im Artikel erkannt und haben stets Vorrang vor dem Standardmarkt; mehrdeutige Mehrfachnennungen werden nicht geraten.
 
 - Manuelle Einkaufslisten-Verschiebungen sammeln und mit **Änderungen an Alexa übertragen** gemeinsam senden. Entwürfe bleiben bei Fehlern erhalten; der ganze Auftrag wird vor dem Schreiben geprüft.
 
