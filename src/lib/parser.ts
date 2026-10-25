@@ -102,6 +102,7 @@ function escapeMarketRegex(value: string): string {
  * as a complete term in a shopping item. No prepositions are required.
  * Overlapping aliases are resolved by longest match; two different markets are
  * deliberately treated as ambiguous rather than silently choosing a store.
+ *
  * @param text Unmodified shopping item value.
  * @param markets Configured stores and aliases.
  */
