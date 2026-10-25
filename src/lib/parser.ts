@@ -12,8 +12,8 @@ const CATEGORY_RULES: Array<{ category: string; terms: string[] }> = [
     { category: 'Brot/Gebäck', terms: ['brot', 'brötchen', 'broetchen', 'baguette', 'toast', 'kuchen', 'torte', 'croissant', 'apfeltasche'] },
     { category: 'Schokolade/Naschen', terms: ['schokolade', 'gummi', 'haribo', 'chips', 'keks', 'bonbon', 'mandel', 'nuss', 'nüsse', 'nuesse', 'sonnenblumenkern', 'kokosraspel'] },
     { category: 'Wurst/Salate/Teigwaren', terms: ['aufschnitt', 'schinken', 'salami', 'leberwurst', 'würst', 'wuerst', 'bacon', 'speck', 'frikadelle', 'fleischsalat', 'eiersalat', 'kartoffelsalat', 'geflügelsalat', 'gefluegelsalat', 'blätterteig', 'blaetterteig', 'pizzateig', 'döner', 'doener'] },
-    { category: 'Milchprodukte', terms: ['milch', 'joghurt', 'quark', 'käse', 'kaese', 'camembert', 'camenbert', 'feta', 'ricotta', 'parmesan', 'gouda', 'sahne', 'butter', 'brunch', 'ei', 'eier'] },
     { category: 'Fleisch/Fisch', terms: ['fleisch', 'hack', 'steak', 'gulasch', 'roulade', 'hähnchen', 'haehnchen', 'kassler', 'lachs', 'fisch', 'sushi'] },
+    { category: 'Milchprodukte', terms: ['milch', 'joghurt', 'quark', 'käse', 'kaese', 'camembert', 'camenbert', 'feta', 'ricotta', 'parmesan', 'gouda', 'sahne', 'butter', 'brunch', 'ei', 'eier'] },
     { category: 'Obst/Gemüse', terms: ['apfel', 'äpfel', 'aepfel', 'banane', 'mango', 'melone', 'nektarine', 'beere', 'avocado', 'karotte', 'möhre', 'moehre', 'gurke', 'tomate', 'paprika', 'zucchini', 'salat', 'rosenkohl', 'kartoffel', 'zwiebel', 'knoblauch', 'zitrone', 'orange', 'obst', 'gemüse', 'gemuese', 'dill', 'petersilie'] },
 ];
 
@@ -92,23 +92,55 @@ export function resolveMarket(value: string | undefined, markets: MarketConfig[]
     return undefined;
 }
 
+function escapeMarketRegex(value: string): string {
+    const special = new Set(['\\', '.', '*', '+', '?', '^', '$', '{', '}', '(', ')', '|', '[', ']']);
+    return [...value].map(character => special.has(character) ? '\\' + character : character).join('');
+}
+
+/**
+ * An enabled, configured market name or alias takes precedence wherever it appears
+ * as a complete term in a shopping item. No prepositions are required.
+ * Overlapping aliases are resolved by longest match; two different markets are
+ * deliberately treated as ambiguous rather than silently choosing a store.
+ */
 function extractMarket(text: string, markets: MarketConfig[]): { productText: string; market?: string; explicit: boolean; ambiguousMarketSuffix?: string } {
-    const normalized = normalize(text);
+    const matches: Array<{ market: string; start: number; end: number }> = [];
 
     for (const entry of marketAliases(markets)) {
-        const patterns = [` von ${entry.alias}`, ` bei ${entry.alias}`];
-        for (const pattern of patterns) {
-            if (normalized.endsWith(pattern)) {
-                return {
-                    productText: text.slice(0, text.length - pattern.length).trim(),
-                    market: entry.market,
-                    explicit: true,
-                };
+        const namePattern = entry.alias.trim().split(/\s+/).map(escapeMarketRegex).join('[\\s-]+');
+        const matcher = new RegExp('(?<![\\p{L}\\p{N}])' + namePattern + '(?![\\p{L}\\p{N}])', 'giu');
+        for (const match of text.matchAll(matcher)) {
+            if (match.index !== undefined) {
+                matches.push({ market: entry.market, start: match.index, end: match.index + match[0].length });
             }
         }
     }
 
-    const ambiguous = text.match(/\s+(?:von|bei)\s+(.+?)\s*$/i);
+    // A compound alias such as "Penny Markt" must beat the overlapping "MARKT".
+    matches.sort((left, right) => left.start - right.start || (right.end - right.start) - (left.end - left.start));
+    const nonOverlapping: typeof matches = [];
+    for (const match of matches) {
+        if (!nonOverlapping.some(other => match.start < other.end && match.end > other.start)) {
+            nonOverlapping.push(match);
+        }
+    }
+
+    const namedMarkets = unique(nonOverlapping.map(match => match.market));
+    if (namedMarkets.length === 1) {
+        const match = nonOverlapping[0];
+        const before = text.slice(0, match.start).replace(/\b(?:von|vom|bei|beim|aus|im|für)\s*$/iu, '');
+        const after = text.slice(match.end);
+        const productText = [before, after].join(' ')
+            .replace(/^[\s,;:()\[\]–—-]+|[\s,;:()\[\]–—-]+$/gu, '')
+            .replace(/\s+/g, ' ')
+            .trim();
+        return { productText: productText || text.trim(), market: namedMarkets[0], explicit: true };
+    }
+    if (namedMarkets.length > 1) {
+        return { productText: text.trim(), explicit: false, ambiguousMarketSuffix: namedMarkets.join(', ') };
+    }
+
+    const ambiguous = text.match(/\s+(?:von|vom|bei|beim)\s+(.+?)\s*$/i);
     return {
         productText: text.trim(),
         explicit: false,
