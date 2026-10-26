@@ -75,7 +75,7 @@ The backend validates every requested move against a fresh list before storing o
 
 ## Release verification (2026-10-26)
 
-- 246 automated tests: PASS; 76 package/schema tests: PASS; 5 isolated ioBroker integration tests: PASS.
+- 248 automated tests: PASS; 76 package/schema tests: PASS; 5 isolated ioBroker integration tests: PASS.
 - GitHub Actions: check/lint and all 9 adapter-test jobs PASS (Node.js 22, 24, 26 on Ubuntu, macOS and Windows).
 - npm package dry run: verified contents, including compiled Bring! bridge and ShoppingRoute Admin pages.
 - User-confirmed live behaviour: existing Bring! lists import; newly added Bring! items appear in ShoppingRoute and follow the configured route on the next sorting run.
@@ -86,3 +86,11 @@ The backend validates every requested move against a fresh list before storing o
 **DE:** Die Produktions-Abhängigkeitsprüfung meldet weiterhin drei High-Funde über die vorgelagerte Bibliothek node-forge in @iobroker/adapter-core. Ein erzwungenes Downgrade auf adapter-core 3.4.2 wurde nicht vorgenommen, um Kompatibilitätsprobleme zu vermeiden. Die Upstream-Warnung bleibt bestehen und sollte beobachtet werden.
 
 **EN:** The production dependency audit still reports three high-severity findings through the upstream node-forge dependency in @iobroker/adapter-core. A forced downgrade to adapter-core 3.4.2 was deliberately avoided. Monitor the upstream advisory for a compatible fix.
+
+## Sprachkurzbefehl ohne Bring!-Skill / Short voice commands without invoking Bring!
+
+**DE – Besonderer Vorteil:** Im Modus **Bring! ↔ Alexa** reicht der normale Alexa-Satz **„Alexa, Milch auf die Einkaufsliste“**. ShoppingRoute verarbeitet den Alexa-Eintrag, ordnet ihn nach Markt und Laufweg ein und übernimmt ihn beim bestätigten Abgleich nach Bring!. Der längere explizite Bring!-Skill-Aufruf ist dafür nicht erforderlich. Wird der Artikel in Bring! erledigt, entfernt ShoppingRoute den zuvor gespiegelten Eintrag aus der aktiven Alexa-Liste (technisch: Entfernen statt Alexa-Erledigt-Markierung). Gültig nur bei aktiviertem bidirektionalem Modus und erfolgreicher Konflikt-/Bestätigungsprüfung.
+
+**EN – Key benefit:** In **Bring! ↔ Alexa** mode, a normal voice request such as **“Alexa, add milk to my shopping list”** is sufficient. ShoppingRoute processes the Alexa list item, applies store/walking-route sorting and mirrors it into Bring! after successful synchronization. No explicit long Bring! skill invocation is necessary. Completing the mirrored item in Bring! removes it from the active Alexa list (delete rather than setting an Alexa completed flag). This requires the enabled bidirectional mode and successful safety/confirmation checks.
+
+The Alexa-to-Bring! addition and Bring!-to-Alexa removal paths are covered by automated reconciliation tests; this description does not claim comprehensive two-cloud-provider fault/recovery live testing.

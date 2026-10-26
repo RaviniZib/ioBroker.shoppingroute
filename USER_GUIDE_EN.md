@@ -17,6 +17,10 @@ Choose a mode:
 3. **Bring! only:** No Alexa installation is required. ShoppingRoute displays Bring! items in its own **Shopping list** page, grouped by store and your configured walking route. This view is read-only; edit items in Bring!.
 4. **Bring! ↔ Alexa:** New and completed items are mirrored both ways. On the **very first synchronization**, each list keeps everything it already contains; only missing items are added.
 
+### Short voice commands without invoking the Bring! skill
+
+In **Bring! ↔ Alexa** mode, you can simply say **“Alexa, add milk to my shopping list.”** The item enters the normal Alexa list, ShoppingRoute applies your store/route sorting and sends it to Bring! on the next confirmed synchronization. You do not need the longer **“Alexa, ask Bring! to add milk …”** invocation for this workflow. When you mark that item done in Bring!, ShoppingRoute removes its mirrored counterpart from the active Alexa shopping list. This operation removes the Alexa item rather than setting its completed flag. Both services must be connected, two-way synchronization must be enabled, and safety checks must permit the write.
+
 Bring! groups items into its own categories and **does not support arbitrary individual item order**. For precise ShoppingRoute walking order use the ShoppingRoute page or the Alexa app. Inside Bring!, you can arrange the existing category order manually.
 
 **Safety:** A confirmed, sufficiently recent Bring! snapshot is required. Duplicate names, conflicting quantities/specifications, oversized batches and unsafe remote states block writes. Interrupted transactions are saved in a persistent journal and not automatically retried until both providers confirm the expected list contents. Never clear a pending journal without checking both lists. Dry Run blocks writes on **both** services.

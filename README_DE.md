@@ -24,6 +24,10 @@ Die vier Betriebsarten stehen unter **Instanz-Einstellungen → Bring!-Integrati
 - **Nur Bring!:** ShoppingRoute zeigt die Bring!-Artikel auf seiner Verwaltungsseite nach Märkten, Produktgruppen und persönlichen Laufwegen sortiert an, ohne Alexa zu benötigen. Diese Ansicht ist absichtlich schreibgeschützt.
 - **Bring! ↔ Alexa:** Neue Artikel und abgeschlossene Artikel werden in beide Richtungen abgeglichen. Beim **allerersten Abgleich** werden ausschließlich fehlende Einträge ergänzt; kein vorhandener Artikel wird gelöscht.
 
+### Alexa-Sprachkurzbefehl für Bring!-Nutzer
+
+**Mit aktiviertem Modus „Bring! ↔ Alexa“ genügt „Alexa, Milch auf die Einkaufsliste“.** Alexa legt den Artikel wie gewohnt auf ihre eigene Einkaufsliste. ShoppingRoute berücksichtigt die Markt- und Laufwegregeln und gleicht den Artikel anschließend mit Bring! ab. Der bisher nötige Umweg über „Alexa, sage Bring! …“ entfällt bei dieser Nutzung. Wird der Artikel später in Bring! als erledigt behandelt, entfernt ShoppingRoute ihn nach bestätigtem Abgleich aus der aktiven Alexa-Liste. Das ist eine Entfernung des Eintrags und kein Setzen eines Alexa-Erledigt-Häkchens. Voraussetzung sind aktivierte bidirektionale Synchronisation, erreichbare Dienste und konfliktfreie Listen.
+
 ### Wichtige Einschränkung von Bring!
 
 **Bring! erlaubt keine freie Reihenfolge einzelner Artikel.** Seine App verwendet eigene Produktkategorien, deren Reihenfolge Nutzer dort einstellen können. ShoppingRoute zeigt daher die optimierte Reihenfolge in seiner eigenen Verwaltungsoberfläche, **nicht** als frei sortierte Reihenfolge innerhalb der Bring!-App. Eine identische Darstellung beider Apps wird nicht versprochen.

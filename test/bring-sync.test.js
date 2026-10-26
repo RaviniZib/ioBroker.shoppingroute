@@ -122,3 +122,22 @@ test('a pending journal survives serialization and blocks re-planning', () => {
     assert.deepEqual(restored.pending, journal.pending);
     assert.throws(() => reconcileBring('bidirectional', restored, old, old), /Pending/);
 });
+
+test('Alexa voice-added milk syncs to Bring! and Bring! completion clears the active Alexa copy', () => {
+    const voiceAdded = [a('voice-milk', '12> Milch', 7)];
+    const importPlan = reconcileBring('bidirectional', baseline([], []), [], voiceAdded);
+    assert.deepEqual(importPlan.addToBring.map(entry => entry.text), ['Milch']);
+    assert.deepEqual(importPlan.removeFromAlexa, []);
+
+    const mirrored = [b('Milch')];
+    const completionPlan = reconcileBring('bidirectional', baseline(mirrored, voiceAdded), [], voiceAdded);
+    assert.deepEqual(completionPlan.removeFromAlexa.map(entry => [entry.alexaId, entry.alexaVersion]), [['voice-milk', 7]]);
+    assert.deepEqual(completionPlan.addToBring, []);
+});
+
+test('one-way Bring import does not transfer an Alexa voice addition into Bring!', () => {
+    const voiceAdded = [a('voice-milk', '12> Milch')];
+    const plan = reconcileBring('import', baseline([], [], 'import'), [], voiceAdded);
+    assert.deepEqual(plan.addToBring, []);
+    assert.deepEqual(plan.removeFromAlexa, []);
+});

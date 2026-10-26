@@ -19,6 +19,10 @@ Du hast vier Betriebsarten zur Auswahl:
 
 **Beim ersten Abgleich werden bestehende Artikel nur ergänzt, niemals gelöscht.** Das betrifft ausdrücklich auch unterschiedliche Artikel in beiden Listen.
 
+### Alexa ohne Bring!-Skill verwenden
+
+Bei eingeschaltetem Modus **Bring! ↔ Alexa** reicht die normale Spracheingabe **„Alexa, Milch auf die Einkaufsliste“**. Der Artikel landet zunächst in der Alexa-Liste; ShoppingRoute sortiert nach deinen Markt- und Laufwegregeln und übernimmt ihn beim nächsten bestätigten Abgleich in Bring!. Den langen Aufruf **„Alexa, sage Bring! …“** brauchst du für diesen Ablauf nicht mehr. Erledigst du Milch anschließend in Bring!, entfernt ShoppingRoute den gespiegelten Eintrag aus der aktiven Alexa-Liste. Dort wird er technisch entfernt, nicht mit einem Häkchen als erledigt markiert. Änderungen werden nur übertragen, wenn die Verbindung funktioniert und keine Sicherheits- oder Konfliktsperre greift.
+
 Bring! selbst sortiert Artikel nach seinen eigenen Produktkategorien. Die App unterstützt **keine frei vorgegebene Reihenfolge einzelner Artikel**. Die individuellen ShoppingRoute-Laufwege siehst du daher auf der ShoppingRoute-Verwaltungsseite beziehungsweise in Alexa. In der Bring!-App kannst du die Reihenfolge der eigenen Kategorien manuell anpassen.
 
 ### Wichtig für den sicheren Betrieb
