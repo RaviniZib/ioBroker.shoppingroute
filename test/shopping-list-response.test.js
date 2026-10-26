@@ -3,8 +3,9 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { ShoppingListEditor } = require('../src-admin/shopping-list-editor');
 const view = { listName: 'SHOP', lists: ['SHOP'], markets: ['REWE', 'LIDL'], items: [{ id: 'gum', text: 'Weckgummis', market: 'REWE', position: 0 }], dryRun: false };
+let editorNumber = 1000;
 function editor(send) {
-    const instance = new ShoppingListEditor({ socket: { sendTo: async (_instance, command, message) => send(command, message) } });
+    const instance = new ShoppingListEditor({ instance: ++editorNumber, socket: { sendTo: async (_instance, command, message) => send(command, message) } });
     instance.setState = patch => { instance.state = { ...instance.state, ...patch }; };
     return instance;
 }
