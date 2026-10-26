@@ -57,5 +57,16 @@
   "ui.items.general.items.minitemspermarket.label": "Мінімальна кількість товарів для додаткового магазину",
   "ui.items.general.items.minitemspermarket.help": "1 вимикає об’єднання. Нижче порога переміщуються лише товари з налаштованими альтернативними магазинами. Явні вказівки магазину ніколи не змінюються.",
   "ui.items.shoppinglisttab.label": "Список покупок",
-  "ui.items.reviewtab.items.reviewitems.items.5.options.3.label": "Прийнято"
+  "ui.items.reviewtab.items.reviewitems.items.5.options.3.label": "Прийнято",
+  "ui.items.bringtab.label": "Інтеграція Bring!",
+  "ui.items.bringtab.info": "За замовчуванням вимкнена. Bring! не підтримує довільне сортування окремих товарів; ShoppingRoute показує попередній перегляд маршруту. Під час першої синхронізації товари не видаляються.",
+  "ui.items.bringtab.mode.label": "Режим Bring!",
+  "ui.items.bringtab.mode.off": "Вимкнено (лише Alexa)",
+  "ui.items.bringtab.mode.import": "Bring! → ShoppingRoute/Alexa (в один бік)",
+  "ui.items.bringtab.mode.bringonly": "Лише Bring! (перегляд маршруту)",
+  "ui.items.bringtab.mode.both": "Bring! ↔ Alexa (двосторонньо)",
+  "ui.items.bringtab.instance.label": "Екземпляр адаптера Bring!",
+  "ui.items.bringtab.list.label": "Список покупок Bring!",
+  "ui.items.bringtab.alexalist.label": "Цільовий список Alexa",
+  "ui.items.bringtab.warning": "Спочатку збережіть екземпляр, потім виберіть список. У разі конфлікту синхронізація зупиняється без видалення даних. Статус: shoppingroute.0.info.bringSyncStatus."
 }

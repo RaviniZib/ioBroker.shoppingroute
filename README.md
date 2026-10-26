@@ -17,7 +17,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT license"></a>
 </p>
 
-> **Current release: 0.5.3**
+> **Current version: 0.6.0 (2026-10-26).**
 > ShoppingRoute is available in the ioBroker **latest** repository.
 
 ## What ShoppingRoute does
@@ -58,6 +58,25 @@ Community and support:
 
 Adapter settings and the backup utility include all 11 standard ioBroker Admin languages. Shopping-list feedback is available in German and English.
 
+## New in 0.6.0: Bring! shopping lists and ShoppingRoute ordering
+
+ShoppingRoute 0.6.0 adds an optional bridge to the existing ioBroker **Bring!** adapter. Existing Alexa users are unaffected because the feature defaults to **Off**. Configure the integration under the new **Bring! integration** settings tab.
+
+- **Off:** Original ShoppingRoute behaviour; Alexa only.
+- **Bring! → ShoppingRoute/Alexa:** One-way import/mirroring from a selected Bring! list to a selected Alexa list, including propagation of subsequently completed Bring! items that were previously mirrored.
+- **Bring! only:** Use the existing ShoppingRoute list view for a read-only preview grouped by market and walking route, even without Alexa.
+- **Bring! ↔ Alexa:** Two-way propagation of new and completed items. The initial merge is additive only; existing entries are never deleted on first connection.
+
+**Short Alexa voice command for Bring! users (two-way sync):** Instead of invoking the Bring! skill explicitly, simply say the normal shopping-list command, e.g. **“Alexa, add milk to my shopping list.”** ShoppingRoute recognizes the Alexa list item, applies its configured market/route sorting and mirrors the product into Bring! at the next confirmed synchronization. Completing it in Bring! removes it from the active Alexa list (a delete, not an Alexa completed checkbox). The **Bring! ↔ Alexa** mode must be enabled and both providers must be reachable without sync conflicts.
+
+Bring! cannot freely rearrange individual shopping items inside its own app. Category order is configurable **in Bring! settings**, but ShoppingRoute's exact route order is available only in the ShoppingRoute view or Alexa. This restriction cannot be bypassed reliably with the documented Bring! adapter API.
+
+Both provider snapshots are checked before writes. Ambiguous duplicates, mismatching specifications, stale Bring! data, write limits or conflicting concurrent changes trigger a safety stop instead of guessed deletions. A persisted transaction journal requires positive confirmation from both providers before accepting the next set of changes. Dry Run prevents **all writes to both apps**. Status and route preview are available in `info.bringSyncStatus` and `info.bringSyncPreview`; recovery details are stored in `data.bringSyncJournal`.
+
+To enable Bring! (start with a test list): save a connected Bring! adapter instance, choose its list, optionally select an enabled Alexa target list, verify the Dry Run first, and only then enable the desired mode. No additional Bring! credentials are required by ShoppingRoute.
+
+**Testing (2026-10-26):** Automated bridge, sorting and safety tests pass. User testing confirms that Bring! lists are imported and newly added Bring! items appear in ShoppingRoute and are assigned on the next sort. Bring! itself cannot reorder individual articles. Live completion/deletion and all bidirectional conflict scenarios are not confirmed by this user test; start with backed-up test lists before enabling two-way mode.
+
 ## What's new in 0.5.3
 
 **Control market assignments from the regular Alexa shopping list on your phone — no extra app and no access to the ioBroker Admin interface required.**
@@ -84,6 +103,10 @@ This release fixes the saving and moving problems reported with the new manageme
 
 Open **ShoppingRoute** in the ioBroker sidebar on your phone. Use the `⋮⋮` handle to drag, or use the arrow buttons and market selector. After updating, fully reload the management page once to load the new interface. Alexa list writes still use the configured rate limits, Dry Run and verification safeguards.
 
+## Manual shopping-list changes
+
+Manual shopping-list moves stay in a browser draft. Move all required items, then press **Transfer changes to Alexa**. Only this button starts one verified Alexa sorting transaction for the complete batch. A failed transfer keeps the draft; **Discard changes** reloads the current list. While a draft is pending, switching lists, adding, deleting and resetting are disabled to preserve the draft. Reloading the same browser tab restores the draft when session storage is available.
+
 ## Main features
 
 - dedicated **ShoppingRoute management page** in the ioBroker sidebar for shopping list, products, markets, product groups, routes, lists and review items
@@ -102,7 +125,7 @@ Open **ShoppingRoute** in the ioBroker sidebar on your phone. Use the `⋮⋮` h
 - global, per-list and temporary priority markets
 - optional market headings such as `═════ ALDI ═════`
 - optional cross-market consolidation using a minimum-item threshold
-- explicit market requests are never moved to another store
+- a configured, enabled store name anywhere in an item (as a complete term) overrides the product's default store, with or without prepositions; explicit requests are never moved by store consolidation
 
 #### Smart store consolidation – fewer stops, shorter shopping trips
 
@@ -199,6 +222,18 @@ ShoppingRoute is still young, so real-world feedback is especially valuable.
 Please use the [ioBroker tester thread](https://forum.iobroker.net/topic/85510/test-adapter-shoppingroute-v0.4.4) for general testing feedback and the [GitHub issue tracker](https://github.com/RaviniZib/ioBroker.shoppingroute/issues) for reproducible bugs or feature requests.
 
 ## Changelog
+
+### 0.6.0 (2026-10-26)
+
+- Detect explicit store names anywhere in shopping-item text, without requiring prepositions; avoid guessing when multiple different stores are named.
+
+- Collect manual shopping-list moves locally and transfer them together using **Transfer changes to Alexa**. Failed transfers retain the draft; batches are validated before writing.
+
+- Opt-in Bring! bridge: one-way import, bidirectional item/completion sync, Bring!-only read-only route view.
+- Crash-safe journal, verified remote snapshots, duplicate and specification conflict checks, bounded writes, full Dry Run support.
+- Bring! integration tab translated into all eleven Admin languages, additional unit tests and updated bilingual documentation.
+- Bring! app still sorts within its own categories and cannot accept arbitrary per-item walking-route order.
+
 
 ### 0.5.3 (2026-10-17)
 

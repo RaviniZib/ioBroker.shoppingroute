@@ -57,5 +57,16 @@
   "ui.items.general.items.minitemspermarket.label": "Minimum items per additional market",
   "ui.items.general.items.minitemspermarket.help": "1 disables consolidation. Below the threshold, only articles with configured alternative available markets may be moved. Explicit phrases such as “from LIDL” or “at ALDI” are never moved.",
   "ui.items.shoppinglisttab.label": "Shopping list",
-  "ui.items.reviewtab.items.reviewitems.items.5.options.3.label": "Accepted"
+  "ui.items.reviewtab.items.reviewitems.items.5.options.3.label": "Accepted",
+  "ui.items.bringtab.label": "Bring! integration",
+  "ui.items.bringtab.info": "Disabled by default. Bring! cannot freely reorder individual items; ShoppingRoute provides a route preview instead. Check Dry Run before enabling. The initial reconciliation never deletes existing items.",
+  "ui.items.bringtab.mode.label": "Bring! operation mode",
+  "ui.items.bringtab.mode.off": "Off (Alexa only, unchanged)",
+  "ui.items.bringtab.mode.import": "Bring! → ShoppingRoute/Alexa (one-way)",
+  "ui.items.bringtab.mode.bringonly": "Bring! only (route preview)",
+  "ui.items.bringtab.mode.both": "Bring! ↔ Alexa (two-way sync)",
+  "ui.items.bringtab.instance.label": "Bring! adapter instance",
+  "ui.items.bringtab.list.label": "Bring! shopping list",
+  "ui.items.bringtab.alexalist.label": "Alexa target list",
+  "ui.items.bringtab.warning": "Save the adapter instance first, then select a list. Conflicting changes stop syncing rather than deleting data. Status: shoppingroute.0.info.bringSyncStatus. Two-way sync requires verified snapshots from both providers."
 }

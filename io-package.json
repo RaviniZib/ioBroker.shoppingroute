@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "shoppingroute",
-    "version": "0.5.3",
+    "version": "0.6.0",
     "titleLang": {
       "en": "ShoppingRoute",
       "de": "ShoppingRoute",
@@ -61,6 +61,19 @@
     "icon": "shoppingroute.png",
     "tier": 3,
     "news": {
+      "0.6.0": {
+        "en": "Optional Bring! integration: one-way import, bidirectional Alexa/Bring! synchronization with verification and conflict safeguards, and a Bring!-only route preview. Disabled by default; Bring! item order cannot be changed.",
+        "de": "Optionale Bring!-Integration: einseitige Übernahme, bidirektionaler Alexa-/Bring!-Abgleich mit Konfliktschutz und Bring!-Laufwegvorschau. Standardmäßig aus; Bring! erlaubt keine freie Artikelsortierung.",
+        "ru": "Необязательная интеграция Bring!: односторонний импорт, двусторонняя синхронизация с Alexa с проверкой и защитой от конфликтов, а также просмотр маршрута Bring!. По умолчанию отключена; порядок товаров в Bring! изменить нельзя.",
+        "pt": "Integração opcional com Bring!: importação unidirecional, sincronização bidirecional com Alexa, verificação e proteção contra conflitos, além de pré-visualização do percurso Bring!. Desativada por predefinição; a ordem dos artigos no Bring! não pode ser alterada.",
+        "nl": "Optionele Bring!-integratie: eenzijdige import, tweerichtingssynchronisatie met Alexa inclusief controles en conflictbeveiliging, en een Bring!-routevoorbeeld. Standaard uitgeschakeld; de artikelvolgorde in Bring! kan niet worden gewijzigd.",
+        "fr": "Intégration Bring! facultative : importation unidirectionnelle, synchronisation bidirectionnelle avec Alexa avec vérification et protection contre les conflits, et aperçu du parcours Bring!. Désactivée par défaut ; l’ordre des articles dans Bring! ne peut pas être modifié.",
+        "it": "Integrazione Bring! facoltativa: importazione unidirezionale, sincronizzazione bidirezionale con Alexa con verifiche e protezione dai conflitti, e anteprima del percorso Bring!. Disattivata per impostazione predefinita; l’ordine degli articoli in Bring! non è modificabile.",
+        "es": "Integración opcional con Bring!: importación unidireccional, sincronización bidireccional con Alexa con verificación y protección ante conflictos, y vista previa del recorrido Bring!. Desactivada por defecto; no es posible cambiar el orden de los artículos en Bring!.",
+        "pl": "Opcjonalna integracja Bring!: import jednokierunkowy, dwukierunkowa synchronizacja z Alexą z weryfikacją i ochroną przed konfliktami oraz podgląd trasy Bring!. Domyślnie wyłączona; kolejności produktów w Bring! nie można zmieniać.",
+        "uk": "Необов’язкова інтеграція Bring!: односторонній імпорт, двостороння синхронізація з Alexa з перевірками та захистом від конфліктів, а також перегляд маршруту Bring!. Типово вимкнена; змінювати порядок товарів у Bring! неможливо.",
+        "zh-cn": "可选的 Bring! 集成：单向导入、带验证和冲突保护的 Alexa 双向同步，以及 Bring! 购物路线预览。默认关闭；无法在 Bring! 中自由调整商品顺序。"
+      },
       "0.5.3": {
         "en": "Adds English command aliases C/E/U/D alongside German W/F/H/R for temporary store changes, permanent assignments and item reordering. D now means Down; F replaces the former permanent D.",
         "de": "Englische Befehle C/E/U/D ergänzen W/F/H/R für temporäre und dauerhafte Marktwechsel sowie Artikelverschiebungen. D bedeutet jetzt Runter, F ersetzt das bisherige dauerhafte D.",
@@ -138,19 +151,6 @@
         "pl": "Używa timerów zarządzanych przez ioBroker dla limitów czasu Alexa i ogranicza news do siedmiu wpisów.",
         "uk": "Використовує таймери ioBroker для тайм-аутів Alexa та обмежує news сімома підтримуваними записами.",
         "zh-cn": "使用 ioBroker 管理的计时器处理 Alexa 超时，并将 news 限制为支持的七个条目。"
-      },
-      "0.4.2": {
-        "en": "Prevents stalled Alexa callbacks, adds direct Amazon list polling, and safely handles additional items and delayed verification without unnecessary sorting stops.",
-        "de": "Verhindert hängende Alexa-Aufrufe, ergänzt den direkten Amazon-Listenabgleich und behandelt zusätzliche Artikel sowie verzögerte Bestätigungen ohne unnötige Sortierstopps.",
-        "ru": "Предотвращает зависание вызовов Alexa, добавляет прямой опрос списков Amazon и обработку новых товаров без лишних остановок сортировки.",
-        "pt": "Evita chamadas Alexa bloqueadas, consulta listas Amazon diretamente e trata artigos adicionais sem paragens desnecessárias.",
-        "nl": "Voorkomt vastlopende Alexa-aanroepen, controleert Amazon-lijsten rechtstreeks en verwerkt extra artikelen zonder onnodige sorteeronderbrekingen.",
-        "fr": "Évite les appels Alexa bloqués, interroge directement les listes Amazon et gère les articles supplémentaires sans arrêt inutile du tri.",
-        "it": "Evita chiamate Alexa bloccate, controlla direttamente le liste Amazon e gestisce articoli aggiuntivi senza arresti inutili.",
-        "es": "Evita llamadas Alexa bloqueadas, consulta listas Amazon directamente y gestiona artículos adicionales sin detener innecesariamente la ordenación.",
-        "pl": "Zapobiega zawieszaniu wywołań Alexa, bezpośrednio sprawdza listy Amazon i obsługuje dodatkowe produkty bez zbędnego zatrzymywania sortowania.",
-        "uk": "Запобігає зависанню викликів Alexa, додає пряме опитування списків Amazon та обробку нових товарів без зайвих зупинок сортування.",
-        "zh-cn": "防止 Alexa 调用挂起，直接轮询 Amazon 清单，并安全处理新增商品和延迟确认，避免不必要的排序停止。"
       }
     },
     "extIcon": "https://raw.githubusercontent.com/RaviniZib/ioBroker.shoppingroute/main/admin/shoppingroute.png",
@@ -695,7 +695,11 @@
     "temporaryPriorityMarket": "",
     "reviewItems": [],
     "marketHeaders": false,
-    "minItemsPerMarket": 1
+    "minItemsPerMarket": 1,
+    "bringSyncMode": "off",
+    "bringInstance": "bring.0",
+    "bringListId": "",
+    "bringAlexaList": "SHOP"
   },
   "objects": [],
   "instanceObjects": [

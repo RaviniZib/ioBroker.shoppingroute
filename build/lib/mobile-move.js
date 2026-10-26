@@ -4,7 +4,7 @@ exports.resolveMobileMarket = resolveMobileMarket;
 exports.resolveMobileMoves = resolveMobileMoves;
 const market_plan_1 = require("./market-plan");
 const prefix_sort_1 = require("./prefix-sort");
-const COMMAND_PATTERN = /^(\d{2})([WD])(.+)$/i;
+const COMMAND_PATTERN = /^(\d{2})([WCFEHUDR])(.+)$/i;
 function normalized(value) {
     return value.trim().normalize('NFKC').toLocaleUpperCase('de-DE');
 }
@@ -21,7 +21,9 @@ function editDistance(left, right) {
     }
     return previous[right.length];
 }
-/** Match configured, enabled markets only; never guess between equally plausible names.
+/**
+ * Match configured, enabled markets only; never guess between equally plausible names.
+ *
  * @param input User-entered destination market.
  * @param markets Configured markets.
  */
@@ -46,7 +48,9 @@ function resolveMobileMarket(input, markets) {
         return undefined;
     return candidates[0].market.name;
 }
-/** Resolve all commands against one unchanged Amazon snapshot, before any writes.
+/**
+ * Resolve all commands against one unchanged Amazon snapshot, before any writes.
+ *
  * @param snapshot Current direct Amazon list snapshot.
  * @param markets Configured markets.
  */
@@ -62,16 +66,20 @@ function resolveMobileMoves(snapshot, markets) {
     const moves = [];
     for (const { item: command, match } of commands) {
         const number = Number(match[1]);
-        const market = resolveMobileMarket(match[3], markets);
+        const letter = match[2].toUpperCase();
+        const mode = { W: 'W', C: 'W', F: 'F', E: 'F', H: 'H', U: 'H', R: 'R', D: 'R' }[letter];
+        const market = mode === 'W' || mode === 'F' ? resolveMobileMarket(match[3], markets) : undefined;
+        const steps = mode === 'H' || mode === 'R' ? Number(match[3]) : undefined;
+        const validArgument = mode === 'W' || mode === 'F' ? Boolean(market) : /^\d{1,2}$/.test(match[3]) && Number.isInteger(steps) && steps > 0;
         const candidates = active.filter(item => !commandIds.has(String(item.id)) &&
             !(0, market_plan_1.isMarketHeader)((0, prefix_sort_1.stripSortPrefix)(item.value), markets) &&
             (0, prefix_sort_1.parseSortPrefix)(item.value)?.number === number);
-        if (!market || candidates.length !== 1 || usedTargets.has(String(candidates[0].id)) ||
+        if (!validArgument || candidates.length !== 1 || usedTargets.has(String(candidates[0].id)) ||
             !Number.isInteger(Number(command.version)) || Number(command.version) <= 0) {
             return { status: 'invalid', moves: [], reason: `Cannot uniquely resolve mobile move ${(0, prefix_sort_1.stripSortPrefix)(command.value)}.` };
         }
         usedTargets.add(String(candidates[0].id));
-        moves.push({ command, target: candidates[0], market, number, mode: match[2].toUpperCase() });
+        moves.push({ command, target: candidates[0], market, steps, number, mode });
     }
     return { status: 'ready', moves };
 }

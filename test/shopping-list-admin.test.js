@@ -19,7 +19,7 @@ test('shopping list Admin tab uses an Admin 8 custom component and safe responsi
     assert.equal(config.tabsStyle.width, 'calc(100% - 100px)');
     assert.match(source, /@media \(max-width: 600px\)/);
     assert.match(source, /draggable:/);
-    assert.match(source, /moveShoppingItem/);
+    assert.match(source, /applyShoppingChanges/);
     assert.match(source, /clearManualShoppingOrder/);
 });
 

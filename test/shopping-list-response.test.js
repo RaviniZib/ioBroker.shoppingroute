@@ -3,8 +3,9 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { ShoppingListEditor } = require('../src-admin/shopping-list-editor');
 const view = { listName: 'SHOP', lists: ['SHOP'], markets: ['REWE', 'LIDL'], items: [{ id: 'gum', text: 'Weckgummis', market: 'REWE', position: 0 }], dryRun: false };
+let editorNumber = 1000;
 function editor(send) {
-    const instance = new ShoppingListEditor({ socket: { sendTo: async (_instance, command, message) => send(command, message) } });
+    const instance = new ShoppingListEditor({ instance: ++editorNumber, socket: { sendTo: async (_instance, command, message) => send(command, message) } });
     instance.setState = patch => { instance.state = { ...instance.state, ...patch }; };
     return instance;
 }
@@ -42,11 +43,11 @@ test('malformed mutation views never replace the last usable view', async () => 
     for (const command of ['moveShoppingItem', 'deleteShoppingItem', 'clearManualShoppingOrder']) {
         const instance = editor(name => name === 'getShoppingList' ? view : { ok: true, view: { items: [] } });
         await instance.load();
-        if (command === 'moveShoppingItem') await instance.move('gum', 'LIDL', 0);
+        if (command === 'moveShoppingItem') { await instance.move('gum', 'LIDL', 0); await instance.applyChanges(); }
         else if (command === 'deleteShoppingItem') await instance.remove('gum');
         else await instance.clearManual();
         assert.ok(instance.state.error, command);
-        assert.deepEqual(instance.state.view, view);
+        assert.deepEqual(instance.state.view, command === 'moveShoppingItem' ? instance.draftView : view);
         assert.doesNotThrow(() => instance.render());
         assert.equal(instance.commandPending, false);
     }

@@ -57,5 +57,16 @@
   "ui.items.general.items.minitemspermarket.label": "每个额外商店的最少商品数",
   "ui.items.general.items.minitemspermarket.help": "设为 1 将关闭合并。低于阈值时，只有配置了其他可用商店的商品才会移动。明确指定商店的说法永远不会更改。",
   "ui.items.shoppinglisttab.label": "购物清单",
-  "ui.items.reviewtab.items.reviewitems.items.5.options.3.label": "已接受"
+  "ui.items.reviewtab.items.reviewitems.items.5.options.3.label": "已接受",
+  "ui.items.bringtab.label": "Bring! 集成",
+  "ui.items.bringtab.info": "默认关闭。Bring! 不支持自由调整单个商品的顺序；ShoppingRoute 提供购物路线预览。首次合并不会删除商品。",
+  "ui.items.bringtab.mode.label": "Bring! 工作模式",
+  "ui.items.bringtab.mode.off": "关闭（仅 Alexa）",
+  "ui.items.bringtab.mode.import": "Bring! → ShoppingRoute/Alexa（单向）",
+  "ui.items.bringtab.mode.bringonly": "仅 Bring!（路线预览）",
+  "ui.items.bringtab.mode.both": "Bring! ↔ Alexa（双向同步）",
+  "ui.items.bringtab.instance.label": "Bring! 适配器实例",
+  "ui.items.bringtab.list.label": "Bring! 购物清单",
+  "ui.items.bringtab.alexalist.label": "目标 Alexa 清单",
+  "ui.items.bringtab.warning": "先保存实例，再选择清单。发生冲突时同步会停止，不会删除数据。状态：shoppingroute.0.info.bringSyncStatus。"
 }
