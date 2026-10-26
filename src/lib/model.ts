@@ -59,6 +59,10 @@ export interface ProductConfig {
 export type LearningMode = 'automatic' | 'review' | 'off';
 
 export interface AdapterConfigShape {
+    bringSyncMode?: 'off' | 'import' | 'bring-only' | 'bidirectional';
+    bringInstance?: string;
+    bringListId?: string;
+    bringAlexaList?: string;
     alexaInstance?: string;
     listName?: string;
     lists?: ShoppingListConfig[];

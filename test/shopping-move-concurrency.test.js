@@ -53,12 +53,22 @@ test('dropping on an item does not also dispatch a drop to its market section', 
     finally { reply.resolve({ ok: true, view: editor.state.view }); await tick(); }
 });
 
-test('two rapid move commands send only one request before React renders busy', async () => {
+test('rapid edits stay local and two transfer clicks send only one batch before React renders', async () => {
     const { editor, calls, reply } = editorFixture();
-    const first = editor.move('gum', 'REWE', 0);
-    const second = editor.move('gum', 'REWE', 1);
-    try { assert.equal(calls.length, 1); }
-    finally { reply.resolve({ ok: true, view: editor.state.view }); await Promise.all([first, second]); }
+    editor.state.view.markets.push('LIDL');
+    editor.state.view.items.push({id:'milk',text:'Milch',market:'REWE',position:1});
+    await editor.move('gum', 'LIDL', 0);
+    await editor.move('milk', 'LIDL', 0);
+    assert.equal(calls.length, 0);
+    assert.equal(editor.draftMoves.length, 2);
+    assert.deepEqual(editor.draftView.items.map(item=>[item.id,item.market,item.position]), [['gum','LIDL',1],['milk','LIDL',0]]);
+    const first=editor.applyChanges(), second=editor.applyChanges();
+    assert.equal(calls.length,1);
+    assert.equal(calls[0][1],'applyShoppingChanges');
+    assert.equal(calls[0][2].moves.length,2);
+    reply.resolve({ok:true,view:editor.draftView});
+    await Promise.all([first,second]);
+    assert.equal(editor.draftMoves.length,0);
 });
 
 test('direct sorting reserves its lock before awaiting the enabled state', async () => {
@@ -122,12 +132,16 @@ test('disabled and failed applies release their lock and report one safety stop'
     assert.equal(adapter.applyingListName, '');
 });
 
-test('a rejected move keeps its error visible after reloading the actual list', async () => {
+test('a rejected batch preserves its draft and visible error', async () => {
     const { editor } = editorFixture(); const view = editor.state.view;
     editor.setState = patch => { editor.state = { ...editor.state, ...patch }; };
-    editor.send = async command => command === 'moveShoppingItem'
+    editor.send = async command => command === 'applyShoppingChanges'
         ? { ok: false, error: 'Safety stop is active.' } : view;
-    await editor.move('gum', 'REWE', 1);
+    editor.state.view.markets.push('LIDL');
+    await editor.move('gum', 'LIDL', 0);
+    await editor.applyChanges();
+    assert.equal(editor.draftMoves.length,1);
+    assert.equal(editor.state.view.items[0].market,'LIDL');
     assert.equal(editor.state.error, 'Safety stop is active.');
     assert.equal(editor.state.busy, '');
     assert.equal(editor.commandPending, false);
@@ -270,15 +284,17 @@ test('a pending mobile move immediately keeps the article at its selected market
     await pending;
 });
 
-test('a pending mobile move immediately explains the Alexa wait', async () => {
+test('only the transfer button starts the Alexa wait', async () => {
     const { editor, calls, reply } = editorFixture();
     editor.state.view.markets = ['REWE', 'LIDL'];
     editor.setState = patch => { editor.state = { ...editor.state, ...patch }; };
-    const pending = editor.move('gum', 'LIDL', 0);
+    await editor.move('gum', 'LIDL', 0);
+    assert.equal(calls.length, 0);
+    const pending = editor.applyChanges();
     assert.equal(calls.length, 1);
     assert.match(editor.state.progress, /Alexa/);
     assert.match(editor.state.progress, /mehrere Minuten|several minutes/);
-    assert.equal(editor.state.busy, 'gum');
+    assert.equal(editor.state.busy, '__apply__');
     const progressNode = elements(editor.render()).find(node => node.key === 'progress');
     assert.equal(progressNode.props.role, 'status');
     assert.equal(progressNode.props['aria-live'], 'polite');

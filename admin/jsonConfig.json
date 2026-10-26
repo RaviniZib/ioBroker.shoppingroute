@@ -261,6 +261,95 @@
         }
       }
     },
+    "bringTab": {
+      "type": "panel",
+      "label": "ui.items.bringtab.label",
+      "items": {
+        "bringInfo": {
+          "type": "infoBox",
+          "text": "ui.items.bringtab.info",
+          "boxType": "info",
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
+        },
+        "bringSyncMode": {
+          "type": "select",
+          "label": "ui.items.bringtab.mode.label",
+          "options": [
+            {
+              "value": "off",
+              "label": "ui.items.bringtab.mode.off"
+            },
+            {
+              "value": "import",
+              "label": "ui.items.bringtab.mode.import"
+            },
+            {
+              "value": "bring-only",
+              "label": "ui.items.bringtab.mode.bringonly"
+            },
+            {
+              "value": "bidirectional",
+              "label": "ui.items.bringtab.mode.both"
+            }
+          ],
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        },
+        "bringInstance": {
+          "type": "instance",
+          "adapter": "bring",
+          "onlyEnabled": true,
+          "label": "ui.items.bringtab.instance.label",
+          "xs": 12,
+          "sm": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        },
+        "bringListId": {
+          "type": "selectSendTo",
+          "command": "getBringLists",
+          "manual": false,
+          "noTranslation": true,
+          "label": "ui.items.bringtab.list.label",
+          "newLine": true,
+          "xs": 12,
+          "sm": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        },
+        "bringAlexaList": {
+          "type": "selectSendTo",
+          "command": "getAlexaLists",
+          "manual": false,
+          "noTranslation": true,
+          "label": "ui.items.bringtab.alexalist.label",
+          "xs": 12,
+          "sm": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        },
+        "bringWarning": {
+          "type": "staticText",
+          "text": "ui.items.bringtab.warning",
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
+        }
+      }
+    },
     "listsTab": {
       "type": "panel",
       "label": "ui.items.liststab.label",

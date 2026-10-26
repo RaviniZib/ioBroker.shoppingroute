@@ -57,5 +57,16 @@
   "ui.items.general.items.minitemspermarket.label": "Mindestanzahl Artikel pro zusätzlichem Markt",
   "ui.items.general.items.minitemspermarket.help": "1 deaktiviert die Zusammenlegung. Unterhalb der Mindestzahl werden nur Artikel verschoben, für die alternative verfügbare Märkte hinterlegt sind. Explizite Angaben wie „von LIDL“ oder „bei ALDI“ werden niemals verschoben.",
   "ui.items.shoppinglisttab.label": "Einkaufsliste",
-  "ui.items.reviewtab.items.reviewitems.items.5.options.3.label": "Übernommen"
+  "ui.items.reviewtab.items.reviewitems.items.5.options.3.label": "Übernommen",
+  "ui.items.bringtab.label": "Bring!-Integration",
+  "ui.items.bringtab.info": "Die Anbindung ist standardmäßig ausgeschaltet. Bring! kann Artikel nicht frei sortieren; der Laufweg wird für Bring! als ShoppingRoute-Vorschau bereitgestellt. Vor dem Aktivieren bitte Dry-Run prüfen. Vorhandene Listen bleiben beim ersten Abgleich erhalten.",
+  "ui.items.bringtab.mode.label": "Bring!-Betriebsart",
+  "ui.items.bringtab.mode.off": "Aus (nur Alexa, unverändert)",
+  "ui.items.bringtab.mode.import": "Bring! → ShoppingRoute/Alexa (einseitig)",
+  "ui.items.bringtab.mode.bringonly": "Nur Bring! (Laufwegvorschau)",
+  "ui.items.bringtab.mode.both": "Bring! ↔ Alexa (bidirektional)",
+  "ui.items.bringtab.instance.label": "Bring!-Adapterinstanz",
+  "ui.items.bringtab.list.label": "Bring!-Einkaufsliste",
+  "ui.items.bringtab.alexalist.label": "Alexa-Zielliste",
+  "ui.items.bringtab.warning": "Neue Instanz zuerst speichern, dann die Liste wählen. Bei Konflikten stoppt die Synchronisierung ohne Daten zu löschen. Status: shoppingroute.0.info.bringSyncStatus. Zwei-Wege-Abgleich erfordert einen bestätigten Listenstand beider Anbieter."
 }

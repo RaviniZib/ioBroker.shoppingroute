@@ -49,9 +49,11 @@ const review_tools_1 = require("./lib/review-tools");
 const manual_order_1 = require("./lib/manual-order");
 const state_change_1 = require("./lib/state-change");
 const mobile_move_1 = require("./lib/mobile-move");
+const bring_sync_1 = require("./lib/bring-sync");
+const bring_io_1 = require("./lib/bring-io");
 const config_protection_1 = require("./lib/config-protection");
 const direct_sort_lifecycle_1 = require("./lib/direct-sort-lifecycle");
-const VERSION = '0.5.2';
+const VERSION = '0.6.0';
 const COLLECT_WINDOW_MS = 5000;
 class MissingAlexaListError extends Error {
 }
@@ -152,6 +154,8 @@ class ShoppingRoute extends utils.Adapter {
     alexaRemote2Version = 'unknown';
     compatibilityDetail = 'Direct Alexa session has not been initialized yet.';
     lastCompatibilityTest = 'Not executed yet.';
+    bringPollTimer;
+    bringSyncRunning = false;
     constructor(options = {}) {
         super({ ...options, name: 'shoppingroute' });
         this.on('ready', this.onReady.bind(this));
@@ -170,6 +174,13 @@ class ShoppingRoute extends utils.Adapter {
             : [{ name: String(this.cfg.listName || 'SHOP').trim() || 'SHOP', enabled: true, priorityMarket: '' }];
     }
     listStateId(listName) { return `${this.alexaInstance}.Lists.${listName}.json`; }
+    get bringMode() {
+        const raw = String(this.cfg.bringSyncMode || 'off');
+        return raw === 'import' || raw === 'bring-only' || raw === 'bidirectional' ? raw : 'off';
+    }
+    get bringInstance() { return String(this.cfg.bringInstance || 'bring.0').trim(); }
+    get bringListId() { return String(this.cfg.bringListId || '').trim(); }
+    get bringAlexaList() { return String(this.cfg.bringAlexaList || this.cfg.listName || 'SHOP').trim(); }
     get markets() {
         return (Array.isArray(this.cfg.markets) ? this.cfg.markets : []).filter(market => market?.name && market.enabled !== false);
     }
@@ -370,6 +381,13 @@ class ShoppingRoute extends utils.Adapter {
         this.temporaryPriorityMarket = tempRaw === '__none__' ? '' : normalizeMarketName(tempRaw);
         await this.setStateAsync('control.temporaryPriorityMarket', this.temporaryPriorityMarket || '__none__', true);
         this.subscribeStates('control.*');
+        await this.ensureBringSyncStates();
+        if (this.bringMode === 'bring-only') {
+            await this.refreshExports();
+            await this.updateFeedbackReport();
+            this.armBringPoll(1000);
+            return;
+        }
         for (const list of this.listConfigs)
             this.subscribeForeignStates(this.listStateId(list.name));
         let stateConnected = false;
@@ -409,6 +427,7 @@ class ShoppingRoute extends utils.Adapter {
         this.log.debug('Direct sorting uses visible prefixes 00>–99>; Alexa2 list states are used only as an external trigger source.');
         this.scheduleAll(COLLECT_WINDOW_MS);
         this.armDirectPoll(DIRECT_POLL_BASE_MS);
+        this.armBringPoll(1000);
     }
     async discoverAlexaLists(instanceName = this.alexaInstance) {
         const instance = String(instanceName || this.alexaInstance).trim() || this.alexaInstance;
@@ -439,6 +458,33 @@ class ShoppingRoute extends utils.Adapter {
         return matched?.name || this.listConfigs[0]?.name || '';
     }
     async buildShoppingListView(listName, confirmedOrder = false) {
+        if (this.bringMode === 'bring-only') {
+            if (!/^[\da-f-]{36}$/i.test(this.bringListId))
+                throw new Error('Select a Bring! list first.');
+            const state = await this.getForeignStateAsync(this.bringInstance + '.' + this.bringListId + '.content');
+            if (!state?.ack)
+                throw new Error('No confirmed Bring! list snapshot.');
+            const bringItems = (0, bring_sync_1.parseBringContent)(state.val);
+            const source = bringItems.map((entry, index) => ({
+                id: 'bring-' + index, value: entry.text, completed: false, version: 1,
+            }));
+            const desired = (0, prefix_sort_1.buildPrefixTargets)(source, this.markets, this.routes, this.products, this.fallbackMarket, this.priorityMarket, this.minimumItemsPerMarket, this.marketHeadersEnabled, [], 'BRING');
+            const markets = [...this.markets.map(entry => entry.name)];
+            if (!markets.includes(this.fallbackMarket))
+                markets.push(this.fallbackMarket);
+            const positions = new Map();
+            const items = desired.filter(entry => entry.id && !(0, market_plan_1.isMarketHeader)(entry.originalText, this.markets))
+                .map(entry => {
+                const market = entry.market || this.fallbackMarket;
+                const position = positions.get(market) || 0;
+                positions.set(market, position + 1);
+                return {
+                    id: String(entry.id), text: entry.originalText, market,
+                    category: entry.category, position, manual: false,
+                };
+            });
+            return { listName: 'BRING', lists: ['BRING'], markets, items, dryRun: true };
+        }
         const resolvedList = this.configuredListName(listName);
         if (!resolvedList)
             throw new Error('No managed Alexa shopping list is configured.');
@@ -526,46 +572,60 @@ class ShoppingRoute extends utils.Adapter {
                 return { ok: false, error: 'Dry Run is active. Disable Dry Run before changing the Alexa list.', view: before };
             if (!(await this.isEnabled()))
                 return { ok: false, error: 'ShoppingRoute is disabled.', view: before };
-            if (this.applyingListName)
-                return { ok: false, error: 'A shopping-list update is already running. Please try again.', view: before };
-            const requestedId = String(message?.itemId || '').trim();
-            const text = (0, prefix_sort_1.stripSortPrefix)(String(message?.itemText || '').trim());
-            const matches = text ? before.items.filter(entry => (0, prefix_sort_1.stripSortPrefix)(entry.text) === text) : [];
-            // Amazon suffix rebuilds replace IDs. Rebind only an unambiguous item,
-            // never guess between duplicate product names.
-            const item = before.items.find(entry => entry.id === requestedId) || (matches.length === 1 ? matches[0] : undefined);
-            if (!item)
-                return { ok: false, error: 'The selected shopping-list item no longer exists.', view: before };
-            const itemId = item.id;
-            const targetMarket = String(message?.targetMarket || '').trim();
-            if (!before.markets.some(market => market.toLocaleLowerCase('de') === targetMarket.toLocaleLowerCase('de'))) {
-                return { ok: false, error: 'The selected target market is not available.', view: before };
-            }
-            const targetCount = before.items.filter(entry => entry.market === targetMarket && entry.id !== itemId).length;
-            const targetPosition = Math.max(0, Math.min(targetCount, Math.floor(Number(message?.targetPosition) || 0)));
-            if (item.market === targetMarket && item.position === targetPosition)
-                return { ok: true, view: before };
+            const moves = Array.isArray(message?.moves) ? message.moves : [message];
+            if (!moves.length)
+                return { ok: false, error: 'Invalid number of shopping-list changes.', view: before };
             const previous = this.manualOverrides.map(entry => ({ ...entry }));
-            this.manualOverrides = (0, manual_order_1.moveManualOverride)(this.manualOverrides, {
-                listName,
-                itemId,
-                originalText: item.text,
-                fromMarket: item.market,
-                fromPosition: item.position,
-                toMarket: targetMarket,
-                toPosition: targetPosition,
-            });
-            await this.persistManualOverrides();
-            await this.setStateAsync('info.lastError', '', true);
-            this.prepareImmediateApply(listName);
-            await this.startApply(listName, true);
-            const error = String((await this.getStateAsync('info.lastError'))?.val || '');
-            if (error) {
+            let overrides = previous.map(entry => ({ ...entry }));
+            const draft = before.items.map(entry => ({ ...entry }));
+            // Validate the entire batch against a fresh list before persisting or writing to Alexa.
+            for (const move of moves) {
+                const requestedId = String(move?.itemId || '').trim();
+                const text = (0, prefix_sort_1.stripSortPrefix)(String(move?.itemText || '').trim());
+                const matches = text ? draft.filter(entry => (0, prefix_sort_1.stripSortPrefix)(entry.text) === text) : [];
+                const item = draft.find(entry => entry.id === requestedId && (!text || (0, prefix_sort_1.stripSortPrefix)(entry.text) === text))
+                    || (matches.length === 1 ? matches[0] : undefined);
+                if (!item)
+                    return { ok: false, error: 'The selected shopping-list item no longer exists.', view: before };
+                const targetMarket = before.markets.find(market => market.toLocaleLowerCase('de') === String(move?.targetMarket || '').trim().toLocaleLowerCase('de'));
+                if (!targetMarket)
+                    return { ok: false, error: 'The selected target market is not available.', view: before };
+                const byPosition = (a, b) => a.position - b.position;
+                const source = draft.filter(entry => entry.market === item.market && entry.id !== item.id).sort(byPosition);
+                const target = item.market === targetMarket ? source :
+                    draft.filter(entry => entry.market === targetMarket && entry.id !== item.id).sort(byPosition);
+                const targetPosition = Math.max(0, Math.min(target.length, Math.floor(Number(move?.targetPosition) || 0)));
+                if (item.market === targetMarket && item.position === targetPosition)
+                    continue;
+                overrides = (0, manual_order_1.moveManualOverride)(overrides, {
+                    listName, itemId: item.id, originalText: item.text,
+                    fromMarket: item.market, fromPosition: item.position,
+                    toMarket: targetMarket, toPosition: targetPosition,
+                });
+                source.forEach((entry, index) => { entry.position = index; });
+                item.market = targetMarket;
+                item.manual = true;
+                target.splice(targetPosition, 0, item);
+                target.forEach((entry, index) => { entry.position = index; });
+            }
+            if (JSON.stringify(overrides) === JSON.stringify(previous))
+                return { ok: true, view: before };
+            this.manualOverrides = overrides;
+            try {
+                await this.persistManualOverrides();
+                await this.setStateAsync('info.lastError', '', true);
+                this.prepareImmediateApply(listName);
+                await this.startApply(listName, true);
+                const error = String((await this.getStateAsync('info.lastError'))?.val || '');
+                if (error)
+                    throw new Error(error);
+                return { ok: true, view: await this.buildShoppingListView(listName) };
+            }
+            catch (error) {
                 this.manualOverrides = previous;
                 await this.persistManualOverrides();
-                return { ok: false, error, view: await this.buildShoppingListView(listName, true) };
+                return { ok: false, error: error instanceof Error ? error.message : String(error), view: before };
             }
-            return { ok: true, view: await this.buildShoppingListView(listName) };
         });
     }
     async createAlexaList(message) {
@@ -676,9 +736,196 @@ class ShoppingRoute extends utils.Adapter {
             return { ok: true, view: await this.buildShoppingListView(listName) };
         });
     }
+    async ensureBringSyncStates() {
+        for (const id of ['info.bringSyncStatus', 'info.bringSyncPreview', 'data.bringSyncJournal']) {
+            await this.setObjectNotExistsAsync(id, {
+                type: 'state',
+                common: { name: id, type: 'string', role: 'json', read: true, write: false },
+                native: {},
+            });
+        }
+    }
+    armBringPoll(delay) {
+        if (this.isUnloading || this.bringMode === 'off')
+            return;
+        if (this.bringPollTimer)
+            this.clearTimeout(this.bringPollTimer);
+        this.bringPollTimer = this.setTimeout(() => {
+            this.bringPollTimer = undefined;
+            void this.runBringSync();
+        }, delay);
+    }
+    async bringStatus(status, message, details = {}) {
+        await this.setStateAsync('info.bringSyncStatus', JSON.stringify({
+            time: new Date().toISOString(), mode: this.bringMode, status, message, ...details,
+        }), true);
+    }
+    async bringRoutePreview(items) {
+        const source = items.map((entry, index) => ({
+            id: 'bring-' + index, value: entry.text, completed: false, version: 1,
+        }));
+        const desired = (0, prefix_sort_1.buildPrefixTargets)(source, this.markets, this.routes, this.products, this.fallbackMarket, this.priorityMarket, this.minimumItemsPerMarket, this.marketHeadersEnabled, [], 'BRING');
+        const rows = desired.filter(entry => entry.id && !(0, market_plan_1.isMarketHeader)(entry.originalText, this.markets))
+            .map(entry => ({ text: entry.originalText, market: entry.market, category: entry.category }));
+        await this.setStateAsync('info.bringSyncPreview', JSON.stringify(rows, null, 2), true);
+    }
+    async runBringSync() {
+        if (this.bringSyncRunning || this.isUnloading || this.bringMode === 'off')
+            return;
+        this.bringSyncRunning = true;
+        try {
+            if (!/^bring\.\d+$/.test(this.bringInstance) || !/^[\da-f-]{36}$/i.test(this.bringListId)) {
+                throw new Error('Select a valid Bring! instance and list before enabling sync.');
+            }
+            const namespace = this.bringInstance + '.' + this.bringListId;
+            const connected = await this.getForeignStateAsync(this.bringInstance + '.info.connection');
+            if (connected?.val !== true)
+                throw new Error('Bring! is not connected.');
+            const state = await this.getForeignStateAsync(namespace + '.content');
+            if (!state || !state.ack || Date.now() - Number(state.ts || 0) > 300_000) {
+                throw new Error('Bring! content is stale or unconfirmed.');
+            }
+            const bringItems = (0, bring_sync_1.parseBringContent)(state.val);
+            await this.bringRoutePreview(bringItems);
+            if (this.bringMode === 'bring-only') {
+                await this.setStateAsync('info.connection', true, true);
+                await this.bringStatus('preview', 'Route preview refreshed; Bring! controls its own item ordering.', {
+                    items: bringItems.length,
+                });
+                return;
+            }
+            const target = this.listConfigs.find(entry => entry.name === this.bringAlexaList);
+            if (!target)
+                throw new Error('Selected Alexa shopping list is not enabled.');
+            if (this.applyingListName || this.manualCommandPending || this.directPollRunning) {
+                await this.bringStatus('busy', 'Another Alexa operation is running; synchronization deferred.');
+                return;
+            }
+            const listId = await this.directListId(target.name);
+            const alexaSnapshot = await this.readDirectItems(listId);
+            const alexaItems = (0, bring_sync_1.parseAlexaContent)(alexaSnapshot, this.markets);
+            (0, bring_sync_1.indexBridgeItems)(bringItems, 'Bring!');
+            (0, bring_sync_1.indexBridgeItems)(alexaItems, 'Alexa');
+            const scope = [this.bringInstance, this.bringListId, target.name, this.bringMode].join('|');
+            const journalState = await this.getStateAsync('data.bringSyncJournal');
+            const previous = (0, bring_sync_1.parseBridgeBaseline)(journalState?.val);
+            if (previous && (previous.scope !== scope || previous.mode !== this.bringMode)) {
+                throw new Error('Bridge settings changed; previous journal must be reviewed before reinitializing.');
+            }
+            if (previous?.pending) {
+                const pending = previous.pending;
+                const confirmed = (0, bring_sync_1.itemsMatchExpected)(bringItems, pending.bring) &&
+                    (0, bring_sync_1.itemsMatchExpected)(alexaItems, pending.alexa);
+                if (confirmed) {
+                    await this.setStateAsync('data.bringSyncJournal', (0, bring_sync_1.serializeBridgeBaseline)({
+                        version: 1, scope, mode: this.bringMode,
+                        bring: pending.bring, alexa: pending.alexa,
+                    }), true);
+                    await this.bringStatus('synced', 'Provider snapshots verified.', {
+                        bringItems: bringItems.length, alexaItems: alexaItems.length,
+                    });
+                }
+                else {
+                    const timedOut = Date.now() - Date.parse(pending.createdAt) > 600_000;
+                    await this.bringStatus(timedOut ? 'blocked' : 'verifying', timedOut ? 'Sync timed out. Check both lists and the journal; no further writes.'
+                        : 'Waiting for confirmation of the previous bridge transaction.');
+                }
+                return;
+            }
+            const plan = (0, bring_sync_1.reconcileBring)(this.bringMode, previous, bringItems, alexaItems);
+            const count = plan.addToBring.length + plan.removeFromBring.length +
+                plan.addToAlexa.length + plan.removeFromAlexa.length;
+            if (!count) {
+                await this.setStateAsync('data.bringSyncJournal', (0, bring_sync_1.serializeBridgeBaseline)({
+                    version: 1, scope, mode: this.bringMode,
+                    bring: plan.expectedBring, alexa: plan.expectedAlexa,
+                }), true);
+                await this.bringStatus('synced', 'No changes needed.', {
+                    bringItems: bringItems.length, alexaItems: alexaItems.length,
+                });
+                return;
+            }
+            if (count > 30 || plan.expectedAlexa.length +
+                (this.marketHeadersEnabled ? this.markets.length : 0) > MAX_ACTIVE_ITEMS) {
+                throw new Error('Too many bridge writes or Alexa list items; no write.');
+            }
+            for (const entry of plan.removeFromAlexa) {
+                if (!entry.alexaId || !Number.isInteger(entry.alexaVersion) || Number(entry.alexaVersion) < 1) {
+                    throw new Error('Cannot remove an Alexa entry without its current version.');
+                }
+            }
+            if (this.dryRun || !(await this.isEnabled())) {
+                await this.bringStatus('preview', 'Dry Run or sorting disabled; no changes made.', {
+                    addToBring: plan.addToBring.length, addToAlexa: plan.addToAlexa.length,
+                    removeFromBring: plan.removeFromBring.length, removeFromAlexa: plan.removeFromAlexa.length,
+                });
+                return;
+            }
+            if (this.applyingListName || this.manualCommandPending || this.isUnloading)
+                return;
+            // Acquire the same writer mutex used by the ShoppingRoute Admin.
+            this.manualCommandPending = true;
+            try {
+                // Persist the recovery barrier BEFORE any provider write.
+                const pending = {
+                    version: 1, scope, mode: this.bringMode,
+                    bring: previous?.bring || [...(0, bring_sync_1.indexBridgeItems)(bringItems, 'Bring!').keys()].sort(),
+                    alexa: previous?.alexa || [...(0, bring_sync_1.indexBridgeItems)(alexaItems, 'Alexa').keys()].sort(),
+                    pending: {
+                        createdAt: new Date().toISOString(),
+                        bring: plan.expectedBring,
+                        alexa: plan.expectedAlexa,
+                    },
+                };
+                await this.setStateAsync('data.bringSyncJournal', (0, bring_sync_1.serializeBridgeBaseline)(pending), true);
+                const client = await this.initializeDirectClient();
+                // Additions first: on partial failure at least one source still owns each item.
+                for (const entry of plan.addToBring) {
+                    await (0, bring_io_1.sendBringCommand)(this, namespace, 'saveItem', entry.text);
+                }
+                if (plan.addToAlexa.length) {
+                    await this.beforeDirectWrite();
+                    await this.amazonCall(undefined, () => client.batchCreate(listId, plan.addToAlexa.map(entry => entry.text)));
+                    await this.recordDirectWrite();
+                }
+                for (const entry of plan.removeFromBring) {
+                    await (0, bring_io_1.sendBringCommand)(this, namespace, 'moveToRecentContent', entry.name);
+                }
+                for (const entry of plan.removeFromAlexa) {
+                    await this.beforeDirectWrite();
+                    await this.amazonCall(undefined, () => client.deleteItem(listId, entry.alexaId, Number(entry.alexaVersion)));
+                    await this.recordDirectWrite();
+                }
+                await this.bringStatus('verifying', 'Writes submitted, waiting for provider confirmation.', {
+                    addToBring: plan.addToBring.length, addToAlexa: plan.addToAlexa.length,
+                    removeFromBring: plan.removeFromBring.length, removeFromAlexa: plan.removeFromAlexa.length,
+                });
+                if (plan.addToAlexa.length || plan.removeFromAlexa.length) {
+                    this.scheduleAll(COLLECT_WINDOW_MS);
+                }
+            }
+            finally {
+                this.manualCommandPending = false;
+            }
+        }
+        catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            this.log.warn('Bring! bridge: ' + message);
+            await this.bringStatus('blocked', message);
+        }
+        finally {
+            this.bringSyncRunning = false;
+            this.armBringPoll(90_000);
+        }
+    }
     async onMessage(obj) {
         if (!obj?.callback)
             return;
+        if (this.bringMode === 'bring-only' && ['createAlexaList', 'addShoppingItem', 'moveShoppingItem',
+            'deleteShoppingItem', 'clearManualShoppingOrder', 'applyShoppingChanges'].includes(obj.command)) {
+            this.sendTo(obj.from, obj.command, { ok: false, error: 'Bring! route preview is read-only.' }, obj.callback);
+            return;
+        }
         if (obj.command === 'createAlexaList' || obj.command === 'addShoppingItem') {
             try {
                 const result = obj.command === 'createAlexaList'
@@ -722,7 +969,7 @@ class ShoppingRoute extends utils.Adapter {
             }
             return;
         }
-        if (obj.command === 'moveShoppingItem') {
+        if (obj.command === 'moveShoppingItem' || obj.command === 'applyShoppingChanges') {
             const requestId = String(obj.message?.requestId || '').trim();
             if (!requestId) {
                 this.sendTo(obj.from, obj.command, { ok: false, error: 'Missing move request ID.' }, obj.callback);
@@ -828,6 +1075,25 @@ class ShoppingRoute extends utils.Adapter {
             this.sendTo(obj.from, obj.command, options, obj.callback);
             return;
         }
+        if (obj.command === 'getBringLists') {
+            try {
+                const instance = String(obj.message?.bringInstance || this.bringInstance).trim();
+                if (!/^bring\.\d+$/.test(instance))
+                    throw new Error('Invalid Bring! instance.');
+                const objects = await this.getForeignObjectsAsync(instance + '.*', 'channel');
+                const options = Object.entries(objects).filter(([id]) => id.startsWith(instance + '.') && /^[0-9a-f-]{36}$/i.test(id.slice(instance.length + 1)))
+                    .map(([id, entry]) => ({
+                    value: id.slice(instance.length + 1),
+                    label: typeof entry.common?.name === 'string' ? entry.common.name : id,
+                }));
+                this.sendTo(obj.from, obj.command, options, obj.callback);
+            }
+            catch (error) {
+                this.log.warn('Bring! list discovery failed: ' + String(error));
+                this.sendTo(obj.from, obj.command, [], obj.callback);
+            }
+            return;
+        }
         if (obj.command === 'getAlexaLists' || obj.command === 'getLists') {
             const instance = String(obj.message?.alexaInstance || this.alexaInstance).trim() || this.alexaInstance;
             const lists = await this.discoverAlexaLists(instance);
@@ -925,6 +1191,8 @@ class ShoppingRoute extends utils.Adapter {
     }
     onUnload(callback) {
         this.isUnloading = true;
+        if (this.bringPollTimer)
+            this.clearTimeout(this.bringPollTimer);
         if (this.directPollTimer)
             this.clearTimeout(this.directPollTimer);
         for (const state of this.listStates.values())
@@ -1233,11 +1501,45 @@ class ShoppingRoute extends utils.Adapter {
             for (const move of mobile.moves) {
                 // D modifies the product catalogue; W only creates a temporary list override.
                 const parsed = (0, parser_1.parseItem)((0, prefix_sort_1.stripSortPrefix)(move.target.value), this.markets, this.products, this.fallbackMarket, this.priorityMarketForList(listName));
-                if (move.mode === 'D' && (!parsed.productText || parsed.explicitMarket)) {
+                if (move.mode === 'F' && (!parsed.productText || parsed.explicitMarket)) {
                     this.log.warn(`${listName}: permanent move needs an unambiguous product without an explicit market suffix.`);
                     return;
                 }
                 const previous = this.manualOverrides.map(entry => ({ ...entry }));
+                if (move.mode === 'H' || move.mode === 'R') {
+                    // Derive the current route, ignoring command entries. Only real products in the
+                    // target's existing market count as steps; headings never count.
+                    const commandIds = new Set(mobile.moves.map(entry => String(entry.command.id)));
+                    const routeSnapshot = snapshot.filter(entry => !commandIds.has(String(entry.id)));
+                    const ordered = (0, prefix_sort_1.buildPrefixTargets)(routeSnapshot, this.markets, this.routes, this.products, this.fallbackMarket, this.priorityMarketForList(listName), this.minimumItemsPerMarket, this.marketHeadersEnabled, this.manualOverrides, listName).filter(entry => entry.id && !(0, market_plan_1.isMarketHeader)(entry.originalText, this.markets));
+                    const target = ordered.find(entry => String(entry.id) === String(move.target.id));
+                    if (!target) {
+                        this.log.warn(`${listName}: mobile position target is no longer in the current route.`);
+                        return;
+                    }
+                    const group = ordered.filter(entry => entry.market === target.market);
+                    const from = group.findIndex(entry => String(entry.id) === String(move.target.id));
+                    const direction = move.mode === 'H' ? -1 : 1;
+                    const to = Math.max(0, Math.min(group.length - 1, from + direction * move.steps));
+                    if (from !== to) {
+                        const reordered = [...group];
+                        const [moving] = reordered.splice(from, 1);
+                        reordered.splice(to, 0, moving);
+                        const groupIds = new Set(reordered.map(entry => String(entry.id)));
+                        this.manualOverrides = (0, manual_order_1.normalizeManualOverrides)([
+                            ...this.manualOverrides.filter(entry => !(entry.listName === listName && groupIds.has(entry.itemId))),
+                            ...reordered.map((entry, position) => ({
+                                listName,
+                                itemId: String(entry.id),
+                                originalText: (0, prefix_sort_1.stripSortPrefix)(entry.originalText),
+                                market: target.market,
+                                position,
+                                updatedAt: new Date().toISOString(),
+                            })),
+                        ]);
+                        await this.persistManualOverrides();
+                    }
+                }
                 if (move.mode === 'W') {
                     this.manualOverrides = (0, manual_order_1.normalizeManualOverrides)([
                         ...this.manualOverrides.filter(entry => !(entry.listName === listName && entry.itemId === String(move.target.id))),
@@ -1277,7 +1579,7 @@ class ShoppingRoute extends utils.Adapter {
                     this.log.warn(`${listName}: mobile move failed; remaining commands were left intact: ${String(error)}`);
                     return;
                 }
-                if (move.mode === 'D') {
+                if (move.mode === 'F') {
                     const product = (0, parser_1.findProduct)(parsed.productText, this.products);
                     if (product) {
                         this.runtimeProducts = this.runtimeProducts.map(entry => entry === product ? { ...entry, defaultMarket: move.market } : entry);
@@ -1299,7 +1601,7 @@ class ShoppingRoute extends utils.Adapter {
                     this.manualOverrides = (0, manual_order_1.normalizeManualOverrides)(this.manualOverrides.filter(entry => !(entry.listName === listName && entry.itemId === String(move.target.id))));
                     await this.persistManualOverrides();
                 }
-                this.log.info(`${listName}: mobile ${move.mode} move ${String(move.number).padStart(2, '0')} -> ${move.market} confirmed.`);
+                this.log.info(`${listName}: mobile ${move.mode} move ${String(move.number).padStart(2, '0')} -> ${move.market ?? `${move.steps} positions`} confirmed.`);
             }
         }
         if ((0, sorter_1.activeItems)(snapshot).length > MAX_ACTIVE_ITEMS)

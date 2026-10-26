@@ -154,7 +154,7 @@ function localizedMoveError(message) {
         'Move status is no longer available.': 'Der Status der Verschiebung ist nicht mehr verfügbar.',
     };
     return text(
-        known[value] || 'Der Artikel konnte nicht verschoben werden. Bitte die Liste neu laden und erneut versuchen.',
+        known[value] || `Die Übertragung wurde nicht bestätigt. Deine Änderungen bleiben erhalten. Details: ${value}`,
         value || 'The item could not be moved. Please reload the list and try again.',
     );
 }
@@ -164,6 +164,8 @@ class ShoppingListEditor extends React.Component {
         super(props);
         this.state = { view: null, loading: true, busy: '', error: '', newItem: '', progress: '' };
         this.commandPending = false;
+        this.draftMoves = [];
+        this.draftView = null;
         this.visitedMarkets = new Set();
     }
 
@@ -186,7 +188,7 @@ class ShoppingListEditor extends React.Component {
 
     async addItem() {
         const value = String(this.state.newItem || '').trim();
-        if (!value || this.commandPending || !this.state.view || this.state.view.dryRun) {
+        if (this.draftMoves.length || !value || this.commandPending || !this.state.view || this.state.view.dryRun) {
             return;
         }
         this.commandPending = true;
@@ -205,13 +207,36 @@ class ShoppingListEditor extends React.Component {
     }
 
     async load(listName) {
+        if (this.draftMoves.length) {
+            return;
+        }
         this.setState({ loading: true, error: '' });
         try {
             const result = await this.send('getShoppingList', { listName });
             if (!result || result.error) {
                 throw new Error(result?.error || 'Shopping list could not be loaded.');
             }
-            this.setState({ view: checkedView(result), loading: false, busy: '' });
+            let view = checkedView(result);
+            try {
+                const saved = JSON.parse(
+                    globalThis.sessionStorage?.getItem(`${this.instanceName()}.shoppingDraft.${view.listName}`) ||
+                        'null',
+                );
+                if (
+                    saved &&
+                    validView(saved.view) &&
+                    saved.view.listName === view.listName &&
+                    Array.isArray(saved.moves) &&
+                    saved.moves.length
+                ) {
+                    this.draftMoves = saved.moves;
+                    this.draftView = saved.view;
+                    view = saved.view;
+                }
+            } catch {
+                /* Ignore unavailable browser storage. */
+            }
+            this.setState({ view, loading: false, busy: '' });
             result.items.forEach(item => this.visitedMarkets.add(item.market));
         } catch (error) {
             this.setState({ loading: false, busy: '', error: error instanceof Error ? error.message : String(error) });
@@ -229,60 +254,98 @@ class ShoppingListEditor extends React.Component {
         throw new Error('Move status timed out.');
     }
 
+    saveDraft() {
+        try {
+            const key = `${this.instanceName()}.shoppingDraft.${this.state.view?.listName}`;
+            if (this.draftMoves.length) {
+                globalThis.sessionStorage?.setItem(
+                    key,
+                    JSON.stringify({ view: this.draftView, moves: this.draftMoves }),
+                );
+            } else {
+                globalThis.sessionStorage?.removeItem(key);
+            }
+        } catch {
+            /* Storage is optional; the current draft remains in memory. */
+        }
+    }
+
     async move(itemId, targetMarket, targetPosition) {
-        const view = this.state.view;
-        if (!view || this.commandPending || this.state.busy) {
+        const view = this.draftView || this.state.view;
+        if (!view || view.dryRun || this.commandPending || this.state.busy) {
             return;
         }
         const item = view.items.find(entry => entry.id === itemId);
-        const sourceMarket = item?.market || '';
-        if (!item || (sourceMarket === targetMarket && Number(item.position) === Number(targetPosition))) {
+        if (!item || !view.markets.includes(targetMarket)) {
             return;
         }
-        this.visitedMarkets.add(sourceMarket);
+        const count = view.items.filter(entry => entry.market === targetMarket && entry.id !== itemId).length;
+        const position = Math.max(0, Math.min(count, Math.floor(Number(targetPosition) || 0)));
+        if (item.market === targetMarket && Number(item.position) === position) {
+            return;
+        }
+        this.visitedMarkets.add(item.market);
         this.visitedMarkets.add(targetMarket);
+        this.draftMoves.push({ itemId, itemText: item.text, targetMarket, targetPosition: position });
+        this.draftView = optimisticMove(view, itemId, targetMarket, position);
+        this.saveDraft();
+        this.setState({ view: this.draftView, error: '', progress: '' });
+    }
+
+    async applyChanges() {
+        const view = this.draftView || this.state.view;
+        if (!view || view.dryRun || !this.draftMoves.length || this.commandPending) {
+            return;
+        }
         this.commandPending = true;
         this.setState({
-            view: optimisticMove(view, itemId, targetMarket, targetPosition),
-            busy: itemId,
+            busy: '__apply__',
             error: '',
             progress: text(
-                `„${item?.text || 'Artikel'}“ wird von ${sourceMarket || 'der bisherigen Zuordnung'} nach ${targetMarket} verschoben. Alexa sortiert und bestätigt jetzt die Einkaufsliste. Das kann mehrere Minuten dauern – bitte diese Seite geöffnet lassen.`,
-                `Moving “${item?.text || 'item'}” from ${sourceMarket || 'its current assignment'} to ${targetMarket}. Alexa is sorting and confirming the shopping list now. This can take several minutes — please keep this page open.`,
+                'Alle Änderungen werden an Alexa übertragen und geprüft. Das kann mehrere Minuten dauern.',
+                'All changes are being sent to Alexa and verified. This can take several minutes.',
             ),
         });
         try {
-            const requestId = `${String(Date.now())}-${Math.random().toString(36).slice(2)}`;
-            let result = await this.send('moveShoppingItem', {
+            const requestId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+            let result = await this.send('applyShoppingChanges', {
                 listName: view.listName,
-                itemId,
-                itemText: item.text,
-                targetMarket,
-                targetPosition,
+                moves: this.draftMoves.map(move => ({ ...move })),
                 requestId,
             });
             if (result?.pending) {
                 result = await this.waitForMove(requestId);
             }
-            if (result?.view) {
-                this.setState({ view: checkedView(result.view) });
-            }
             if (!result?.ok) {
-                throw new Error(result?.error || 'The item could not be moved.');
+                throw new Error(result?.error || 'The changes could not be transferred.');
             }
-            this.setState({ busy: '', progress: '' });
+            const confirmed = checkedView(result.view);
+            this.draftMoves = [];
+            this.draftView = null;
+            this.saveDraft();
+            this.setState({ view: confirmed, busy: '', progress: '' });
         } catch (error) {
             const message = localizedMoveError(error instanceof Error ? error.message : String(error));
-            await this.load(view.listName);
             this.setState({ busy: '', progress: '', error: message });
         } finally {
             this.commandPending = false;
         }
     }
 
+    async discardChanges() {
+        if (this.commandPending) {
+            return;
+        }
+        const listName = this.state.view?.listName;
+        this.draftMoves = [];
+        this.draftView = null;
+        this.saveDraft();
+        await this.load(listName);
+    }
+
     async remove(itemId) {
         const view = this.state.view;
-        if (!view || view.dryRun || this.commandPending || this.state.busy) {
+        if (this.draftMoves.length || !view || view.dryRun || this.commandPending || this.state.busy) {
             return;
         }
         this.commandPending = true;
@@ -307,7 +370,7 @@ class ShoppingListEditor extends React.Component {
 
     async clearManual() {
         const view = this.state.view;
-        if (!view || this.commandPending || this.state.busy) {
+        if (this.draftMoves.length || !view || this.commandPending || this.state.busy) {
             return;
         }
         this.commandPending = true;
@@ -353,7 +416,7 @@ class ShoppingListEditor extends React.Component {
             {
                 key: item.id,
                 className: 'shoppingroute-item-row',
-                draggable: !busy,
+                draggable: !busy && !view.dryRun,
                 'data-drop-index': index,
                 onDragEnd: () => {
                     this.dragItemId = null;
@@ -410,7 +473,7 @@ class ShoppingListEditor extends React.Component {
                             key: 'up',
                             type: 'button',
                             className: 'shoppingroute-list-button',
-                            disabled: busy || index === 0,
+                            disabled: busy || view.dryRun || index === 0,
                             title: text('Nach oben', 'Move up'),
                             onClick: () => void this.move(item.id, item.market, index - 1),
                         },
@@ -422,7 +485,7 @@ class ShoppingListEditor extends React.Component {
                             key: 'down',
                             type: 'button',
                             className: 'shoppingroute-list-button',
-                            disabled: busy || index === marketItems.length - 1,
+                            disabled: busy || view.dryRun || index === marketItems.length - 1,
                             title: text('Nach unten', 'Move down'),
                             onClick: () => void this.move(item.id, item.market, index + 1),
                         },
@@ -434,7 +497,7 @@ class ShoppingListEditor extends React.Component {
                             key: 'delete',
                             type: 'button',
                             className: 'shoppingroute-list-button',
-                            disabled: busy || view.dryRun,
+                            disabled: Boolean(this.draftMoves.length) || busy || view.dryRun,
                             title: text('Aus der Alexa-Einkaufsliste löschen', 'Delete from the Alexa shopping list'),
                             'aria-label': `${text('Artikel löschen', 'Delete item')}: ${stripVisiblePrefix(item.text)}`,
                             onClick: () => void this.remove(item.id),
@@ -446,7 +509,7 @@ class ShoppingListEditor extends React.Component {
                         {
                             key: 'market',
                             value: item.market,
-                            disabled: busy,
+                            disabled: busy || view.dryRun,
                             title: text('Markt wechseln', 'Change market'),
                             'aria-label': text('In einen anderen Markt verschieben', 'Move to another market'),
                             onChange: event => {
@@ -475,8 +538,8 @@ class ShoppingListEditor extends React.Component {
                     'div',
                     { key: 'hint', style: { opacity: 0.7, marginTop: '3px' } },
                     text(
-                        'Ziehen verschiebt Artikel direkt. Pfeile und Marktauswahl sind die einfache Alternative für Maus und Handy.',
-                        'Drag items directly. Arrows and the market selector are the simple alternative for mouse and phone.',
+                        'Artikel mit Ziehen, Pfeilen oder Marktauswahl verschieben. Anschließend alle Änderungen mit „Änderungen an Alexa übertragen“ senden.',
+                        'Move items using drag, arrows or the market selector. Then send all changes with “Transfer changes to Alexa”.',
                     ),
                 ),
             ]),
@@ -559,12 +622,47 @@ class ShoppingListEditor extends React.Component {
         const items = visibleItems(view);
         children.push(
             h('div', { key: 'toolbar', className: 'shoppingroute-list-toolbar' }, [
+                h(
+                    'button',
+                    {
+                        key: 'apply-changes',
+                        type: 'button',
+                        className: 'shoppingroute-list-button',
+                        style: { minHeight: '44px', fontWeight: 700 },
+                        disabled: busy || view.dryRun || !this.draftMoves.length,
+                        onClick: () => void this.applyChanges(),
+                    },
+                    text('Änderungen an Alexa übertragen', 'Transfer changes to Alexa'),
+                ),
+                this.draftMoves.length
+                    ? h(
+                          'span',
+                          { key: 'draft-status', role: 'status' },
+                          text(
+                              `${this.draftMoves.length} Änderungen noch nicht übertragen`,
+                              `${this.draftMoves.length} changes not yet transferred`,
+                          ),
+                      )
+                    : null,
+                this.draftMoves.length
+                    ? h(
+                          'button',
+                          {
+                              key: 'discard-changes',
+                              type: 'button',
+                              className: 'shoppingroute-list-button',
+                              disabled: busy,
+                              onClick: () => void this.discardChanges(),
+                          },
+                          text('Änderungen verwerfen', 'Discard changes'),
+                      )
+                    : null,
                 h('input', {
                     key: 'new-item',
                     type: 'text',
                     value: this.state.newItem || '',
                     maxLength: 500,
-                    disabled: busy || view.dryRun,
+                    disabled: Boolean(this.draftMoves.length) || busy || view.dryRun,
                     placeholder: text('Neuen Artikel hinzufügen', 'Add a new item'),
                     'aria-label': text('Neuer Artikel', 'New item'),
                     onChange: event => this.setState({ newItem: event.target.value }),
@@ -581,7 +679,11 @@ class ShoppingListEditor extends React.Component {
                         key: 'add-item',
                         type: 'button',
                         className: 'shoppingroute-list-button',
-                        disabled: busy || view.dryRun || !String(this.state.newItem || '').trim(),
+                        disabled:
+                            Boolean(this.draftMoves.length) ||
+                            busy ||
+                            view.dryRun ||
+                            !String(this.state.newItem || '').trim(),
                         onClick: () => void this.addItem(),
                     },
                     text('Hinzufügen', 'Add'),
@@ -591,7 +693,7 @@ class ShoppingListEditor extends React.Component {
                     {
                         key: 'list',
                         value: view.listName,
-                        disabled: busy,
+                        disabled: Boolean(this.draftMoves.length) || busy,
                         onChange: event => void this.load(event.target.value),
                         'aria-label': text('Einkaufsliste auswählen', 'Select shopping list'),
                     },
@@ -603,7 +705,7 @@ class ShoppingListEditor extends React.Component {
                         key: 'refresh',
                         type: 'button',
                         className: 'shoppingroute-list-button',
-                        disabled: busy,
+                        disabled: Boolean(this.draftMoves.length) || busy,
                         onClick: () => void this.load(view.listName),
                     },
                     text('Aktualisieren', 'Refresh'),
@@ -614,7 +716,7 @@ class ShoppingListEditor extends React.Component {
                         key: 'clear',
                         type: 'button',
                         className: 'shoppingroute-list-button',
-                        disabled: busy,
+                        disabled: Boolean(this.draftMoves.length) || busy,
                         onClick: () => void this.clearManual(),
                     },
                     text('Manuelle Reihenfolge zurücksetzen', 'Reset manual order'),

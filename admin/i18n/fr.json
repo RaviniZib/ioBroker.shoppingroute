@@ -57,5 +57,16 @@
   "ui.items.general.items.minitemspermarket.label": "Nombre minimum d’articles par magasin supplémentaire",
   "ui.items.general.items.minitemspermarket.help": "1 désactive la consolidation. Sous le seuil, seuls les articles avec des magasins alternatifs configurés peuvent être déplacés. Les indications explicites ne sont jamais modifiées.",
   "ui.items.shoppinglisttab.label": "Liste de courses",
-  "ui.items.reviewtab.items.reviewitems.items.5.options.3.label": "Accepté"
+  "ui.items.reviewtab.items.reviewitems.items.5.options.3.label": "Accepté",
+  "ui.items.bringtab.label": "Intégration Bring!",
+  "ui.items.bringtab.info": "Désactivé par défaut. Bring! ne permet pas de réordonner librement les articles ; ShoppingRoute fournit un aperçu du parcours. Le premier rapprochement ne supprime rien.",
+  "ui.items.bringtab.mode.label": "Mode de fonctionnement Bring!",
+  "ui.items.bringtab.mode.off": "Désactivé (Alexa uniquement)",
+  "ui.items.bringtab.mode.import": "Bring! → ShoppingRoute/Alexa (sens unique)",
+  "ui.items.bringtab.mode.bringonly": "Bring! seul (aperçu du parcours)",
+  "ui.items.bringtab.mode.both": "Bring! ↔ Alexa (bidirectionnel)",
+  "ui.items.bringtab.instance.label": "Instance de l’adaptateur Bring!",
+  "ui.items.bringtab.list.label": "Liste de courses Bring!",
+  "ui.items.bringtab.alexalist.label": "Liste Alexa cible",
+  "ui.items.bringtab.warning": "Enregistrez d’abord l’instance, puis choisissez la liste. En cas de conflit, la synchronisation s’arrête sans suppression. État : shoppingroute.0.info.bringSyncStatus."
 }

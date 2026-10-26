@@ -47,3 +47,4 @@ function restoreProtectedConfig(current, backup) {
         restored[key] = clone(rows(backup.native[key]));
     return restored;
 }
+//# sourceMappingURL=config-protection.js.map
