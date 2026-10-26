@@ -1,10 +1,10 @@
 # ShoppingRoute – Bedienungsanleitung
 
-**Gültig ab Version 0.5.0; Abschnitt Bring!-Integration für den unveröffentlichten Entwicklungsstand 0.6.0**
+**Bedienungsanleitung für ShoppingRoute 0.6.0 (26.10.2026)**
 
 ShoppingRoute hilft dir dabei, eine Alexa-Einkaufsliste so zu ordnen, wie du tatsächlich einkaufst.
 
-## In Entwicklung: Bring! mit ShoppingRoute verbinden (0.6.0, noch nicht veröffentlicht)
+## Bring!-Listen in ShoppingRoute 0.6.0 einbinden
 
 Die neuen Bring!-Funktionen sind optional und standardmäßig ausgeschaltet.
 
@@ -29,7 +29,7 @@ Bring! selbst sortiert Artikel nach seinen eigenen Produktkategorien. Die App un
 - Bei Dry-Run werden weder Bring! noch Alexa beschrieben.
 - Die Statusmeldung steht unter `shoppingroute.0.info.bringSyncStatus`; die berechnete Bring!-Route unter `shoppingroute.0.info.bringSyncPreview`.
 
-**Achtung:** Für 0.6.0 sind die rein logischen Tests vorgesehen; ein vollständiger Live-Synchronisationstest mit zwei echten Cloud-Listen steht noch aus. Auf dem Produktivsystem bitte bis dahin 0.5.3 belassen.
+**Praxistest (26.10.2026):** Vorhandene Bring!-Listen und neu in Bring! hinzugefügte Artikel werden in ShoppingRoute übernommen und beim nächsten Sortierlauf entsprechend den Markt- und Laufwegregeln eingeordnet. Die Bring!-App selbst lässt keine freie Sortierung einzelner Artikel zu. Automatische Tests für Synchronisierung und Konfliktschutz sind erfolgreich. Nicht durch diesen Praxistest bestätigt sind sämtliche Erledigungs-, Lösch- und Konfliktfälle bei bidirektionalem Live-Abgleich. Diesen Modus zuerst mit gesicherten Testlisten verwenden.
 
 ## Neu in 0.5.3: Einkäufe direkt in der Alexa-App ändern
 

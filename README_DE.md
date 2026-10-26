@@ -2,7 +2,7 @@
 
 ![ShoppingRoute](admin/shoppingroute.png)
 
-**Entwicklungsstand: 0.6.0 (unveröffentlicht). Letzte veröffentlichte Version: 0.5.3.**
+**Aktuelle Version: 0.6.0 (26.10.2026).**
 
 ShoppingRoute macht aus einer normalen Alexa-Einkaufsliste eine praktische Einkaufshilfe: **Alle Märkte können gemeinsam in einer einzigen Liste geführt oder bewusst auf mehrere Listen verteilt werden.** Das besondere Merkmal ist das frei einstellbare **Marktrouting**: Für jeden Markt legst du deinen persönlichen Laufweg durch die Abteilungen fest. Dadurch steht die Einkaufsliste in der Reihenfolge, in der du tatsächlich durch den Laden gehst – für weniger Zurücklaufen, weniger Suchen und **schnelleres, effizienteres Einkaufen**.
 
@@ -13,7 +13,7 @@ ShoppingRoute sortiert Alexa-Einkaufslisteneinträge nach Markt, Produktgruppe u
 🇩🇪 [**Deutsche Bedienungsanleitung**](BEDIENUNGSANLEITUNG_DE.md)  
 🇬🇧 [**English user guide**](USER_GUIDE_EN.md)
 
-## Neu in 0.6.0 (Entwicklungszweig – nicht veröffentlicht): Bring!-Anbindung
+## Neu in 0.6.0: Bring!-Listen und ShoppingRoute-Sortierung
 
 ShoppingRoute unterstützt zusätzlich den ioBroker-Adapter **bring.0** (Bring! 1.9.1) und kann eine ausgewählte Bring!-Liste mit einer Alexa-Einkaufsliste verknüpfen. Die Funktion ist **standardmäßig ausgeschaltet** und verändert bei einem normalen Update keine bestehenden Listen.
 
@@ -39,7 +39,7 @@ Die vier Betriebsarten stehen unter **Instanz-Einstellungen → Bring!-Integrati
 
 Für die Einrichtung: Bring!-Instanz auswählen und speichern, Bring!-Liste auswählen, bei Verbindung zu Alexa eine aktivierte Zielliste angeben, zuerst Dry-Run prüfen und erst danach bewusst aktivieren. Die Bring!-Daten kommen aus der vorhandenen lokalen ioBroker-Instanz; ShoppingRoute benötigt kein eigenes Bring!-Passwort.
 
-**Wichtiger Testhinweis:** Die reine Abgleichlogik wird automatisiert getestet. Ein vollständiger Live-Test mit beiden Cloud-Anbietern ist für diesen Entwicklungsstand noch ausstehend; deshalb ist 0.6.0 weder veröffentlicht noch auf der laufenden ioBroker-Instanz installiert.
+**Teststand (26.10.2026):** Die automatisierten Tests der Synchronisierung, Sortierung und Schutzmechanismen sind erfolgreich. Der Praxistest bestätigt die Übernahme von Bring!-Listen sowie neu in Bring! hinzugefügter Artikel, die beim nächsten Sortierlauf in ShoppingRoute eingeordnet werden. Eine freie Artikelsortierung innerhalb der Bring!-App ist technisch nicht möglich. Abschließen, Löschen und sämtliche Konfliktfälle des beidseitigen Live-Abgleichs wurden mit diesem Praxistest nicht bestätigt. Für den bidirektionalen Modus zunächst gesicherte Testlisten verwenden.
 
 ## Manuelle Einkaufslistenänderungen
 
@@ -157,7 +157,7 @@ ShoppingRoute wird unter der **[MIT-Lizenz](LICENSE)** veröffentlicht. Frühere
 
 ## Changelog
 
-### 0.6.0 (Entwicklung, unveröffentlicht)
+### 0.6.0 (26.10.2026)
 
 - Explizite Marktnamen werden als vollständige Begriffe an beliebiger Position im Artikel erkannt und haben stets Vorrang vor dem Standardmarkt; mehrdeutige Mehrfachnennungen werden nicht geraten.
 

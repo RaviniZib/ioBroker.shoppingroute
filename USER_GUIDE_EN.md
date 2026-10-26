@@ -1,10 +1,10 @@
 # ShoppingRoute – User Guide
 
-**For versions 0.5.0+; the Bring! section refers to unpublished development 0.6.0**
+**Guide for ShoppingRoute 0.6.0 (26 October 2026)**
 
 ShoppingRoute helps turn a normal Alexa shopping list into a list that follows the way you actually shop.
 
-## Under development: ShoppingRoute + Bring! (0.6.0, not released)
+## Bring! lists and store routing in ShoppingRoute 0.6.0
 
 The Bring! bridge is **disabled by default**. Existing Alexa users will notice no change.
 
@@ -23,7 +23,7 @@ Bring! groups items into its own categories and **does not support arbitrary ind
 
 Status: `shoppingroute.0.info.bringSyncStatus`. Bring! route preview: `shoppingroute.0.info.bringSyncPreview`. Journal: `shoppingroute.0.data.bringSyncJournal`.
 
-Bring! normally polls its list about every 90 seconds, so bidirectional changes are not instantaneous. Pure logic tests are available; full two-cloud-provider end-to-end validation is still outstanding. Do not replace a productive 0.5.3 installation with this development build yet.
+Bring! normally polls its list about every 90 seconds, so changes are not instantaneous. In user testing, existing Bring! lists and newly added Bring! items were imported into ShoppingRoute and placed into the shopping route during the next sorting run. Automatic tests cover reconciliation and safeguards. The user test does not establish live completion, deletion or every two-way conflict scenario; start bidirectional synchronization with backed-up test lists.
 
 ## New in 0.5.3: Change your shopping list right in the Alexa app
 

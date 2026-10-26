@@ -1,7 +1,7 @@
-# ShoppingRoute 0.6.0 – Bring! integration (unpublished development candidate)
+# ShoppingRoute 0.6.0 – Bring! lists, routing and synchronization
 
-**Status: Development branch only. NOT published to npm, ioBroker latest/stable or GitHub Releases.**
-Public users remain on 0.5.3. The Bring! integration has not been deployed to the running instance. The manual shopping-list batch fix is also prepared as a targeted 0.5.3 hotfix.
+**Release version: 0.6.0 (2026-10-26).** Bring! support is optional and disabled by default.
+This release combines the Bring! integration, explicit store detection and batched manual Alexa list changes with the latest main-branch fixes. Existing installations retain their current list configuration unless Bring! is explicitly enabled.
 
 ## Features
 
@@ -24,11 +24,11 @@ Public users remain on 0.5.3. The Bring! integration has not been deployed to th
 - Remote write transactions are persisted before the first remote command. Pending transactions require confirmation of both resulting provider snapshots before processing more changes. No automatic replay after partial failure.
 - A stale or blocked pending transaction requires an operator to inspect both lists and journal carefully before any reset.
 - Bring! uses periodic polling (~90 seconds); changes may arrive with delay.
-- A complete two-provider **live integration test remains outstanding**. Do not deploy this build to production before testing with sacrificial lists.
+- User testing confirms Bring! list import and automatic inclusion of new Bring! items in ShoppingRoute on the next sorting pass. Live two-way completion, deletion and all conflict/recovery scenarios are not independently confirmed; use backed-up test lists for these modes.
 
 ## Test matrix
 
-Automated (scratch checkout, Node.js 24):
+Automated (local Node.js 24 and GitHub Actions Node.js 22/24/26 on Linux, macOS and Windows):
 - TypeScript build/check
 - Existing ioBroker Admin and Alexa regression tests
 - Bring! parsing, names/descriptions and Alexa prefix handling
@@ -38,7 +38,7 @@ Automated (scratch checkout, Node.js 24):
 - Duplicate and description mismatch safety stop
 - Persistent pending journal recovery and snapshot confirmation checks
 
-Manual testing required before release:
+Further recommended manual test scenarios (not claimed as completed):
 - Fresh installation with only Bring! (Alexa2 not installed)
 - Brand-new and existing linked Bring!/Alexa lists with test items
 - Pending command acknowledgement and eventual consistent snapshots
@@ -47,13 +47,13 @@ Manual testing required before release:
 - Admin phone view with Bring!-only route preview
 - Recovery of a deliberately interrupted transaction
 
-## Development and backup
+## Release sources and backups
 
 Base revision: `7d00a274110848f1cd0151d63409f2489a0febfb` (0.5.3).
 Timestamped backup branch: `backup/shoppingroute-0.5.3-before-bring-sync-20261020`.
-Working branch: `feature/bring-sync-0.6.0`.
+Merged from feature/bring-sync-0.6.0 and current main into release/0.6.0-20261026 (PR #81).
 
-No tag, public release or npm upload has been made. Bring! remains a development candidate.
+The v0.6.0 tag triggers the release workflow; npm/GitHub publication must be confirmed from the workflow result. The running ioBroker installation is not modified by preparing this release.
 
 ## Manual shopping-list batch fix (2026-10-23)
 
@@ -72,3 +72,17 @@ The backend validates every requested move against a fresh list before storing o
 **EN – Additional improvements:** Explicit store names anywhere in item text take precedence for the current trip without changing catalogue defaults. Manual list moves are staged locally and transferred to Alexa together only when confirmed.
 
 **DE/EN – Sicherheit / Safety:** Bring!-Integration ist standardmäßig ausgeschaltet / Bring! integration is disabled by default. Dry Run, bestätigte Listenstände, Konfliktsperre und Journal-Wiederherstellung bleiben aktiv / Dry run, verified snapshots, conflict safety stop and recovery journal remain active.
+
+## Release verification (2026-10-26)
+
+- 246 automated tests: PASS; 76 package/schema tests: PASS; 5 isolated ioBroker integration tests: PASS.
+- GitHub Actions: check/lint and all 9 adapter-test jobs PASS (Node.js 22, 24, 26 on Ubuntu, macOS and Windows).
+- npm package dry run: verified contents, including compiled Bring! bridge and ShoppingRoute Admin pages.
+- User-confirmed live behaviour: existing Bring! lists import; newly added Bring! items appear in ShoppingRoute and follow the configured route on the next sorting run.
+- NOT claimed as live-tested: every two-way completion/delete and interruption/recovery scenario. Use dedicated, backed-up lists when enabling write-capable synchronization.
+
+## Security advisory / Sicherheitshinweis
+
+**DE:** Die Produktions-Abhängigkeitsprüfung meldet weiterhin drei High-Funde über die vorgelagerte Bibliothek node-forge in @iobroker/adapter-core. Ein erzwungenes Downgrade auf adapter-core 3.4.2 wurde nicht vorgenommen, um Kompatibilitätsprobleme zu vermeiden. Die Upstream-Warnung bleibt bestehen und sollte beobachtet werden.
+
+**EN:** The production dependency audit still reports three high-severity findings through the upstream node-forge dependency in @iobroker/adapter-core. A forced downgrade to adapter-core 3.4.2 was deliberately avoided. Monitor the upstream advisory for a compatible fix.
