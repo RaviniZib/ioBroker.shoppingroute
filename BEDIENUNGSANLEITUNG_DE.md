@@ -4,6 +4,8 @@
 
 ShoppingRoute hilft dir dabei, eine Alexa-Einkaufsliste so zu ordnen, wie du tatsächlich einkaufst.
 
+**Für 0.6.1 vorgesehen (noch nicht veröffentlicht):** Wird während der Bestätigung einer älteren Bring!/Alexa-Übertragung ein weiterer Artikel in Bring! abgehakt, prüft ShoppingRoute die ursprünglichen Schreibvorgänge einzeln. Sobald diese vollständig bestätigt sind, verarbeitet es die spätere Erledigung im nächsten Abgleich, ohne den erledigten Artikel in Bring! wiederherzustellen. Nicht bestätigte Schreibvorgänge bleiben gesperrt. Ausstehende Bestätigungen und Timeouts werden einmalig im ioBroker-Log gemeldet, statt das Log bei jedem Poll zu füllen. Bei 0.6.0 die Datenpunkte `shoppingroute.0.info.bringSyncStatus` und `shoppingroute.0.data.bringSyncJournal` prüfen; das Journal nur nach Sicherung und Abgleich beider Listen korrigieren.
+
 ## Bring!-Listen in ShoppingRoute 0.6.0 einbinden
 
 Die neuen Bring!-Funktionen sind optional und standardmäßig ausgeschaltet.
