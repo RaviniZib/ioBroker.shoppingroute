@@ -5,6 +5,7 @@ const assert = require('node:assert/strict');
 const {
     parseBringContent, parseAlexaContent, indexBridgeItems, reconcileBring,
     itemKey, itemsMatchExpected, parseBridgeBaseline, serializeBridgeBaseline, bringSyncLogEvent,
+    pendingWritesConfirmedExceptConcurrent,
 } = require('../build/lib/bring-sync');
 
 const markets = [{ name: 'ALDI' }, { name: 'REWE' }];
@@ -165,4 +166,50 @@ test('Bring! bridge logs timed-out transactions only once, escalating to an erro
     assert.equal(healthy.key, null);
     assert.equal(bringSyncLogEvent('synced', 'No changes needed.', null), null);
     assert.equal(bringSyncLogEvent('busy', 'Sorting', null), null);
+});
+
+
+test('pending writes are confirmed despite a new Bring! completion of an unchanged article', () => {
+    const items = [b('Bifteki'), b('Salami'), b('Testartikel'), b('Äpfel')];
+    const journal = baseline(items, items);
+    journal.pending = {
+        createdAt: '2026-10-27T09:31:19.798Z',
+        bring: [b('Testartikel').key, b('Äpfel').key],
+        alexa: [b('Testartikel').key, b('Äpfel').key],
+    };
+    const bringNow = [b('Äpfel')]; // User completed Testartikel while older deletes verified.
+    const alexaNow = [a('test', '68> Testartikel'), a('apple', '37> Äpfel')];
+    assert.equal(itemsMatchExpected(bringNow, journal.pending.bring), false);
+    assert.equal(pendingWritesConfirmedExceptConcurrent(journal, bringNow, alexaNow), true);
+    const verifiedBase = { ...journal, bring: journal.pending.bring, alexa: journal.pending.alexa };
+    delete verifiedBase.pending;
+    const next = reconcileBring('bidirectional', verifiedBase, bringNow, alexaNow);
+    assert.deepEqual(next.removeFromAlexa.map(entry => entry.name), ['Testartikel']);
+    assert.deepEqual(next.addToBring, []); // NEVER restore the completed article.
+});
+
+test('pending writes cannot be acknowledged if any originally requested removal failed', () => {
+    const items = [b('Bifteki'), b('Salami'), b('Testartikel'), b('Äpfel')];
+    const journal = baseline(items, items);
+    journal.pending = {
+        createdAt: '2026-10-27T09:31:19.798Z',
+        bring: [b('Testartikel').key, b('Äpfel').key],
+        alexa: [b('Testartikel').key, b('Äpfel').key],
+    };
+    assert.equal(pendingWritesConfirmedExceptConcurrent(
+        journal, [b('Äpfel')], [a('b', 'Bifteki'), a('t', 'Testartikel'), a('ap', 'Äpfel')]), false);
+});
+
+test('pending writes cannot be acknowledged if a requested new item is still missing', () => {
+    const old = [b('Äpfel')];
+    const journal = baseline(old, old);
+    journal.pending = {
+        createdAt: '2026-10-27T09:31:19.798Z',
+        bring: [b('Äpfel').key, b('Milch').key],
+        alexa: [b('Äpfel').key, b('Milch').key],
+    };
+    assert.equal(pendingWritesConfirmedExceptConcurrent(journal, old, old), false);
+    assert.equal(pendingWritesConfirmedExceptConcurrent(journal,
+        [b('Äpfel'), b('Milch')], [a('ap', 'Äpfel'), a('milk', 'Milch'), a('new', 'Neu')]), true);
+    assert.equal(pendingWritesConfirmedExceptConcurrent(baseline(old, old), old, old), false);
 });
