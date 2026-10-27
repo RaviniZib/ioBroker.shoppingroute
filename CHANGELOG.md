@@ -8,7 +8,7 @@
 - **Sicherheitslogik:** Nicht bestätigte Schreibvorgänge bleiben weiterhin gesperrt. Das Transaktionsjournal wird nicht blind zurückgesetzt.
 - **Protokollierung:** Bei mehr als drei Minuten ausstehender Bestätigung wird einmalig eine Warnung, beim Timeout eine Fehlermeldung und nach erfolgreicher Wiederherstellung eine Entwarnung im normalen ioBroker-Log ausgegeben. Wiederholte Polls erzeugen keine Logflut.
 - **Tests und Dokumentation:** Automatische Regressionstests für konkurrierende Erledigungen, vollständige Bestätigung und ausstehende Schreibvorgänge; deutsche und englische Anleitungen aktualisiert.
-- **Geschwindigkeit:** Ereignisgesteuerte Aktualisierung nach Bring!- und Alexa-Statusänderungen, 30-Sekunden-Rückfallprüfung und verkürzte Bestätigungsprüfung. Der Bring!-Adapter 1.9.1 fragt seine Cloud weiterhin alle etwa 90 Sekunden ab.
+- **Geschwindigkeit:** Ereignisgesteuerte Aktualisierung nach Bring!- und Alexa-Statusänderungen, 30-Sekunden-Rückfallprüfung und verkürzte Bestätigungsprüfung. **Externe Grenze:** Der eigenständige Bring!-Adapter 1.9.1 fragt seine Cloud ungefähr alle **90 Sekunden** ab. **ShoppingRoute kann dieses Intervall nicht einstellen, verkürzen oder vorzeitig auslösen**; der schnelle ShoppingRoute-Abgleich beginnt erst nach dem aktualisierten Bring!-Datenpunkt.
 
 ### English
 
@@ -16,7 +16,7 @@
 - **Safety:** Incomplete or unconfirmed original writes remain blocked. Never blindly reset a pending journal.
 - **Logging:** One warning for confirmations pending longer than three minutes, one error upon timeout, and an informational recovery message. Recurring polls do not flood the ioBroker log.
 - **Tests and documentation:** Regression tests for concurrent completions, confirmed writes and incomplete pending transactions; bilingual guides updated.
-- **Speed:** Event-driven wakeups after confirmed Bring! and Alexa changes, a 30-second fallback and faster verification; Bring! adapter 1.9.1 still polls its cloud roughly every 90 seconds.
+- **Speed:** Event-driven wakeups after confirmed Bring! and Alexa changes, a 30-second fallback and faster verification. **Upstream limit:** The separate Bring! adapter 1.9.1 still fetches its cloud list approximately every **90 seconds**. **ShoppingRoute cannot configure, shorten, or trigger that external polling interval**; faster synchronization starts once updated Bring! data reaches ioBroker.
 
 ## 0.6.0 – 2026-10-26
 
