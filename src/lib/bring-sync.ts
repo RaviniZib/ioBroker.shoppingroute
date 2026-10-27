@@ -228,6 +228,11 @@ export function bringSyncLogEvent(
  * to untouched items remain pending for the NEXT reconciliation pass.
  *
  * This must never bypass confirmation of an incomplete or ambiguous write.
+ *
+ * @param previous Persisted bridge baseline and expected pending transaction.
+ * @param bringItems Current acknowledged Bring! items.
+ * @param alexaItems Current Alexa items.
+ * @returns True only when every originally requested mutation is observable.
  */
 export function pendingWritesConfirmedExceptConcurrent(
     previous: BridgeBaseline, bringItems: BridgeItem[], alexaItems: BridgeItem[],
