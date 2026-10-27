@@ -4,11 +4,15 @@
 
 **Aktuelle Version: 0.6.0 (26.10.2026).**
 
-**Für Version 0.6.1 vorgesehen – Bring!-Synchronisationsmeldungen:** Wenn eine
+**Für Version 0.6.1 vorgesehen – Bring!-Synchronisation und Fehlermeldungen:** Wenn eine
 ausstehende Transaktion länger als drei Minuten nicht bestätigt wird, soll
 ShoppingRoute einmalig warnen und bei einem Timeout einen klaren Fehler im normalen
 ioBroker-Log melden. Wiederholte Prüfdurchläufe erzeugen dabei keine Logflut.
 Nach erfolgreicher Wiederherstellung erscheint eine einmalige Entwarnung.
+Außerdem werden die bereits ausgeführten Schreibvorgänge einzeln bestätigt: Wird
+während dieser Bestätigung ein anderer Artikel erledigt, bleibt die Synchronisation
+nicht dauerhaft hängen. Diese neue Erledigung wird im nächsten Abgleich verarbeitet.
+Nicht bestätigte ursprüngliche Schreibvorgänge bleiben weiterhin gesperrt.
 Bis zur Veröffentlichung sind bei ausbleibenden Übertragungen die Datenpunkte
 `shoppingroute.0.info.bringSyncStatus` und
 `shoppingroute.0.data.bringSyncJournal` zu prüfen.
