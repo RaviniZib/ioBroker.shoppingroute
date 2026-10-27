@@ -218,3 +218,37 @@ export function bringSyncLogEvent(
     }
     return null;
 }
+
+
+/**
+ * A pending bridge transaction may have finished its own writes even when
+ * users changed unrelated items while the cloud snapshots were being
+ * confirmed. Only acknowledge the transaction if EVERY change attempted
+ * against the old baseline is visible on the correct provider. New changes
+ * to untouched items remain pending for the NEXT reconciliation pass.
+ *
+ * This must never bypass confirmation of an incomplete or ambiguous write.
+ */
+export function pendingWritesConfirmedExceptConcurrent(
+    previous: BridgeBaseline, bringItems: BridgeItem[], alexaItems: BridgeItem[],
+): boolean {
+    if (!previous.pending) return false;
+    const actualBring = indexBridgeItems(bringItems, 'Bring!');
+    const actualAlexa = indexBridgeItems(alexaItems, 'Alexa');
+    let mutations = 0;
+    const allPlannedMutationsPresent = (
+        beforeKeys: string[], expectedKeys: string[], actual: Map<string, BridgeItem>,
+    ): boolean => {
+        const before = new Set(beforeKeys);
+        const expected = new Set(expectedKeys);
+        for (const key of new Set([...before, ...expected])) {
+            if (before.has(key) === expected.has(key)) continue;
+            mutations++;
+            if (actual.has(key) !== expected.has(key)) return false;
+        }
+        return true;
+    };
+    return allPlannedMutationsPresent(previous.bring, previous.pending.bring, actualBring) &&
+        allPlannedMutationsPresent(previous.alexa, previous.pending.alexa, actualAlexa) &&
+        mutations > 0;
+}
