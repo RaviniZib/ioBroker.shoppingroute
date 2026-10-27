@@ -2,22 +2,13 @@
 
 ![ShoppingRoute](admin/shoppingroute.png)
 
-**Aktuelle Version: 0.6.0 (26.10.2026).**
+**Aktuelle Version: 0.6.1 (27.10.2026).**
 
-**Für Version 0.6.1 vorgesehen – Bring!-Synchronisation und Fehlermeldungen:** Wenn eine
-ausstehende Transaktion länger als drei Minuten nicht bestätigt wird, soll
-ShoppingRoute einmalig warnen und bei einem Timeout einen klaren Fehler im normalen
-ioBroker-Log melden. Wiederholte Prüfdurchläufe erzeugen dabei keine Logflut.
-Nach erfolgreicher Wiederherstellung erscheint eine einmalige Entwarnung.
-Außerdem werden die bereits ausgeführten Schreibvorgänge einzeln bestätigt: Wird
-während dieser Bestätigung ein anderer Artikel erledigt, bleibt die Synchronisation
-nicht dauerhaft hängen. Diese neue Erledigung wird im nächsten Abgleich verarbeitet.
-Nicht bestätigte ursprüngliche Schreibvorgänge bleiben weiterhin gesperrt.
-Bis zur Veröffentlichung sind bei ausbleibenden Übertragungen die Datenpunkte
-`shoppingroute.0.info.bringSyncStatus` und
-`shoppingroute.0.data.bringSyncJournal` zu prüfen.
-**Ein ausstehendes Journal niemals ohne vorherigen Vergleich beider aktiven Listen
-und der erledigten Artikel löschen.** Siehe [Issue #82](https://github.com/RaviniZib/ioBroker.shoppingroute/issues/82).
+**Neu in 0.6.1 – schnellerer und robusterer Bring!-/Alexa-Abgleich:** Sobald der Bring!-Adapter einen bestätigten Listenstand oder Alexa eine Listenänderung meldet, wird ShoppingRoute ereignisgesteuert aktiv. Es entfällt die zusätzliche Wartezeit von bis zu 90 Sekunden im ShoppingRoute-Intervall. Eine 30-Sekunden-Rückfallprüfung, kurze Wiederholungsversuche bei laufenden Sortierungen und zeitnahe Bestätigungen bleiben aktiv. Bereits ausgeführte Schreibvorgänge werden unabhängig von zwischenzeitlich erledigten anderen Artikeln erkannt. Dadurch blockieren solche Erledigungen den nächsten Abgleich nicht mehr. Nach drei Minuten ohne Bestätigung erscheint einmalig eine Warnung im ioBroker-Log, bei Timeout ein Fehler und nach Wiederherstellung eine Entwarnung – keine Logflut.
+
+**Wichtig zur Geschwindigkeit:** Der externe ioBroker-Bring!-Adapter **1.9.1** fragt die Bring!-Cloud weiterhin etwa **alle 90 Sekunden** ab. Erledigungen ausschließlich in der Bring!-App werden daher erst nach dessen nächster Aktualisierung im ioBroker bekannt. ShoppingRoute 0.6.1 beseitigt die **zusätzliche** eigene Wartezeit danach, ändert aber den Bring!-Cloud-Abruf nicht. Die Amazon-API-Schreibsperren bleiben bestehen.
+
+Bei Problemen `shoppingroute.0.info.bringSyncStatus` und `shoppingroute.0.data.bringSyncJournal` prüfen. Ein ausstehendes Journal niemals löschen, ohne vorher beide aktiven Listen und die erledigten Artikel zu sichern und zu vergleichen. Siehe [Issue #82](https://github.com/RaviniZib/ioBroker.shoppingroute/issues/82).
 
 ShoppingRoute macht aus einer normalen Alexa-Einkaufsliste eine praktische Einkaufshilfe: **Alle Märkte können gemeinsam in einer einzigen Liste geführt oder bewusst auf mehrere Listen verteilt werden.** Das besondere Merkmal ist das frei einstellbare **Marktrouting**: Für jeden Markt legst du deinen persönlichen Laufweg durch die Abteilungen fest. Dadurch steht die Einkaufsliste in der Reihenfolge, in der du tatsächlich durch den Laden gehst – für weniger Zurücklaufen, weniger Suchen und **schnelleres, effizienteres Einkaufen**.
 
