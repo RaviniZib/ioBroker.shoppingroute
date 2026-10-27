@@ -1,6 +1,6 @@
 # Changelog / Änderungsprotokoll
 
-## Unreleased – planned for 0.6.1 / für 0.6.1 vorgesehen
+## 0.6.1 – 2026-10-27
 
 ### Deutsch
 
@@ -8,7 +8,7 @@
 - **Sicherheitslogik:** Nicht bestätigte Schreibvorgänge bleiben weiterhin gesperrt. Das Transaktionsjournal wird nicht blind zurückgesetzt.
 - **Protokollierung:** Bei mehr als drei Minuten ausstehender Bestätigung wird einmalig eine Warnung, beim Timeout eine Fehlermeldung und nach erfolgreicher Wiederherstellung eine Entwarnung im normalen ioBroker-Log ausgegeben. Wiederholte Polls erzeugen keine Logflut.
 - **Tests und Dokumentation:** Automatische Regressionstests für konkurrierende Erledigungen, vollständige Bestätigung und ausstehende Schreibvorgänge; deutsche und englische Anleitungen aktualisiert.
-- **Status:** Noch nicht veröffentlicht. Änderungen bedürfen erfolgreicher Tests und Freigabe.
+- **Geschwindigkeit:** Ereignisgesteuerte Aktualisierung nach Bring!- und Alexa-Statusänderungen, 30-Sekunden-Rückfallprüfung und verkürzte Bestätigungsprüfung. Der Bring!-Adapter 1.9.1 fragt seine Cloud weiterhin alle etwa 90 Sekunden ab.
 
 ### English
 
@@ -16,7 +16,7 @@
 - **Safety:** Incomplete or unconfirmed original writes remain blocked. Never blindly reset a pending journal.
 - **Logging:** One warning for confirmations pending longer than three minutes, one error upon timeout, and an informational recovery message. Recurring polls do not flood the ioBroker log.
 - **Tests and documentation:** Regression tests for concurrent completions, confirmed writes and incomplete pending transactions; bilingual guides updated.
-- **Status:** Not released. CI and review are required before publishing.
+- **Speed:** Event-driven wakeups after confirmed Bring! and Alexa changes, a 30-second fallback and faster verification; Bring! adapter 1.9.1 still polls its cloud roughly every 90 seconds.
 
 ## 0.6.0 – 2026-10-26
 
