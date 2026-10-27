@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "shoppingroute",
-    "version": "0.6.0",
+    "version": "0.6.1",
     "titleLang": {
       "en": "ShoppingRoute",
       "de": "ShoppingRoute",
@@ -61,6 +61,19 @@
     "icon": "shoppingroute.png",
     "tier": 3,
     "news": {
+      "0.6.1": {
+        "en": "Faster event-driven Bring!/Alexa synchronization, safe reconciliation of concurrent completions and clear deduplicated timeout warnings.",
+        "de": "Schnellerer ereignisgesteuerter Bring!-/Alexa-Abgleich, sichere Verarbeitung gleichzeitiger Erledigungen und eindeutige, nicht wiederholte Timeout-Warnungen.",
+        "ru": "Ускоренная синхронизация Bring!/Alexa по событиям, безопасная обработка одновременных изменений и предупреждения о задержках без повторов.",
+        "pt": "Sincronização Bring!/Alexa mais rápida por eventos, conclusão simultânea segura e avisos de timeout sem repetições.",
+        "nl": "Snellere gebeurtenisgestuurde Bring!/Alexa-sync, veilige verwerking van gelijktijdige afmeldingen en duidelijke waarschuwingen zonder herhaling.",
+        "fr": "Synchronisation Bring!/Alexa plus rapide par événements, gestion sûre des validations simultanées et alertes de délai sans répétitions.",
+        "it": "Sincronizzazione Bring!/Alexa più rapida su eventi, gestione sicura degli elementi completati simultaneamente e avvisi non ripetuti.",
+        "es": "Sincronización Bring!/Alexa más rápida basada en eventos, gestión segura de elementos completados simultáneamente y avisos sin repeticiones.",
+        "pl": "Szybsza synchronizacja Bring!/Alexa sterowana zdarzeniami, bezpieczna obsługa jednoczesnych zmian i ostrzeżenia bez powtórzeń.",
+        "uk": "Швидша синхронізація Bring!/Alexa за подіями, безпечна обробка одночасних змін і попередження без повторів.",
+        "zh-cn": "更快的事件驱动 Bring!/Alexa 同步，安全处理同时完成的商品，并提供不重复的超时警告。"
+      },
       "0.6.0": {
         "en": "Optional Bring! integration: one-way import, bidirectional Alexa/Bring! synchronization with verification and conflict safeguards, and a Bring!-only route preview. Disabled by default; Bring! item order cannot be changed.",
         "de": "Optionale Bring!-Integration: einseitige Übernahme, bidirektionaler Alexa-/Bring!-Abgleich mit Konfliktschutz und Bring!-Laufwegvorschau. Standardmäßig aus; Bring! erlaubt keine freie Artikelsortierung.",
