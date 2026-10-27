@@ -1,6 +1,6 @@
 {
   "name": "iobroker.shoppingroute",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "ShoppingRoute for Alexa and Bring! with market routing, safe list synchronization and personal shopping routes.",
   "author": "RaviniZib <zib@ravini.org>",
   "license": "MIT",
