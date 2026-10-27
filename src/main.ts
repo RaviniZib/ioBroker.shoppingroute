@@ -56,7 +56,7 @@ import {
 import { isAcknowledgedForeignState } from './lib/state-change';
 import { resolveMobileMoves } from './lib/mobile-move';
 import { parseBringContent, parseAlexaContent, indexBridgeItems, reconcileBring,
-    itemsMatchExpected, parseBridgeBaseline, serializeBridgeBaseline,
+    itemsMatchExpected, parseBridgeBaseline, serializeBridgeBaseline, bringSyncLogEvent,
     type BringSyncMode, type BridgeBaseline, type BridgeItem } from './lib/bring-sync';
 import { sendBringCommand } from './lib/bring-io';
 import { createConfigBackup, isSuspiciousConfigReplacement, parseConfigBackup, restoreProtectedConfig } from './lib/config-protection';
@@ -239,6 +239,7 @@ export class ShoppingRoute extends utils.Adapter {
     private lastCompatibilityTest = 'Not executed yet.';
     private bringPollTimer: ioBroker.Timeout | undefined;
     private bringSyncRunning = false;
+    private bringLastLogAlert: string | null = null;
 
     public constructor(options: Partial<utils.AdapterOptions> = {}) {
         super({ ...options, name: 'shoppingroute' });
@@ -834,6 +835,13 @@ export class ShoppingRoute extends utils.Adapter {
         await this.setStateAsync('info.bringSyncStatus', JSON.stringify({
             time: new Date().toISOString(), mode: this.bringMode, status, message, ...details,
         }), true);
+        const pendingSince = typeof details.pendingSince === 'string' ? details.pendingSince : undefined;
+        const event = bringSyncLogEvent(status, message, this.bringLastLogAlert, pendingSince);
+        if (!event) return;
+        this.bringLastLogAlert = event.key;
+        if (event.level === 'error') this.log.error(event.message);
+        else if (event.level === 'warn') this.log.warn(event.message);
+        else this.log.info(event.message);
     }
 
     private async bringRoutePreview(items: BridgeItem[]): Promise<void> {
@@ -906,7 +914,9 @@ export class ShoppingRoute extends utils.Adapter {
                     const timedOut = Date.now() - Date.parse(pending.createdAt) > 600_000;
                     await this.bringStatus(timedOut ? 'blocked' : 'verifying',
                         timedOut ? 'Sync timed out. Check both lists and the journal; no further writes.'
-                            : 'Waiting for confirmation of the previous bridge transaction.');
+                            : 'Waiting for confirmation of the previous bridge transaction.', {
+                            pendingSince: pending.createdAt,
+                        });
                 }
                 return;
             }
@@ -987,7 +997,6 @@ export class ShoppingRoute extends utils.Adapter {
             }
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
-            this.log.warn('Bring! bridge: ' + message);
             await this.bringStatus('blocked', message);
         } finally {
             this.bringSyncRunning = false;
