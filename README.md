@@ -20,6 +20,14 @@
 > **Current version: 0.6.0 (2026-10-26).**
 > ShoppingRoute is available in the ioBroker **latest** repository.
 
+**Planned for 0.6.1 – Bring!/Alexa stall diagnostics:** A pending bridge transaction that
+cannot be confirmed will warn once after three minutes and report a clear ioBroker error
+if it times out. Repeated checks do not flood the log; confirmed recovery generates one
+informational message. Until the fix is released, inspect
+`shoppingroute.0.info.bringSyncStatus` and `shoppingroute.0.data.bringSyncJournal`
+if list changes stop propagating. **Do not delete a pending journal without verifying both
+provider lists and their completed items.** See [issue #82](https://github.com/RaviniZib/ioBroker.shoppingroute/issues/82).
+
 ## What ShoppingRoute does
 
 ShoppingRoute turns an ordinary Alexa shopping list into a practical shopping assistant. **All stores can share one Alexa list, or you can deliberately split them across several lists.** Its key feature is configurable **market routing**: for every store, you define your own walking order through the sections. ShoppingRoute then arranges the list to match the way you actually move through the shop — reducing backtracking and searching for **faster, more efficient shopping**.
