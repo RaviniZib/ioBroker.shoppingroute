@@ -1,10 +1,10 @@
 # ShoppingRoute – User Guide
 
-**Guide for ShoppingRoute 0.6.0 (26 October 2026)**
+**Guide for ShoppingRoute 0.6.1 (27 October 2026)**
 
-ShoppingRoute helps turn a normal Alexa shopping list into a list that follows the way you actually shop.
+**Faster Bring! synchronization (0.6.1):** ShoppingRoute now reacts to confirmed Bring! adapter list updates and Alexa list events without waiting for its old 90-second bridge timer. Fallback checks run every 30 seconds; confirmations can be checked sooner on an event without disabling Amazon's write-rate protection. A user completing another item during an older transaction no longer blocks subsequent changes when the original writes have been verified. A stalled bridge produces one warning after three minutes, an error after timeout, and one recovery notice instead of log spam. Check `shoppingroute.0.info.bringSyncStatus` and `shoppingroute.0.data.bringSyncJournal` if changes stop propagating; never reset the journal without backing up and checking both lists.
 
-**Update planned for 0.6.1 (not yet released):** If you complete an item in Bring! while an earlier synchronization is waiting for confirmation, ShoppingRoute will verify the original provider writes item by item. Once all original writes are confirmed, it will process your later completion in a new pass instead of blocking forever. An incomplete original write still prevents further changes. Delayed confirmations and timeouts are reported once in the normal ioBroker log, without repeated poll spam. In 0.6.0, check `shoppingroute.0.info.bringSyncStatus` and `shoppingroute.0.data.bringSyncJournal`; do not clear the journal without backing up and checking both lists.
+**External limit:** Bring! adapter 1.9.1 polls the Bring! cloud approximately every 90 seconds. A completion made in the Bring! mobile app cannot appear in ShoppingRoute before the Bring! adapter has refreshed its ioBroker state. Version 0.6.1 eliminates the additional delay inside ShoppingRoute, not this upstream cloud polling interval.
 
 ## Bring! lists and store routing in ShoppingRoute 0.6.0
 
