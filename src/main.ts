@@ -57,6 +57,7 @@ import { isAcknowledgedForeignState } from './lib/state-change';
 import { resolveMobileMoves } from './lib/mobile-move';
 import { parseBringContent, parseAlexaContent, indexBridgeItems, reconcileBring,
     itemsMatchExpected, parseBridgeBaseline, serializeBridgeBaseline, bringSyncLogEvent,
+    pendingWritesConfirmedExceptConcurrent,
     type BringSyncMode, type BridgeBaseline, type BridgeItem } from './lib/bring-sync';
 import { sendBringCommand } from './lib/bring-io';
 import { createConfigBackup, isSuspiciousConfigReplacement, parseConfigBackup, restoreProtectedConfig } from './lib/config-protection';
@@ -861,6 +862,7 @@ export class ShoppingRoute extends utils.Adapter {
     private async runBringSync(): Promise<void> {
         if (this.bringSyncRunning || this.isUnloading || this.bringMode === 'off') return;
         this.bringSyncRunning = true;
+        let nextBringPollMs = 90_000;
         try {
             if (!/^bring\.\d+$/.test(this.bringInstance) || !/^[\da-f-]{36}$/i.test(this.bringListId)) {
                 throw new Error('Select a valid Bring! instance and list before enabling sync.');
@@ -910,6 +912,16 @@ export class ShoppingRoute extends utils.Adapter {
                     await this.bringStatus('synced', 'Provider snapshots verified.', {
                         bringItems: bringItems.length, alexaItems: alexaItems.length,
                     });
+                } else if (pendingWritesConfirmedExceptConcurrent(previous, bringItems, alexaItems)) {
+                    // All writes of the earlier transaction are verified. New user edits
+                    // happened in parallel and must be handled in a fresh transaction.
+                    await this.setStateAsync('data.bringSyncJournal', serializeBridgeBaseline({
+                        version: 1, scope, mode: this.bringMode,
+                        bring: pending.bring, alexa: pending.alexa,
+                    }), true);
+                    await this.bringStatus('busy',
+                        'Previous bridge writes confirmed; concurrent list changes queued for reconciliation.');
+                    nextBringPollMs = 1_000;
                 } else {
                     const timedOut = Date.now() - Date.parse(pending.createdAt) > 600_000;
                     await this.bringStatus(timedOut ? 'blocked' : 'verifying',
@@ -1000,7 +1012,7 @@ export class ShoppingRoute extends utils.Adapter {
             await this.bringStatus('blocked', message);
         } finally {
             this.bringSyncRunning = false;
-            this.armBringPoll(90_000);
+            this.armBringPoll(nextBringPollMs);
         }
     }
 
