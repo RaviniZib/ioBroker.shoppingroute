@@ -1,6 +1,6 @@
 # ShoppingRoute – Bedienungsanleitung
 
-**Bedienungsanleitung für ShoppingRoute 0.6.0 (26.10.2026)**
+**Bedienungsanleitung für ShoppingRoute 0.6.1 (27.10.2026)**
 
 ShoppingRoute hilft dir dabei, eine Alexa-Einkaufsliste so zu ordnen, wie du tatsächlich einkaufst.
 
