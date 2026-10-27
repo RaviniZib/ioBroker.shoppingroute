@@ -20,10 +20,13 @@
 > **Current version: 0.6.0 (2026-10-26).**
 > ShoppingRoute is available in the ioBroker **latest** repository.
 
-**Planned for 0.6.1 – Bring!/Alexa stall diagnostics:** A pending bridge transaction that
+**Planned for 0.6.1 – Bring!/Alexa pending-transaction recovery and stall diagnostics:** A pending bridge transaction that
 cannot be confirmed will warn once after three minutes and report a clear ioBroker error
 if it times out. Repeated checks do not flood the log; confirmed recovery generates one
-informational message. Until the fix is released, inspect
+informational message. The bridge also verifies its original writes independently of
+other list items, so completing a different item during confirmation does not
+permanently block synchronization; that completion is handled on a new pass.
+Incomplete or unconfirmed original writes still block further operations. Until the fix is released, inspect
 `shoppingroute.0.info.bringSyncStatus` and `shoppingroute.0.data.bringSyncJournal`
 if list changes stop propagating. **Do not delete a pending journal without verifying both
 provider lists and their completed items.** See [issue #82](https://github.com/RaviniZib/ioBroker.shoppingroute/issues/82).
