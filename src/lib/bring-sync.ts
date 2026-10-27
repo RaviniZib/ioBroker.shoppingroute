@@ -176,3 +176,45 @@ export function parseBridgeBaseline(raw: unknown): BridgeBaseline | null {
     }
     return value as BridgeBaseline;
 }
+
+
+/**
+ * One-shot visibility for stalled Bring!/Alexa bridge operations. No log output
+ * during healthy polls. Returning a key lets callers suppress repeated reports.
+ */
+export interface BringSyncLogEvent {
+    level: 'info' | 'warn' | 'error';
+    key: string | null;
+    message: string;
+}
+export function bringSyncLogEvent(
+    status: string, description: string, previousKey: string | null,
+    pendingSince?: string, nowMs = Date.now(),
+): BringSyncLogEvent | null {
+    if (status === 'blocked') {
+        const key = 'blocked:' + description;
+        return previousKey === key ? null : {
+            level: 'error', key,
+            message: '[Bring!-Sync] BLOCKIERT/BLOCKED: ' + description +
+                ' Datenpunkt info.bringSyncStatus und Journal data.bringSyncJournal prüfen; nicht blind zurücksetzen.',
+        };
+    }
+    if (status === 'verifying' && pendingSince) {
+        const elapsed = nowMs - Date.parse(pendingSince);
+        if (Number.isFinite(elapsed) && elapsed >= 180_000) {
+            const key = 'confirmation-delayed';
+            return previousKey === key ? null : {
+                level: 'warn', key,
+                message: '[Bring!-Sync] WARNUNG/WARNING: Provider-Bestätigung seit mindestens 3 Minuten ausstehend. ' +
+                    'Weitere Änderungen können verzögert werden; info.bringSyncStatus prüfen.',
+            };
+        }
+    }
+    if (status === 'synced' && previousKey) {
+        return {
+            level: 'info', key: null,
+            message: '[Bring!-Sync] OK: Abgleich wieder bestätigt / synchronization confirmed again.',
+        };
+    }
+    return null;
+}
