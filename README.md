@@ -17,20 +17,14 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT license"></a>
 </p>
 
-> **Current version: 0.6.0 (2026-10-26).**
-> ShoppingRoute is available in the ioBroker **latest** repository.
+> **Current version: 0.6.1 (2026-10-27).**
+> ShoppingRoute releases appear through the ioBroker **latest** repository after index refresh.
 
-**Planned for 0.6.1 – Bring!/Alexa pending-transaction recovery and stall diagnostics:** A pending bridge transaction that
-cannot be confirmed will warn once after three minutes and report a clear ioBroker error
-if it times out. Repeated checks do not flood the log; confirmed recovery generates one
-informational message. The bridge also verifies its original writes independently of
-other list items, so completing a different item during confirmation does not
-permanently block synchronization; that completion is handled on a new pass.
-Incomplete or unconfirmed original writes still block further operations. Until the fix is released, inspect
-`shoppingroute.0.info.bringSyncStatus` and `shoppingroute.0.data.bringSyncJournal`
-if list changes stop propagating. **Do not delete a pending journal without verifying both
-provider lists and their completed items.** See [issue #82](https://github.com/RaviniZib/ioBroker.shoppingroute/issues/82).
+**0.6.1 – faster, safer Bring!/Alexa synchronization:** Once a new acknowledged Bring! list state or an Alexa list change is observed, ShoppingRoute starts a short debounced bridge check instead of waiting for another 90-second bridge poll. It retains a 30-second fallback check and reschedules busy transactions after three seconds; verification checks are rate-conscious and provider updates can wake them early. Original completed writes are confirmed independently from unrelated concurrent user changes, preventing a stale transaction from blocking later completions. The adapter reports delayed confirmations once as warnings, hard failures as errors, and a successful recovery once as informational output.
 
+**Timing limit:** ioBroker Bring! adapter 1.9.1 itself reads its cloud list every approximately **90 seconds**. Changes made only in the Bring! mobile app therefore still depend on that adapter's next read. ShoppingRoute 0.6.1 removes the *additional* 90-second wait **after** Bring! updates its ioBroker state; it does not change Bring!'s cloud polling, and it does not relax Alexa's API/write safety limits.
+
+For a blocked sync inspect `shoppingroute.0.info.bringSyncStatus` and `shoppingroute.0.data.bringSyncJournal`. Never clear a pending journal without first comparing and backing up both provider lists and completed items. See [issue #82](https://github.com/RaviniZib/ioBroker.shoppingroute/issues/82).
 ## What ShoppingRoute does
 
 ShoppingRoute turns an ordinary Alexa shopping list into a practical shopping assistant. **All stores can share one Alexa list, or you can deliberately split them across several lists.** Its key feature is configurable **market routing**: for every store, you define your own walking order through the sections. ShoppingRoute then arranges the list to match the way you actually move through the shop — reducing backtracking and searching for **faster, more efficient shopping**.
