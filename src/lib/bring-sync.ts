@@ -176,3 +176,84 @@ export function parseBridgeBaseline(raw: unknown): BridgeBaseline | null {
     }
     return value as BridgeBaseline;
 }
+
+
+/**
+ * One-shot visibility for stalled Bring!/Alexa bridge operations. No log output
+ * during healthy polls. Returning a key lets callers suppress repeated reports.
+ */
+export interface BringSyncLogEvent {
+    level: 'info' | 'warn' | 'error';
+    key: string | null;
+    message: string;
+}
+export function bringSyncLogEvent(
+    status: string, description: string, previousKey: string | null,
+    pendingSince?: string, nowMs = Date.now(),
+): BringSyncLogEvent | null {
+    if (status === 'blocked') {
+        const key = 'blocked:' + description;
+        return previousKey === key ? null : {
+            level: 'error', key,
+            message: '[Bring!-Sync] BLOCKIERT/BLOCKED: ' + description +
+                ' Datenpunkt info.bringSyncStatus und Journal data.bringSyncJournal prüfen; nicht blind zurücksetzen.',
+        };
+    }
+    if (status === 'verifying' && pendingSince) {
+        const elapsed = nowMs - Date.parse(pendingSince);
+        if (Number.isFinite(elapsed) && elapsed >= 180_000) {
+            const key = 'confirmation-delayed';
+            return previousKey === key ? null : {
+                level: 'warn', key,
+                message: '[Bring!-Sync] WARNUNG/WARNING: Provider-Bestätigung seit mindestens 3 Minuten ausstehend. ' +
+                    'Weitere Änderungen können verzögert werden; info.bringSyncStatus prüfen.',
+            };
+        }
+    }
+    if (status === 'synced' && previousKey) {
+        return {
+            level: 'info', key: null,
+            message: '[Bring!-Sync] OK: Abgleich wieder bestätigt / synchronization confirmed again.',
+        };
+    }
+    return null;
+}
+
+
+/**
+ * A pending bridge transaction may have finished its own writes even when
+ * users changed unrelated items while the cloud snapshots were being
+ * confirmed. Only acknowledge the transaction if EVERY change attempted
+ * against the old baseline is visible on the correct provider. New changes
+ * to untouched items remain pending for the NEXT reconciliation pass.
+ *
+ * This must never bypass confirmation of an incomplete or ambiguous write.
+ *
+ * @param previous Persisted bridge baseline and expected pending transaction.
+ * @param bringItems Current acknowledged Bring! items.
+ * @param alexaItems Current Alexa items.
+ * @returns True only when every originally requested mutation is observable.
+ */
+export function pendingWritesConfirmedExceptConcurrent(
+    previous: BridgeBaseline, bringItems: BridgeItem[], alexaItems: BridgeItem[],
+): boolean {
+    if (!previous.pending) return false;
+    const actualBring = indexBridgeItems(bringItems, 'Bring!');
+    const actualAlexa = indexBridgeItems(alexaItems, 'Alexa');
+    let mutations = 0;
+    const allPlannedMutationsPresent = (
+        beforeKeys: string[], expectedKeys: string[], actual: Map<string, BridgeItem>,
+    ): boolean => {
+        const before = new Set(beforeKeys);
+        const expected = new Set(expectedKeys);
+        for (const key of new Set([...before, ...expected])) {
+            if (before.has(key) === expected.has(key)) continue;
+            mutations++;
+            if (actual.has(key) !== expected.has(key)) return false;
+        }
+        return true;
+    };
+    return allPlannedMutationsPresent(previous.bring, previous.pending.bring, actualBring) &&
+        allPlannedMutationsPresent(previous.alexa, previous.pending.alexa, actualAlexa) &&
+        mutations > 0;
+}

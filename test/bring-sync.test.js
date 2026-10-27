@@ -4,7 +4,8 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
     parseBringContent, parseAlexaContent, indexBridgeItems, reconcileBring,
-    itemKey, itemsMatchExpected, parseBridgeBaseline, serializeBridgeBaseline,
+    itemKey, itemsMatchExpected, parseBridgeBaseline, serializeBridgeBaseline, bringSyncLogEvent,
+    pendingWritesConfirmedExceptConcurrent,
 } = require('../build/lib/bring-sync');
 
 const markets = [{ name: 'ALDI' }, { name: 'REWE' }];
@@ -140,4 +141,75 @@ test('one-way Bring import does not transfer an Alexa voice addition into Bring!
     const plan = reconcileBring('import', baseline([], [], 'import'), [], voiceAdded);
     assert.deepEqual(plan.addToBring, []);
     assert.deepEqual(plan.removeFromAlexa, []);
+});
+
+test('Bring! bridge stays quiet during normal polling, then warns once after three minutes', () => {
+    const since = '2026-10-27T08:00:00.000Z';
+    const now = Date.parse(since);
+    assert.equal(bringSyncLogEvent('synced', 'No changes needed.', null, undefined, now), null);
+    assert.equal(bringSyncLogEvent('verifying', 'Waiting', null, since, now + 179_999), null);
+    const warning = bringSyncLogEvent('verifying', 'Waiting', null, since, now + 180_000);
+    assert.equal(warning.level, 'warn');
+    assert.match(warning.message, /Bestätigung/);
+    assert.equal(bringSyncLogEvent('verifying', 'Waiting', warning.key, since, now + 270_000), null);
+});
+
+test('Bring! bridge logs timed-out transactions only once, escalating to an error', () => {
+    const warning = bringSyncLogEvent('verifying', 'Waiting', null, '2026-10-27T08:00:00.000Z',
+        Date.parse('2026-10-27T08:04:00.000Z'));
+    const error = bringSyncLogEvent('blocked', 'Sync timed out.', warning.key);
+    assert.equal(error.level, 'error');
+    assert.match(error.message, /BLOCKIERT/);
+    assert.equal(bringSyncLogEvent('blocked', 'Sync timed out.', error.key), null);
+    const healthy = bringSyncLogEvent('synced', 'No changes needed.', error.key);
+    assert.equal(healthy.level, 'info');
+    assert.equal(healthy.key, null);
+    assert.equal(bringSyncLogEvent('synced', 'No changes needed.', null), null);
+    assert.equal(bringSyncLogEvent('busy', 'Sorting', null), null);
+});
+
+
+test('pending writes are confirmed despite a new Bring! completion of an unchanged article', () => {
+    const items = [b('Bifteki'), b('Salami'), b('Testartikel'), b('Äpfel')];
+    const journal = baseline(items, items);
+    journal.pending = {
+        createdAt: '2026-10-27T09:31:19.798Z',
+        bring: [b('Testartikel').key, b('Äpfel').key],
+        alexa: [b('Testartikel').key, b('Äpfel').key],
+    };
+    const bringNow = [b('Äpfel')]; // User completed Testartikel while older deletes verified.
+    const alexaNow = [a('test', '68> Testartikel'), a('apple', '37> Äpfel')];
+    assert.equal(itemsMatchExpected(bringNow, journal.pending.bring), false);
+    assert.equal(pendingWritesConfirmedExceptConcurrent(journal, bringNow, alexaNow), true);
+    const verifiedBase = { ...journal, bring: journal.pending.bring, alexa: journal.pending.alexa };
+    delete verifiedBase.pending;
+    const next = reconcileBring('bidirectional', verifiedBase, bringNow, alexaNow);
+    assert.deepEqual(next.removeFromAlexa.map(entry => entry.name), ['Testartikel']);
+    assert.deepEqual(next.addToBring, []); // NEVER restore the completed article.
+});
+
+test('pending writes cannot be acknowledged if any originally requested removal failed', () => {
+    const items = [b('Bifteki'), b('Salami'), b('Testartikel'), b('Äpfel')];
+    const journal = baseline(items, items);
+    journal.pending = {
+        createdAt: '2026-10-27T09:31:19.798Z',
+        bring: [b('Testartikel').key, b('Äpfel').key],
+        alexa: [b('Testartikel').key, b('Äpfel').key],
+    };
+    assert.equal(pendingWritesConfirmedExceptConcurrent(
+        journal, [b('Äpfel')], [a('b', 'Bifteki'), a('t', 'Testartikel'), a('ap', 'Äpfel')]), false);
+});
+
+test('pending writes cannot be acknowledged if a requested new item is still missing', () => {
+    const old = [b('Äpfel')];
+    const journal = baseline(old, old);
+    journal.pending = {
+        createdAt: '2026-10-27T09:31:19.798Z',
+        bring: [b('Äpfel').key, b('Milch').key],
+        alexa: [b('Äpfel').key, b('Milch').key],
+    };
+    assert.equal(pendingWritesConfirmedExceptConcurrent(journal, old, old), false);
+    assert.equal(pendingWritesConfirmedExceptConcurrent(journal,
+        [b('Äpfel'), b('Milch')], [a('ap', 'Äpfel'), a('milk', 'Milch'), a('new', 'Neu')]), true);
+    assert.equal(pendingWritesConfirmedExceptConcurrent(baseline(old, old), old, old), false);
 });
