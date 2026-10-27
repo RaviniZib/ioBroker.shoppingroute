@@ -69,7 +69,7 @@ import {
     type DirectSortPhase,
 } from './lib/direct-sort-lifecycle';
 
-const VERSION = '0.6.0';
+const VERSION = '0.6.1';
 const COLLECT_WINDOW_MS = 5000;
 class MissingAlexaListError extends Error {}
 const MAX_ACTIVE_ITEMS = 99;
@@ -81,7 +81,7 @@ const DIRECT_POLL_BRIDGE_MS = 30_000;
 const BRING_SYNC_BACKSTOP_MS = 30_000;
 const BRING_SYNC_EVENT_MS = 750;
 const BRING_SYNC_BUSY_RETRY_MS = 3_000;
-const BRING_SYNC_VERIFY_RETRY_MS = 5_000;
+const BRING_SYNC_VERIFY_RETRY_MS = 15_000;
 const DIRECT_FINAL_VERIFY_ATTEMPTS = 3;
 const DIRECT_FINAL_VERIFY_RETRY_MS = 1500;
 
