@@ -4,6 +4,17 @@
 
 **Aktuelle Version: 0.6.0 (26.10.2026).**
 
+**Für Version 0.6.1 vorgesehen – Bring!-Synchronisationsmeldungen:** Wenn eine
+ausstehende Transaktion länger als drei Minuten nicht bestätigt wird, soll
+ShoppingRoute einmalig warnen und bei einem Timeout einen klaren Fehler im normalen
+ioBroker-Log melden. Wiederholte Prüfdurchläufe erzeugen dabei keine Logflut.
+Nach erfolgreicher Wiederherstellung erscheint eine einmalige Entwarnung.
+Bis zur Veröffentlichung sind bei ausbleibenden Übertragungen die Datenpunkte
+`shoppingroute.0.info.bringSyncStatus` und
+`shoppingroute.0.data.bringSyncJournal` zu prüfen.
+**Ein ausstehendes Journal niemals ohne vorherigen Vergleich beider aktiven Listen
+und der erledigten Artikel löschen.** Siehe [Issue #82](https://github.com/RaviniZib/ioBroker.shoppingroute/issues/82).
+
 ShoppingRoute macht aus einer normalen Alexa-Einkaufsliste eine praktische Einkaufshilfe: **Alle Märkte können gemeinsam in einer einzigen Liste geführt oder bewusst auf mehrere Listen verteilt werden.** Das besondere Merkmal ist das frei einstellbare **Marktrouting**: Für jeden Markt legst du deinen persönlichen Laufweg durch die Abteilungen fest. Dadurch steht die Einkaufsliste in der Reihenfolge, in der du tatsächlich durch den Laden gehst – für weniger Zurücklaufen, weniger Suchen und **schnelleres, effizienteres Einkaufen**.
 
 ShoppingRoute sortiert Alexa-Einkaufslisteneinträge nach Markt, Produktgruppe und dem individuellen Laufweg durch den jeweiligen Markt. Dazu vergibt es sichtbare zweistellige Schlüssel wie `20> Bananen` und `40> ═════ ALDI ═════`; verwaltete Listen müssen deshalb in der Alexa-App auf **A–Z** stehen. ShoppingRoute übernimmt lokal die Alexa2-Authentifizierung für direkte Updates, Deletes und Batch-Creates; Alexa2-Listenstates bleiben die Triggerquelle für externe Änderungen.
