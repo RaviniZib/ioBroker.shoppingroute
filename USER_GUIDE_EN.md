@@ -4,6 +4,8 @@
 
 ShoppingRoute helps turn a normal Alexa shopping list into a list that follows the way you actually shop.
 
+**Update planned for 0.6.1 (not yet released):** If you complete an item in Bring! while an earlier synchronization is waiting for confirmation, ShoppingRoute will verify the original provider writes item by item. Once all original writes are confirmed, it will process your later completion in a new pass instead of blocking forever. An incomplete original write still prevents further changes. Delayed confirmations and timeouts are reported once in the normal ioBroker log, without repeated poll spam. In 0.6.0, check `shoppingroute.0.info.bringSyncStatus` and `shoppingroute.0.data.bringSyncJournal`; do not clear the journal without backing up and checking both lists.
+
 ## Bring! lists and store routing in ShoppingRoute 0.6.0
 
 The Bring! bridge is **disabled by default**. Existing Alexa users will notice no change.
