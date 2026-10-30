@@ -151,19 +151,6 @@
         "pl": "No Market jako domyślny sklep zastępczy, strona kopii zapasowej w 11 językach i usunięcie sześciu nieużywanych kluczy tłumaczeń. Istniejąca konfiguracja zostaje zachowana.",
         "uk": "Резервний магазин за замовчуванням: No Market. Сторінку резервного копіювання перекладено 11 мовами, видалено шість невикористаних ключів перекладу. Наявну конфігурацію збережено.",
         "zh-cn": "默认备用商店名称改为 No Market，备份页面支持全部 11 种管理语言，并移除六个未使用的翻译键。保留现有配置。"
-      },
-      "0.4.3": {
-        "en": "Uses ioBroker-managed timers for Alexa callback timeouts and keeps repository news metadata within the supported seven-entry limit.",
-        "de": "Verwendet ioBroker-verwaltete Timer für Alexa-Callback-Timeouts und hält die Repository-News-Metadaten innerhalb des unterstützten Limits von sieben Einträgen.",
-        "ru": "Использует таймеры ioBroker для тайм-аутов Alexa и ограничивает news поддерживаемыми семью записями.",
-        "pt": "Usa temporizadores geridos pelo ioBroker para timeouts Alexa e mantém news no limite suportado de sete entradas.",
-        "nl": "Gebruikt door ioBroker beheerde timers voor Alexa-time-outs en houdt news binnen de ondersteunde limiet van zeven items.",
-        "fr": "Utilise les temporisateurs gérés par ioBroker pour les délais Alexa et limite news aux sept entrées prises en charge.",
-        "it": "Usa timer gestiti da ioBroker per i timeout Alexa e mantiene news entro il limite supportato di sette voci.",
-        "es": "Usa temporizadores gestionados por ioBroker para los tiempos de espera de Alexa y limita news a siete entradas.",
-        "pl": "Używa timerów zarządzanych przez ioBroker dla limitów czasu Alexa i ogranicza news do siedmiu wpisów.",
-        "uk": "Використовує таймери ioBroker для тайм-аутів Alexa та обмежує news сімома підтримуваними записами.",
-        "zh-cn": "使用 ioBroker 管理的计时器处理 Alexa 超时，并将 news 限制为支持的七个条目。"
       }
     },
     "extIcon": "https://raw.githubusercontent.com/RaviniZib/ioBroker.shoppingroute/main/admin/shoppingroute.png",
