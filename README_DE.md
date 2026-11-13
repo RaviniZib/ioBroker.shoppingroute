@@ -169,6 +169,9 @@ ShoppingRoute wird unter der **[MIT-Lizenz](LICENSE)** veröffentlicht. Frühere
 
 ### 0.6.2 (13.11.2026)
 - @iobroker/testing auf 6.3.2 aktualisiert (Repo-Checker-Warnung W0037, Issue #85).
+- Bisher unveröffentlichte Repo-Checker-Korrekturen aus #86 übernommen: README-Changelog, veraltete Changelog-Dateien und zu viele Versionsmeldungen bereinigt.
+- Zweisprachigen Hinweis zur eigenständigen, ungefähr 90-sekündigen Bring!-Cloud-Abfrage übernommen (#84).
+- Bereits zusammengeführte Aktualisierungen auf Vite 8.3.5 und @module-federation/vite 1.23.7 enthalten (#87, #88).
 - Versionsangaben im Laufzeitcode und in den Paketdateien abgeglichen; bewährte Alexa-/Bring!-Schutzmechanismen und Funktionen beibehalten.
 
 ### 0.6.1 (27.10.2026)

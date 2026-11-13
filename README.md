@@ -230,6 +230,9 @@ Please use the [ioBroker tester thread](https://forum.iobroker.net/topic/85510/t
 
 ### 0.6.2 (2026-11-13)
 - Updated @iobroker/testing to 6.3.2 to resolve repository checker warning W0037 (Issue #85).
+- Includes unpublished repository checker cleanup from #86: README changelog entries, old changelog files and excessive io-package news were corrected.
+- Includes the bilingual clarification that the separate Bring! adapter refreshes its cloud data on its own approximately 90-second schedule (#84).
+- Includes previously merged Vite 8.3.5 and @module-federation/vite 1.23.7 build-tool updates (#87, #88).
 - Aligned runtime and package version metadata; retained the established Alexa and Bring! safety mechanisms and behavior.
 
 ### 0.6.1 (2026-10-27)
