@@ -1,6 +1,6 @@
 {
   "name": "iobroker.shoppingroute",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "ShoppingRoute for Alexa and Bring! with market routing, safe list synchronization and personal shopping routes.",
   "author": "RaviniZib <zib@ravini.org>",
   "license": "MIT",
@@ -55,7 +55,7 @@
     "@alcalzone/release-script-plugin-manual-review": "^5.2.0",
     "@iobroker/adapter-dev": "^1.5.0",
     "@iobroker/eslint-config": "^2.3.4",
-    "@iobroker/testing": "^6.3.0",
+    "@iobroker/testing": "^6.3.2",
     "@module-federation/vite": "^1.4.1",
     "@tsconfig/node22": "^22.0.5",
     "@types/node": "^22.15.0",

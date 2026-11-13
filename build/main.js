@@ -53,7 +53,7 @@ const bring_sync_1 = require("./lib/bring-sync");
 const bring_io_1 = require("./lib/bring-io");
 const config_protection_1 = require("./lib/config-protection");
 const direct_sort_lifecycle_1 = require("./lib/direct-sort-lifecycle");
-const VERSION = '0.6.0';
+const VERSION = '0.6.2';
 const COLLECT_WINDOW_MS = 5000;
 class MissingAlexaListError extends Error {
 }
@@ -61,6 +61,12 @@ const MAX_ACTIVE_ITEMS = 99;
 const OWN_REFRESH_MAX_MS = 30000;
 const DIRECT_POLL_BASE_MS = 60000;
 const DIRECT_POLL_MAX_MS = 15 * 60000;
+// Event-driven Bring! sync: the upstream Bring! adapter still polls its cloud independently.
+const DIRECT_POLL_BRIDGE_MS = 30_000;
+const BRING_SYNC_BACKSTOP_MS = 30_000;
+const BRING_SYNC_EVENT_MS = 750;
+const BRING_SYNC_BUSY_RETRY_MS = 3_000;
+const BRING_SYNC_VERIFY_RETRY_MS = 15_000;
 const DIRECT_FINAL_VERIFY_ATTEMPTS = 3;
 const DIRECT_FINAL_VERIFY_RETRY_MS = 1500;
 const normalizeMarketName = (value) => typeof value === 'string' ? value.trim().toLocaleUpperCase('de-DE') : '';
@@ -155,7 +161,10 @@ class ShoppingRoute extends utils.Adapter {
     compatibilityDetail = 'Direct Alexa session has not been initialized yet.';
     lastCompatibilityTest = 'Not executed yet.';
     bringPollTimer;
+    bringPollDueAt = 0;
+    bringPollQueued = false;
     bringSyncRunning = false;
+    bringLastLogAlert = null;
     constructor(options = {}) {
         super({ ...options, name: 'shoppingroute' });
         this.on('ready', this.onReady.bind(this));
@@ -181,6 +190,10 @@ class ShoppingRoute extends utils.Adapter {
     get bringInstance() { return String(this.cfg.bringInstance || 'bring.0').trim(); }
     get bringListId() { return String(this.cfg.bringListId || '').trim(); }
     get bringAlexaList() { return String(this.cfg.bringAlexaList || this.cfg.listName || 'SHOP').trim(); }
+    get directPollBaseMs() {
+        return this.bringMode === 'bidirectional' || this.bringMode === 'import'
+            ? DIRECT_POLL_BRIDGE_MS : DIRECT_POLL_BASE_MS;
+    }
     get markets() {
         return (Array.isArray(this.cfg.markets) ? this.cfg.markets : []).filter(market => market?.name && market.enabled !== false);
     }
@@ -382,6 +395,11 @@ class ShoppingRoute extends utils.Adapter {
         await this.setStateAsync('control.temporaryPriorityMarket', this.temporaryPriorityMarket || '__none__', true);
         this.subscribeStates('control.*');
         await this.ensureBringSyncStates();
+        // One-way event bridge: observe Bring! adapter snapshots without writing to it.
+        if (this.bringMode !== 'off' && /^bring\.\d+$/.test(this.bringInstance) &&
+            /^[\da-f-]{36}$/i.test(this.bringListId)) {
+            this.subscribeForeignStates(`${this.bringInstance}.${this.bringListId}.content`);
+        }
         if (this.bringMode === 'bring-only') {
             await this.refreshExports();
             await this.updateFeedbackReport();
@@ -426,7 +444,7 @@ class ShoppingRoute extends utils.Adapter {
         this.log.info('IMPORTANT: Set every managed list in the Alexa app to alphabetical sorting (A–Z).');
         this.log.debug('Direct sorting uses visible prefixes 00>–99>; Alexa2 list states are used only as an external trigger source.');
         this.scheduleAll(COLLECT_WINDOW_MS);
-        this.armDirectPoll(DIRECT_POLL_BASE_MS);
+        this.armDirectPoll(this.directPollBaseMs);
         this.armBringPoll(1000);
     }
     async discoverAlexaLists(instanceName = this.alexaInstance) {
@@ -748,17 +766,45 @@ class ShoppingRoute extends utils.Adapter {
     armBringPoll(delay) {
         if (this.isUnloading || this.bringMode === 'off')
             return;
+        const clampedDelay = Math.max(0, delay);
+        const dueAt = Date.now() + clampedDelay;
+        // A later fallback must never postpone a pending event-triggered check.
+        if (this.bringPollTimer && this.bringPollDueAt <= dueAt)
+            return;
         if (this.bringPollTimer)
             this.clearTimeout(this.bringPollTimer);
+        this.bringPollDueAt = dueAt;
         this.bringPollTimer = this.setTimeout(() => {
             this.bringPollTimer = undefined;
+            this.bringPollDueAt = 0;
             void this.runBringSync();
-        }, delay);
+        }, clampedDelay);
+    }
+    requestBringPoll(delay = BRING_SYNC_EVENT_MS) {
+        if (this.isUnloading || this.bringMode === 'off')
+            return;
+        if (this.bringSyncRunning) {
+            // Never lose events received while a write or confirmation is running.
+            this.bringPollQueued = true;
+            return;
+        }
+        this.armBringPoll(delay);
     }
     async bringStatus(status, message, details = {}) {
         await this.setStateAsync('info.bringSyncStatus', JSON.stringify({
             time: new Date().toISOString(), mode: this.bringMode, status, message, ...details,
         }), true);
+        const pendingSince = typeof details.pendingSince === 'string' ? details.pendingSince : undefined;
+        const event = (0, bring_sync_1.bringSyncLogEvent)(status, message, this.bringLastLogAlert, pendingSince);
+        if (!event)
+            return;
+        this.bringLastLogAlert = event.key;
+        if (event.level === 'error')
+            this.log.error(event.message);
+        else if (event.level === 'warn')
+            this.log.warn(event.message);
+        else
+            this.log.info(event.message);
     }
     async bringRoutePreview(items) {
         const source = items.map((entry, index) => ({
@@ -770,9 +816,14 @@ class ShoppingRoute extends utils.Adapter {
         await this.setStateAsync('info.bringSyncPreview', JSON.stringify(rows, null, 2), true);
     }
     async runBringSync() {
-        if (this.bringSyncRunning || this.isUnloading || this.bringMode === 'off')
+        if (this.isUnloading || this.bringMode === 'off')
             return;
+        if (this.bringSyncRunning) {
+            this.bringPollQueued = true;
+            return;
+        }
         this.bringSyncRunning = true;
+        let nextBringPollMs = BRING_SYNC_BACKSTOP_MS;
         try {
             if (!/^bring\.\d+$/.test(this.bringInstance) || !/^[\da-f-]{36}$/i.test(this.bringListId)) {
                 throw new Error('Select a valid Bring! instance and list before enabling sync.');
@@ -797,7 +848,9 @@ class ShoppingRoute extends utils.Adapter {
             const target = this.listConfigs.find(entry => entry.name === this.bringAlexaList);
             if (!target)
                 throw new Error('Selected Alexa shopping list is not enabled.');
-            if (this.applyingListName || this.manualCommandPending || this.directPollRunning) {
+            if (this.applyingListName || this.manualCommandPending || this.directPollRunning ||
+                this.getListState(target.name).phase === 'COLLECTING') {
+                nextBringPollMs = BRING_SYNC_BUSY_RETRY_MS;
                 await this.bringStatus('busy', 'Another Alexa operation is running; synchronization deferred.');
                 return;
             }
@@ -825,10 +878,23 @@ class ShoppingRoute extends utils.Adapter {
                         bringItems: bringItems.length, alexaItems: alexaItems.length,
                     });
                 }
+                else if ((0, bring_sync_1.pendingWritesConfirmedExceptConcurrent)(previous, bringItems, alexaItems)) {
+                    // All writes of the earlier transaction are verified. New user edits
+                    // happened in parallel and must be handled in a fresh transaction.
+                    await this.setStateAsync('data.bringSyncJournal', (0, bring_sync_1.serializeBridgeBaseline)({
+                        version: 1, scope, mode: this.bringMode,
+                        bring: pending.bring, alexa: pending.alexa,
+                    }), true);
+                    await this.bringStatus('busy', 'Previous bridge writes confirmed; concurrent list changes queued for reconciliation.');
+                    nextBringPollMs = 1_000;
+                }
                 else {
+                    nextBringPollMs = BRING_SYNC_VERIFY_RETRY_MS;
                     const timedOut = Date.now() - Date.parse(pending.createdAt) > 600_000;
                     await this.bringStatus(timedOut ? 'blocked' : 'verifying', timedOut ? 'Sync timed out. Check both lists and the journal; no further writes.'
-                        : 'Waiting for confirmation of the previous bridge transaction.');
+                        : 'Waiting for confirmation of the previous bridge transaction.', {
+                        pendingSince: pending.createdAt,
+                    });
                 }
                 return;
             }
@@ -896,6 +962,7 @@ class ShoppingRoute extends utils.Adapter {
                     await this.amazonCall(undefined, () => client.deleteItem(listId, entry.alexaId, Number(entry.alexaVersion)));
                     await this.recordDirectWrite();
                 }
+                nextBringPollMs = BRING_SYNC_VERIFY_RETRY_MS;
                 await this.bringStatus('verifying', 'Writes submitted, waiting for provider confirmation.', {
                     addToBring: plan.addToBring.length, addToAlexa: plan.addToAlexa.length,
                     removeFromBring: plan.removeFromBring.length, removeFromAlexa: plan.removeFromAlexa.length,
@@ -910,12 +977,17 @@ class ShoppingRoute extends utils.Adapter {
         }
         catch (error) {
             const message = error instanceof Error ? error.message : String(error);
-            this.log.warn('Bring! bridge: ' + message);
             await this.bringStatus('blocked', message);
         }
         finally {
             this.bringSyncRunning = false;
-            this.armBringPoll(90_000);
+            if (this.bringPollQueued) {
+                this.bringPollQueued = false;
+                this.armBringPoll(BRING_SYNC_EVENT_MS);
+            }
+            else {
+                this.armBringPoll(nextBringPollMs);
+            }
         }
     }
     async onMessage(obj) {
@@ -1180,6 +1252,11 @@ class ShoppingRoute extends utils.Adapter {
                 this.scheduleAll(COLLECT_WINDOW_MS);
             return;
         }
+        if (this.bringMode !== 'off' && id === `${this.bringInstance}.${this.bringListId}.content`) {
+            if ((0, state_change_1.isAcknowledgedForeignState)(state))
+                this.requestBringPoll();
+            return;
+        }
         const list = this.listConfigs.find(entry => id === this.listStateId(entry.name));
         if (list) {
             if (!(0, state_change_1.isAcknowledgedForeignState)(state))
@@ -1187,6 +1264,9 @@ class ShoppingRoute extends utils.Adapter {
             await this.setStateAsync('info.connection', true, true);
             if (!this.compatibilityTesting)
                 this.observeListState(list.name, state.val);
+            if (this.bringMode !== 'off' && this.bringMode !== 'bring-only' &&
+                list.name === this.bringAlexaList)
+                this.requestBringPoll();
         }
     }
     onUnload(callback) {
@@ -1291,7 +1371,7 @@ class ShoppingRoute extends utils.Adapter {
         try {
             // Keep the poll timer alive while writes are running or sorting is disabled.
             if (this.applyingListName || this.manualCommandPending || !(await this.isEnabled())) {
-                this.directPollDelayMs = DIRECT_POLL_BASE_MS;
+                this.directPollDelayMs = this.directPollBaseMs;
                 return;
             }
             for (const list of this.listConfigs) {
@@ -1308,11 +1388,11 @@ class ShoppingRoute extends utils.Adapter {
                 const items = await this.readDirectItems(listId);
                 this.observeListState(list.name, JSON.stringify(items));
             }
-            this.directPollDelayMs = DIRECT_POLL_BASE_MS;
+            this.directPollDelayMs = this.directPollBaseMs;
             await this.setStateAsync('info.connection', true, true);
         }
         catch (error) {
-            this.directPollDelayMs = Math.min(DIRECT_POLL_MAX_MS, Math.max(DIRECT_POLL_BASE_MS, this.directPollDelayMs) * 2);
+            this.directPollDelayMs = Math.min(DIRECT_POLL_MAX_MS, Math.max(this.directPollBaseMs, this.directPollDelayMs) * 2);
             this.directClient?.close();
             this.directClient = null;
             this.directListIds.clear();

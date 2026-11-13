@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "shoppingroute",
-    "version": "0.6.1",
+    "version": "0.6.2",
     "titleLang": {
       "en": "ShoppingRoute",
       "de": "ShoppingRoute",
@@ -61,6 +61,19 @@
     "icon": "shoppingroute.png",
     "tier": 3,
     "news": {
+      "0.6.2": {
+        "en": "Maintenance release: updated @iobroker/testing to 6.3.2 to resolve repository checker warning W0037.",
+        "de": "Wartungsversion: @iobroker/testing auf 6.3.2 aktualisiert und Repo-Checker-Warnung W0037 behoben.",
+        "ru": "Техническое обновление: @iobroker/testing обновлён до 6.3.2, устранено предупреждение W0037.",
+        "pt": "Versão de manutenção: @iobroker/testing atualizado para 6.3.2, resolvendo o aviso W0037.",
+        "nl": "Onderhoudsrelease: @iobroker/testing bijgewerkt naar 6.3.2; waarschuwing W0037 opgelost.",
+        "fr": "Version de maintenance : @iobroker/testing mis à jour vers 6.3.2 pour corriger l’avertissement W0037.",
+        "it": "Versione di manutenzione: @iobroker/testing aggiornato alla 6.3.2; risolto l’avviso W0037.",
+        "es": "Versión de mantenimiento: @iobroker/testing actualizado a 6.3.2; aviso W0037 corregido.",
+        "pl": "Wydanie konserwacyjne: zaktualizowano @iobroker/testing do 6.3.2; usunięto ostrzeżenie W0037.",
+        "uk": "Технічне оновлення: @iobroker/testing оновлено до 6.3.2; попередження W0037 усунено.",
+        "zh-cn": "维护版本：将 @iobroker/testing 更新至 6.3.2，解决仓库检查器警告 W0037。"
+      },
       "0.6.1": {
         "en": "Faster event-driven Bring!/Alexa synchronization, safe reconciliation of concurrent completions and clear deduplicated timeout warnings.",
         "de": "Schnellerer ereignisgesteuerter Bring!-/Alexa-Abgleich, sichere Verarbeitung gleichzeitiger Erledigungen und eindeutige, nicht wiederholte Timeout-Warnungen.",
@@ -138,19 +151,6 @@
         "pl": "Nowa strona zarządzania ShoppingRoute na pasku bocznym, zapis katalogów podczas działania, ochrona przed przypadkowym resetem i nazwy sklepów wielkimi literami.",
         "uk": "Нова сторінка керування ShoppingRoute у бічній панелі, збереження каталогів під час роботи, захист від випадкового скидання та назви магазинів великими літерами.",
         "zh-cn": "新增侧边栏 ShoppingRoute 管理页面、运行时目录存储、意外目录重置保护，以及统一的大写商店名称。"
-      },
-      "0.4.4": {
-        "en": "Use No Market as the default fallback market, translate the backup utility into all 11 admin languages, and remove six unused translation keys. Existing configuration is preserved.",
-        "de": "No Market als Standard-Ausweichmarkt, Backup-Seite in allen 11 Admin-Sprachen und sechs ungenutzte Übersetzungsschlüssel entfernt. Bestehende Konfigurationen bleiben erhalten.",
-        "ru": "Резервный магазин по умолчанию: No Market. Страница резервного копирования переведена на 11 языков, удалены шесть неиспользуемых ключей перевода. Существующая конфигурация сохранена.",
-        "pt": "No Market como loja predefinida de recurso, página de cópia de segurança nos 11 idiomas e remoção de seis chaves de tradução não utilizadas. A configuração existente é preservada.",
-        "nl": "No Market als standaard terugvalwinkel, de back-uppagina in alle 11 beheertalen en zes ongebruikte vertaalsleutels verwijderd. Bestaande configuratie blijft behouden.",
-        "fr": "No Market comme magasin de secours par défaut, outil de sauvegarde traduit dans les 11 langues et suppression de six clés de traduction inutilisées. La configuration existante est préservée.",
-        "it": "No Market come negozio predefinito di riserva, pagina di backup in tutte le 11 lingue e rimozione di sei chiavi di traduzione inutilizzate. La configurazione esistente viene preservata.",
-        "es": "No Market como tienda predeterminada de respaldo, página de copias de seguridad en los 11 idiomas y eliminación de seis claves de traducción sin uso. Se conserva la configuración existente.",
-        "pl": "No Market jako domyślny sklep zastępczy, strona kopii zapasowej w 11 językach i usunięcie sześciu nieużywanych kluczy tłumaczeń. Istniejąca konfiguracja zostaje zachowana.",
-        "uk": "Резервний магазин за замовчуванням: No Market. Сторінку резервного копіювання перекладено 11 мовами, видалено шість невикористаних ключів перекладу. Наявну конфігурацію збережено.",
-        "zh-cn": "默认备用商店名称改为 No Market，备份页面支持全部 11 种管理语言，并移除六个未使用的翻译键。保留现有配置。"
       }
     },
     "extIcon": "https://raw.githubusercontent.com/RaviniZib/ioBroker.shoppingroute/main/admin/shoppingroute.png",
