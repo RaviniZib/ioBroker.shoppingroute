@@ -84,6 +84,41 @@ function optimisticMove(view, itemId, targetMarket, targetPosition) {
     return { ...view, items: items.map(item => orderedById.get(item.id) || item) };
 }
 
+function reconcileSavedMoves(freshView, requestedMoves) {
+    const requested = Array.isArray(requestedMoves) ? requestedMoves : [];
+    const activeById = new Map(freshView.items.map(item => [item.id, item]));
+    const moves = [];
+    let view = freshView;
+    for (const move of requested) {
+        const current = activeById.get(move?.itemId);
+        const position = Number(move?.targetPosition);
+        if (
+            freshView.dryRun ||
+            !current ||
+            typeof move.targetMarket !== 'string' ||
+            !freshView.markets.includes(move.targetMarket) ||
+            (typeof move.itemText === 'string' &&
+                stripVisiblePrefix(move.itemText) !== stripVisiblePrefix(current.text)) ||
+            !Number.isInteger(position) ||
+            position < 0
+        ) {
+            continue;
+        }
+        const maxPosition = view.items.filter(
+            item => item.id !== current.id && item.market === move.targetMarket,
+        ).length;
+        const targetPosition = Math.min(position, maxPosition);
+        view = optimisticMove(view, current.id, move.targetMarket, targetPosition);
+        moves.push({
+            itemId: current.id,
+            itemText: current.text,
+            targetMarket: move.targetMarket,
+            targetPosition,
+        });
+    }
+    return { view, moves, dropped: requested.length - moves.length };
+}
+
 function validView(view) {
     return Boolean(
         view &&
@@ -167,10 +202,33 @@ class ShoppingListEditor extends React.Component {
         this.draftMoves = [];
         this.draftView = null;
         this.visitedMarkets = new Set();
+        this.lastLoadedAt = 0;
+        this.loadingRequest = false;
+        this.refreshOnFocus = () => {
+            if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+                return;
+            }
+            if (Date.now() - this.lastLoadedAt >= 60000) {
+                void this.load(this.state.view?.listName);
+            }
+        };
     }
 
     componentDidMount() {
         void this.load();
+        if (typeof window !== 'undefined') {
+            window.addEventListener('focus', this.refreshOnFocus);
+            document.addEventListener('visibilitychange', this.refreshOnFocus);
+            this.refreshTimer = window.setInterval(this.refreshOnFocus, 120000);
+        }
+    }
+
+    componentWillUnmount() {
+        if (typeof window !== 'undefined') {
+            window.removeEventListener('focus', this.refreshOnFocus);
+            document.removeEventListener('visibilitychange', this.refreshOnFocus);
+            window.clearInterval(this.refreshTimer);
+        }
     }
 
     instanceName() {
@@ -207,39 +265,59 @@ class ShoppingListEditor extends React.Component {
     }
 
     async load(listName) {
-        if (this.draftMoves.length) {
+        if (this.commandPending || this.loadingRequest || this.state.busy) {
             return;
         }
-        this.setState({ loading: true, error: '' });
+        this.loadingRequest = true;
+        const previousListName = this.state.view?.listName;
+        this.setState({ loading: true, error: '', view: null });
         try {
             const result = await this.send('getShoppingList', { listName });
             if (!result || result.error) {
                 throw new Error(result?.error || 'Shopping list could not be loaded.');
             }
-            let view = checkedView(result);
-            try {
-                const saved = JSON.parse(
-                    globalThis.sessionStorage?.getItem(`${this.instanceName()}.shoppingDraft.${view.listName}`) ||
-                        'null',
-                );
-                if (
-                    saved &&
-                    validView(saved.view) &&
-                    saved.view.listName === view.listName &&
-                    Array.isArray(saved.moves) &&
-                    saved.moves.length
-                ) {
-                    this.draftMoves = saved.moves;
-                    this.draftView = saved.view;
-                    view = saved.view;
+            const freshView = checkedView(result);
+            let requestedMoves = previousListName === freshView.listName ? this.draftMoves : [];
+            if (!requestedMoves.length) {
+                try {
+                    const saved = JSON.parse(
+                        globalThis.sessionStorage?.getItem(
+                            `${this.instanceName()}.shoppingDraft.${freshView.listName}`,
+                        ) || 'null',
+                    );
+                    if (saved && Array.isArray(saved.moves)) {
+                        requestedMoves = saved.moves;
+                    }
+                } catch {
+                    /* Invalid storage must never replace the live Alexa snapshot. */
                 }
-            } catch {
-                /* Ignore unavailable browser storage. */
             }
-            this.setState({ view, loading: false, busy: '' });
-            result.items.forEach(item => this.visitedMarkets.add(item.market));
+            const reconciled = reconcileSavedMoves(freshView, requestedMoves);
+            this.draftMoves = reconciled.moves;
+            this.draftView = reconciled.moves.length ? reconciled.view : null;
+            this.saveDraft(freshView.listName);
+            this.lastLoadedAt = Date.now();
+            this.setState({
+                view: reconciled.view,
+                loading: false,
+                busy: '',
+                error: reconciled.dropped
+                    ? text(
+                          'Veraltete Änderungen wurden entfernt. Die Liste wurde mit Alexa abgeglichen.',
+                          'Obsolete draft changes were removed. The list was refreshed from Alexa.',
+                      )
+                    : '',
+            });
+            freshView.items.forEach(item => this.visitedMarkets.add(item.market));
         } catch (error) {
-            this.setState({ loading: false, busy: '', error: error instanceof Error ? error.message : String(error) });
+            this.setState({
+                loading: false,
+                busy: '',
+                view: null,
+                error: error instanceof Error ? error.message : String(error),
+            });
+        } finally {
+            this.loadingRequest = false;
         }
     }
 
@@ -254,9 +332,9 @@ class ShoppingListEditor extends React.Component {
         throw new Error('Move status timed out.');
     }
 
-    saveDraft() {
+    saveDraft(listName = this.state.view?.listName) {
         try {
-            const key = `${this.instanceName()}.shoppingDraft.${this.state.view?.listName}`;
+            const key = `${this.instanceName()}.shoppingDraft.${listName}`;
             if (this.draftMoves.length) {
                 globalThis.sessionStorage?.setItem(
                     key,
@@ -828,6 +906,6 @@ class ShoppingListEditor extends React.Component {
 
 module.exports = {
     Components: { ShoppingListEditor },
-    ShoppingListEditorModel: { stripVisiblePrefix, headerMarket, visibleItems, optimisticMove },
+    ShoppingListEditorModel: { stripVisiblePrefix, headerMarket, visibleItems, optimisticMove, reconcileSavedMoves },
     ShoppingListEditor,
 };
