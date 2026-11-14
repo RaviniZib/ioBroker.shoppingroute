@@ -205,7 +205,7 @@ class ShoppingListEditor extends React.Component {
         this.lastLoadedAt = 0;
         this.loadingRequest = false;
         this.refreshOnFocus = () => {
-            if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+            if (typeof globalThis.document !== 'undefined' && globalThis.document.visibilityState === 'hidden') {
                 return;
             }
             if (Date.now() - this.lastLoadedAt >= 60000) {
@@ -216,18 +216,18 @@ class ShoppingListEditor extends React.Component {
 
     componentDidMount() {
         void this.load();
-        if (typeof window !== 'undefined') {
-            window.addEventListener('focus', this.refreshOnFocus);
-            document.addEventListener('visibilitychange', this.refreshOnFocus);
-            this.refreshTimer = window.setInterval(this.refreshOnFocus, 120000);
+        if (typeof globalThis.window !== 'undefined') {
+            globalThis.window.addEventListener('focus', this.refreshOnFocus);
+            globalThis.document.addEventListener('visibilitychange', this.refreshOnFocus);
+            this.refreshTimer = globalThis.window.setInterval(this.refreshOnFocus, 120000);
         }
     }
 
     componentWillUnmount() {
-        if (typeof window !== 'undefined') {
-            window.removeEventListener('focus', this.refreshOnFocus);
-            document.removeEventListener('visibilitychange', this.refreshOnFocus);
-            window.clearInterval(this.refreshTimer);
+        if (typeof globalThis.window !== 'undefined') {
+            globalThis.window.removeEventListener('focus', this.refreshOnFocus);
+            globalThis.document.removeEventListener('visibilitychange', this.refreshOnFocus);
+            globalThis.window.clearInterval(this.refreshTimer);
         }
     }
 
