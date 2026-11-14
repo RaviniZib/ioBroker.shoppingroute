@@ -110,7 +110,7 @@ Open **ShoppingRoute** in the ioBroker sidebar on your phone. Use the `⋮⋮` h
 
 ## Manual shopping-list changes
 
-Manual shopping-list moves stay in a browser draft. Move all required items, then press **Transfer changes to Alexa**. Only this button starts one verified Alexa sorting transaction for the complete batch. A failed transfer keeps the draft; **Discard changes** reloads the current list. While a draft is pending, switching lists, adding, deleting and resetting are disabled to preserve the draft. Reloading the same browser tab restores the draft when session storage is available.
+Manual shopping-list moves stay in a browser draft. Move all required items, then press **Transfer changes to Alexa**. Only this button starts one verified Alexa sorting transaction for the complete batch. A failed transfer keeps the draft; **Discard changes** reloads the current list. While a draft is pending, switching lists, adding, deleting and resetting are disabled to preserve the draft. Reloading the same browser tab restores valid, unsent moves from session storage without restoring obsolete items. Each reload checks a fresh Alexa list snapshot first; completed or removed items are never reintroduced by a draft. The visible tab refreshes at a low rate and on return to the tab. Failed refreshes show an error and retry option rather than presenting stale products as current. No browser cache clearing is required.
 
 ## Main features
 

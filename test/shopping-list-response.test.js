@@ -53,14 +53,16 @@ test('malformed mutation views never replace the last usable view', async () => 
     }
 });
 
-test('failed refresh preserves the existing list and its visible error', async () => {
+test('failed refresh hides the old list, shows an error and offers a fresh retry', async () => {
     let response = view;
     const instance = editor(() => response);
     await instance.load();
     response = { error: 'Amazon unavailable' };
     await instance.load();
-    assert.deepEqual(instance.state.view, view);
+    assert.equal(instance.state.view, null);
     assert.equal(instance.state.error, 'Amazon unavailable');
+    assert.ok(nodes(instance.render()).some(n => n.key === 'retry'));
+    assert.equal(nodes(instance.render()).filter(n => n.props?.className === 'shoppingroute-item-row').length, 0);
     assert.doesNotThrow(() => instance.render());
 });
 

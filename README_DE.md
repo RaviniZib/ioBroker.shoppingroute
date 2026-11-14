@@ -53,7 +53,7 @@ Für die Einrichtung: Bring!-Instanz auswählen und speichern, Bring!-Liste ausw
 
 ## Manuelle Einkaufslistenänderungen
 
-Manuelle Verschiebungen in der Einkaufsliste bleiben zunächst als Entwurf im Browser. Verschiebe alle gewünschten Artikel und drücke dann **Änderungen an Alexa übertragen**. Erst dieser Button startet einen gemeinsamen, geprüften Alexa-Sortierlauf. Bei einem Fehler bleibt der Entwurf erhalten; **Änderungen verwerfen** lädt die aktuelle Liste neu. Solange Änderungen offen sind, sind Listenwechsel, Hinzufügen, Löschen und Zurücksetzen gesperrt, damit der Entwurf erhalten bleibt. Ein Neuladen desselben Browser-Tabs stellt den Entwurf bei verfügbarem Sitzungsspeicher wieder her.
+Manuelle Verschiebungen in der Einkaufsliste bleiben zunächst als Entwurf im Browser. Verschiebe alle gewünschten Artikel und drücke dann **Änderungen an Alexa übertragen**. Erst dieser Button startet einen gemeinsamen, geprüften Alexa-Sortierlauf. Bei einem Fehler bleibt der Entwurf erhalten; **Änderungen verwerfen** lädt die aktuelle Liste neu. Solange Änderungen offen sind, sind Listenwechsel, Hinzufügen, Löschen und Zurücksetzen gesperrt, damit der Entwurf erhalten bleibt. Beim Neuladen desselben Browser-Tabs werden gültige, noch nicht übertragene Verschiebungen auf die frisch von Alexa abgefragte Liste angewendet. Erledigte oder entfernte Artikel tauchen durch alte Entwürfe nicht wieder auf. Der sichtbare Tab wird sparsam und bei Rückkehr erneut geprüft. Schlägt das Laden fehl, erscheint eine Fehlermeldung mit erneuter Lademöglichkeit statt einer als aktuell dargestellten veralteten Liste. Das Löschen des Browser-Caches ist nicht erforderlich.
 
 ## Neu in 0.5.3: Direktsteuerung in der Alexa-App
 
