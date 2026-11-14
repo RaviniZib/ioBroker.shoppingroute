@@ -380,7 +380,7 @@ If ShoppingRoute assigned an item to the wrong market, you can move it directly.
 
 Depending on the view, you can use drag and drop, arrow buttons or a market selector.
 
-Manual shopping-list moves stay in a browser draft. Move all required items, then press **Transfer changes to Alexa**. Only this button starts one verified Alexa sorting transaction for the complete batch. A failed transfer keeps the draft; **Discard changes** reloads the current list. While a draft is pending, switching lists, adding, deleting and resetting are disabled to preserve the draft. Reloading the same browser tab restores the draft when session storage is available.
+Manual shopping-list moves stay in a browser draft. Move all required items, then press **Transfer changes to Alexa**. Only this button starts one verified Alexa sorting transaction for the complete batch. A failed transfer keeps the draft; **Discard changes** reloads the current list. While a draft is pending, switching lists, adding, deleting and resetting are disabled to preserve the draft. Reloading the same browser tab restores only valid moves onto the freshly retrieved Alexa list. Completed, deleted or renamed items cannot be resurrected by an old draft. The open view refreshes at a low frequency while visible and when you return to the tab. If Alexa cannot be reached, the UI displays an error and a retry option instead of displaying an old list as current. No cache clearing is necessary.
 
 A manual change has priority over the automatic assignment.
 
