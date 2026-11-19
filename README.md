@@ -220,6 +220,10 @@ After installation:
 
 For all configuration details, see the [English user guide](USER_GUIDE_EN.md) or the [German user guide](BEDIENUNGSANLEITUNG_DE.md).
 
+## Messages for scripts and AI agents
+
+`sendTo('shoppingroute.0', 'help', {}, answer => ...)` returns a description of all messages for AI agents (e.g. ioBroker.pi-agent) and scripts: `{ help, commands }`, where `commands` lists every message with `write: true` if it changes something.
+
 ## Feedback and support
 
 ShoppingRoute is still young, so real-world feedback is especially valuable.
@@ -227,6 +231,12 @@ ShoppingRoute is still young, so real-world feedback is especially valuable.
 Please use the [ioBroker tester thread](https://forum.iobroker.net/topic/85510/test-adapter-shoppingroute-v0.4.4) for general testing feedback and the [GitHub issue tracker](https://github.com/RaviniZib/ioBroker.shoppingroute/issues) for reproducible bugs or feature requests.
 
 ## Changelog
+<!--
+    Placeholder for the next version (at the beginning of the line):
+    ### **WORK IN PROGRESS**
+-->
+### **WORK IN PROGRESS**
+- (@GermanBluefox) Added the message "help": a description of all messages for AI agents (e.g. pi-agent), and common.supportedMessages.help
 
 ### 0.6.2 (2026-11-13)
 - Updated @iobroker/testing to 6.3.2 to resolve repository checker warning W0037 (Issue #85).

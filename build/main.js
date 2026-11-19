@@ -53,6 +53,7 @@ const bring_sync_1 = require("./lib/bring-sync");
 const bring_io_1 = require("./lib/bring-io");
 const config_protection_1 = require("./lib/config-protection");
 const direct_sort_lifecycle_1 = require("./lib/direct-sort-lifecycle");
+const help_1 = require("./lib/help");
 const VERSION = '0.6.2';
 const COLLECT_WINDOW_MS = 5000;
 class MissingAlexaListError extends Error {
@@ -993,6 +994,10 @@ class ShoppingRoute extends utils.Adapter {
     async onMessage(obj) {
         if (!obj?.callback)
             return;
+        if (obj.command === 'help') {
+            this.sendTo(obj.from, obj.command, { help: help_1.HELP, commands: help_1.COMMANDS }, obj.callback);
+            return;
+        }
         if (this.bringMode === 'bring-only' && ['createAlexaList', 'addShoppingItem', 'moveShoppingItem',
             'deleteShoppingItem', 'clearManualShoppingOrder', 'applyShoppingChanges'].includes(obj.command)) {
             this.sendTo(obj.from, obj.command, { ok: false, error: 'Bring! route preview is read-only.' }, obj.callback);
