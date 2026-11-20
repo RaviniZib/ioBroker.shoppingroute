@@ -1,6 +1,13 @@
 # ShoppingRoute – User Guide
 
-**Guide for ShoppingRoute 0.6.2 (13 November 2026)**
+**Guide for ShoppingRoute 0.6.3 (20 November 2026)**
+
+**New in 0.6.3:** The shopping-list view uses the latest confirmed Alexa snapshot instead of outdated browser drafts. Completed or deleted items no longer reappear. Valid pending moves are matched against the fresh list; a failed refresh displays an error rather than pretending stale data is current. ShoppingRoute also provides a read-only help message for scripts and AI agents.
+
+### Messages for scripts and AI agents
+
+Call `sendTo('shoppingroute.0', 'help', {}, response => ...)` to receive `{ help, commands }`. The `help` field describes the message formats in English; `commands` lists the supported messages. An entry marked `write: true` can change data, whereas `write: false` is read-only. AI agents should only change lists or configuration at the user's explicit request. Existing Dry Run, enabled-state checks, confirmation safeguards and configurable Amazon write limits remain active. Calling `help` does not change Alexa or Bring! data.
+
 
 **Maintenance release 0.6.2:** Updated the ioBroker testing development dependency to 6.3.2 (repository checker W0037, Issue #85). Existing Alexa and Bring! runtime features and safeguards are retained.
 

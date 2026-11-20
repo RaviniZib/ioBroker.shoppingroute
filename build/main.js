@@ -54,7 +54,7 @@ const bring_io_1 = require("./lib/bring-io");
 const config_protection_1 = require("./lib/config-protection");
 const direct_sort_lifecycle_1 = require("./lib/direct-sort-lifecycle");
 const help_1 = require("./lib/help");
-const VERSION = '0.6.2';
+const VERSION = '0.6.3';
 const COLLECT_WINDOW_MS = 5000;
 class MissingAlexaListError extends Error {
 }

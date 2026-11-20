@@ -17,7 +17,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT license"></a>
 </p>
 
-> **Current version: 0.6.2 (2026-11-13).**
+> **Current version: 0.6.3 (2026-11-20).**
 > ShoppingRoute releases appear through the ioBroker **latest** repository after index refresh.
 
 **0.6.1 – faster, safer Bring!/Alexa synchronization:** Once a new acknowledged Bring! list state or an Alexa list change is observed, ShoppingRoute starts a short debounced bridge check instead of waiting for another 90-second bridge poll. It retains a 30-second fallback check and reschedules busy transactions after three seconds; verification checks are rate-conscious and provider updates can wake them early. Original completed writes are confirmed independently from unrelated concurrent user changes, preventing a stale transaction from blocking later completions. The adapter reports delayed confirmations once as warnings, hard failures as errors, and a successful recovery once as informational output.
@@ -231,12 +231,9 @@ ShoppingRoute is still young, so real-world feedback is especially valuable.
 Please use the [ioBroker tester thread](https://forum.iobroker.net/topic/85510/test-adapter-shoppingroute-v0.4.4) for general testing feedback and the [GitHub issue tracker](https://github.com/RaviniZib/ioBroker.shoppingroute/issues) for reproducible bugs or feature requests.
 
 ## Changelog
-<!--
-    Placeholder for the next version (at the beginning of the line):
-    ### **WORK IN PROGRESS**
--->
-### **WORK IN PROGRESS**
-- (@GermanBluefox) Added the message "help": a description of all messages for AI agents (e.g. pi-agent), and common.supportedMessages.help
+### 0.6.3 (2026-11-20)
+- (@RaviniZib) The shopping-list UI now uses the latest confirmed Alexa list instead of stale browser drafts. Valid pending moves are rebased; removed or completed items cannot reappear, and failed reads show an error.
+- (@GermanBluefox) Added the `help` message and `common.supportedMessages.help` so AI agents and scripts can discover the supported commands and write permissions.
 
 ### 0.6.2 (2026-11-13)
 - Updated @iobroker/testing to 6.3.2 to resolve repository checker warning W0037 (Issue #85).
