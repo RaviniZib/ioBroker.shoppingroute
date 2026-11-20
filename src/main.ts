@@ -68,6 +68,7 @@ import {
     finishDirectApply,
     type DirectSortPhase,
 } from './lib/direct-sort-lifecycle';
+import { COMMANDS, HELP } from './lib/help';
 
 const VERSION = '0.6.2';
 const COLLECT_WINDOW_MS = 5000;
@@ -1064,6 +1065,10 @@ export class ShoppingRoute extends utils.Adapter {
 
     private async onMessage(obj: { command: string; from: string; callback?: any; message?: any }): Promise<void> {
         if (!obj?.callback) return;
+        if (obj.command === 'help') {
+            this.sendTo(obj.from, obj.command, { help: HELP, commands: COMMANDS }, obj.callback);
+            return;
+        }
         if (this.bringMode === 'bring-only' && ['createAlexaList', 'addShoppingItem', 'moveShoppingItem',
             'deleteShoppingItem', 'clearManualShoppingOrder', 'applyShoppingChanges'].includes(obj.command)) {
             this.sendTo(obj.from, obj.command, { ok: false, error: 'Bring! route preview is read-only.' }, obj.callback);

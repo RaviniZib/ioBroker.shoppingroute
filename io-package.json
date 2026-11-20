@@ -58,6 +58,10 @@
       }
     ],
     "messagebox": true,
+    "supportedMessages": {
+      "help": true,
+      "custom": true
+    },
     "icon": "shoppingroute.png",
     "tier": 3,
     "news": {
