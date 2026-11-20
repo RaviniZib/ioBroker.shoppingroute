@@ -70,7 +70,7 @@ import {
 } from './lib/direct-sort-lifecycle';
 import { COMMANDS, HELP } from './lib/help';
 
-const VERSION = '0.6.2';
+const VERSION = '0.6.3';
 const COLLECT_WINDOW_MS = 5000;
 class MissingAlexaListError extends Error {}
 const MAX_ACTIVE_ITEMS = 99;

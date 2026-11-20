@@ -1,6 +1,13 @@
 # ShoppingRoute – Bedienungsanleitung
 
-**Bedienungsanleitung für ShoppingRoute 0.6.2 (13.11.2026)**
+**Bedienungsanleitung für ShoppingRoute 0.6.3 (20.11.2026)**
+
+**Neu in 0.6.3:** Die Einkaufslistenansicht zeigt den aktuellen bestätigten Alexa-Listenstand statt veralteter Browserdaten. Abgehakte oder gelöschte Artikel tauchen nach dem Neuladen nicht erneut auf. Noch gültige lokale Verschiebungen werden an die aktuelle Liste angepasst; bei einem Abruffehler erscheint eine Fehlermeldung statt eines veralteten Listenstands. Außerdem stellt ShoppingRoute einen lesenden Hilfeaufruf für Skripte und KI-Agenten bereit.
+
+### Nachrichten für Skripte und KI-Agenten
+
+Der Aufruf `sendTo('shoppingroute.0', 'help', {}, response => ...)` liefert ein Objekt mit `help` (englische Beschreibung der Schnittstelle) und `commands` (Liste aller unterstützten Nachrichtennamen). Der Eintrag `write: true` bezeichnet einen potenziell verändernden Befehl, `write: false` einen lesenden Befehl. Ein KI-Agent kann damit die Nachrichtenformate vor der Nutzung ermitteln. Änderungen an Einkaufslisten oder Konfigurationen sollen nur nach ausdrücklichem Nutzerauftrag erfolgen. Dry-Run, Aktivierungsstatus, Bestätigungsprüfungen und konfigurierte Amazon-Schreiblimits bleiben aktiv. Der `help`-Befehl allein verursacht keine Listenänderung.
+
 
 **Wartungsversion 0.6.2:** Die ioBroker-Testabhängigkeit wurde auf 6.3.2 aktualisiert (Repo-Checker W0037, Issue #85). Die bisherigen Alexa-/Bring!-Funktionen und Schutzmechanismen bleiben erhalten.
 

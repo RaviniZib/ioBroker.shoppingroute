@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "shoppingroute",
-    "version": "0.6.2",
+    "version": "0.6.3",
     "titleLang": {
       "en": "ShoppingRoute",
       "de": "ShoppingRoute",
@@ -65,6 +65,19 @@
     "icon": "shoppingroute.png",
     "tier": 3,
     "news": {
+      "0.6.3": {
+        "en": "Fresh Alexa shopping-list views without stale browser drafts; help message for AI agents and scripts.",
+        "de": "Aktuelle Alexa-Einkaufslisten ohne veraltete Browser-Entwürfe; Hilfe-Befehl für KI-Agenten und Skripte.",
+        "ru": "Актуальные списки Alexa без устаревших черновиков браузера; команда help для ИИ-агентов и скриптов.",
+        "pt": "Listas Alexa atualizadas sem rascunhos antigos do navegador; comando help para agentes de IA e scripts.",
+        "nl": "Actuele Alexa-boodschappenlijsten zonder oude browserconcepten; help-bericht voor AI-agenten en scripts.",
+        "fr": "Listes Alexa à jour sans brouillons périmés du navigateur ; commande help pour agents IA et scripts.",
+        "it": "Liste Alexa aggiornate senza bozze obsolete del browser; messaggio help per agenti IA e script.",
+        "es": "Listas Alexa actualizadas sin borradores antiguos del navegador; comando help para agentes de IA y scripts.",
+        "pl": "Aktualne listy Alexa bez nieaktualnych szkiców przeglądarki; komunikat help dla agentów AI i skryptów.",
+        "uk": "Актуальні списки Alexa без застарілих чернеток браузера; команда help для ШІ-агентів і скриптів.",
+        "zh-cn": "Alexa 购物清单保持最新，不再使用过时的浏览器草稿；为 AI 代理和脚本提供 help 命令。"
+      },
       "0.6.2": {
         "en": "Maintenance release: updated @iobroker/testing to 6.3.2 to resolve repository checker warning W0037.",
         "de": "Wartungsversion: @iobroker/testing auf 6.3.2 aktualisiert und Repo-Checker-Warnung W0037 behoben.",
@@ -142,19 +155,6 @@
         "pl": "Naprawia zapis katalogów i przeciąganie, tworzy zweryfikowane listy Alexa, dodaje produkty bezpośrednio i pokazuje postęp długich przenosin. Lokalne zmiany nie uruchamiają adaptera ponownie.",
         "uk": "Виправляє збереження каталогів і перетягування, створює перевірені списки Alexa, додає товари безпосередньо та показує перебіг тривалих переміщень. Локальні зміни не перезапускають адаптер.",
         "zh-cn": "修复目录保存和拖放问题，创建经验证的 Alexa 清单，直接添加商品，并显示长时间移动的进度。本地修改不再重启适配器。"
-      },
-      "0.5.0": {
-        "en": "Adds the ShoppingRoute sidebar management page, runtime catalogue storage, protection against accidental catalogue resets, and consistent uppercase market names.",
-        "de": "Neue ShoppingRoute-Verwaltung in der Seitenleiste, Katalogspeicherung zur Laufzeit, Schutz vor versehentlichen Katalog-Resets und konsistente Marktnamen in Großbuchstaben.",
-        "ru": "Новая страница управления ShoppingRoute в боковой панели, сохранение каталогов во время работы, защита от случайного сброса и названия магазинов в верхнем регистре.",
-        "pt": "Nova página de gestão ShoppingRoute na barra lateral, armazenamento dos catálogos em execução, proteção contra reposições acidentais e nomes de lojas em maiúsculas.",
-        "nl": "Nieuwe ShoppingRoute-beheerpagina in de zijbalk, catalogusopslag tijdens runtime, bescherming tegen onbedoeld resetten en winkelnamen in hoofdletters.",
-        "fr": "Nouvelle page de gestion ShoppingRoute dans la barre latérale, stockage des catalogues en fonctionnement, protection contre les réinitialisations accidentelles et noms de magasins en majuscules.",
-        "it": "Nuova pagina di gestione ShoppingRoute nella barra laterale, salvataggio dei cataloghi durante l’esecuzione, protezione dai ripristini accidentali e nomi dei negozi in maiuscolo.",
-        "es": "Nueva página de gestión ShoppingRoute en la barra lateral, guardado de catálogos en ejecución, protección ante reinicios accidentales de los catálogos y nombres de tiendas en mayúsculas.",
-        "pl": "Nowa strona zarządzania ShoppingRoute na pasku bocznym, zapis katalogów podczas działania, ochrona przed przypadkowym resetem i nazwy sklepów wielkimi literami.",
-        "uk": "Нова сторінка керування ShoppingRoute у бічній панелі, збереження каталогів під час роботи, захист від випадкового скидання та назви магазинів великими літерами.",
-        "zh-cn": "新增侧边栏 ShoppingRoute 管理页面、运行时目录存储、意外目录重置保护，以及统一的大写商店名称。"
       }
     },
     "extIcon": "https://raw.githubusercontent.com/RaviniZib/ioBroker.shoppingroute/main/admin/shoppingroute.png",
